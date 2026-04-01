@@ -24,7 +24,7 @@ Asegúrate de tener instalado en tu sistema:
 
 **1. Clonar el repositorio y entrar al backend**
 ```bash
-git clone [https://github.com/sergiogonzalezch/loremaster](https://github.com/sergiogonzalezch/loremaster)
+git clone https://github.com/sergiogonzalezch/loremaster
 cd lore-master/backend
 
 # En Windows:
