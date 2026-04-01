@@ -1,0 +1,12 @@
+# Entornos y variables
+venv/
+env/
+.env
+
+# Archivos temporales
+__pycache__/
+*.pyc
+backend/temp_uploads/
+
+# Base de datos vectorial local de Qdrant
+backend/qdrant_data/
