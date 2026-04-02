@@ -5,7 +5,7 @@ from app.schemas.models import GenerateTextRequest
 router = APIRouter()
 
 
-@router.post("/generate")
+@router.post("/text")
 async def generate(request: GenerateTextRequest):
     return {
         "response": generate_response(request.query),

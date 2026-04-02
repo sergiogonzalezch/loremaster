@@ -1,2 +1,2 @@
-documents = []
-entities = []
+documents = {}
+entities = {}
