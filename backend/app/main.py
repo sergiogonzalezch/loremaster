@@ -1,11 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
-from pydantic import BaseModel
 from dotenv import load_dotenv
-from app.api.routes import generate
+from app.api.routes import generate, documents, entities
 
-# from qdrant_client import QdrantClient
-# from qdrant_client.http.models import Distance, VectorParams
-# import shutil
 import os
 
 load_dotenv()
@@ -23,3 +19,5 @@ def health():
     return {"status": "ok", "environment": ENVIRONMENT}
 
 app.include_router(generate.router, prefix="/api/v1/generate/text", tags=["generate"])
+app.include_router(documents.router, prefix="/api/v1/documents/ingest", tags=["documents"])
+app.include_router(entities.router, prefix="/api/v1/entities", tags=["entities"])

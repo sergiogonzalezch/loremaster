@@ -11,4 +11,4 @@ uvicorn[standard]
 pypdf
 python-dotenv
 # qdrant-client
-# python-multipart
+python-multipart

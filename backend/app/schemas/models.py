@@ -1,5 +1,4 @@
 from pydantic import BaseModel
 
-class GenerateRequest(BaseModel):
+class GenerateTextRequest(BaseModel):
     query: str
-    max_tokens: int = 500
