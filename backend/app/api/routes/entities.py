@@ -1,10 +1,10 @@
 from fastapi import APIRouter
-from app.schemas.models import CreateEntityRequest
+from app.models.models import CreateEntityRequest
 
-router = APIRouter()
+router = APIRouter(prefix="/entities", tags=["entities"])
 
 
-@router.post("/entities")
+@router.post("/create")
 async def create_entity(request: CreateEntityRequest):
     response = create_entity(request)
     return {"message": response, "status": "success"}

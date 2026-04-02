@@ -1,8 +1,8 @@
 from fastapi import APIRouter
 from app.services.rag_service import generate_response
-from app.schemas.models import GenerateTextRequest
+from app.models.models import GenerateTextRequest
 
-router = APIRouter()
+router = APIRouter(prefix="/generate", tags=["generate"])
 
 
 @router.post("/text")
