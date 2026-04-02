@@ -8,6 +8,6 @@ router = APIRouter()
 @router.post("/text")
 async def generate(request: GenerateTextRequest):
     return {
-        "response": generate_response(request.query),
+        "message": generate_response(request.query),
         "status": "success",
     }

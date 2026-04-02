@@ -16,7 +16,8 @@ app = FastAPI(
 
 @app.get("/")
 def health():
-    return {"status": "ok", "environment": ENVIRONMENT}
+    return {"status": "healthy", 
+            "environment": ENVIRONMENT}
 
 app.include_router(documents.router, prefix="/api/v1/documents", tags=["documents"])
 app.include_router(generate.router, prefix="/api/v1/generate", tags=["generate"])

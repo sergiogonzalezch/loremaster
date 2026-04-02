@@ -11,4 +11,3 @@ def generate_response(query:str):
         "document": doc,
         "response": f"Respuesta generada para la consulta: '{query}' utilizando el documento '{doc['filename']}'"
     }
-    # return {f"Procesando la consulta: {query}"}
