@@ -43,4 +43,5 @@ PROJECT_NAME="Lore Master API"
 ENVIRONMENT="development"
 
 # Ejecutar
-uvicorn main:app --reload
+```cd backend```
+uvicorn app.main:app --reload
