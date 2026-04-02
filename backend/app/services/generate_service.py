@@ -8,6 +8,6 @@ def generate_response(query:str):
 
     return {
         "query": query,
-        "document": doc,
+        "sources": [{"filename": doc["filename"]}],
         "response": f"Respuesta generada para la consulta: '{query}' utilizando el documento '{doc['filename']}'"
     }
