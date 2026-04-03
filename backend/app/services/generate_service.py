@@ -9,5 +9,5 @@ def generate_response(query:str):
     return {
         "query": query,
         "sources": [{"filename": doc["filename"]}],
-        "response": f"Respuesta generada para la consulta: '{query}' utilizando el documento '{doc['filename']}'"
+        "message": f"Respuesta generada para la consulta: '{query}' utilizando el documento '{doc['filename']}'"
     }
