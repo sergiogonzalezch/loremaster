@@ -1,14 +1,12 @@
 langchain
-# langchain-classic
 langchain-openai
 langchain-community
 langchain-huggingface
 langchain-text-splitters
 sentence-transformers
-# chromadb
 fastapi
 uvicorn[standard]
 pypdf
 python-dotenv
-# qdrant-client
+qdrant-client
 python-multipart

@@ -1,6 +1,6 @@
 from fastapi import HTTPException, UploadFile, File
 import uuid
-from app.services.documents_db_mock import documents
+from app.services.documents_db_mock import documents, collections
 
 ALLOWED_MIME_TYPES = ["text/plain", "application/pdf"]
 MAX_BYTES = 50 * 1024 * 1024  # 50 MB
@@ -18,7 +18,7 @@ async def ingest_document_service(
     if len(content_bytes) > MAX_BYTES:
         raise HTTPException(status_code=400, detail="File too large")
 
-    if collection_id not in documents:
+    if collection_id not in collections:
         raise HTTPException(status_code=404, detail="Collection not found")
 
     content = content_bytes.decode("utf-8", errors="ignore")

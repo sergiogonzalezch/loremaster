@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from app.services.collection_service import create_collection_service
 
-from app.services.documents_db_mock import documents
+from app.services.documents_db_mock import collections
 
 router = APIRouter(prefix="/collections", tags=["collections"])
 
@@ -14,12 +14,12 @@ async def create_collection(name: str, description: str = ""):
 
 @router.get("/list")
 async def get_collections():
-    return list(documents.values())
+    return list(collections.values())
 
 
 @router.get("/{collection_id}")
 async def get_collection(collection_id: str):
-    collection = documents.get(collection_id)
+    collection = collections.get(collection_id)
     if not collection:
         raise HTTPException(status_code=404, detail="Collection not found")
     return collection
