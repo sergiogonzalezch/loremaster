@@ -12,5 +12,5 @@ def generate_response(query:str, collection_id: str = None):
     return {
         "query": query,
         "sources": [{"filename": collection['name']}],
-        "message": f"Respuesta generada para la consulta: '{query}' utilizando el documento '{collection['name']}'"
+        "message": f"Respuesta generada para la consulta: '{query}' utilizando la colección '{collection['name']}'"
     }

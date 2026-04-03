@@ -11,33 +11,23 @@ async def ingest_document_service(
 ):
 
     if data.content_type not in ALLOWED_MIME_TYPES:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "error": "Unsupported file type",
-                "message": f"Only the following MIME types are allowed: PDF and plain text",
-            },
-        )
+        raise HTTPException(status_code=400, detail="Unsupported file type")
 
     content_bytes = await data.read()
 
     if len(content_bytes) > MAX_BYTES:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "error": "File size exceeds limit",
-                "message": "File size exceeds the maximum allowed size of 50 MB",
-            },
-        )
+        raise HTTPException(status_code=400, detail="File too large")
+
+    if collection_id not in documents:
+        raise HTTPException(status_code=404, detail="Collection not found")
 
     content = content_bytes.decode("utf-8", errors="ignore")
     doc_id = str(uuid.uuid4())
-    documents[collection_id].append({
-        doc_id: {
-            "filename": data.filename,
-            "content": content,
-            "status": "completed",
-        }
-    })
+
+    documents[collection_id][doc_id] = {
+        "filename": data.filename,
+        "content": content,
+        "status": "completed",
+    }
 
     return doc_id

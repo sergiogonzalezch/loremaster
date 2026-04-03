@@ -8,7 +8,7 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 
 @router.post("/ingest/{collection_id}")
 async def ingest(collection_id: str, request: UploadFile = File(...)):
-    response = ingest_document_service(request, collection_id)
+    response = await ingest_document_service(request, collection_id)
     return {"response": response, "status": "success"}
 
 
