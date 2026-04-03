@@ -32,12 +32,12 @@ async def ingest_document_service(
 
     content = content_bytes.decode("utf-8", errors="ignore")
     doc_id = str(uuid.uuid4())
-    documents[collection_id] = {
+    documents[collection_id].append({
         doc_id: {
             "filename": data.filename,
             "content": content,
             "status": "completed",
         }
-    }
+    })
 
     return doc_id

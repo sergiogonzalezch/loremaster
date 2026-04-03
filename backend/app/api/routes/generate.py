@@ -6,8 +6,8 @@ router = APIRouter(prefix="/generate", tags=["generate"])
 
 
 @router.post("/text")
-async def generate(request: GenerateTextRequest, doc_id: str = None):
+async def generate(request: GenerateTextRequest, collection_id: str = None):
     return {
-        "message": generate_response(request.query, doc_id=doc_id),
+        "message": generate_response(request.query, collection_id=collection_id),
         "status": "success",
     }
