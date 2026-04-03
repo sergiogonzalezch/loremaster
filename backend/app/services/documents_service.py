@@ -6,7 +6,10 @@ ALLOWED_MIME_TYPES = ["text/plain", "application/pdf"]
 MAX_BYTES = 50 * 1024 * 1024  # 50 MB
 
 
-async def ingest_document_result(data: UploadFile = File(...)):
+async def ingest_document_service(
+    data: UploadFile = File(...), collection_id: str = None
+):
+
     if data.content_type not in ALLOWED_MIME_TYPES:
         raise HTTPException(
             status_code=400,
@@ -29,11 +32,22 @@ async def ingest_document_result(data: UploadFile = File(...)):
 
     content = content_bytes.decode("utf-8", errors="ignore")
     doc_id = str(uuid.uuid4())
-    documents[doc_id] = {
-        "id": doc_id,
-        "filename": data.filename,
-        "content": content,
-        "status": "completed",
+    documents[collection_id] = {
+        doc_id: {
+            "filename": data.filename,
+            "content": content,
+            "status": "completed",
+        }
     }
 
     return doc_id
+
+def create_collection_service(name: str, description: str = ""):
+    collection_id = str(uuid.uuid4())
+    documents[collection_id] = {
+        "id": collection_id,
+        "name": name,
+        "description": description,
+        "status": "active",
+    }
+    return {"collection_id": collection_id, "name": name, "description": description}

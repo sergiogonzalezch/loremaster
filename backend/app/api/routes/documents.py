@@ -1,11 +1,38 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File
-import uuid
-from app.services.documents_service import ingest_document_result
+from app.services.documents_service import ingest_document_service
+
+from app.services.documents_db_mock import documents
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
 
-@router.post("/ingest")
-async def ingest(request: UploadFile = File(...)):
-    response = ingest_document_result(request)
+@router.post("/ingest/{collection_id}")
+async def ingest(collection_id: str, request: UploadFile = File(...)):
+    response = ingest_document_service(request, collection_id)
     return {"response": response, "status": "success"}
+
+
+@router.get("/{doc_id}/status")
+async def get_document(doc_id: str):
+    for collection in documents.values():
+        doc = collection.get(doc_id)
+        if doc:
+            return {"doc_id": doc_id, "status": doc["status"]}
+    raise HTTPException(status_code=404, detail="Document not found")
+
+
+@router.get("/list")
+async def get_documents():
+    docs = []
+    for collection in documents.values():
+        docs.extend(collection.values())
+    return docs
+
+
+@router.delete("/{doc_id}")
+async def delete_document(doc_id: str):
+    for collection in documents.values():
+        if doc_id in collection:
+            del collection[doc_id]
+            return {"message": f"Document {doc_id} deleted successfully"}
+    raise HTTPException(status_code=404, detail="Document not found")
