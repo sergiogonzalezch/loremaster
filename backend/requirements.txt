@@ -1,5 +1,5 @@
 langchain
-langchain-classic
+# langchain-classic
 langchain-openai
 langchain-community
 langchain-huggingface

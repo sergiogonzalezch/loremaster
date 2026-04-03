@@ -2,7 +2,7 @@ from app.services.documents_db_mock import entities
 import uuid
 
 
-def create_entity(request: dict):
+def create_entity_service(request: dict):
     entity_id = str(uuid.uuid4())
     entities[entity_id] = {
         "id": entity_id,

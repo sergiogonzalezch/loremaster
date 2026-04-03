@@ -15,9 +15,12 @@ app = FastAPI(
 )
 
 @app.get("/")
-def health():
-    return {"status": "healthy", 
-            "environment": ENVIRONMENT}
+def read_root():
+    return {"message": f"Welcome to {PROJECT_NAME} API!"}
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "environment": ENVIRONMENT}
 
 app.include_router(documents.router, prefix="/api/v1", tags=["documents"])
 app.include_router(generate.router, prefix="/api/v1", tags=["generate"])
