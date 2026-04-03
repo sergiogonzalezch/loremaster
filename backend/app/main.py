@@ -14,13 +14,16 @@ app = FastAPI(
     version="1.0.0",
 )
 
+
 @app.get("/")
 def read_root():
     return {"message": f"Welcome to {PROJECT_NAME} API!"}
 
+
 @app.get("/health")
 def health_check():
     return {"status": "healthy", "environment": ENVIRONMENT}
+
 
 app.include_router(collections.router, prefix="/api/v1", tags=["collections"])
 app.include_router(documents.router, prefix="/api/v1", tags=["documents"])

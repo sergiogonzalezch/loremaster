@@ -31,7 +31,7 @@ async def ingest_document_service(
 
     document = {
         "id": doc_id,
-        "collection_id": collection_id, 
+        "collection_id": collection_id,
         "filename": data.filename,
         "content": content,
         "status": "completed",

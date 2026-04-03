@@ -24,6 +24,7 @@ async def get_collection(collection_id: str):
         raise HTTPException(status_code=404, detail="Collection not found")
     return collection
 
+
 @router.delete("/{collection_id}")
 async def delete_collection(collection_id: str):
     if collection_id in collections:
