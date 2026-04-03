@@ -1,10 +1,13 @@
 from app.services.documents_db_mock import documents
 
-def generate_response(query:str):
+def generate_response(query:str, doc_id: str = None):
     if not documents: 
         return {"error": "No hay documentos disponibles para procesar la consulta."}
 
-    doc = list(documents.values())[0]
+    if doc_id:
+        doc = documents.get(doc_id)
+    else:
+        doc = list(documents.values())[0]
 
     return {
         "query": query,
