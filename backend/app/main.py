@@ -1,6 +1,6 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI
 from dotenv import load_dotenv
-from app.api.routes import generate, documents, entities, collections
+from app.api.routes import generate, documents, collections
 
 import os
 
@@ -25,4 +25,4 @@ def health_check():
 app.include_router(collections.router, prefix="/api/v1", tags=["collections"])
 app.include_router(documents.router, prefix="/api/v1", tags=["documents"])
 app.include_router(generate.router, prefix="/api/v1", tags=["generate"])
-app.include_router(entities.router, prefix="/api/v1", tags=["entities"])
+# app.include_router(entities.router, prefix="/api/v1", tags=["entities"])
