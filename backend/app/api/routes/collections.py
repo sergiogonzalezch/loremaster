@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from app.services.documents_service import create_collection_service
+from app.services.collection_service import create_collection_service
 
 from app.services.documents_db_mock import documents
 
