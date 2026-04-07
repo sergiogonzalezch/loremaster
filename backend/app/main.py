@@ -1,15 +1,12 @@
 from fastapi import FastAPI
 from dotenv import load_dotenv
 from app.api.routes import generate, documents, collections
+from config import settings
 
 import os
 
-load_dotenv()
-PROJECT_NAME = os.getenv("PROJECT_NAME", "Lore Master API")
-ENVIRONMENT = os.getenv("ENVIRONMENT", "local")
-
 app = FastAPI(
-    title=PROJECT_NAME,
+    title=settings.project_name,
     description="API for managing lore and knowledge base",
     version="1.0.0",
 )
@@ -17,12 +14,16 @@ app = FastAPI(
 
 @app.get("/")
 def read_root():
-    return {"message": f"Welcome to {PROJECT_NAME} API!"}
+     return {
+        "service": "AI Multimodal API",
+        "version": "1.0.0",
+        "model": settings.model_name,
+    }
 
 
 @app.get("/health")
 def health_check():
-    return {"status": "healthy", "environment": ENVIRONMENT}
+    return {"status": "healthy", "environment": settings.environment}
 
 
 app.include_router(collections.router, prefix="/api/v1", tags=["collections"])
