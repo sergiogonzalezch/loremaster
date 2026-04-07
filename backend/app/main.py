@@ -13,7 +13,7 @@ def read_root():
      return {
         "service": "AI Multimodal API",
         "version": "1.0.0",
-        "model": settings.model_name,
+        "model": settings.ollama_model,
     }
 
 
