@@ -1,6 +1,6 @@
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama.llms import OllamaLLM
-from config import settings
+from backend.core.config import settings
 
 template = """Question: {question}
 
@@ -13,7 +13,5 @@ model = OllamaLLM(
 )
 
 chain = prompt | model
-
-# chain.invoke({"question": "What is LangChain?"})
 
 print(chain.invoke({"question": "What is LangChain?"}))
