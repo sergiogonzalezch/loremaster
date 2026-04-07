@@ -96,16 +96,3 @@ backend/
 ### Generación
 - `POST /api/v1/collections/{collection_id}/text` recibe `query` y retorna respuesta mock usando fuentes de esa colección.
 
----
-
-## Documentación extendida
-
-Para el detalle de auditoría, lineamientos de arquitectura, ERD comparativo y estándares de modelos/schemas revisa:
-
-- [`docs/documentation-audit.md`](docs/documentation-audit.md)
-- [`docs/architecture-and-erd.md`](docs/architecture-and-erd.md)
-
-## Próximos pasos recomendados
-- Sustituir `documents_db_mock.py` por persistencia real (PostgreSQL + Qdrant).
-- Versionar contratos de respuesta con schemas explícitos en todos los endpoints.
-- Activar y documentar módulo de entidades en `main.py` cuando esté listo.
