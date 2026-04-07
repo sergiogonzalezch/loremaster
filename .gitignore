@@ -10,3 +10,7 @@ backend/temp_uploads/
 
 # Base de datos vectorial local de Qdrant
 backend/qdrant_data/
+.agents
+.claude
+CLAUDE.md
+skills-lock.json
