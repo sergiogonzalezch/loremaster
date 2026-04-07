@@ -1,47 +1,111 @@
 # 📜 Lore Master API
 
-Lore Master es el backend central de una plataforma web interactiva diseñada para escritores, narradores de rol (RPG) y creadores de contenido. Permite construir, organizar y expandir mundos ficticios utilizando una arquitectura RAG (Retrieval-Augmented Generation) basada en documentos de los propios usuarios.
+Backend en **FastAPI** para gestionar colecciones de conocimiento (lore), documentos y generación de respuestas basadas en contenido ingestado.
 
-## 🚀 Estado Actual (Draft - Semana 1)
-Este repositorio contiene la versión inicial (Draft) de la API. Actualmente incluye la estructura base, validación de datos, manejo de subida de archivos y la configuración local de la base de datos vectorial.
+## 1) Objetivo y alcance
 
-### 🛠️ Stack Tecnológico
-* **Framework Web:** FastAPI (Python)
-* **Base de Datos Vectorial:** Qdrant (Modo Local / En memoria)
-* **Validación de Datos:** Pydantic
-* **Entorno:** `python-dotenv`
+Lore Master API sirve como capa de backend para:
+- crear y administrar colecciones,
+- cargar documentos por colección,
+- generar respuestas usando los documentos cargados,
+- (en evolución) modelar entidades narrativas.
 
----
+> Estado actual: implementación **MVP con almacenamiento en memoria (mock)**, útil para validar flujos API antes de persistencia real.
 
-## ⚙️ Requisitos Previos
-Asegúrate de tener instalado en tu sistema:
-* [Python 3.10+](https://www.python.org/downloads/)
-* [Git](https://git-scm.com/)
+## 2) Stack y dependencias principales
 
----
+- **Framework**: FastAPI
+- **Validación**: Pydantic
+- **Servidor local**: Uvicorn
+- **Config**: python-dotenv
+- **Persistencia actual**: diccionarios en memoria (`documents_db_mock.py`)
 
-## 💻 Instalación y Configuración Local
+## 3) Puesta en marcha local
 
-**1. Clonar el repositorio y entrar al backend**
+### Requisitos
+- Python 3.10+
+- pip
+
+### Instalación
 ```bash
-git clone https://github.com/sergiogonzalezch/loremaster
-cd lore-master/backend
-
-# En Windows:
-python -m venv venv
-venv\Scripts\activate
-
-# En Mac / Linux:
-python3 -m venv venv
-source venv/bin/activate
-
-# Instalar requerimiento
+git clone https://github.com/sergiogonzalezch/loremaster.git
+cd loremaster/backend
+python -m venv .venv
+source .venv/bin/activate   # En Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+```
 
-# Variables de entorno
+### Variables de entorno
+Crear `.env` dentro de `backend/` (puedes partir de `.env.example`) con al menos:
+
+```env
 PROJECT_NAME="Lore Master API"
 ENVIRONMENT="development"
+OLLAMA_MODEL="llama3"
+```
 
-# Ejecutar
-```cd backend```
+### Ejecutar
+```bash
+cd backend
 uvicorn app.main:app --reload
+```
+
+### Endpoints base
+- `GET /` estado general del servicio
+- `GET /health` healthcheck
+- Swagger: `GET /docs`
+
+## 4) Árbol del proyecto y responsabilidades
+
+```text
+backend/
+  app/
+    api/routes/
+      collections.py   # CRUD básico de colecciones
+      documents.py     # Ingesta y lectura/borrado de documentos
+      generate.py      # Generación de respuestas por colección
+      entities.py      # Ruta de entidades (actualmente no montada)
+    services/
+      collection_service.py
+      documents_service.py
+      generate_service.py
+      entities_service.py
+      documents_db_mock.py  # "base de datos" en memoria
+    models/
+      models.py        # Schemas Pydantic de request/response
+    main.py            # Inicialización FastAPI + router include
+  config.py            # Settings del proyecto
+```
+
+## 5) Contratos API y reglas funcionales (actual)
+
+### Colecciones
+- `POST /api/v1/collections/` crea colección (`name`, `description`).
+- `GET /api/v1/collections/` lista colecciones.
+- `GET /api/v1/collections/{collection_id}` obtiene detalle.
+- `DELETE /api/v1/collections/{collection_id}` elimina colección.
+
+### Documentos
+- `POST /api/v1/collections/{collection_id}/documents` ingesta archivo.
+- MIME permitido: `text/plain`, `application/pdf`.
+- Tamaño máximo: **50 MB**.
+- `GET /api/v1/collections/{collection_id}/documents` lista documentos.
+- `GET /api/v1/collections/{collection_id}/documents/{doc_id}` obtiene documento.
+- `DELETE /api/v1/collections/{collection_id}/documents/{doc_id}` elimina documento.
+
+### Generación
+- `POST /api/v1/collections/{collection_id}/text` recibe `query` y retorna respuesta mock usando fuentes de esa colección.
+
+---
+
+## Documentación extendida
+
+Para el detalle de auditoría, lineamientos de arquitectura, ERD comparativo y estándares de modelos/schemas revisa:
+
+- [`docs/documentation-audit.md`](docs/documentation-audit.md)
+- [`docs/architecture-and-erd.md`](docs/architecture-and-erd.md)
+
+## Próximos pasos recomendados
+- Sustituir `documents_db_mock.py` por persistencia real (PostgreSQL + Qdrant).
+- Versionar contratos de respuesta con schemas explícitos en todos los endpoints.
+- Activar y documentar módulo de entidades en `main.py` cuando esté listo.
