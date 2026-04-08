@@ -11,11 +11,11 @@ import uuid
 class Entity(SQLModel, table=True):
     __tablename__ = "entities"
 
-    id: str = Field(default_factory=str(uuid.uuid4()), primary_key=True, max_length=36)
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True, max_length=36)
     collection_id: str = Field(index=True, max_length=36)
     name: str = Field(max_length=255)
     description: str = Field(default="", max_length=2000)
-    created_at: datetime = Field(default_factory=datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: Optional[datetime] = Field(default=None)
     is_deleted: bool = Field(default=False)
     deleted_at: Optional[datetime] = Field(default=None)
