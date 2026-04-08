@@ -116,9 +116,7 @@ backend/qdrant_data/
 # Temp files
 # ========================
 backend/temp_uploads/
-__pycache__/
-*.pyc
-.pycache/
+
 # ========================
 # Mensajería / colas
 # ========================
