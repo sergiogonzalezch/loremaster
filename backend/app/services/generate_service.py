@@ -6,7 +6,7 @@ async def generate_response(query: str, collection_id: str = None):
 
     if not documents or not any(documents.values()):
         raise HTTPException(
-            status_code=404,
+            status_code=422,
             detail="No documents available to process the query.",
         )
 
@@ -26,7 +26,7 @@ async def generate_response(query: str, collection_id: str = None):
 
     if not col_docs:
         raise HTTPException(
-            status_code=404, detail="Collection has no ingested documents."
+            status_code=422, detail="Collection has no ingested documents."
         )
 
     return {
