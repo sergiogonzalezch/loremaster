@@ -1,39 +1,45 @@
-from pydantic_settings import BaseSettings
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+    )
+
     project_name: str = "Lore Master API"
     environment: str = "local"
 
     # LLM (Ollama)
-
     ollama_model: str = "llama3.2:latest"
     ollama_base_url: Optional[str] = None
 
     # LLM parameters
-    temperature: float = 0.7
-    max_tokens: int = 500
+    temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+    max_tokens: int = Field(default=500, gt=0, le=8192)
 
-    # # Vector database (Qdrant)
-    # qdrant_url: Optional[str] = None
+    # Vector DB (Qdrant)
+    qdrant_url: str = "http://localhost:6333"
+    qdrant_api_key: Optional[str] = None
+    qdrant_collection: str = "loremaster"
 
-    # # Redis
-    # redis_url: Optional[str] = None
-    # cache_ttl: int = 3600  #
-    # cache_threshold: float = 0.95
+    # Embeddings
+    embedding_model: str = "paraphrase-multilingual-MiniLM-L12-v2"
+    chunk_size: int = Field(default=512, gt=0)
+    chunk_overlap: int = Field(default=50, ge=0)
 
-    # # ComfyUI
-    # comfyui_url: Optional[str] = None
-    # comfyui_url: Optional[str] = None
-    # comfy_timeout: int = 60
+    # Redis
+    redis_url: str = "redis://localhost:6379/0"
+    cache_ttl: int = 3600
+    cache_threshold: float = 0.95
 
-    # # DB
-    # database_url: str = "sqlite:///./loremaster.db"
-
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    # Database
+    # Dev local:  sqlite:///./loremaster.db
+    # Docker:     postgresql+asyncpg://loremaster:loremaster@postgres:5432/loremaster
+    database_url: str = "sqlite:///./loremaster.db"
 
 
 settings = Settings()
