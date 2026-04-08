@@ -11,6 +11,9 @@ from alembic import context
 config = context.config
 
 from sqlmodel import SQLModel
+from app.models.collections import Collection
+from app.models.documents import Document
+from app.models.entities import Entity
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
