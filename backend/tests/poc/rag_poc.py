@@ -46,7 +46,7 @@ from app.models.entities import Entity  # noqa: F401 — necesario para create_a
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
-SQLITE_URL = "sqlite:///./poc_loremaster.db"
+SQLITE_URL = "sqlite:///./poc_database.db"
 QDRANT_URL = "http://localhost:6333"
 QDRANT_API_KEY = "test_key_dev"
 OLLAMA_BASE_URL = "http://localhost:11434"
