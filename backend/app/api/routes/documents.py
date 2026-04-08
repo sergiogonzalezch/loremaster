@@ -1,6 +1,11 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File
-from app.services.documents_service import ingest_document_service
-from app.services.documents_db_mock import documents, collections
+
+from app.services.documents_service import (
+    ingest_document_service,
+    list_documents_service,
+    get_document_service,
+    delete_document_service,
+)
 
 router = APIRouter(prefix="/collections", tags=["documents"])
 
@@ -8,28 +13,32 @@ router = APIRouter(prefix="/collections", tags=["documents"])
 @router.post("/{collection_id}/documents")
 async def ingest(collection_id: str, request: UploadFile = File(...)):
     doc = await ingest_document_service(request, collection_id)
+
+    if not doc:
+        raise HTTPException(status_code=404, detail="Collection not found")
+
     return {"data": doc, "status": "success"}
 
 
 @router.get("/{collection_id}/documents")
 async def get_documents(collection_id: str):
-    if collection_id not in collections:
+    docs = list_documents_service(collection_id)
+
+    if docs is None:
         raise HTTPException(status_code=404, detail="Collection not found")
 
-    collection_docs = documents.get(collection_id, {})
-
-    if not collection_docs:
+    if not docs:
         raise HTTPException(status_code=404, detail="No documents found")
 
-    return {"data": list(collection_docs.values()), "count": len(collection_docs)}
+    return {
+        "data": docs,
+        "count": len(docs),
+    }
 
 
 @router.get("/{collection_id}/documents/{doc_id}")
 async def get_document(collection_id: str, doc_id: str):
-    if collection_id not in collections:
-        raise HTTPException(status_code=404, detail="Collection not found")
-
-    doc = documents.get(collection_id, {}).get(doc_id)
+    doc = get_document_service(collection_id, doc_id)
 
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -39,14 +48,12 @@ async def get_document(collection_id: str, doc_id: str):
 
 @router.delete("/{collection_id}/documents/{doc_id}")
 async def delete_document(collection_id: str, doc_id: str):
-    if collection_id not in collections:
+    result = delete_document_service(collection_id, doc_id)
+
+    if result is None:
         raise HTTPException(status_code=404, detail="Collection not found")
 
-    collection_docs = documents.get(collection_id, {})
-
-    if doc_id not in collection_docs:
+    if result is False:
         raise HTTPException(status_code=404, detail="Document not found")
-
-    del collection_docs[doc_id]
 
     return {"message": f"Document {doc_id} deleted successfully"}
