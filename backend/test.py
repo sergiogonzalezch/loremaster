@@ -1,6 +1,6 @@
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama.llms import OllamaLLM
-from backend.core.config import settings
+from backend.config import settings
 
 template = """Question: {question}
 
