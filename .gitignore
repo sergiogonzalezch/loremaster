@@ -1,24 +1,170 @@
+# ========================
+# Python core
+# ========================
+__pycache__/
+*.py[codz]
+*$py.class
+*.so
+
+# ========================
 # Entornos y variables
+# ========================
+.env
+.envrc
+.venv
 venv/
 env/
-.env
+ENV/
+env.bak/
+venv.bak/
 
-# Archivos temporales
-__pycache__/
-*.pyc
-.pycache/
-backend/temp_uploads/
+# ========================
+# Packaging / build
+# ========================
+.Python
+build/
+dist/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# Base de datos vectorial local de Qdrant
-backend/qdrant_data/
+# ========================
+# Logs / testing / coverage
+# ========================
+*.log
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+coverage.xml
+*.cover
+*.py.cover
+.pytest_cache/
+.hypothesis/
 
-# Base de datos SQLite local (generada en runtime)
+# ========================
+# Jupyter / IPython
+# ========================
+.ipynb_checkpoints
+profile_default/
+ipython_config.py
+
+# ========================
+# IDEs / editors
+# ========================
+.vscode/
+.idea/
+.spyderproject
+.spyproject
+.ropeproject
+
+# ========================
+# Type checkers / linters
+# ========================
+.mypy_cache/
+.dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
+
+# ========================
+# Docs
+# ========================
+docs/_build/
+site/
+# docs
+
+# ========================
+# Frameworks
+# ========================
+instance/
+.webassets-cache
+.scrapy
+
+# ========================
+# Databases
+# ========================
+db.sqlite3
+db.sqlite3-journal
+*.sqlite3
+
+# SQLite runtime (tu proyecto)
 backend/*.db
 backend/*.db-shm
 backend/*.db-wal
+
+# ========================
+# Qdrant (vector DB)
+# ========================
+backend/qdrant_data/
+
+# ========================
+# Temp files
+# ========================
+backend/temp_uploads/
+__pycache__/
+*.pyc
+.pycache/
+# ========================
+# Mensajería / colas
+# ========================
+celerybeat-schedule
+celerybeat.pid
+*.pid
+
+# Redis
+*.rdb
+*.aof
+
+# RabbitMQ
+mnesia/
+rabbitmq/
+rabbitmq-data/
+
+# ActiveMQ
+activemq-data/
+
+# ========================
+# Otros
+# ========================
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ========================
+# Tools / misc
+# ========================
+.pdm-python
+.pdm-build/
+.pixi
+__pypackages__/
+cython_debug/
+.pypirc
+
+# ========================
+# AI / agentes
+# ========================
 .agents
 .claude
 CLAUDE.md
 skills-lock.json
 
-docs
+# ========================
+# Streamlit
+# ========================
+.streamlit/secrets.toml
