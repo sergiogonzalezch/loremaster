@@ -10,6 +10,11 @@ backend/temp_uploads/
 
 # Base de datos vectorial local de Qdrant
 backend/qdrant_data/
+
+# Base de datos SQLite local (generada en runtime)
+backend/*.db
+backend/*.db-shm
+backend/*.db-wal
 .agents
 .claude
 CLAUDE.md
