@@ -17,7 +17,7 @@ def create_entity_service(request: CreateEntityRequest, collection_id: str) -> d
         "name": request.name,
         "description": request.description,
         "created_at": now,
-        "updated_at": now,
+        "updated_at": None,
         "is_deleted": False,
         "deleted_at": None,
     }
