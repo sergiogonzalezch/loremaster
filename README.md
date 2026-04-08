@@ -50,6 +50,10 @@ cd backend
 uvicorn app.main:app --reload
 ```
 
+Al importar `app` se configura automáticamente `sys.pycache_prefix` para
+centralizar los `.pyc` en `backend/.pycache/` (también aplica cuando uses el
+mismo entrypoint en Docker).
+
 ### Endpoints base
 - `GET /` estado general del servicio
 - `GET /health` healthcheck
@@ -95,4 +99,3 @@ backend/
 
 ### Generación
 - `POST /api/v1/collections/{collection_id}/text` recibe `query` y retorna respuesta mock usando fuentes de esa colección.
-
