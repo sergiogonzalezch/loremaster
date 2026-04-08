@@ -4,11 +4,6 @@ from typing import Optional
 
 
 class Settings(BaseSettings):
-    # model_config = SettingsConfigDict(
-    #     env_file=".env",
-    #     env_file_encoding="utf-8",
-    #     case_sensitive=False,
-    # )
 
     project_name: str = "Lore Master API"
     environment: str = "local"
@@ -37,9 +32,7 @@ class Settings(BaseSettings):
     cache_threshold: float = 0.95
 
     # Database
-    # Dev local:  sqlite:///./database.db
-    # Docker:     postgresql+asyncpg://database:loremaster@postgres:5432/loremaster
-    database_url: str = "sqlite:///./database.db"
+    database_url: str = "sqlite:///./loremaster.db"
 
     class Config:
         env_file = ".env"
