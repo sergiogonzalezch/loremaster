@@ -2,12 +2,12 @@ from app.services.documents_db_mock import documents, collections
 from fastapi import HTTPException
 
 
-def generate_response(query: str, collection_id: str = None):
+async def generate_response(query: str, collection_id: str = None):
 
     if not documents or not any(documents.values()):
         raise HTTPException(
-            status_code=422,
-            detail="No hay documentos disponibles para procesar la consulta.",
+            status_code=404,
+            detail="No documents available to process the query.",
         )
 
     if collection_id:
@@ -26,7 +26,7 @@ def generate_response(query: str, collection_id: str = None):
 
     if not col_docs:
         raise HTTPException(
-            status_code=422, detail="La colección no tiene documentos ingestados."
+            status_code=404, detail="Collection has no ingested documents."
         )
 
     return {

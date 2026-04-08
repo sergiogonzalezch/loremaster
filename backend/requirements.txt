@@ -10,3 +10,9 @@ python-dotenv
 qdrant-client
 python-multipart
 langchain-ollama
+sqlmodel
+alembic
+redis
+pytest
+pytest-asyncio
+httpx

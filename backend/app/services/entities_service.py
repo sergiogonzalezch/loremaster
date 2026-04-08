@@ -1,55 +1,62 @@
 import uuid
+from datetime import datetime, timezone
+
+from app.models.entities import CreateEntityRequest, UpdateEntityRequest
 from app.services.documents_db_mock import entities
 
 
-def create_entity_service(request, collection_id: str):
-    entity_id = str(uuid.uuid4())
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
 
+
+def create_entity_service(request: CreateEntityRequest, collection_id: str) -> dict:
+    now = _now()
     entity = {
-        "id": entity_id,
+        "id": str(uuid.uuid4()),
         "collection_id": collection_id,
         "name": request.name,
         "description": request.description,
+        "created_at": now,
+        "updated_at": now,
+        "is_deleted": False,
+        "deleted_at": None,
     }
-
-    entities[entity_id] = entity
+    entities[entity["id"]] = entity
     return entity
 
 
-def get_entity_service(entity_id: str, collection_id: str):
+def get_entity_service(entity_id: str, collection_id: str) -> dict | None:
     entity = entities.get(entity_id)
-
-    if not entity or entity["collection_id"] != collection_id:
+    if not entity or entity["collection_id"] != collection_id or entity["is_deleted"]:
         return None
-
     return entity
 
 
-def list_entities_service(collection_id: str):
+def list_entities_service(collection_id: str) -> list[dict]:
     return [
-        entity
-        for entity in entities.values()
-        if entity["collection_id"] == collection_id
+        e for e in entities.values()
+        if e["collection_id"] == collection_id and not e["is_deleted"]
     ]
 
 
-def update_entity_service(entity_id: str, collection_id: str, request):
+def update_entity_service(
+    entity_id: str, collection_id: str, request: UpdateEntityRequest
+) -> dict | None:
     entity = entities.get(entity_id)
-
-    if not entity or entity["collection_id"] != collection_id:
+    if not entity or entity["collection_id"] != collection_id or entity["is_deleted"]:
         return None
-
     entity["name"] = request.name
     entity["description"] = request.description
-
+    entity["updated_at"] = _now()
     return entity
 
 
-def delete_entity_service(entity_id: str, collection_id: str):
+def delete_entity_service(entity_id: str, collection_id: str) -> bool:
     entity = entities.get(entity_id)
-
-    if not entity or entity["collection_id"] != collection_id:
+    if not entity or entity["collection_id"] != collection_id or entity["is_deleted"]:
         return False
-
-    del entities[entity_id]
+    now = _now()
+    entity["is_deleted"] = True
+    entity["deleted_at"] = now
+    entity["updated_at"] = now
     return True

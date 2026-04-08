@@ -27,13 +27,7 @@ async def get_documents(collection_id: str):
     if docs is None:
         raise HTTPException(status_code=404, detail="Collection not found")
 
-    if not docs:
-        raise HTTPException(status_code=404, detail="No documents found")
-
-    return {
-        "data": docs,
-        "count": len(docs),
-    }
+    return {"data": docs, "count": len(docs)}
 
 
 @router.get("/{collection_id}/documents/{doc_id}")

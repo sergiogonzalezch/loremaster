@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field
-from fastapi import UploadFile, File
-from typing import List, Dict, Optional
+from typing import Dict
 
 
 class GenerateTextRequest(BaseModel):
@@ -13,8 +12,3 @@ class GenerateTextResponse(BaseModel):
     answer: str = Field(..., description="Texto generado en respuesta a la consulta.")
     source: Dict = Field(..., description="Fuente utilizada para generar la respuesta.")
     query: str = Field(..., description="Consulta original enviada por el usuario.")
-
-
-class CreateEntityRequest(BaseModel):
-    name: str
-    description: str = ""
