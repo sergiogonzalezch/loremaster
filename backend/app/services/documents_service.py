@@ -42,11 +42,6 @@ async def ingest_document_service(
     return document
 
 def list_documents_service(collection_id: str):
-    """
-    - None: colección no existe
-    - []: colección existe pero sin documentos
-    - list: documentos
-    """
     if collection_id not in collections:
         return None
 
@@ -55,10 +50,7 @@ def list_documents_service(collection_id: str):
 
 
 def get_document_service(collection_id: str, doc_id: str):
-    """
-    - None: colección no existe o documento no existe
-    - dict: documento encontrado
-    """
+
     if collection_id not in collections:
         return None
 
@@ -66,11 +58,7 @@ def get_document_service(collection_id: str, doc_id: str):
 
 
 def delete_document_service(collection_id: str, doc_id: str):
-    """
-    - None: colección no existe
-    - False: documento no existe
-    - True: eliminado correctamente
-    """
+
     if collection_id not in collections:
         return None
 
