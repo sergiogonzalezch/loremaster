@@ -38,7 +38,7 @@ async def generate_response(query: str, collection_id: str = None):
         col_docs = documents[collection_id]
     else:
         col_docs = None
-        for docs in documents.items():
+        for _, docs in documents.items():
             if docs:
                 col_docs = docs
                 break
