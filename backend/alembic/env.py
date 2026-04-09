@@ -10,12 +10,13 @@ from alembic import context
 
 config = context.config
 from config import settings
-config.set_main_option("sqlalchemy.url", settings.database_url)
 
+config.set_main_option("sqlalchemy.url", settings.database_url)
 
 
 from sqlmodel import SQLModel
 import app.models
+
 # from app.models.collections import Collection
 # from app.models.documents import Document
 # from app.models.entities import Entity
@@ -75,7 +76,9 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata, render_as_batch=True)
+        context.configure(
+            connection=connection, target_metadata=target_metadata, render_as_batch=True
+        )
 
         with context.begin_transaction():
             context.run_migrations()

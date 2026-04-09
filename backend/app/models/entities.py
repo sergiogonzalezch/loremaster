@@ -11,7 +11,9 @@ import uuid
 class Entity(SQLModel, table=True):
     __tablename__ = "entities"
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True, max_length=36)
+    id: str = Field(
+        default_factory=lambda: str(uuid.uuid4()), primary_key=True, max_length=36
+    )
     collection_id: str = Field(index=True, max_length=36)
     name: str = Field(max_length=255)
     description: str = Field(default="", max_length=2000)

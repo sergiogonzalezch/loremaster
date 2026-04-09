@@ -2,9 +2,8 @@ from app.services.documents_db_mock import documents, collections
 from fastapi import HTTPException
 from langchain_ollama import OllamaLLM
 from config import settings
-from langchain_core import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 from app.services import rag_engine
-
 
 _llm = OllamaLLM(
     model=settings.ollama_model,
@@ -36,14 +35,11 @@ async def generate_response(query: str, collection_id: str = None):
     if collection_id:
         if collection_id not in collections:
             raise HTTPException(status_code=404, detail="Collection not found")
-        # col_meta = collections[collection_id]
         col_docs = documents[collection_id]
     else:
-        # col_meta = None
         col_docs = None
-        for cid, docs in documents.items():
+        for docs in documents.items():
             if docs:
-                # col_meta = collections[cid]
                 col_docs = docs
                 break
 
@@ -73,8 +69,3 @@ async def generate_response(query: str, collection_id: str = None):
         "answer": answer,
         "sources_count": len(context_chunks),
     }
-    # return {
-    #     "query": query,
-    #     "sources": [{"filename": d["filename"]} for d in col_docs.values()],
-    #     "message": f"Respuesta para '{query}' usando colección '{col_meta['name']}'",
-    # }

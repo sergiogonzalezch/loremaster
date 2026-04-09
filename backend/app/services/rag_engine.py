@@ -5,10 +5,10 @@ from sentence_transformers import SentenceTransformer
 import uuid
 from config import settings
 
-EMBEDDING_DIMS = 384  # Adjust based on the model used
+EMBEDDING_DIMS = 384
 
 _qdrant_client = QdrantClient(":memory:")
-_embedding_model = settings.embedding_model
+_embedding_model = SentenceTransformer(settings.embedding_model)
 _splitter = RecursiveCharacterTextSplitter(
     chunk_size=settings.chunk_size,
     chunk_overlap=settings.chunk_overlap,
@@ -52,19 +52,19 @@ def ingest_chunks(doc_id: str, collection_id: str, text: str):
 
     return len(chunks)
 
-def search_context(collection_id:str, query:str, top_k:int=4)-> list[str]:
+
+def search_context(collection_id: str, query: str, top_k: int = 4) -> list[str]:
     name = f"lm_{collection_id}"
-    existing_collections = {c.name for c in _qdrant_client.get_collections().collections}
+    existing_collections = {
+        c.name for c in _qdrant_client.get_collections().collections
+    }
     if name not in existing_collections:
         return []
-    
+
     query_vector = _embedding_model.encode([query])[0].tolist()
 
-    results = _qdrant_client.search(
-        collection_name=name,
-        query_vector=query_vector,
-        limit=top_k,
-        with_payload=True
+    results = _qdrant_client.query_points(
+        collection_name=name, query=query_vector, limit=top_k, with_payload=True
     )
 
-    return [hit.payload["text"] for hit in results]
+    return [point.payload["text"] for point in results.points]
