@@ -24,7 +24,7 @@ _PROMPT = PromptTemplate.from_template(
 _chain = _PROMPT | _llm
 
 
-async def generate_response(query: str, collection_id: str = None):
+async def text_generation_service(query: str, collection_id: str = None):
 
     if not documents or not any(documents.values()):
         raise HTTPException(
