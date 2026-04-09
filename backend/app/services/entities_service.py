@@ -34,7 +34,8 @@ def get_entity_service(entity_id: str, collection_id: str) -> dict | None:
 
 def list_entities_service(collection_id: str) -> list[dict]:
     return [
-        e for e in entities.values()
+        e
+        for e in entities.values()
         if e["collection_id"] == collection_id and not e["is_deleted"]
     ]
 

@@ -1,5 +1,10 @@
 from fastapi import APIRouter, HTTPException
-from app.models.entities import CreateEntityRequest, UpdateEntityRequest, EntityResponse, EntityListResponse
+from app.models.entities import (
+    CreateEntityRequest,
+    UpdateEntityRequest,
+    EntityResponse,
+    EntityListResponse,
+)
 from app.services.entities_service import (
     create_entity_service,
     get_entity_service,

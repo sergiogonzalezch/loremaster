@@ -5,14 +5,15 @@ from pydantic import BaseModel, ConfigDict
 from sqlmodel import SQLModel, Field
 import uuid
 
-
 # ── Tabla DB ──────────────────────────────────────────────────────────────────
 
 
 class Document(SQLModel, table=True):
     __tablename__ = "documents"
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True, max_length=36)
+    id: str = Field(
+        default_factory=lambda: str(uuid.uuid4()), primary_key=True, max_length=36
+    )
     collection_id: str = Field(index=True, max_length=36)
     filename: str = Field(max_length=255)
     file_type: str = Field(max_length=100)

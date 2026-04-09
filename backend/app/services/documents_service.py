@@ -9,6 +9,7 @@ from app.services.documents_db_mock import documents, collections
 ALLOWED_MIME_TYPES = ["text/plain", "application/pdf"]
 MAX_BYTES = 50 * 1024 * 1024
 
+
 def _extract_text(content_bytes: bytes, content_type: str) -> str:
     if content_type == "application/pdf":
         reader = PdfReader(io.BytesIO(content_bytes))

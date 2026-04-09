@@ -7,10 +7,13 @@ import uuid
 
 # ── Tabla DB ──────────────────────────────────────────────────────────────────
 
+
 class Collection(SQLModel, table=True):
     __tablename__ = "collections"
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True, max_length=36)
+    id: str = Field(
+        default_factory=lambda: str(uuid.uuid4()), primary_key=True, max_length=36
+    )
     name: str = Field(index=True, unique=True, max_length=255)
     description: str = Field(default="", max_length=2000)
     status: str = Field(default="active", max_length=50)
@@ -21,6 +24,7 @@ class Collection(SQLModel, table=True):
 
 
 # ── API schemas ───────────────────────────────────────────────────────────────
+
 
 class CreateCollectionRequest(BaseModel):
     name: str
