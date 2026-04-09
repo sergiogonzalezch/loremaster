@@ -7,7 +7,7 @@ from config import settings
 
 EMBEDDING_DIMS = 384
 
-_qdrant_client = QdrantClient(":memory:")
+_qdrant_client = QdrantClient(settings.qdrant_url)
 _embedding_model = SentenceTransformer(settings.embedding_model)
 _splitter = RecursiveCharacterTextSplitter(
     chunk_size=settings.chunk_size,
