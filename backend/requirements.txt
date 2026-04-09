@@ -16,3 +16,4 @@ redis
 pytest
 pytest-asyncio
 httpx
+pydantic-settings
