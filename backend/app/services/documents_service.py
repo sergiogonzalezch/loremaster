@@ -3,7 +3,7 @@ import uuid
 
 from fastapi import HTTPException, UploadFile, File
 from pypdf import PdfReader
-
+from app.services import rag_engine
 from app.services.documents_db_mock import documents, collections
 
 ALLOWED_MIME_TYPES = ["text/plain", "application/pdf"]
@@ -36,6 +36,12 @@ async def ingest_document_service(
     content = _extract_text(content_bytes, data.content_type)
     doc_id = str(uuid.uuid4())
 
+    chunk_count = rag_engine.ingest_chunks(
+        doc_id=doc_id,
+        collection_id=collection_id,
+        text=content,
+    )
+
     if collection_id not in documents:
         documents[collection_id] = {}
 
@@ -44,6 +50,7 @@ async def ingest_document_service(
         "collection_id": collection_id,
         "filename": data.filename,
         "content": content,
+        "chunk_count": chunk_count,
         "status": "completed",
     }
 
