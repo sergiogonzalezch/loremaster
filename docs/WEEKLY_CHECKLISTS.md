@@ -57,6 +57,12 @@ Cada semana incluye tareas verificables, criterios de aceptación y dependencias
 
 ## Semana 2 — Ingesta + Embeddings
 
+Nota de Mike:
+
+- Agregar testing
+- Agregar frontend folder
+- Avanzar con la semana 2
+
 **Hito:** Ingesta de documentos funcional con generacion de embeddings.
 **Objetivos:** O-1
 **Historias:** HU-02
