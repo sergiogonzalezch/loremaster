@@ -83,11 +83,11 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 - Diagrama de flujo — Creación de colección
 
-![mermaid-diagram.png](attachment:a052f96b-2abc-432d-9397-9831b6939188:mermaid-diagram.png)
+![Diagrama de flujo](mermaid-diagram.png)
 
 - Diagrama de secuencia — Cliente → FastAPI → DB
 
-![mermaid-diagram (1).png](<attachment:f8fbf349-ae91-4879-9cf4-99a4aed45a35:mermaid-diagram_(1).png>)
+![Diagrama de secuencia](mermaid-diagram_(1).png)
 
 ### Criterios de aceptación
 
@@ -102,11 +102,11 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 - Diagrama de flujo — Ingestión de documentos
 
-![mermaid-diagram (4).png](<attachment:0ba8b632-23bd-4a3c-9bae-b8b33d8a8649:mermaid-diagram_(4).png>)
+![Diagrama de flujo](mermaid-diagram_(4).png)
 
 - Diagrama de secuencia — Cliente → FastAPI → Qdrant
 
-![mermaid-diagram (5).png](<attachment:ce1dc863-50d8-45ea-bcfb-a2e89bb42011:mermaid-diagram_(5).png>)
+![Diagrama de secuencia](mermaid-diagram_(5).png)
 
 ### Criterios de aceptación (corregidos)
 
@@ -133,11 +133,11 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 - Diagrama de flujo — Generación de texto RAG
 
-![mermaid-diagram.png](attachment:46bdefba-1dd6-49c6-8cb4-c7a045d3e085:mermaid-diagram.png)
+![Diagrama de flujo](mermaid-diagram_1.png)
 
 - Diagrama de secuencia — Cliente → FastAPI → Qdrant → LLM
 
-![mermaid-diagram (1).png](<attachment:3458801f-1ca5-44dd-afe7-9ce1a15b3754:mermaid-diagram_(1).png>)
+![Diagrama de secuencia](mermaid-diagram_(1)_1.png)
 
 ### Criterios de aceptación (MVP ajustado)
 
@@ -163,11 +163,11 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 - Diagrama de flujo — Generación de imágenes
 
-![mermaid-diagram (2).png](<attachment:887fa04b-b779-4857-a020-de3f5a6210ce:mermaid-diagram_(2).png>)
+![Diagrama de flujo](mermaid-diagram_(2).png)
 
 - Diagrama de secuencia — Cliente → FastAPI → ComfyUI / RunPod
 
-![mermaid-diagram (3).png](<attachment:0b27c05f-da0d-4fe1-b649-19d7ae7c4f97:mermaid-diagram_(3).png>)
+![Diagrama de secuencia](mermaid-diagram_(3).png)
 
 ### Criterios de aceptación (ajustados)
 
@@ -196,11 +196,11 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 - Diagrama de flujo — CRUD de entidades
 
-![mermaid-diagram (4).png](<attachment:4d956859-316e-4d47-bc71-81856564b7ee:mermaid-diagram_(4).png>)
+![Diagrama de flujo](mermaid-diagram_(4)_1.png)
 
 - Diagrama de secuencia — Cliente → FastAPI → DB
 
-![mermaid-diagram (5).png](<attachment:c01794c4-e0d5-45e1-8505-e97419a086a2:mermaid-diagram_(5).png>)
+![Diagrama de secuencia](mermaid-diagram_(5)_1.png)
 
 ### Criterios de aceptación
 
@@ -234,7 +234,7 @@ La arquitectura se divide en dos configuraciones que comparten el mismo codebase
 
 ## Diagrama de arquitectura general
 
-![mermaid-diagram (11).png](<attachment:9d91e5a5-1896-4bb6-99e0-16678c65e375:mermaid-diagram_(11).png>)
+![Diagrama de flujo](mermaid-diagram_(11).png)
 
 **Diagrama de Arquitectura — Vista General Local y Cloud**
 
@@ -412,19 +412,17 @@ DATABASE_URL=postgresql://user:pass@postgres:5432/loremaster
 
 ## 6.1 Modelo relacional (tablas principales)
 
-| **Tabla**            | **Campos principales**                                                                                                      | **Notas / Restricciones**                              |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ---------- | --------- | ------- |
-| **users**            | id (UUID PK), email (UNIQUE), hashed_password, created_at                                                                   | Base para multi-tenant futuro (opcional en MVP).       |
-| **collections**      | id (UUID PK), user_id (FK?), name, description, created_at                                                                  | Unidad principal del sistema (world).                  |
-| **documents**        | id (UUID PK), collection_id (FK), filename, content (TEXT), status, created_at                                              | Asociado a una colección. status: pending              | processing | completed | failed. |
-| **document_chunks**  | id (UUID PK), document_id (FK), chunk_index, content (TEXT), created_at                                                     | Fragmentos del texto para RAG.                         |
-| **entities**         | id (UUID PK), collection_id (FK), type (ENUM), name, attributes (JSONB), created_at, deleted_at                             | Soft-delete con deleted_at.                            |
-| **generated_images** | id (UUID PK), collection_id (FK), entity_id (FK?), image_url, visual_prompt, seed, model_version, generation_ms, created_at | Imagen asociada a colección y opcionalmente a entidad. |
-| **entity_relations** | id (UUID PK), source_id (FK entities), target_id (FK entities), relation_type, created_at                                   | ENUM: belongs_to, contains, allied_with, enemy_of.     |
+| **Tabla** | **Campos principales** | **Notas / Restricciones** |
+|---|---|---|
+| **collections** | id (UUID PK), name, description, status, created_at, updated_at, is_deleted, deleted_at | Unidad principal del sistema (world). |
+| **documents** | id (UUID PK), collection_id (FK), filename, file_type, chunk_count, status, created_at, is_deleted, deleted_at | Sin campo content — el texto vive en Qdrant. Sin updated_at — los documentos no se editan. status: completed \| failed. |
+| **entities** | id (UUID PK), collection_id (FK), type (ENUM), name, description, created_at, updated_at, is_deleted, deleted_at | type: character \| scene \| faction \| item. Soft-delete con deleted_at. |
+| **generated_images** | id (UUID PK), collection_id (FK), entity_id (FK?), image_url, visual_prompt, seed, model_version, generation_ms, backend, created_at | Imagen asociada a colección y opcionalmente a entidad. backend: local \| runpod. |
+| **entity_relations** | id (UUID PK), source_id (FK entities), target_id (FK entities), relation_type, created_at | ENUM: belongs_to, contains, allied_with, enemy_of. Sem. 4+. |
 
 ### Diagrama ERD
 
-![mermaid-diagram (3).png](<attachment:07116f49-b6cf-4425-a4c5-509006943e51:mermaid-diagram_(3).png>)
+![Diagrama de flujo](image.png)
 
 **Diagrama ERD — Modelo de datos Lore Master**
 
