@@ -1,101 +1,160 @@
-# 📜 Lore Master API
+# Lore Master
 
-Backend en **FastAPI** para gestionar colecciones de conocimiento (lore), documentos y generación de respuestas basadas en contenido ingestado.
+Plataforma RAG para escritores, narradores de rol (RPG) y diseñadores de mundos ficticios. Permite cargar documentos de lore y generar texto narrativo coherente con ese contexto usando una arquitectura de Retrieval-Augmented Generation.
 
-## 1) Objetivo y alcance
+## ¿Qué hace?
 
-Lore Master API sirve como capa de backend para:
-- crear y administrar colecciones,
-- cargar documentos por colección,
-- generar respuestas usando los documentos cargados,
-- (en evolución) modelar entidades narrativas.
+- Ingesta y vectoriza documentos de lore (PDF/TXT) en colecciones independientes.
+- Recupera contexto relevante antes de cada generación de texto.
+- Genera texto narrativo expandido, anclado en el lore cargado por el usuario.
+- Gestiona entidades del mundo (personajes, escenarios, facciones, ítems).
+- (Roadmap) Generación de imágenes con ComfyUI + Flux.2 Klein 4B.
 
-> Estado actual: implementación **MVP con almacenamiento en memoria (mock)**, útil para validar flujos API antes de persistencia real.
+## Stack
 
-## 2) Stack y dependencias principales
+| Capa | Tecnología |
+|---|---|
+| API | FastAPI + Uvicorn |
+| Validación | Pydantic v2 |
+| RAG | LangChain |
+| Embeddings | sentence-transformers (`all-MiniLM-L6-v2`, 384d) |
+| Vector DB | Qdrant |
+| LLM local | Ollama (`llama3.2:latest`) |
+| Caché semántico | Redis (similitud ≥ 0.95, TTL 3600s) |
+| BD relacional | PostgreSQL (SQLite en prototipo) |
+| Almacenamiento | LocalStack S3 (dev) / AWS S3 o Cloudflare R2 (prod) |
+| Observabilidad | Prometheus + Grafana |
+| Contenerización | Docker Compose |
 
-- **Framework**: FastAPI
-- **Validación**: Pydantic
-- **Servidor local**: Uvicorn
-- **Config**: python-dotenv
-- **Persistencia actual**: diccionarios en memoria (`documents_db_mock.py`)
-
-## 3) Puesta en marcha local
+## Puesta en marcha local
 
 ### Requisitos
+
 - Python 3.10+
-- pip
+- Docker + Docker Compose
+- Ollama corriendo localmente con `llama3.2:latest`
 
 ### Instalación
+
 ```bash
 git clone https://github.com/sergiogonzalezch/loremaster.git
 cd loremaster/backend
-python -m venv .venv
-source .venv/bin/activate   # En Windows: .venv\Scripts\activate
+
+python -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+
 pip install -r requirements.txt
 ```
 
 ### Variables de entorno
-Crear `.env` dentro de `backend/` (puedes partir de `.env.example`) con al menos:
 
-```env
-PROJECT_NAME="Lore Master API"
-ENVIRONMENT="development"
-OLLAMA_MODEL="llama3"
+```bash
+cp .env.example .env
 ```
 
-### Ejecutar
+Variables clave en `backend/.env`:
+
+| Variable | Por defecto |
+|---|---|
+| `OLLAMA_BASE_URL` | `http://localhost:11434` |
+| `OLLAMA_MODEL` | `llama3.2:latest` |
+| `QDRANT_URL` | `http://localhost:6333` |
+| `QDRANT_COLLECTION` | `loremaster` |
+| `REDIS_URL` | `redis://localhost:6379/0` |
+| `DATABASE_URL` | `sqlite:///./loremaster.db` |
+
+### Levantar servicios de soporte
+
+```bash
+cd backend
+docker-compose up -d
+```
+
+Servicios disponibles:
+
+| Servicio | Puerto | Propósito |
+|---|---|---|
+| Qdrant | 6333 | Base de datos vectorial |
+| PostgreSQL | 5432 | Metadatos relacionales |
+| Redis | 6379 | Caché semántico |
+| LocalStack | 4566 | S3 local |
+| Prometheus | 9090 | Scraping de métricas |
+| Grafana | 3000 | Dashboard (admin/admin) |
+
+### Ejecutar la API
+
 ```bash
 cd backend
 uvicorn app.main:app --reload
 ```
 
-Al importar `app` se configura automáticamente `sys.pycache_prefix` para
-centralizar los `.pyc` en `backend/.pycache/` (también aplica cuando uses el
-mismo entrypoint en Docker).
+Swagger UI disponible en: `http://localhost:8000/docs`
 
-### Endpoints base
-- `GET /` estado general del servicio
-- `GET /health` healthcheck
-- Swagger: `GET /docs`
+## API — Endpoints principales
 
-## 4) Árbol del proyecto y responsabilidades
-
-```text
-backend/
-  app/
-    api/routes/
-      collections.py   # CRUD básico de colecciones
-      documents.py     # Ingesta y lectura/borrado de documentos
-      generate.py      # Generación de respuestas por colección
-      entities.py      # Ruta de entidades (actualmente no montada)
-    services/
-      collection_service.py
-      documents_service.py
-      generate_service.py
-      entities_service.py
-      documents_db_mock.py  # "base de datos" en memoria
-    models/
-      models.py        # Schemas Pydantic de request/response
-    main.py            # Inicialización FastAPI + router include
-  config.py            # Settings del proyecto
-```
-
-## 5) Contratos API y reglas funcionales (actual)
+Todos bajo `/api/v1/`:
 
 ### Colecciones
-- `POST /api/v1/collections/` crea colección (`name`, `description`).
-- `GET /api/v1/collections/` lista colecciones.
-- `GET /api/v1/collections/{collection_id}` obtiene detalle.
-- `DELETE /api/v1/collections/{collection_id}` elimina colección.
+- `POST /collections` — crear colección
+- `GET /collections` — listar colecciones
+- `GET /collections/{id}` — obtener colección
+- `DELETE /collections/{id}` — eliminar colección
 
 ### Documentos
-- `POST /api/v1/collections/{collection_id}/documents` ingesta archivo.
-- MIME permitido: `text/plain`, `application/pdf`.
-- Tamaño máximo: **50 MB**.
-- `GET /api/v1/collections/{collection_id}/documents` lista documentos.
-- `GET /api/v1/collections/{collection_id}/documents/{doc_id}` obtiene documento.
-- `DELETE /api/v1/collections/{collection_id}/documents/{doc_id}` elimina documento.
+- `POST /collections/{id}/documents` — subir documento (PDF/TXT, max 50 MB)
+- `GET /collections/{id}/documents` — listar documentos
+- `GET /collections/{id}/documents/{doc_id}` — obtener documento
+- `DELETE /collections/{id}/documents/{doc_id}` — eliminar documento
 
 ### Generación
-- `POST /api/v1/collections/{collection_id}/text` recibe `query` y retorna respuesta mock usando fuentes de esa colección.
+- `POST /collections/{id}/text` — generar texto RAG a partir de una query
+
+### Entidades
+- `POST /collections/{id}/entities` — crear entidad
+- `GET /collections/{id}/entities` — listar entidades
+- `GET /collections/{id}/entities/{entity_id}` — obtener entidad
+- `PUT /collections/{id}/entities/{entity_id}` — actualizar entidad
+- `DELETE /collections/{id}/entities/{entity_id}` — eliminar entidad
+
+## Estructura del proyecto
+
+```
+loremaster/
+├── backend/
+│   ├── config.py                   # Settings via pydantic-settings
+│   ├── requirements.txt
+│   ├── docker-compose.yml
+│   ├── .env.example
+│   └── app/
+│       ├── main.py                 # FastAPI app + routers
+│       ├── models/
+│       │   └── models.py           # Schemas Pydantic
+│       ├── api/routes/
+│       │   ├── collections.py
+│       │   ├── documents.py
+│       │   ├── generate.py
+│       │   └── entities.py
+│       └── services/
+│           ├── collection_service.py
+│           ├── documents_service.py
+│           ├── generate_service.py
+│           ├── entities_service.py
+│           └── documents_db_mock.py  # Almacenamiento en memoria (actual)
+└── docs/
+    ├── DOCUMENTATION.md
+    └── WEEKLY_CHECKLISTS.md
+```
+
+## Estado actual
+
+> **Fase 1 — Semana 1 completada.** La API expone todos los endpoints con almacenamiento en memoria (`documents_db_mock.py`). Qdrant, Redis y LLM están configurados en `config.py` pero aún no integrados en los servicios. La integración real está planificada para la Semana 2.
+
+## Desarrollo
+
+```bash
+# Formatear código
+cd backend && black .
+
+# Ejecutar tests
+cd backend && pytest
+```
