@@ -17,14 +17,12 @@ _PROMPT = ChatPromptTemplate.from_messages(
 )
 
 
-def _get_llm():
-    llm_instance = OllamaLLM(
-        model=settings.ollama_model,
-        temperature=settings.temperature,
-        num_predict=settings.max_tokens,
-    )
-    return llm_instance
+_llm_instance = OllamaLLM(
+    model=settings.ollama_model,
+    temperature=settings.temperature,
+    num_predict=settings.max_tokens,
+)
 
 
 def get_chain():
-    return _PROMPT | _get_llm() | StrOutputParser()
+    return _PROMPT | _llm_instance | StrOutputParser()
