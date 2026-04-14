@@ -17,7 +17,6 @@ _PROMPT = ChatPromptTemplate.from_messages(
 )
 
 
-
 def _get_llm():
     llm_instance = OllamaLLM(
         model=settings.ollama_model,
