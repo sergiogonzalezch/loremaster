@@ -127,19 +127,30 @@ loremaster/
 │   ├── .env.example
 │   └── app/
 │       ├── main.py                 # FastAPI app + routers
+│       ├── database.py             # SQLModel session y engine (SQLite/PostgreSQL)
 │       ├── models/
-│       │   └── models.py           # Schemas Pydantic
-│       ├── api/routes/
 │       │   ├── collections.py
 │       │   ├── documents.py
+│       │   ├── entities.py
 │       │   ├── generate.py
-│       │   └── entities.py
+│       │   └── common.py
+│       ├── api/
+│       │   ├── dependencies.py     # Inyección de dependencias (DB session)
+│       │   └── routes/
+│       │       ├── collections.py
+│       │       ├── documents.py
+│       │       ├── generate.py
+│       │       └── entities.py
+│       ├── core/
+│       │   ├── rag_engine.py       # Qdrant: ingest, search, delete
+│       │   ├── llm_client.py       # Ollama via LangChain
+│       │   ├── text_extractor.py   # Extracción PDF/TXT
+│       │   └── common.py           # Helpers de consulta SQLModel
 │       └── services/
 │           ├── collection_service.py
 │           ├── documents_service.py
 │           ├── generate_service.py
-│           ├── entities_service.py
-│           └── documents_db_mock.py  # Almacenamiento en memoria (actual)
+│           └── entities_service.py
 └── docs/
     ├── DOCUMENTATION.md
     └── WEEKLY_CHECKLISTS.md
@@ -147,7 +158,7 @@ loremaster/
 
 ## Estado actual
 
-> **Fase 1 — Semana 1 completada.** La API expone todos los endpoints con almacenamiento en memoria (`documents_db_mock.py`). Qdrant, Redis y LLM están configurados en `config.py` pero aún no integrados en los servicios. La integración real está planificada para la Semana 2.
+> **Fase 1 — Semanas 1-3 completadas.** Pipeline RAG funcional end-to-end: ingesta de documentos (PDF/TXT) → chunking → embeddings → Qdrant → búsqueda semántica → Ollama → respuesta. Persistencia en SQLite via SQLModel. Semana 4 en curso: refinamiento del prompt template y endpoints de cierre de fase.
 
 ## Desarrollo
 
