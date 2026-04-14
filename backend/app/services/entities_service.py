@@ -14,6 +14,7 @@ def create_entity_service(request: CreateEntityRequest, collection_id: str) -> d
     entity = {
         "id": str(uuid.uuid4()),
         "collection_id": collection_id,
+        "type": request.type,
         "name": request.name,
         "description": request.description,
         "created_at": now,
@@ -46,6 +47,7 @@ def update_entity_service(
     entity = entities.get(entity_id)
     if not entity or entity["collection_id"] != collection_id or entity["is_deleted"]:
         return None
+    entity["type"] = request.type
     entity["name"] = request.name
     entity["description"] = request.description
     entity["updated_at"] = _now()

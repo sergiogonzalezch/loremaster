@@ -1,9 +1,16 @@
+from enum import Enum
 from typing import List, Optional
 from datetime import datetime, timezone
 
 from pydantic import BaseModel, ConfigDict
 from sqlmodel import SQLModel, Field
 import uuid
+
+
+class DocumentStatus(str, Enum):
+    completed = "completed"
+    failed = "failed"
+
 
 # ── Tabla DB ──────────────────────────────────────────────────────────────────
 
@@ -18,9 +25,8 @@ class Document(SQLModel, table=True):
     filename: str = Field(max_length=255)
     file_type: str = Field(max_length=100)
     chunk_count: int = Field(default=0)
-    status: str = Field(default="completed", max_length=50)
+    status: str = Field(default=DocumentStatus.completed, max_length=50)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: Optional[datetime] = Field(default=None)
     is_deleted: bool = Field(default=False)
     deleted_at: Optional[datetime] = Field(default=None)
 
@@ -36,9 +42,8 @@ class DocumentResponse(BaseModel):
     filename: str
     file_type: str
     chunk_count: int
-    status: str
+    status: DocumentStatus
     created_at: datetime
-    updated_at: datetime
 
 
 class DocumentListResponse(BaseModel):
