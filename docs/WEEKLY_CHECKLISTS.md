@@ -96,14 +96,14 @@ Nota de Mike:
 
 - [x] Generacion de embeddings con `sentence-transformers` (modelo MiniLM, 384 dims)
 - [x] Batch size configurado a 32
-- [ ] Embeddings asociados a cada chunk en memoria
+- [x] Embeddings asociados a cada chunk en memoria
 
 ### Criterios de aceptacion Semana 2
 
 - [x] Subir un PDF de prueba retorna 201 con `doc_id` y `chunk_count`
 - [x] Subir un TXT retorna 201 con `doc_id` y `chunk_count`
-- [ ] Subir un `.docx` retorna 400
-- [ ] Subir archivo > 50 MB retorna 400
+- [x] Subir un `.docx` retorna 400
+- [x] Subir archivo > 50 MB retorna 400
 - [x] Los chunks se pueden consultar internamente por `collection_id`
 
 ---
@@ -116,33 +116,33 @@ Nota de Mike:
 
 ### Infraestructura Qdrant
 
-- [ ] `docker-compose.yml` con servicio Qdrant (puerto 6333, volumen persistente)
-- [ ] Agregar `qdrant-client` a `requirements.txt`
-- [ ] Variables en `.env.example`: `QDRANT_URL`, `QDRANT_COLLECTION`
+- [x] `docker-compose.yml` con servicio Qdrant (puerto 6333, volumen persistente)
+- [x] Agregar `qdrant-client` a `requirements.txt`
+- [x] Variables en `.env.example`: `QDRANT_URL`, `QDRANT_COLLECTION`
 - [ ] Verificar conectividad: Qdrant dashboard accesible en `http://localhost:6333/dashboard`
 
 ### RAG Engine
 
-- [ ] `rag_engine.py` con clase/funciones para operaciones vectoriales
-- [ ] Crear coleccion en Qdrant con prefijo `lm_{collection_id}` (384 dims, cosine)
-- [ ] Verificacion de coleccion existente antes de crear (evitar duplicados)
-- [ ] Insertar chunks con embeddings en Qdrant (payload: `doc_id`, `collection_id`, `chunk_idx`, `text`)
-- [ ] Busqueda semantica: recibir query, generar embedding, buscar `top_k=4` en Qdrant
+- [x] `rag_engine.py` con clase/funciones para operaciones vectoriales
+- [x] Crear coleccion en Qdrant con prefijo `lm_{collection_id}` (384 dims, cosine)
+- [x] Verificacion de coleccion existente antes de crear (evitar duplicados)
+- [x] Insertar chunks con embeddings en Qdrant (payload: `doc_id`, `collection_id`, `chunk_idx`, `text`)
+- [x] Busqueda semantica: recibir query, generar embedding, buscar `top_k=4` en Qdrant
 
 ### Endpoint Generate/Text con Contexto Real
 
-- [ ] `POST /api/v1/collections/{id}/generate/text` ahora usa contexto de Qdrant
-- [ ] Si no hay documentos en la coleccion → `HTTP 422`
-- [ ] Contexto ensamblado: chunks unidos con `\n\n---\n\n`
-- [ ] Respuesta temporal: retorna el contexto recuperado (sin LLM aun)
+- [x] `POST /api/v1/collections/{id}/generate/text` ahora usa contexto de Qdrant
+- [x] Si no hay documentos en la coleccion → `HTTP 422`
+- [x] Contexto ensamblado: chunks unidos con `\n\n---\n\n`
+- [x] Respuesta temporal: retorna el contexto recuperado (sin LLM aun)
 
 ### Criterios de aceptacion Semana 3
 
 - [ ] `docker compose up qdrant` levanta sin errores
-- [ ] Ingestar documento → chunks aparecen en Qdrant dashboard
-- [ ] Query semantica retorna chunks relevantes del documento ingestado
-- [ ] Query en coleccion vacia retorna 422
-- [ ] Busqueda es especifica por `collection_id` (no cruza colecciones)
+- [x] Ingestar documento → chunks aparecen en Qdrant dashboard
+- [x] Query semantica retorna chunks relevantes del documento ingestado
+- [x] Query en coleccion vacia retorna 422
+- [x] Busqueda es especifica por `collection_id` (no cruza colecciones)
 
 ---
 
