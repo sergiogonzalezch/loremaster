@@ -1,11 +1,16 @@
 import io
-import uuid
 from datetime import datetime, timezone
 
 from fastapi import HTTPException, UploadFile, File
 from pypdf import PdfReader
+from sqlmodel import Session, select
+
+from app.database import engine
+from app.models.documents import Document
 from app.services import rag_engine
-from app.services.documents_db_mock import documents, collections
+from app.services.collection_service import collection_exists
+
+# from app.services.documents_db_mock import documents, collections  # replaced by SQLite
 
 ALLOWED_MIME_TYPES = ["text/plain", "application/pdf"]
 MAX_BYTES = 50 * 1024 * 1024
@@ -20,14 +25,14 @@ def _extract_text(content_bytes: bytes, content_type: str) -> str:
 
 async def ingest_document_service(
     data: UploadFile = File(...), collection_id: str = None
-):
+) -> Document:
     if data.content_type not in ALLOWED_MIME_TYPES:
         raise HTTPException(status_code=400, detail="Unsupported file type")
 
     if not data.filename:
         raise HTTPException(status_code=400, detail="Filename is required")
 
-    if collection_id not in collections:
+    if not collection_exists(collection_id):
         raise HTTPException(status_code=404, detail="Collection not found")
 
     content_bytes = await data.read()
@@ -36,50 +41,70 @@ async def ingest_document_service(
         raise HTTPException(status_code=400, detail="File too large")
 
     content = _extract_text(content_bytes, data.content_type)
-    doc_id = str(uuid.uuid4())
 
-    chunk_count = rag_engine.ingest_chunks(
-        doc_id=doc_id,
-        collection_id=collection_id,
-        text=content,
-    )
+    with Session(engine) as session:
+        document = Document(
+            collection_id=collection_id,
+            filename=data.filename,
+            file_type=data.content_type,
+            chunk_count=0,
+            status="completed",
+        )
+        session.add(document)
+        session.commit()
+        session.refresh(document)
 
-    if collection_id not in documents:
-        documents[collection_id] = {}
+        chunk_count = rag_engine.ingest_chunks(
+            doc_id=document.id,
+            collection_id=collection_id,
+            text=content,
+        )
 
-    document = {
-        "id": doc_id,
-        "collection_id": collection_id,
-        "filename": data.filename,
-        "file_type": data.content_type,
-        "chunk_count": chunk_count,
-        "status": "completed",
-        "created_at": datetime.now(timezone.utc),
-        "is_deleted": False,
-        "deleted_at": None,
-    }
-
-    documents[collection_id][doc_id] = document
-    return document
+        document.chunk_count = chunk_count
+        session.add(document)
+        session.commit()
+        session.refresh(document)
+        return document
 
 
-def list_documents_service(collection_id: str):
-    if collection_id not in collections:
+def list_documents_service(collection_id: str) -> list[Document] | None:
+    if not collection_exists(collection_id):
         return None
-    return list(documents.get(collection_id, {}).values())
+    with Session(engine) as session:
+        stmt = select(Document).where(
+            Document.collection_id == collection_id,
+            Document.is_deleted == False,
+        )
+        return session.exec(stmt).all()
 
 
-def get_document_service(collection_id: str, doc_id: str):
-    if collection_id not in collections:
+def get_document_service(collection_id: str, doc_id: str) -> Document | None:
+    if not collection_exists(collection_id):
         return None
-    return documents.get(collection_id, {}).get(doc_id)
+    with Session(engine) as session:
+        stmt = select(Document).where(
+            Document.id == doc_id,
+            Document.collection_id == collection_id,
+            Document.is_deleted == False,
+        )
+        return session.exec(stmt).first()
 
 
 def delete_document_service(collection_id: str, doc_id: str):
-    if collection_id not in collections:
+    if not collection_exists(collection_id):
         return None
-    collection_docs = documents.get(collection_id, {})
-    if doc_id not in collection_docs:
-        return False
-    del collection_docs[doc_id]
-    return True
+    with Session(engine) as session:
+        stmt = select(Document).where(
+            Document.id == doc_id,
+            Document.collection_id == collection_id,
+            Document.is_deleted == False,
+        )
+        document = session.exec(stmt).first()
+        if not document:
+            return False
+        rag_engine.delete_document_chunks(collection_id, doc_id)
+        document.is_deleted = True
+        document.deleted_at = datetime.now(timezone.utc)
+        session.add(document)
+        session.commit()
+        return True

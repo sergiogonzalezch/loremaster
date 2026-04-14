@@ -1,5 +1,12 @@
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams, PointStruct
+from qdrant_client.models import (
+    Distance,
+    VectorParams,
+    PointStruct,
+    Filter,
+    FieldCondition,
+    MatchValue,
+)
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
 import uuid
@@ -51,6 +58,33 @@ def ingest_chunks(doc_id: str, collection_id: str, text: str):
     )
 
     return len(chunks)
+
+
+def delete_collection_vectors(collection_id: str) -> bool:
+    name = f"lm_{collection_id}"
+    existing_collections = {
+        c.name for c in _qdrant_client.get_collections().collections
+    }
+    if name not in existing_collections:
+        return False
+    _qdrant_client.delete_collection(collection_name=name)
+    return True
+
+
+def delete_document_chunks(collection_id: str, doc_id: str) -> int:
+    name = f"lm_{collection_id}"
+    existing_collections = {
+        c.name for c in _qdrant_client.get_collections().collections
+    }
+    if name not in existing_collections:
+        return 0
+    result = _qdrant_client.delete(
+        collection_name=name,
+        points_selector=Filter(
+            must=[FieldCondition(key="doc_id", match=MatchValue(value=doc_id))]
+        ),
+    )
+    return result.operation_id if result else 0
 
 
 def search_context(collection_id: str, query: str, top_k: int = 4) -> list[str]:

@@ -11,7 +11,9 @@ from app.services.documents_service import (
 router = APIRouter(prefix="/collections", tags=["documents"])
 
 
-@router.post("/{collection_id}/documents", response_model=DocumentResponse, status_code=201)
+@router.post(
+    "/{collection_id}/documents", response_model=DocumentResponse, status_code=201
+)
 async def ingest(collection_id: str, request: UploadFile = File(...)):
     doc = await ingest_document_service(request, collection_id)
     return doc
