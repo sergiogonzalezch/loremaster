@@ -1,13 +1,7 @@
 from langchain_ollama import OllamaLLM
 from langchain_core.prompts import ChatPromptTemplate
-from config import settings
 from langchain_core.output_parsers import StrOutputParser
-
-_llm = OllamaLLM(
-    model=settings.ollama_model,
-    temperature=settings.temperature,
-    num_predict=settings.max_tokens,
-)
+from config import settings
 
 _PROMPT = ChatPromptTemplate.from_messages(
     [
@@ -22,4 +16,16 @@ _PROMPT = ChatPromptTemplate.from_messages(
     ]
 )
 
-chain = _PROMPT | _llm | StrOutputParser()
+
+
+def _get_llm():
+    llm_instance = OllamaLLM(
+        model=settings.ollama_model,
+        temperature=settings.temperature,
+        num_predict=settings.max_tokens,
+    )
+    return llm_instance
+
+
+def get_chain():
+    return _PROMPT | _get_llm() | StrOutputParser()

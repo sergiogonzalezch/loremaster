@@ -7,7 +7,7 @@ from sqlmodel import Session, select
 
 from app.database import engine
 from app.models.documents import Document, DocumentStatus
-from app.services import rag_engine
+from app.services.rag_engine import ingest_chunks, delete_document_chunks
 
 ALLOWED_MIME_TYPES = ["text/plain", "application/pdf"]
 MAX_BYTES = 50 * 1024 * 1024
@@ -49,7 +49,7 @@ async def ingest_document_service(
         session.refresh(document)
 
         try:
-            chunk_count = rag_engine.ingest_chunks(
+            chunk_count = ingest_chunks(
                 doc_id=document.id,
                 collection_id=collection_id,
                 text=content,
@@ -100,7 +100,7 @@ def delete_document_service(collection_id: str, doc_id: str):
         document = session.exec(stmt).first()
         if not document:
             return False
-        rag_engine.delete_document_chunks(collection_id, doc_id)
+        delete_document_chunks(collection_id, doc_id)
         document.is_deleted = True
         document.deleted_at = datetime.now(timezone.utc)
         session.add(document)

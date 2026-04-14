@@ -1,8 +1,8 @@
 from fastapi import HTTPException
 from config import settings
 from app.models.generate import GenerateTextResponse
-from app.services import rag_engine
-from app.services.llm_client import chain
+from app.services.rag_engine import search_context
+from app.services.llm_client import get_chain
 from app.services.documents_service import list_documents_service
 
 
@@ -14,7 +14,7 @@ async def text_generation_service(query: str, collection_id: str = None):
             status_code=422, detail="Collection has no ingested documents."
         )
 
-    context_chunks = rag_engine.search_context(
+    context_chunks = search_context(
         collection_id=collection_id,
         query=query,
         top_k=settings.top_k,
@@ -28,7 +28,7 @@ async def text_generation_service(query: str, collection_id: str = None):
 
     context = "\n\n---\n\n".join(context_chunks)
 
-    answer = chain.invoke({"context": context, "query": query})
+    answer = get_chain().invoke({"context": context, "query": query})
 
     return GenerateTextResponse(
         query=query,

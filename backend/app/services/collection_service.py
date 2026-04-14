@@ -5,7 +5,7 @@ from sqlmodel import Session, select
 
 from app.database import engine
 from app.models.collections import Collection
-from app.services import rag_engine
+from app.services.rag_engine import delete_collection_vectors
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ def delete_collection_service(collection_id: str):
         session.add(collection)
         session.commit()
         try:
-            rag_engine.delete_collection_vectors(collection_id)
+            delete_collection_vectors(collection_id)
         except Exception as e:
             logger.warning(
                 "Failed to delete vectors for collection %s: %s", collection_id, e
