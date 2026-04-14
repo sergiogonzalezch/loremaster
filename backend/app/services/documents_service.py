@@ -1,14 +1,12 @@
-import io
 import logging
-from datetime import datetime, timezone
 
 from fastapi import HTTPException, UploadFile, File
-from pypdf import PdfReader
-from sqlmodel import Session, select
+from sqlmodel import Session
 
-from app.database import engine
 from app.models.documents import Document, DocumentStatus
-from app.services.rag_engine import ingest_chunks, delete_document_chunks
+from app.core.common import get_active_by_id, list_active_by_collection, soft_delete
+from app.core.text_extractor import extract_text
+from app.core.rag_engine import ingest_chunks, delete_document_chunks
 
 logger = logging.getLogger(__name__)
 
@@ -16,102 +14,74 @@ ALLOWED_MIME_TYPES = ["text/plain", "application/pdf"]
 MAX_BYTES = 50 * 1024 * 1024
 
 
-def _extract_text(content_bytes: bytes, content_type: str) -> str:
-    if content_type == "application/pdf":
-        reader = PdfReader(io.BytesIO(content_bytes))
-        return "\n".join(page.extract_text() or "" for page in reader.pages)
-    return content_bytes.decode("utf-8", errors="ignore")
-
-
 async def ingest_document_service(
-    data: UploadFile = File(...), collection_id: str = None
+    session: Session,
+    data: UploadFile = File(...),
+    collection_id: str = None,
 ) -> Document:
     if data.content_type not in ALLOWED_MIME_TYPES:
         raise HTTPException(status_code=400, detail="Unsupported file type")
-
     if not data.filename:
         raise HTTPException(status_code=400, detail="Filename is required")
 
     content_bytes = await data.read()
-
     if len(content_bytes) > MAX_BYTES:
         raise HTTPException(status_code=400, detail="File too large")
 
     logger.info("Ingesting document '%s' into collection %s", data.filename, collection_id)
-    content = _extract_text(content_bytes, data.content_type)
+    content = extract_text(content_bytes, data.content_type)
 
-    with Session(engine) as session:
-        document = Document(
+    document = Document(
+        collection_id=collection_id,
+        filename=data.filename,
+        file_type=data.content_type,
+        chunk_count=0,
+        status=DocumentStatus.completed,
+    )
+    session.add(document)
+    session.commit()
+    session.refresh(document)
+
+    try:
+        chunk_count = ingest_chunks(
+            doc_id=document.id,
             collection_id=collection_id,
-            filename=data.filename,
-            file_type=data.content_type,
-            chunk_count=0,
-            status=DocumentStatus.completed,
+            text=content,
         )
+    except Exception as e:
+        logger.error("Ingestion failed for '%s': %s", data.filename, e)
+        document.status = DocumentStatus.failed
         session.add(document)
         session.commit()
-        session.refresh(document)
-
-        try:
-            chunk_count = ingest_chunks(
-                doc_id=document.id,
-                collection_id=collection_id,
-                text=content,
-            )
-        except Exception as e:
-            logger.error("Ingestion failed for '%s': %s", data.filename, e)
-            document.status = DocumentStatus.failed
-            document.chunk_count = 0
-            session.add(document)
-            session.commit()
-            raise HTTPException(
-                status_code=502,
-                detail=f"Failed to ingest document into vector store: {e}",
-            )
-
-        document.chunk_count = chunk_count
-        session.add(document)
-        session.commit()
-        session.refresh(document)
-        return document
-
-
-def list_documents_service(collection_id: str) -> list[Document]:
-    with Session(engine) as session:
-        stmt = select(Document).where(
-            Document.collection_id == collection_id,
-            Document.is_deleted == False,
+        raise HTTPException(
+            status_code=502,
+            detail=f"Failed to ingest document into vector store: {e}",
         )
-        return session.exec(stmt).all()
+
+    document.chunk_count = chunk_count
+    session.add(document)
+    session.commit()
+    session.refresh(document)
+    return document
 
 
-def get_document_service(collection_id: str, doc_id: str) -> Document | None:
-    with Session(engine) as session:
-        stmt = select(Document).where(
-            Document.id == doc_id,
-            Document.collection_id == collection_id,
-            Document.is_deleted == False,
-        )
-        return session.exec(stmt).first()
+def list_documents_service(session: Session, collection_id: str) -> list[Document]:
+    return list_active_by_collection(session, Document, collection_id)
 
 
-def delete_document_service(collection_id: str, doc_id: str):
-    with Session(engine) as session:
-        stmt = select(Document).where(
-            Document.id == doc_id,
-            Document.collection_id == collection_id,
-            Document.is_deleted == False,
-        )
-        document = session.exec(stmt).first()
-        if not document:
-            return False
-        try:
-            delete_document_chunks(collection_id, doc_id)
-        except Exception as e:
-            logger.warning("Failed to delete vector chunks for doc %s: %s", doc_id, e)
-        document.is_deleted = True
-        document.deleted_at = datetime.now(timezone.utc)
-        session.add(document)
-        session.commit()
-        logger.info("Document %s soft-deleted from collection %s", doc_id, collection_id)
-        return True
+def get_document_service(session: Session, collection_id: str, doc_id: str) -> Document | None:
+    return get_active_by_id(session, Document, doc_id, collection_id)
+
+
+def delete_document_service(session: Session, collection_id: str, doc_id: str):
+    document = get_active_by_id(session, Document, doc_id, collection_id)
+    if not document:
+        return False
+    try:
+        delete_document_chunks(collection_id, doc_id)
+    except Exception as e:
+        logger.warning("Failed to delete vector chunks for doc %s: %s", doc_id, e)
+    soft_delete(session, document)
+    session.commit()
+    logger.info("Document %s soft-deleted from collection %s", doc_id, collection_id)
+    return True
