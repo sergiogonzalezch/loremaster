@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
 from app.database import get_session
+from app.models.common import SuccessResponse
 from app.models.collections import (
     CreateCollectionRequest,
     CollectionResponse,
@@ -42,7 +43,7 @@ async def get_collection(
     return collection
 
 
-@router.delete("/{collection_id}")
+@router.delete("/{collection_id}", response_model=SuccessResponse)
 async def delete_collection(
     collection_id: str,
     session: Session = Depends(get_session),

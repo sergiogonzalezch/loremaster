@@ -28,7 +28,9 @@ async def ingest_document_service(
     if len(content_bytes) > MAX_BYTES:
         raise HTTPException(status_code=400, detail="File too large")
 
-    logger.info("Ingesting document '%s' into collection %s", data.filename, collection_id)
+    logger.info(
+        "Ingesting document '%s' into collection %s", data.filename, collection_id
+    )
     content = extract_text(content_bytes, data.content_type)
 
     document = Document(
@@ -69,7 +71,9 @@ def list_documents_service(session: Session, collection_id: str) -> list[Documen
     return list_active_by_collection(session, Document, collection_id)
 
 
-def get_document_service(session: Session, collection_id: str, doc_id: str) -> Document | None:
+def get_document_service(
+    session: Session, collection_id: str, doc_id: str
+) -> Document | None:
     return get_active_by_id(session, Document, doc_id, collection_id)
 
 

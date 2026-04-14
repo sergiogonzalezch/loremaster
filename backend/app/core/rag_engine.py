@@ -28,7 +28,9 @@ _splitter = RecursiveCharacterTextSplitter(
 
 def _ensure_qdrant_collection(collection_id: str):
     name = f"lm_{collection_id}"
-    existing_collections = {c.name for c in _qdrant_client.get_collections().collections}
+    existing_collections = {
+        c.name for c in _qdrant_client.get_collections().collections
+    }
     if name not in existing_collections:
         _qdrant_client.create_collection(
             collection_name=name,
@@ -59,7 +61,12 @@ def ingest_chunks(doc_id: str, collection_id: str, text: str):
         collection_name=f"lm_{collection_id}",
         points=points,
     )
-    logger.info("Ingested %d chunks for doc %s into collection %s", len(chunks), doc_id, collection_id)
+    logger.info(
+        "Ingested %d chunks for doc %s into collection %s",
+        len(chunks),
+        doc_id,
+        collection_id,
+    )
     return len(chunks)
 
 
@@ -105,5 +112,7 @@ def search_context(collection_id: str, query: str, top_k: int = 4) -> list[str]:
         collection_name=name, query=query_vector, limit=top_k, with_payload=True
     )
 
-    logger.debug("Search in lm_%s returned %d results", collection_id, len(results.points))
+    logger.debug(
+        "Search in lm_%s returned %d results", collection_id, len(results.points)
+    )
     return [point.payload["text"] for point in results.points]
