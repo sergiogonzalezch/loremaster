@@ -25,8 +25,8 @@ _splitter = RecursiveCharacterTextSplitter(
 
 def _ensure_qdrant_collection(collection_id: str):
     name = f"lm_{collection_id}"
-    exiting_collections = {c.name for c in _qdrant_client.get_collections().collections}
-    if name not in exiting_collections:
+    existing_collections = {c.name for c in _qdrant_client.get_collections().collections}
+    if name not in existing_collections:
         _qdrant_client.create_collection(
             collection_name=name,
             vectors_config=VectorParams(size=EMBEDDING_DIMS, distance=Distance.COSINE),
