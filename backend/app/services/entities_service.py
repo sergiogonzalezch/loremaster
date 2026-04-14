@@ -1,9 +1,12 @@
+import logging
 from datetime import datetime, timezone
 
 from sqlmodel import Session, select
 
 from app.database import engine
 from app.models.entities import Entity, CreateEntityRequest, UpdateEntityRequest
+
+logger = logging.getLogger(__name__)
 
 
 def _now() -> datetime:
@@ -21,6 +24,7 @@ def create_entity_service(request: CreateEntityRequest, collection_id: str) -> E
         session.add(entity)
         session.commit()
         session.refresh(entity)
+        logger.info("Entity '%s' created in collection %s", request.name, collection_id)
         return entity
 
 
@@ -81,4 +85,5 @@ def delete_entity_service(entity_id: str, collection_id: str) -> bool:
         entity.updated_at = now
         session.add(entity)
         session.commit()
+        logger.info("Entity %s soft-deleted from collection %s", entity_id, collection_id)
         return True

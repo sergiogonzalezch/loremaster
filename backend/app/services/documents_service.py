@@ -1,4 +1,5 @@
 import io
+import logging
 from datetime import datetime, timezone
 
 from fastapi import HTTPException, UploadFile, File
@@ -8,6 +9,8 @@ from sqlmodel import Session, select
 from app.database import engine
 from app.models.documents import Document, DocumentStatus
 from app.services.rag_engine import ingest_chunks, delete_document_chunks
+
+logger = logging.getLogger(__name__)
 
 ALLOWED_MIME_TYPES = ["text/plain", "application/pdf"]
 MAX_BYTES = 50 * 1024 * 1024
@@ -34,6 +37,7 @@ async def ingest_document_service(
     if len(content_bytes) > MAX_BYTES:
         raise HTTPException(status_code=400, detail="File too large")
 
+    logger.info("Ingesting document '%s' into collection %s", data.filename, collection_id)
     content = _extract_text(content_bytes, data.content_type)
 
     with Session(engine) as session:
@@ -55,6 +59,7 @@ async def ingest_document_service(
                 text=content,
             )
         except Exception as e:
+            logger.error("Ingestion failed for '%s': %s", data.filename, e)
             document.status = DocumentStatus.failed
             document.chunk_count = 0
             session.add(document)
@@ -100,9 +105,13 @@ def delete_document_service(collection_id: str, doc_id: str):
         document = session.exec(stmt).first()
         if not document:
             return False
-        delete_document_chunks(collection_id, doc_id)
+        try:
+            delete_document_chunks(collection_id, doc_id)
+        except Exception as e:
+            logger.warning("Failed to delete vector chunks for doc %s: %s", doc_id, e)
         document.is_deleted = True
         document.deleted_at = datetime.now(timezone.utc)
         session.add(document)
         session.commit()
+        logger.info("Document %s soft-deleted from collection %s", doc_id, collection_id)
         return True

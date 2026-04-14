@@ -9,8 +9,11 @@ from qdrant_client.models import (
 )
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
+import logging
 import uuid
 from config import settings
+
+logger = logging.getLogger(__name__)
 
 EMBEDDING_DIMS = 384
 
@@ -56,7 +59,7 @@ def ingest_chunks(doc_id: str, collection_id: str, text: str):
         collection_name=f"lm_{collection_id}",
         points=points,
     )
-
+    logger.info("Ingested %d chunks for doc %s into collection %s", len(chunks), doc_id, collection_id)
     return len(chunks)
 
 
@@ -68,6 +71,7 @@ def delete_collection_vectors(collection_id: str) -> bool:
     if name not in existing_collections:
         return False
     _qdrant_client.delete_collection(collection_name=name)
+    logger.info("Deleted vector collection lm_%s", collection_id)
     return True
 
 
@@ -101,4 +105,5 @@ def search_context(collection_id: str, query: str, top_k: int = 4) -> list[str]:
         collection_name=name, query=query_vector, limit=top_k, with_payload=True
     )
 
+    logger.debug("Search in lm_%s returned %d results", collection_id, len(results.points))
     return [point.payload["text"] for point in results.points]
