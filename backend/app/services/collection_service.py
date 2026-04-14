@@ -6,8 +6,6 @@ from app.database import engine
 from app.models.collections import Collection
 from app.services import rag_engine
 
-# from app.services.documents_db_mock import documents, collections  # replaced by SQLite
-
 
 def create_collection_service(name: str, description: str = "") -> Collection:
     with Session(engine) as session:

@@ -39,7 +39,7 @@ async def text_generation_service(query: str, collection_id: str = None):
     context_chunks = rag_engine.search_context(
         collection_id=collection_id,
         query=query,
-        top_k=4,
+        top_k=settings.top_k,
     )
 
     if not context_chunks:
