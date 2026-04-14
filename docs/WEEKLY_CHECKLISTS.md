@@ -82,7 +82,7 @@ Nota de Mike:
 
 ### Extraccion de Texto
 
-- [ ] Extraccion de texto de PDF con `pypdf`
+- [x] Extraccion de texto de PDF con `pypdf`
 - [x] Lectura directa de archivos TXT (UTF-8)
 - [ ] Manejo de PDFs con paginas sin texto (fallback a string vacio por pagina)
 
@@ -95,16 +95,16 @@ Nota de Mike:
 ### Embeddings
 
 - [x] Generacion de embeddings con `sentence-transformers` (modelo MiniLM, 384 dims)
-- [ ] Batch size configurado a 32
+- [x] Batch size configurado a 32
 - [ ] Embeddings asociados a cada chunk en memoria
 
 ### Criterios de aceptacion Semana 2
 
-- [ ] Subir un PDF de prueba retorna 201 con `doc_id` y `chunk_count`
+- [x] Subir un PDF de prueba retorna 201 con `doc_id` y `chunk_count`
 - [x] Subir un TXT retorna 201 con `doc_id` y `chunk_count`
 - [ ] Subir un `.docx` retorna 400
 - [ ] Subir archivo > 50 MB retorna 400
-- [ ] Los chunks se pueden consultar internamente por `collection_id`
+- [x] Los chunks se pueden consultar internamente por `collection_id`
 
 ---
 
