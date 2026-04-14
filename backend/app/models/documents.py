@@ -25,7 +25,7 @@ class Document(SQLModel, table=True):
     filename: str = Field(max_length=255)
     file_type: str = Field(max_length=100)
     chunk_count: int = Field(default=0)
-    status: str = Field(default=DocumentStatus.completed, max_length=50)
+    status: DocumentStatus = Field(default=DocumentStatus.completed, max_length=50)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     is_deleted: bool = Field(default=False)
     deleted_at: Optional[datetime] = Field(default=None)

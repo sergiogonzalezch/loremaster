@@ -6,9 +6,8 @@ from pypdf import PdfReader
 from sqlmodel import Session, select
 
 from app.database import engine
-from app.models.documents import Document
+from app.models.documents import Document, DocumentStatus
 from app.services import rag_engine
-from app.services.collection_service import collection_exists
 
 ALLOWED_MIME_TYPES = ["text/plain", "application/pdf"]
 MAX_BYTES = 50 * 1024 * 1024
@@ -30,9 +29,6 @@ async def ingest_document_service(
     if not data.filename:
         raise HTTPException(status_code=400, detail="Filename is required")
 
-    if not collection_exists(collection_id):
-        raise HTTPException(status_code=404, detail="Collection not found")
-
     content_bytes = await data.read()
 
     if len(content_bytes) > MAX_BYTES:
@@ -46,17 +42,27 @@ async def ingest_document_service(
             filename=data.filename,
             file_type=data.content_type,
             chunk_count=0,
-            status="completed",
+            status=DocumentStatus.completed,
         )
         session.add(document)
         session.commit()
         session.refresh(document)
 
-        chunk_count = rag_engine.ingest_chunks(
-            doc_id=document.id,
-            collection_id=collection_id,
-            text=content,
-        )
+        try:
+            chunk_count = rag_engine.ingest_chunks(
+                doc_id=document.id,
+                collection_id=collection_id,
+                text=content,
+            )
+        except Exception as e:
+            document.status = DocumentStatus.failed
+            document.chunk_count = 0
+            session.add(document)
+            session.commit()
+            raise HTTPException(
+                status_code=502,
+                detail=f"Failed to ingest document into vector store: {e}",
+            )
 
         document.chunk_count = chunk_count
         session.add(document)
@@ -65,9 +71,7 @@ async def ingest_document_service(
         return document
 
 
-def list_documents_service(collection_id: str) -> list[Document] | None:
-    if not collection_exists(collection_id):
-        return None
+def list_documents_service(collection_id: str) -> list[Document]:
     with Session(engine) as session:
         stmt = select(Document).where(
             Document.collection_id == collection_id,
@@ -77,8 +81,6 @@ def list_documents_service(collection_id: str) -> list[Document] | None:
 
 
 def get_document_service(collection_id: str, doc_id: str) -> Document | None:
-    if not collection_exists(collection_id):
-        return None
     with Session(engine) as session:
         stmt = select(Document).where(
             Document.id == doc_id,
@@ -89,8 +91,6 @@ def get_document_service(collection_id: str, doc_id: str) -> Document | None:
 
 
 def delete_document_service(collection_id: str, doc_id: str):
-    if not collection_exists(collection_id):
-        return None
     with Session(engine) as session:
         stmt = select(Document).where(
             Document.id == doc_id,

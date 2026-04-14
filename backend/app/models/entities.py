@@ -24,7 +24,7 @@ class Entity(SQLModel, table=True):
         default_factory=lambda: str(uuid.uuid4()), primary_key=True, max_length=36
     )
     collection_id: str = Field(index=True, max_length=36)
-    type: str = Field(index=True, max_length=50)
+    type: EntityType = Field(index=True, max_length=50)
     name: str = Field(max_length=255)
     description: str = Field(default="", max_length=2000)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
