@@ -6,7 +6,6 @@ from app.database import engine
 from app.models.entities import Entity, CreateEntityRequest, UpdateEntityRequest
 
 
-
 def _now() -> datetime:
     return datetime.now(timezone.utc)
 
