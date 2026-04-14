@@ -10,7 +10,7 @@ from app.models.generate import GenerateTextRequest, GenerateTextResponse
 router = APIRouter(prefix="/collections", tags=["generate"])
 
 
-@router.post("/{collection_id}/text", response_model=GenerateTextResponse)
+@router.post("/{collection_id}/generate/text", response_model=GenerateTextResponse)
 async def generate(
     request: GenerateTextRequest,
     collection_id: str,
