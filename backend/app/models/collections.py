@@ -16,7 +16,6 @@ class Collection(SQLModel, table=True):
     )
     name: str = Field(index=True, unique=True, max_length=255)
     description: str = Field(default="", max_length=2000)
-    status: str = Field(default="active", max_length=50)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: Optional[datetime] = Field(default=None)
     is_deleted: bool = Field(default=False)
@@ -37,7 +36,6 @@ class CollectionResponse(BaseModel):
     id: str
     name: str
     description: str
-    status: str
     created_at: datetime
     updated_at: Optional[datetime] = None
 
