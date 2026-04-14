@@ -83,14 +83,14 @@ Nota de Mike:
 ### Extraccion de Texto
 
 - [ ] Extraccion de texto de PDF con `pypdf`
-- [ ] Lectura directa de archivos TXT (UTF-8)
+- [x] Lectura directa de archivos TXT (UTF-8)
 - [ ] Manejo de PDFs con paginas sin texto (fallback a string vacio por pagina)
 
 ### Chunking
 
 - [x] `RecursiveCharacterTextSplitter` configurado: `chunk_size=512`, `chunk_overlap=50`
 - [x] Separadores definidos: `["\n\n", "\n", ". ", " ", ""]`
-- [ ] Chunks almacenados en memoria (dict mock) con metadata: `doc_id`, `collection_id`, `chunk_idx`
+- [x] Chunks almacenados en memoria (dict mock) con metadata: `doc_id`, `collection_id`, `chunk_idx`
 
 ### Embeddings
 
@@ -101,7 +101,7 @@ Nota de Mike:
 ### Criterios de aceptacion Semana 2
 
 - [ ] Subir un PDF de prueba retorna 201 con `doc_id` y `chunk_count`
-- [ ] Subir un TXT retorna 201 con `doc_id` y `chunk_count`
+- [x] Subir un TXT retorna 201 con `doc_id` y `chunk_count`
 - [ ] Subir un `.docx` retorna 400
 - [ ] Subir archivo > 50 MB retorna 400
 - [ ] Los chunks se pueden consultar internamente por `collection_id`

@@ -5,7 +5,6 @@ from sqlmodel import Session, select
 from app.database import engine
 from app.models.entities import Entity, CreateEntityRequest, UpdateEntityRequest
 
-# from app.services.documents_db_mock import entities  # replaced by SQLite
 
 
 def _now() -> datetime:
