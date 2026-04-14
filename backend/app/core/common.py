@@ -9,12 +9,12 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T", bound=SQLModel)
 
 
-def soft_delete(session: Session, entity) -> bool:
-    entity.is_deleted = True
-    entity.deleted_at = datetime.now(timezone.utc)
-    if hasattr(entity, "updated_at"):
-        entity.updated_at = datetime.now(timezone.utc)
-    session.add(entity)
+def soft_delete(session: Session, record) -> bool:
+    record.is_deleted = True
+    record.deleted_at = datetime.now(timezone.utc)
+    if hasattr(record, "updated_at"):
+        record.updated_at = datetime.now(timezone.utc)
+    session.add(record)
     return True
 
 
