@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 
 from sqlmodel import Session, select
@@ -5,6 +6,8 @@ from sqlmodel import Session, select
 from app.database import engine
 from app.models.collections import Collection
 from app.services import rag_engine
+
+logger = logging.getLogger(__name__)
 
 
 def create_collection_service(name: str, description: str = "") -> Collection:
@@ -39,9 +42,14 @@ def delete_collection_service(collection_id: str):
         collection = session.get(Collection, collection_id)
         if not collection or collection.is_deleted:
             return None
-        rag_engine.delete_collection_vectors(collection_id)
         collection.is_deleted = True
         collection.deleted_at = datetime.now(timezone.utc)
         session.add(collection)
         session.commit()
+        try:
+            rag_engine.delete_collection_vectors(collection_id)
+        except Exception as e:
+            logger.warning(
+                "Failed to delete vectors for collection %s: %s", collection_id, e
+            )
         return True

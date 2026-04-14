@@ -9,13 +9,17 @@ _llm = OllamaLLM(
     num_predict=settings.max_tokens,
 )
 
-_PROMPT = ChatPromptTemplate.from_messages([
-    ("system",
-     "Eres un asistente experto en narrativa y worldbuilding.\n"
-     "Responde usando ÚNICAMENTE la información del contexto proporcionado.\n"
-     "Si el contexto no contiene información suficiente, indícalo claramente.\n\n"
-     "CONTEXTO:\n{context}"),
-    ("human", "{query}"),
-])
+_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "Eres un asistente experto en narrativa y worldbuilding.\n"
+            "Responde usando ÚNICAMENTE la información del contexto proporcionado.\n"
+            "Si el contexto no contiene información suficiente, indícalo claramente.\n\n"
+            "CONTEXTO:\n{context}",
+        ),
+        ("human", "{query}"),
+    ]
+)
 
 chain = _PROMPT | _llm | StrOutputParser()

@@ -1,5 +1,4 @@
 from pydantic import BaseModel, Field
-from typing import Dict
 
 
 class GenerateTextRequest(BaseModel):
@@ -10,5 +9,7 @@ class GenerateTextRequest(BaseModel):
 
 class GenerateTextResponse(BaseModel):
     answer: str = Field(..., description="Texto generado en respuesta a la consulta.")
-    source: Dict = Field(..., description="Fuente utilizada para generar la respuesta.")
     query: str = Field(..., description="Consulta original enviada por el usuario.")
+    sources_count: int = Field(
+        ..., description="Número de fragmentos de contexto usados."
+    )

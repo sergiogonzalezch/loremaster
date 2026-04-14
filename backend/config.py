@@ -25,8 +25,7 @@ class Settings(BaseSettings):
     embedding_model: str = "paraphrase-multilingual-MiniLM-L12-v2"
     chunk_size: int = Field(default=512, gt=0)
     chunk_overlap: int = Field(default=50, ge=0)
-    top_k : int = Field(default=4, gt=0)
-    
+    top_k: int = Field(default=4, gt=0)
 
     # Redis
     redis_url: str = "redis://localhost:6379/0"

@@ -1,15 +1,12 @@
 from fastapi import HTTPException
 from config import settings
+from app.models.generate import GenerateTextResponse
 from app.services import rag_engine
 from app.services.llm_client import chain
-from app.services.collection_service import collection_exists
 from app.services.documents_service import list_documents_service
 
 
 async def text_generation_service(query: str, collection_id: str = None):
-
-    if not collection_exists(collection_id):
-        raise HTTPException(status_code=404, detail="Collection not found")
 
     col_docs = list_documents_service(collection_id)
     if not col_docs:
@@ -33,8 +30,8 @@ async def text_generation_service(query: str, collection_id: str = None):
 
     answer = chain.invoke({"context": context, "query": query})
 
-    return {
-        "query": query,
-        "answer": answer,
-        "sources_count": len(context_chunks),
-    }
+    return GenerateTextResponse(
+        query=query,
+        answer=answer,
+        sources_count=len(context_chunks),
+    )
