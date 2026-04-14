@@ -5,6 +5,8 @@ from sqlmodel import Session, select
 
 from app.database import engine
 from app.models.collections import Collection
+from app.models.documents import Document
+from app.models.entities import Entity
 from app.services.rag_engine import delete_collection_vectors
 
 logger = logging.getLogger(__name__)
@@ -16,6 +18,7 @@ def create_collection_service(name: str, description: str = "") -> Collection:
         session.add(collection)
         session.commit()
         session.refresh(collection)
+        logger.info("Collection '%s' created with id %s", name, collection.id)
         return collection
 
 
@@ -46,6 +49,28 @@ def delete_collection_service(collection_id: str):
         collection.deleted_at = datetime.now(timezone.utc)
         session.add(collection)
         session.commit()
+        logger.info("Collection %s soft-deleted", collection_id)
+
+        docs_stmt = select(Document).where(
+            Document.collection_id == collection_id,
+            Document.is_deleted == False,
+        )
+        for doc in session.exec(docs_stmt).all():
+            doc.is_deleted = True
+            doc.deleted_at = datetime.now(timezone.utc)
+            session.add(doc)
+
+        entities_stmt = select(Entity).where(
+            Entity.collection_id == collection_id,
+            Entity.is_deleted == False,
+        )
+        for entity in session.exec(entities_stmt).all():
+            entity.is_deleted = True
+            entity.deleted_at = datetime.now(timezone.utc)
+            session.add(entity)
+
+        session.commit()
+
         try:
             delete_collection_vectors(collection_id)
         except Exception as e:
