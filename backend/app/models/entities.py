@@ -1,9 +1,18 @@
+from enum import Enum
 from typing import List, Optional
 from datetime import datetime, timezone
 
 from pydantic import BaseModel, ConfigDict
 from sqlmodel import SQLModel, Field
 import uuid
+
+
+class EntityType(str, Enum):
+    character = "character"
+    scene = "scene"
+    faction = "faction"
+    item = "item"
+
 
 # ── Tabla DB ──────────────────────────────────────────────────────────────────
 
@@ -15,6 +24,7 @@ class Entity(SQLModel, table=True):
         default_factory=lambda: str(uuid.uuid4()), primary_key=True, max_length=36
     )
     collection_id: str = Field(index=True, max_length=36)
+    type: str = Field(index=True, max_length=50)
     name: str = Field(max_length=255)
     description: str = Field(default="", max_length=2000)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -27,11 +37,13 @@ class Entity(SQLModel, table=True):
 
 
 class CreateEntityRequest(BaseModel):
+    type: EntityType
     name: str
     description: str = ""
 
 
 class UpdateEntityRequest(BaseModel):
+    type: EntityType
     name: str
     description: str = ""
 
@@ -41,10 +53,11 @@ class EntityResponse(BaseModel):
 
     id: str
     collection_id: str
+    type: EntityType
     name: str
     description: str
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime]
 
 
 class EntityListResponse(BaseModel):

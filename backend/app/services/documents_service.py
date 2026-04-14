@@ -1,5 +1,6 @@
 import io
 import uuid
+from datetime import datetime, timezone
 
 from fastapi import HTTPException, UploadFile, File
 from pypdf import PdfReader
@@ -50,9 +51,12 @@ async def ingest_document_service(
         "id": doc_id,
         "collection_id": collection_id,
         "filename": data.filename,
-        "content": content,
+        "file_type": data.content_type,
         "chunk_count": chunk_count,
         "status": "completed",
+        "created_at": datetime.now(timezone.utc),
+        "is_deleted": False,
+        "deleted_at": None,
     }
 
     documents[collection_id][doc_id] = document
