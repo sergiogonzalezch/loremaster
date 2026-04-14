@@ -1,12 +1,23 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
 from app.api.routes import generate, documents, collections, entities
+from app.database import create_db_and_tables
 from config import settings
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_db_and_tables()
+    yield
+
 
 app = FastAPI(
     title=settings.project_name,
     description="API for managing lore and knowledge base",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 

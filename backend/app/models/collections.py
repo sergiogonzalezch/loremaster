@@ -39,7 +39,7 @@ class CollectionResponse(BaseModel):
     description: str
     status: str
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
 
 
 class CollectionListResponse(BaseModel):
