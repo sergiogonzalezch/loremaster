@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends
+from sqlmodel import Session
 
 from app.api.dependencies import get_valid_collection
+from app.database import get_session
 from app.models.collections import Collection
 from app.services.generate_service import text_generation_service
 from app.models.generate import GenerateTextRequest, GenerateTextResponse
@@ -13,5 +15,6 @@ async def generate(
     request: GenerateTextRequest,
     collection_id: str,
     collection: Collection = Depends(get_valid_collection),
+    session: Session = Depends(get_session),
 ):
-    return await text_generation_service(request.query, collection_id=collection_id)
+    return await text_generation_service(session, request.query, collection_id=collection_id)

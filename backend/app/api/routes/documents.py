@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from sqlmodel import Session
 
 from app.api.dependencies import get_valid_collection
+from app.database import get_session
 from app.models.collections import Collection
 from app.models.documents import DocumentResponse, DocumentListResponse
 from app.services.documents_service import (
@@ -13,24 +15,23 @@ from app.services.documents_service import (
 router = APIRouter(prefix="/collections", tags=["documents"])
 
 
-@router.post(
-    "/{collection_id}/documents", response_model=DocumentResponse, status_code=201
-)
+@router.post("/{collection_id}/documents", response_model=DocumentResponse, status_code=201)
 async def ingest(
     collection_id: str,
     request: UploadFile = File(...),
     collection: Collection = Depends(get_valid_collection),
+    session: Session = Depends(get_session),
 ):
-    doc = await ingest_document_service(request, collection_id)
-    return doc
+    return await ingest_document_service(session, request, collection_id)
 
 
 @router.get("/{collection_id}/documents", response_model=DocumentListResponse)
 async def get_documents(
     collection_id: str,
     collection: Collection = Depends(get_valid_collection),
+    session: Session = Depends(get_session),
 ):
-    docs = list_documents_service(collection_id)
+    docs = list_documents_service(session, collection_id)
     return DocumentListResponse(data=docs, count=len(docs))
 
 
@@ -39,8 +40,9 @@ async def get_document(
     collection_id: str,
     doc_id: str,
     collection: Collection = Depends(get_valid_collection),
+    session: Session = Depends(get_session),
 ):
-    doc = get_document_service(collection_id, doc_id)
+    doc = get_document_service(session, collection_id, doc_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     return doc
@@ -51,8 +53,9 @@ async def delete_document(
     collection_id: str,
     doc_id: str,
     collection: Collection = Depends(get_valid_collection),
+    session: Session = Depends(get_session),
 ):
-    result = delete_document_service(collection_id, doc_id)
+    result = delete_document_service(session, collection_id, doc_id)
     if not result:
         raise HTTPException(status_code=404, detail="Document not found")
     return {"message": f"Document {doc_id} deleted successfully"}

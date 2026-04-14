@@ -1,19 +1,22 @@
 import logging
 
 from fastapi import HTTPException
+from sqlmodel import Session
+
 from config import settings
 from app.models.generate import GenerateTextResponse
-from app.services.rag_engine import search_context
-from app.services.llm_client import get_chain
-from app.services.documents_service import list_documents_service
+from app.models.documents import Document
+from app.core.common import list_active_by_collection
+from app.core.rag_engine import search_context
+from app.core.llm_client import get_chain
 
 logger = logging.getLogger(__name__)
 
 
-async def text_generation_service(query: str, collection_id: str = None):
+async def text_generation_service(session: Session, query: str, collection_id: str = None):
     logger.info("Generating text for collection %s, query: '%.50s...'", collection_id, query)
 
-    col_docs = list_documents_service(collection_id)
+    col_docs = list_active_by_collection(session, Document, collection_id)
     if not col_docs:
         raise HTTPException(
             status_code=422, detail="Collection has no ingested documents."
@@ -36,7 +39,6 @@ async def text_generation_service(query: str, collection_id: str = None):
         )
 
     context = "\n\n---\n\n".join(context_chunks)
-
     answer = get_chain().invoke({"context": context, "query": query})
     logger.info("Generated response using %d context chunks", len(context_chunks))
 
