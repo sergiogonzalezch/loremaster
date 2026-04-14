@@ -10,8 +10,6 @@ from app.models.documents import Document
 from app.services import rag_engine
 from app.services.collection_service import collection_exists
 
-# from app.services.documents_db_mock import documents, collections  # replaced by SQLite
-
 ALLOWED_MIME_TYPES = ["text/plain", "application/pdf"]
 MAX_BYTES = 50 * 1024 * 1024
 

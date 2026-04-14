@@ -1,9 +1,10 @@
-from app.services.documents_db_mock import documents, collections
 from fastapi import HTTPException
 from langchain_ollama import OllamaLLM
 from config import settings
 from langchain_core.prompts import PromptTemplate
 from app.services import rag_engine
+from app.services.collection_service import collection_exists
+from app.services.documents_service import list_documents_service
 
 _llm = OllamaLLM(
     model=settings.ollama_model,
@@ -26,23 +27,10 @@ _chain = _PROMPT | _llm
 
 async def text_generation_service(query: str, collection_id: str = None):
 
-    if not documents or not any(documents.values()):
-        raise HTTPException(
-            status_code=422,
-            detail="No documents available to process the query.",
-        )
+    if not collection_exists(collection_id):
+        raise HTTPException(status_code=404, detail="Collection not found")
 
-    if collection_id:
-        if collection_id not in collections:
-            raise HTTPException(status_code=404, detail="Collection not found")
-        col_docs = documents[collection_id]
-    else:
-        col_docs = None
-        for _, docs in documents.items():
-            if docs:
-                col_docs = docs
-                break
-
+    col_docs = list_documents_service(collection_id)
     if not col_docs:
         raise HTTPException(
             status_code=422, detail="Collection has no ingested documents."
