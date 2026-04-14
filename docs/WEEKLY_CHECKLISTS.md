@@ -69,16 +69,16 @@ Nota de Mike:
 
 ### Dependencias
 
-- [ ] Agregar a `requirements.txt`: `pypdf`, `langchain`, `langchain-text-splitters`, `sentence-transformers`, `langchain-huggingface`, `python-multipart`
-- [ ] Verificar descarga del modelo `paraphrase-multilingual-MiniLM-L12-v2`
+- [x] Agregar a `requirements.txt`: `pypdf`, `langchain`, `langchain-text-splitters`, `sentence-transformers`, `langchain-huggingface`, `python-multipart`
+- [x] Verificar descarga del modelo `paraphrase-multilingual-MiniLM-L12-v2`
 
 ### Endpoint de Ingesta
 
-- [ ] `POST /api/v1/collections/{collection_id}/documents` acepta archivos via `UploadFile`
-- [ ] Validacion de tipo de archivo: solo `application/pdf` y `text/plain`
-- [ ] Validacion de tamano: maximo 50 MB
-- [ ] Retorna `HTTP 400` para formatos invalidos o archivos sin nombre
-- [ ] Retorna `HTTP 404` si `collection_id` no existe
+- [x] `POST /api/v1/collections/{collection_id}/documents` acepta archivos via `UploadFile`
+- [x] Validacion de tipo de archivo: solo `application/pdf` y `text/plain`
+- [x] Validacion de tamano: maximo 50 MB
+- [x] Retorna `HTTP 400` para formatos invalidos o archivos sin nombre
+- [x] Retorna `HTTP 404` si `collection_id` no existe
 
 ### Extraccion de Texto
 
@@ -88,13 +88,13 @@ Nota de Mike:
 
 ### Chunking
 
-- [ ] `RecursiveCharacterTextSplitter` configurado: `chunk_size=512`, `chunk_overlap=50`
-- [ ] Separadores definidos: `["\n\n", "\n", ". ", " ", ""]`
+- [x] `RecursiveCharacterTextSplitter` configurado: `chunk_size=512`, `chunk_overlap=50`
+- [x] Separadores definidos: `["\n\n", "\n", ". ", " ", ""]`
 - [ ] Chunks almacenados en memoria (dict mock) con metadata: `doc_id`, `collection_id`, `chunk_idx`
 
 ### Embeddings
 
-- [ ] Generacion de embeddings con `sentence-transformers` (modelo MiniLM, 384 dims)
+- [x] Generacion de embeddings con `sentence-transformers` (modelo MiniLM, 384 dims)
 - [ ] Batch size configurado a 32
 - [ ] Embeddings asociados a cada chunk en memoria
 
