@@ -13,8 +13,12 @@ from app.core.llm_client import get_chain
 logger = logging.getLogger(__name__)
 
 
-async def text_generation_service(session: Session, query: str, collection_id: str = None):
-    logger.info("Generating text for collection %s, query: '%.50s...'", collection_id, query)
+async def text_generation_service(
+    session: Session, query: str, collection_id: str = None
+):
+    logger.info(
+        "Generating text for collection %s, query: '%.50s...'", collection_id, query
+    )
 
     col_docs = list_active_by_collection(session, Document, collection_id)
     if not col_docs:

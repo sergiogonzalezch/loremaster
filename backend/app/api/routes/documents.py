@@ -3,6 +3,7 @@ from sqlmodel import Session
 
 from app.api.dependencies import get_valid_collection
 from app.database import get_session
+from app.models.common import SuccessResponse
 from app.models.collections import Collection
 from app.models.documents import DocumentResponse, DocumentListResponse
 from app.services.documents_service import (
@@ -15,7 +16,9 @@ from app.services.documents_service import (
 router = APIRouter(prefix="/collections", tags=["documents"])
 
 
-@router.post("/{collection_id}/documents", response_model=DocumentResponse, status_code=201)
+@router.post(
+    "/{collection_id}/documents", response_model=DocumentResponse, status_code=201
+)
 async def ingest(
     collection_id: str,
     request: UploadFile = File(...),
@@ -48,7 +51,11 @@ async def get_document(
     return doc
 
 
-@router.delete("/{collection_id}/documents/{doc_id}", status_code=200)
+@router.delete(
+    "/{collection_id}/documents/{doc_id}",
+    response_model=SuccessResponse,
+    status_code=200,
+)
 async def delete_document(
     collection_id: str,
     doc_id: str,

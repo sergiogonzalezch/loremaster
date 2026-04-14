@@ -9,7 +9,9 @@ from app.core.common import get_active_by_id, list_active_by_collection, soft_de
 logger = logging.getLogger(__name__)
 
 
-def create_entity_service(session: Session, request: CreateEntityRequest, collection_id: str) -> Entity:
+def create_entity_service(
+    session: Session, request: CreateEntityRequest, collection_id: str
+) -> Entity:
     entity = Entity(
         collection_id=collection_id,
         type=request.type,
@@ -23,7 +25,9 @@ def create_entity_service(session: Session, request: CreateEntityRequest, collec
     return entity
 
 
-def get_entity_service(session: Session, entity_id: str, collection_id: str) -> Entity | None:
+def get_entity_service(
+    session: Session, entity_id: str, collection_id: str
+) -> Entity | None:
     return get_active_by_id(session, Entity, entity_id, collection_id)
 
 

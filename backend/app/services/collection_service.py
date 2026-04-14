@@ -12,7 +12,9 @@ from app.core.rag_engine import delete_collection_vectors
 logger = logging.getLogger(__name__)
 
 
-def create_collection_service(session: Session, name: str, description: str = "") -> Collection:
+def create_collection_service(
+    session: Session, name: str, description: str = ""
+) -> Collection:
     existing = session.exec(
         select(Collection).where(
             Collection.name == name,

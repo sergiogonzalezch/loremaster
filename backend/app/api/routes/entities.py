@@ -3,6 +3,7 @@ from sqlmodel import Session
 
 from app.api.dependencies import get_valid_collection
 from app.database import get_session
+from app.models.common import SuccessResponse
 from app.models.collections import Collection
 from app.models.entities import (
     CreateEntityRequest,
@@ -68,7 +69,7 @@ async def update_entity(
     return entity
 
 
-@router.delete("/{collection_id}/entities/{entity_id}")
+@router.delete("/{collection_id}/entities/{entity_id}", response_model=SuccessResponse)
 async def delete_entity(
     collection_id: str,
     entity_id: str,
