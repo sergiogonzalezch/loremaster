@@ -44,7 +44,7 @@ def get_collection_service(session: Session, collection_id: str) -> Collection |
     return collection
 
 
-def _cascade_soft_delete_children(session: Session, collection_id: str):
+def _cascade_soft_delete_children(session: Session, collection_id: str) -> None:
     for model in (Document, Entity):
         stmt = select(model).where(
             model.collection_id == collection_id,
@@ -52,7 +52,7 @@ def _cascade_soft_delete_children(session: Session, collection_id: str):
         )
         for record in session.exec(stmt).all():
             soft_delete(session, record)
-    session.commit()
+    # Sin commit aquí — lo hace el caller en un único commit
 
 
 def delete_collection_service(session: Session, collection_id: str):
@@ -60,11 +60,12 @@ def delete_collection_service(session: Session, collection_id: str):
     if not collection or collection.is_deleted:
         return None
 
-    soft_delete(session, collection)
-    session.commit()
-    logger.info("Collection %s soft-deleted", collection_id)
-
     _cascade_soft_delete_children(session, collection_id)
+
+    soft_delete(session, collection)
+
+    session.commit()
+    logger.info("Collection %s and its children soft-deleted", collection_id)
 
     try:
         delete_collection_vectors(collection_id)
@@ -72,4 +73,5 @@ def delete_collection_service(session: Session, collection_id: str):
         logger.warning(
             "Failed to delete vectors for collection %s: %s", collection_id, e
         )
+
     return True
