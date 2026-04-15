@@ -82,11 +82,15 @@ def list_drafts_service(
     entity_id: str,
     collection_id: str,
 ) -> list[EntityTextDraft]:
-    stmt = select(EntityTextDraft).where(
-        EntityTextDraft.entity_id == entity_id,
-        EntityTextDraft.collection_id == collection_id,
-        EntityTextDraft.is_discarded == False,
-    ).order_by(EntityTextDraft.created_at.desc())
+    stmt = (
+        select(EntityTextDraft)
+        .where(
+            EntityTextDraft.entity_id == entity_id,
+            EntityTextDraft.collection_id == collection_id,
+            EntityTextDraft.is_discarded == False,
+        )
+        .order_by(EntityTextDraft.created_at.desc())
+    )
     return session.exec(stmt).all()
 
 

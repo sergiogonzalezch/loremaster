@@ -38,9 +38,7 @@ async def generate_draft(
     collection: Collection = Depends(get_valid_collection),
     session: Session = Depends(get_session),
 ):
-    return await generate_draft_service(
-        session, entity_id, collection_id, request
-    )
+    return await generate_draft_service(session, entity_id, collection_id, request)
 
 
 @router.get(
@@ -69,9 +67,7 @@ async def update_draft(
     collection: Collection = Depends(get_valid_collection),
     session: Session = Depends(get_session),
 ):
-    draft = update_draft_content_service(
-        session, draft_id, entity_id, request.content
-    )
+    draft = update_draft_content_service(session, draft_id, entity_id, request.content)
     if not draft:
         raise HTTPException(status_code=404, detail="Draft not found")
     return draft
@@ -88,9 +84,7 @@ async def confirm_draft(
     collection: Collection = Depends(get_valid_collection),
     session: Session = Depends(get_session),
 ):
-    entity = confirm_draft_service(
-        session, draft_id, entity_id, collection_id
-    )
+    entity = confirm_draft_service(session, draft_id, entity_id, collection_id)
     if not entity:
         raise HTTPException(status_code=404, detail="Draft not found")
     return entity

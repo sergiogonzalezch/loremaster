@@ -5,10 +5,12 @@ from fastapi import FastAPI
 from app.api.routes import generate, documents, collections, entities
 from app.database import create_db_and_tables
 from config import settings
+
 # Agregar import
 from app.api.routes import generate, documents, collections, entities, entity_text_draft
 
 # Agregar router
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
