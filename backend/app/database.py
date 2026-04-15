@@ -3,11 +3,11 @@ from collections.abc import Generator
 from sqlmodel import SQLModel, Session, create_engine
 from config import settings
 
-engine = create_engine(
-    settings.database_url,
-    connect_args={"check_same_thread": False},
-    echo=False,
-)
+connect_args = {}
+if settings.database_url.startswith("sqlite"):
+    connect_args["check_same_thread"] = False
+
+engine = create_engine(settings.database_url, connect_args=connect_args, echo=False)
 
 
 def create_db_and_tables():
