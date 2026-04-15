@@ -49,6 +49,6 @@ async def delete_collection(
     session: Session = Depends(get_session),
 ):
     result = delete_collection_service(session, collection_id)
-    if result is None:
+    if not result:
         raise HTTPException(status_code=404, detail="Collection not found")
     return {"message": f"Collection {collection_id} deleted successfully"}
