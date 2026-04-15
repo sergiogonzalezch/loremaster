@@ -15,11 +15,11 @@ from app.models.entity_text_draft import (
 )
 from app.models.entities import EntityResponse
 from app.services.entity_text_draft_service import (
-    generate_text_draft_service,
-    list_text_drafts_service,
-    update_text_draft_content_service,
-    confirm_text_draft_service,
-    discard_text_draft_service,
+    generate_draft_service,
+    list_drafts_service,
+    update_draft_content_service,
+    confirm_draft_service,
+    discard_draft_service,
 )
 from fastapi import HTTPException
 
@@ -38,7 +38,7 @@ async def generate_draft(
     collection: Collection = Depends(get_valid_collection),
     session: Session = Depends(get_session),
 ):
-    return await generate_text_draft_service(
+    return await generate_draft_service(
         session, entity_id, collection_id, request
     )
 
@@ -53,7 +53,7 @@ async def list_drafts(
     collection: Collection = Depends(get_valid_collection),
     session: Session = Depends(get_session),
 ):
-    drafts = list_text_drafts_service(session, entity_id, collection_id)
+    drafts = list_drafts_service(session, entity_id, collection_id)
     return EntityTextDraftListResponse(data=drafts, count=len(drafts))
 
 
@@ -69,7 +69,7 @@ async def update_draft(
     collection: Collection = Depends(get_valid_collection),
     session: Session = Depends(get_session),
 ):
-    draft = update_text_draft_content_service(
+    draft = update_draft_content_service(
         session, draft_id, entity_id, request.content
     )
     if not draft:
@@ -88,7 +88,7 @@ async def confirm_draft(
     collection: Collection = Depends(get_valid_collection),
     session: Session = Depends(get_session),
 ):
-    entity = confirm_text_draft_service(
+    entity = confirm_draft_service(
         session, draft_id, entity_id, collection_id
     )
     if not entity:
@@ -107,7 +107,7 @@ async def discard_draft(
     collection: Collection = Depends(get_valid_collection),
     session: Session = Depends(get_session),
 ):
-    success = discard_text_draft_service(session, draft_id, entity_id)
+    success = discard_draft_service(session, draft_id, entity_id)
     if not success:
         raise HTTPException(status_code=404, detail="Draft not found")
     return {"message": f"Draft {draft_id} discarded"}
