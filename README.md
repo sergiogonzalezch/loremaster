@@ -17,7 +17,7 @@ Plataforma RAG para escritores, narradores de rol (RPG) y diseñadores de mundos
 | API | FastAPI + Uvicorn |
 | Validación | Pydantic v2 |
 | RAG | LangChain |
-| Embeddings | sentence-transformers (`all-MiniLM-L6-v2`, 384d) |
+| Embeddings | sentence-transformers (`paraphrase-multilingual-MiniLM-L12-v2`, 384d) |
 | Vector DB | Qdrant |
 | LLM local | Ollama (`llama3.2:latest`) |
 | Caché semántico | Redis (similitud ≥ 0.95, TTL 3600s) |
