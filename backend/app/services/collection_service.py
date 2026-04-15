@@ -52,7 +52,6 @@ def _cascade_soft_delete_children(session: Session, collection_id: str) -> None:
         )
         for record in session.exec(stmt).all():
             soft_delete(session, record)
-    # Sin commit aquí — lo hace el caller en un único commit
 
 
 def delete_collection_service(session: Session, collection_id: str):
