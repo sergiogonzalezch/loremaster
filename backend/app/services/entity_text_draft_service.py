@@ -4,6 +4,7 @@ import logging
 from datetime import datetime, timezone
 
 from fastapi import HTTPException
+from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.models.entity_text_draft import EntityTextDraft, GenerateEntityTextDraftRequest
@@ -15,6 +16,8 @@ from config import settings
 
 logger = logging.getLogger(__name__)
 
+MAX_PENDING_DRAFTS = 5
+
 
 async def generate_draft_service(
     session: Session,
@@ -22,12 +25,27 @@ async def generate_draft_service(
     collection_id: str,
     request: GenerateEntityTextDraftRequest,
 ) -> EntityTextDraft:
-    # 1. Obtener entidad
     entity = get_active_by_id(session, Entity, entity_id, collection_id)
     if not entity:
         raise HTTPException(status_code=404, detail="Entity not found")
 
-    # 2. Buscar contexto RAG
+    pending_count = session.exec(
+        select(func.count())
+        .select_from(EntityTextDraft)
+        .where(
+            EntityTextDraft.entity_id == entity_id,
+            EntityTextDraft.collection_id == collection_id,
+            EntityTextDraft.is_confirmed == False,
+            EntityTextDraft.is_discarded == False,
+        )
+    ).one()
+    if pending_count >= MAX_PENDING_DRAFTS:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Entity has {pending_count} pending drafts (max {MAX_PENDING_DRAFTS}). "
+            "Confirm or discard existing drafts first.",
+        )
+
     try:
         context_chunks = search_context(
             collection_id=collection_id,
@@ -38,7 +56,6 @@ async def generate_draft_service(
         logger.error("Qdrant search failed: %s", e)
         raise HTTPException(status_code=503, detail="Vector search unavailable")
 
-    # 3. Enriquecer contexto con descripción actual de la entidad
     entity_context = ""
     if entity.description:
         entity_context = (
@@ -55,14 +72,12 @@ async def generate_draft_service(
             detail="No context available. Ingest documents first.",
         )
 
-    # 4. Generar texto con LLM
     try:
         answer = get_chain().invoke({"context": context, "query": request.query})
     except Exception as e:
         logger.error("LLM generation failed: %s", e)
         raise HTTPException(status_code=503, detail="LLM service unavailable")
 
-    # 5. Guardar borrador
     draft = EntityTextDraft(
         entity_id=entity_id,
         collection_id=collection_id,
@@ -82,6 +97,9 @@ def list_drafts_service(
     entity_id: str,
     collection_id: str,
 ) -> list[EntityTextDraft]:
+    entity = get_active_by_id(session, Entity, entity_id, collection_id)
+    if not entity:
+        raise HTTPException(status_code=404, detail="Entity not found")
     stmt = (
         select(EntityTextDraft)
         .where(
@@ -98,9 +116,10 @@ def update_draft_content_service(
     session: Session,
     draft_id: str,
     entity_id: str,
+    collection_id: str,
     content: str,
 ) -> EntityTextDraft | None:
-    draft = _get_active_draft(session, draft_id, entity_id)
+    draft = _get_active_draft(session, draft_id, entity_id, collection_id)
     if not draft:
         return None
     draft.content = content
@@ -116,7 +135,7 @@ def confirm_draft_service(
     entity_id: str,
     collection_id: str,
 ) -> Entity | None:
-    draft = _get_active_draft(session, draft_id, entity_id)
+    draft = _get_active_draft(session, draft_id, entity_id, collection_id)
     if not draft:
         return None
 
@@ -125,7 +144,23 @@ def confirm_draft_service(
     draft.confirmed_at = datetime.now(timezone.utc)
     session.add(draft)
 
-    # 2. Persistir en entity.description
+    pending_stmt = select(EntityTextDraft).where(
+        EntityTextDraft.entity_id == entity_id,
+        EntityTextDraft.collection_id == collection_id,
+        EntityTextDraft.id != draft_id,
+        EntityTextDraft.is_confirmed == False,
+        EntityTextDraft.is_discarded == False,
+    )
+    pending_drafts = session.exec(pending_stmt).all()
+    for pending in pending_drafts:
+        pending.is_discarded = True
+        session.add(pending)
+    logger.info(
+        "Auto-discarded %d pending draft(s) for entity %s",
+        len(pending_drafts),
+        entity_id,
+    )
+
     entity = get_active_by_id(session, Entity, entity_id, collection_id)
     if not entity:
         raise HTTPException(status_code=404, detail="Entity not found")
@@ -145,8 +180,9 @@ def discard_draft_service(
     session: Session,
     draft_id: str,
     entity_id: str,
+    collection_id: str,
 ) -> bool:
-    draft = _get_active_draft(session, draft_id, entity_id)
+    draft = _get_active_draft(session, draft_id, entity_id, collection_id)
     if not draft:
         return False
     draft.is_discarded = True
@@ -160,10 +196,13 @@ def _get_active_draft(
     session: Session,
     draft_id: str,
     entity_id: str,
+    collection_id: str,
 ) -> EntityTextDraft | None:
     stmt = select(EntityTextDraft).where(
         EntityTextDraft.id == draft_id,
         EntityTextDraft.entity_id == entity_id,
+        EntityTextDraft.collection_id == collection_id,
+        EntityTextDraft.is_confirmed == False,
         EntityTextDraft.is_discarded == False,
     )
     return session.exec(stmt).first()

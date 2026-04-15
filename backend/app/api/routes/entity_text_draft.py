@@ -67,7 +67,9 @@ async def update_draft(
     collection: Collection = Depends(get_valid_collection),
     session: Session = Depends(get_session),
 ):
-    draft = update_draft_content_service(session, draft_id, entity_id, request.content)
+    draft = update_draft_content_service(
+        session, draft_id, entity_id, collection_id, request.content
+    )
     if not draft:
         raise HTTPException(status_code=404, detail="Draft not found")
     return draft
@@ -101,7 +103,7 @@ async def discard_draft(
     collection: Collection = Depends(get_valid_collection),
     session: Session = Depends(get_session),
 ):
-    success = discard_draft_service(session, draft_id, entity_id)
+    success = discard_draft_service(session, draft_id, entity_id, collection_id)
     if not success:
         raise HTTPException(status_code=404, detail="Draft not found")
     return {"message": f"Draft {draft_id} discarded"}
