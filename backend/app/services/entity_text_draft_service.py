@@ -7,12 +7,14 @@ from fastapi import HTTPException
 from sqlalchemy import func
 from sqlmodel import Session, select
 
-from app.models.entity_text_draft import EntityTextDraft, GenerateEntityTextDraftRequest
+from app.models.entity_text_draft import (
+    DraftStatus,
+    EntityTextDraft,
+    GenerateEntityTextDraftRequest,
+)
 from app.models.entities import Entity
-from app.core.rag_engine import search_context
-from app.core.llm_client import get_chain
+from app.core.rag_generate import generate_rag_response
 from app.core.common import get_active_by_id
-from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +37,7 @@ async def generate_draft_service(
         .where(
             EntityTextDraft.entity_id == entity_id,
             EntityTextDraft.collection_id == collection_id,
-            EntityTextDraft.is_confirmed == False,
-            EntityTextDraft.is_discarded == False,
+            EntityTextDraft.status == DraftStatus.pending,
         )
     ).one()
     if pending_count >= MAX_PENDING_DRAFTS:
@@ -46,44 +47,30 @@ async def generate_draft_service(
             "Confirm or discard existing drafts first.",
         )
 
-    try:
-        context_chunks = search_context(
-            collection_id=collection_id,
-            query=request.query,
-            top_k=settings.top_k,
-        )
-    except Exception as e:
-        logger.error("Qdrant search failed: %s", e)
-        raise HTTPException(status_code=503, detail="Vector search unavailable")
-
-    entity_context = ""
+    extra_context = ""
     if entity.description:
-        entity_context = (
+        extra_context = (
             f"Información actual de '{entity.name}' ({entity.type}):\n"
             f"{entity.description}\n\n"
         )
 
-    rag_context = "\n\n---\n\n".join(context_chunks) if context_chunks else ""
-    context = entity_context + rag_context
-
-    if not context.strip():
-        raise HTTPException(
-            status_code=422,
-            detail="No context available. Ingest documents first.",
-        )
-
     try:
-        answer = get_chain().invoke({"context": context, "query": request.query})
-    except Exception as e:
-        logger.error("LLM generation failed: %s", e)
-        raise HTTPException(status_code=503, detail="LLM service unavailable")
+        answer, sources_count = generate_rag_response(
+            collection_id=collection_id,
+            query=request.query,
+            extra_context=extra_context,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
 
     draft = EntityTextDraft(
         entity_id=entity_id,
         collection_id=collection_id,
         query=request.query,
         content=answer,
-        sources_count=len(context_chunks),
+        sources_count=sources_count,
     )
     session.add(draft)
     session.commit()
@@ -105,7 +92,7 @@ def list_drafts_service(
         .where(
             EntityTextDraft.entity_id == entity_id,
             EntityTextDraft.collection_id == collection_id,
-            EntityTextDraft.is_discarded == False,
+            EntityTextDraft.status != DraftStatus.discarded,
         )
         .order_by(EntityTextDraft.created_at.desc())
     )
@@ -139,8 +126,7 @@ def confirm_draft_service(
     if not draft:
         return None
 
-    # 1. Confirmar el borrador
-    draft.is_confirmed = True
+    draft.status = DraftStatus.confirmed
     draft.confirmed_at = datetime.now(timezone.utc)
     session.add(draft)
 
@@ -148,12 +134,11 @@ def confirm_draft_service(
         EntityTextDraft.entity_id == entity_id,
         EntityTextDraft.collection_id == collection_id,
         EntityTextDraft.id != draft_id,
-        EntityTextDraft.is_confirmed == False,
-        EntityTextDraft.is_discarded == False,
+        EntityTextDraft.status == DraftStatus.pending,
     )
     pending_drafts = session.exec(pending_stmt).all()
     for pending in pending_drafts:
-        pending.is_discarded = True
+        pending.status = DraftStatus.discarded
         session.add(pending)
     logger.info(
         "Auto-discarded %d pending draft(s) for entity %s",
@@ -181,15 +166,16 @@ def discard_draft_service(
     draft_id: str,
     entity_id: str,
     collection_id: str,
-) -> bool:
+) -> EntityTextDraft | None:
     draft = _get_active_draft(session, draft_id, entity_id, collection_id)
     if not draft:
-        return False
-    draft.is_discarded = True
+        return None
+    draft.status = DraftStatus.discarded
     session.add(draft)
     session.commit()
+    session.refresh(draft)
     logger.info("Draft %s discarded", draft_id)
-    return True
+    return draft
 
 
 def _get_active_draft(
@@ -202,7 +188,6 @@ def _get_active_draft(
         EntityTextDraft.id == draft_id,
         EntityTextDraft.entity_id == entity_id,
         EntityTextDraft.collection_id == collection_id,
-        EntityTextDraft.is_confirmed == False,
-        EntityTextDraft.is_discarded == False,
+        EntityTextDraft.status == DraftStatus.pending,
     )
     return session.exec(stmt).first()

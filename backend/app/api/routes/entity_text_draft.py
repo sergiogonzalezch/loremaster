@@ -1,12 +1,11 @@
 # backend/app/api/routes/entity_drafts.py
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
 from app.api.dependencies import get_valid_collection
 from app.database import get_session
 from app.models.collections import Collection
-from app.models.common import SuccessResponse
 from app.models.entity_text_draft import (
     GenerateEntityTextDraftRequest,
     UpdateEntityTextDraftContentRequest,
@@ -21,7 +20,6 @@ from app.services.entity_text_draft_service import (
     confirm_draft_service,
     discard_draft_service,
 )
-from fastapi import HTTPException
 
 router = APIRouter(prefix="/collections", tags=["entity-drafts"])
 
@@ -94,7 +92,7 @@ async def confirm_draft(
 
 @router.delete(
     "/{collection_id}/entities/{entity_id}/drafts/{draft_id}",
-    response_model=SuccessResponse,
+    response_model=EntityTextDraftResponse,
 )
 async def discard_draft(
     collection_id: str,
@@ -103,7 +101,7 @@ async def discard_draft(
     collection: Collection = Depends(get_valid_collection),
     session: Session = Depends(get_session),
 ):
-    success = discard_draft_service(session, draft_id, entity_id, collection_id)
-    if not success:
+    draft = discard_draft_service(session, draft_id, entity_id, collection_id)
+    if not draft:
         raise HTTPException(status_code=404, detail="Draft not found")
-    return {"message": f"Draft {draft_id} discarded"}
+    return draft
