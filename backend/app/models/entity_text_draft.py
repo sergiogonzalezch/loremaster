@@ -21,13 +21,12 @@ class EntityTextDraft(SQLModel, table=True):
     sources_count: int = Field(default=0)
     is_confirmed: bool = Field(default=False)
     is_discarded: bool = Field(default=False)
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     confirmed_at: Optional[datetime] = Field(default=None)
 
 
 # ── API schemas ───────────────────────────────────────────────────────────────
+
 
 class GenerateEntityTextDraftRequest(BaseModel):
     query: str = Field(..., min_length=5)
