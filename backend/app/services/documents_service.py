@@ -84,7 +84,7 @@ def delete_document_service(session: Session, collection_id: str, doc_id: str):
     try:
         delete_document_chunks(collection_id, doc_id)
     except Exception as e:
-        logger.warning("Failed to delete vector chunks for doc %s: %s", doc_id, e)
+        logger.error("Failed to delete vector chunks for doc %s: %s", doc_id, e)
     soft_delete(session, document)
     session.commit()
     logger.info("Document %s soft-deleted from collection %s", doc_id, collection_id)

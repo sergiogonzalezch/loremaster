@@ -5,6 +5,7 @@ from sqlmodel import Session
 
 from app.models.entities import Entity, CreateEntityRequest, UpdateEntityRequest
 from app.core.common import get_active_by_id, list_active_by_collection, soft_delete
+from app.services.entity_text_draft_service import discard_pending_drafts
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +56,10 @@ def delete_entity_service(session: Session, entity_id: str, collection_id: str) 
     entity = get_active_by_id(session, Entity, entity_id, collection_id)
     if not entity:
         return False
+    discarded = discard_pending_drafts(
+        session, entity_id=entity_id, collection_id=collection_id
+    )
+    logger.info("Discarded %d pending draft(s) for entity %s", discarded, entity_id)
     soft_delete(session, entity)
     session.commit()
     logger.info("Entity %s soft-deleted from collection %s", entity_id, collection_id)

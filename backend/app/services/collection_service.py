@@ -8,6 +8,7 @@ from app.models.documents import Document
 from app.models.entities import Entity
 from app.core.common import soft_delete
 from app.core.rag_engine import delete_collection_vectors
+from app.services.entity_text_draft_service import discard_pending_drafts
 
 logger = logging.getLogger(__name__)
 
@@ -53,14 +54,16 @@ def _cascade_soft_delete_children(session: Session, collection_id: str) -> None:
         for record in session.exec(stmt).all():
             soft_delete(session, record)
 
+    count = discard_pending_drafts(session, collection_id=collection_id)
+    logger.info("Discarded %d pending draft(s) for collection %s", count, collection_id)
+
 
 def delete_collection_service(session: Session, collection_id: str):
     collection = session.get(Collection, collection_id)
     if not collection or collection.is_deleted:
-        return None
+        return False
 
     _cascade_soft_delete_children(session, collection_id)
-
     soft_delete(session, collection)
 
     session.commit()
@@ -69,8 +72,6 @@ def delete_collection_service(session: Session, collection_id: str):
     try:
         delete_collection_vectors(collection_id)
     except Exception as e:
-        logger.warning(
-            "Failed to delete vectors for collection %s: %s", collection_id, e
-        )
+        logger.error("Failed to delete vectors for collection %s: %s", collection_id, e)
 
     return True

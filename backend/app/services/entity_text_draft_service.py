@@ -1,5 +1,3 @@
-# backend/app/services/entity_draft_service.py
-
 import logging
 from datetime import datetime, timezone
 
@@ -176,6 +174,31 @@ def discard_draft_service(
     session.refresh(draft)
     logger.info("Draft %s discarded", draft_id)
     return draft
+
+
+def discard_pending_drafts(
+    session: Session,
+    entity_id: str | None = None,
+    collection_id: str | None = None,
+) -> int:
+    stmt = select(EntityTextDraft).where(EntityTextDraft.status == DraftStatus.pending)
+    if entity_id is not None:
+        stmt = stmt.where(EntityTextDraft.entity_id == entity_id)
+    if collection_id is not None:
+        stmt = stmt.where(EntityTextDraft.collection_id == collection_id)
+
+    drafts = session.exec(stmt).all()
+    for draft in drafts:
+        draft.status = DraftStatus.discarded
+        session.add(draft)
+
+    logger.info(
+        "Discarded %d pending draft(s) [entity_id=%s, collection_id=%s]",
+        len(drafts),
+        entity_id,
+        collection_id,
+    )
+    return len(drafts)
 
 
 def _get_active_draft(
