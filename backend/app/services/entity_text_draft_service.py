@@ -124,6 +124,10 @@ def confirm_draft_service(
     if not draft:
         return None
 
+    entity = get_active_by_id(session, Entity, entity_id, collection_id)
+    if not entity:
+        raise HTTPException(status_code=404, detail="Entity not found")
+
     draft.status = DraftStatus.confirmed
     draft.confirmed_at = datetime.now(timezone.utc)
     session.add(draft)
@@ -144,9 +148,6 @@ def confirm_draft_service(
         entity_id,
     )
 
-    entity = get_active_by_id(session, Entity, entity_id, collection_id)
-    if not entity:
-        raise HTTPException(status_code=404, detail="Entity not found")
     entity.description = draft.content
     entity.updated_at = datetime.now(timezone.utc)
     session.add(entity)
