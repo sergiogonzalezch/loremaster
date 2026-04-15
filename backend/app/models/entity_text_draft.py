@@ -1,11 +1,18 @@
 # backend/app/models/entity_draft.py
 
+from enum import Enum
 from typing import List, Optional
 from datetime import datetime, timezone
 
 from pydantic import BaseModel, ConfigDict
 from sqlmodel import SQLModel, Field
 import uuid
+
+
+class DraftStatus(str, Enum):
+    pending = "pending"
+    confirmed = "confirmed"
+    discarded = "discarded"
 
 
 class EntityTextDraft(SQLModel, table=True):
@@ -19,8 +26,7 @@ class EntityTextDraft(SQLModel, table=True):
     query: str = Field(max_length=1000)
     content: str = Field(max_length=10000)
     sources_count: int = Field(default=0)
-    is_confirmed: bool = Field(default=False)
-    is_discarded: bool = Field(default=False)
+    status: DraftStatus = Field(default=DraftStatus.pending)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     confirmed_at: Optional[datetime] = Field(default=None)
 
@@ -45,8 +51,7 @@ class EntityTextDraftResponse(BaseModel):
     query: str
     content: str
     sources_count: int
-    is_confirmed: bool
-    is_discarded: bool
+    status: DraftStatus
     created_at: datetime
     confirmed_at: Optional[datetime] = None
 
