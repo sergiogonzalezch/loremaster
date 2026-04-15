@@ -21,11 +21,11 @@ router = APIRouter(prefix="/collections", tags=["documents"])
 )
 async def ingest(
     collection_id: str,
-    request: UploadFile = File(...),
+    file: UploadFile = File(...),
     collection: Collection = Depends(get_valid_collection),
     session: Session = Depends(get_session),
 ):
-    return await ingest_document_service(session, request, collection_id)
+    return await ingest_document_service(session, file, collection_id)
 
 
 @router.get("/{collection_id}/documents", response_model=DocumentListResponse)
