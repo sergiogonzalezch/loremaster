@@ -20,8 +20,6 @@ class Settings(BaseSettings):
 
     # Vector DB (Qdrant)
     qdrant_url: str = "http://localhost:6333"
-    qdrant_api_key: Optional[str] = None
-    qdrant_collection: str = "loremaster"
 
     # Embeddings
     embedding_model: str = "paraphrase-multilingual-MiniLM-L12-v2"
@@ -36,7 +34,7 @@ class Settings(BaseSettings):
     cache_threshold: float = 0.95
 
     # Database
-    database_url: str = "sqlite:///./loremaster.db"
+    database_url: str = "postgresql://loremaster:loremaster@localhost:5432/loremaster"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

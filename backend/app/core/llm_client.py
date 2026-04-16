@@ -19,6 +19,7 @@ _PROMPT = ChatPromptTemplate.from_messages(
 
 _llm_instance = OllamaLLM(
     model=settings.ollama_model,
+    base_url=settings.ollama_base_url,
     temperature=settings.temperature,
     num_predict=settings.max_tokens,
 )
