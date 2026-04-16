@@ -1,5 +1,3 @@
-# backend/app/models/entity_draft.py
-
 from enum import Enum
 from typing import List, Optional
 from datetime import datetime, timezone
