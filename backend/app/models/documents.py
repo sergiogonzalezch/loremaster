@@ -3,6 +3,7 @@ from typing import List, Optional
 from datetime import datetime, timezone
 
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy import Column, ForeignKey, String
 from sqlmodel import SQLModel, Field
 import uuid
 
@@ -22,7 +23,14 @@ class Document(SQLModel, table=True):
     id: str = Field(
         default_factory=lambda: str(uuid.uuid4()), primary_key=True, max_length=36
     )
-    collection_id: str = Field(index=True, max_length=36)
+    collection_id: str = Field(
+        sa_column=Column(
+            String(36),
+            ForeignKey("collections.id"),
+            nullable=False,
+            index=True,
+        )
+    )
     filename: str = Field(max_length=255)
     file_type: str = Field(max_length=100)
     chunk_count: int = Field(default=0)
