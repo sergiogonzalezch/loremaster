@@ -2,7 +2,7 @@ from collections.abc import Generator
 
 from sqlalchemy import Engine
 from sqlmodel import SQLModel, Session, create_engine
-from config import settings
+from app.core.config import settings
 
 
 def _build_engine() -> Engine:
