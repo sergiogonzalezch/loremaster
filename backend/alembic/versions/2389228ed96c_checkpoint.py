@@ -1,8 +1,8 @@
 """Checkpoint
 
-Revision ID: 75730f468081
+Revision ID: 2389228ed96c
 Revises:
-Create Date: 2026-04-15 13:11:13.089056
+Create Date: 2026-04-15 20:15:57.699048
 
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 import sqlmodel
 
 # revision identifiers, used by Alembic.
-revision: str = "75730f468081"
+revision: str = "2389228ed96c"
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -41,9 +41,7 @@ def upgrade() -> None:
     op.create_table(
         "documents",
         sa.Column("id", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=False),
-        sa.Column(
-            "collection_id", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=False
-        ),
+        sa.Column("collection_id", sa.String(length=36), nullable=False),
         sa.Column(
             "filename", sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False
         ),
@@ -53,12 +51,16 @@ def upgrade() -> None:
         sa.Column("chunk_count", sa.Integer(), nullable=False),
         sa.Column(
             "status",
-            sa.Enum("completed", "failed", name="documentstatus"),
+            sa.Enum("processing", "completed", "failed", name="documentstatus"),
             nullable=False,
         ),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("is_deleted", sa.Boolean(), nullable=False),
         sa.Column("deleted_at", sa.DateTime(), nullable=True),
+        sa.ForeignKeyConstraint(
+            ["collection_id"],
+            ["collections.id"],
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     with op.batch_alter_table("documents", schema=None) as batch_op:
@@ -69,9 +71,7 @@ def upgrade() -> None:
     op.create_table(
         "entities",
         sa.Column("id", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=False),
-        sa.Column(
-            "collection_id", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=False
-        ),
+        sa.Column("collection_id", sa.String(length=36), nullable=False),
         sa.Column(
             "type",
             sa.Enum("character", "scene", "faction", "item", name="entitytype"),
@@ -85,6 +85,10 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.Column("is_deleted", sa.Boolean(), nullable=False),
         sa.Column("deleted_at", sa.DateTime(), nullable=True),
+        sa.ForeignKeyConstraint(
+            ["collection_id"],
+            ["collections.id"],
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     with op.batch_alter_table("entities", schema=None) as batch_op:
@@ -96,12 +100,8 @@ def upgrade() -> None:
     op.create_table(
         "entity_text_drafts",
         sa.Column("id", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=False),
-        sa.Column(
-            "entity_id", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=False
-        ),
-        sa.Column(
-            "collection_id", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=False
-        ),
+        sa.Column("entity_id", sa.String(length=36), nullable=False),
+        sa.Column("collection_id", sa.String(length=36), nullable=False),
         sa.Column(
             "query", sqlmodel.sql.sqltypes.AutoString(length=1000), nullable=False
         ),
@@ -116,6 +116,14 @@ def upgrade() -> None:
         ),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("confirmed_at", sa.DateTime(), nullable=True),
+        sa.ForeignKeyConstraint(
+            ["collection_id"],
+            ["collections.id"],
+        ),
+        sa.ForeignKeyConstraint(
+            ["entity_id"],
+            ["entities.id"],
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     with op.batch_alter_table("entity_text_drafts", schema=None) as batch_op:
