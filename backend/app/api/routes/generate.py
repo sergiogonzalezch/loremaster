@@ -14,7 +14,7 @@ router = APIRouter(prefix="/collections", tags=["generate"])
 async def generate(
     request: GenerateTextRequest,
     collection_id: str,
-    collection: Collection = Depends(get_valid_collection),
+    _: Collection = Depends(get_valid_collection),
     session: Session = Depends(get_session),
 ):
     return await text_generation_service(

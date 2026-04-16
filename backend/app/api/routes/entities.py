@@ -25,7 +25,7 @@ router = APIRouter(prefix="/collections", tags=["entities"])
 async def create_entity(
     collection_id: str,
     request: CreateEntityRequest,
-    collection: Collection = Depends(get_valid_collection),
+    _: Collection = Depends(get_valid_collection),
     session: Session = Depends(get_session),
 ):
     return create_entity_service(session, request, collection_id)
@@ -34,7 +34,7 @@ async def create_entity(
 @router.get("/{collection_id}/entities", response_model=EntityListResponse)
 async def list_entities(
     collection_id: str,
-    collection: Collection = Depends(get_valid_collection),
+    _: Collection = Depends(get_valid_collection),
     session: Session = Depends(get_session),
 ):
     entities = list_entities_service(session, collection_id)
