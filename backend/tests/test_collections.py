@@ -47,7 +47,7 @@ async def test_get_collection_by_id(client, sample_collection):
 async def test_delete_collection(client, sample_collection):
     """COL-04: Eliminar colección y luego GET retorna 404."""
     delete_response = await client.delete(f"/api/v1/collections/{sample_collection.id}")
-    assert delete_response.status_code == 200
+    assert delete_response.status_code == 204
 
     get_response = await client.get(f"/api/v1/collections/{sample_collection.id}")
     assert get_response.status_code == 404
@@ -67,7 +67,7 @@ async def test_delete_cascades_documents(client, db_session, sample_collection):
     db_session.refresh(doc)
 
     response = await client.delete(f"/api/v1/collections/{sample_collection.id}")
-    assert response.status_code == 200
+    assert response.status_code == 204
 
     db_doc = db_session.exec(select(Document).where(Document.id == doc.id)).first()
     assert db_doc is not None
@@ -88,7 +88,7 @@ async def test_delete_cascades_entities(client, db_session, sample_collection):
     db_session.refresh(entity)
 
     response = await client.delete(f"/api/v1/collections/{sample_collection.id}")
-    assert response.status_code == 200
+    assert response.status_code == 204
 
     db_entity = db_session.exec(select(Entity).where(Entity.id == entity.id)).first()
     assert db_entity is not None
@@ -112,7 +112,7 @@ async def test_delete_cascades_pending_drafts(
     db_session.refresh(draft)
 
     response = await client.delete(f"/api/v1/collections/{sample_collection.id}")
-    assert response.status_code == 200
+    assert response.status_code == 204
 
     db_draft = db_session.exec(
         select(EntityTextDraft).where(EntityTextDraft.id == draft.id)

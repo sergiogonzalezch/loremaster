@@ -33,7 +33,8 @@ def generate_rag_response(
         raise RuntimeError("Vector search unavailable") from e
 
     rag_context = "\n\n---\n\n".join(context_chunks) if context_chunks else ""
-    context = extra_context + rag_context
+    parts = [p for p in (extra_context, rag_context) if p]
+    context = "\n\n---\n\n".join(parts)
 
     if not context.strip():
         raise ValueError("No context available")

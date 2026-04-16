@@ -1,9 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, File
 from sqlmodel import Session
 
-from app.api.dependencies import get_valid_collection
+from app.core.valid_collection import get_valid_collection
 from app.database import get_session
-from app.models.common import SuccessResponse
 from app.models.collections import Collection
 from app.models.documents import DocumentResponse, DocumentListResponse
 from app.services.documents_service import (
@@ -51,11 +50,7 @@ async def get_document(
     return doc
 
 
-@router.delete(
-    "/{collection_id}/documents/{doc_id}",
-    response_model=SuccessResponse,
-    status_code=200,
-)
+@router.delete("/{collection_id}/documents/{doc_id}", status_code=204)
 async def delete_document(
     collection_id: str,
     doc_id: str,
@@ -65,4 +60,4 @@ async def delete_document(
     result = delete_document_service(session, collection_id, doc_id)
     if not result:
         raise HTTPException(status_code=404, detail="Document not found")
-    return {"message": f"Document {doc_id} deleted successfully"}
+    return Response(status_code=204)

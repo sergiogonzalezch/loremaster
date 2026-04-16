@@ -1,9 +1,7 @@
-# backend/app/api/routes/entity_drafts.py
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
-from app.api.dependencies import get_valid_collection
+from app.core.valid_collection import get_valid_collection
 from app.database import get_session
 from app.models.collections import Collection
 from app.models.entity_text_draft import (

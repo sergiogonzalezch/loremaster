@@ -1,8 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlmodel import Session
 
 from app.database import get_session
-from app.models.common import SuccessResponse
 from app.models.collections import (
     CreateCollectionRequest,
     CollectionResponse,
@@ -43,7 +42,7 @@ async def get_collection(
     return collection
 
 
-@router.delete("/{collection_id}", response_model=SuccessResponse)
+@router.delete("/{collection_id}", status_code=204)
 async def delete_collection(
     collection_id: str,
     session: Session = Depends(get_session),
@@ -51,4 +50,4 @@ async def delete_collection(
     result = delete_collection_service(session, collection_id)
     if not result:
         raise HTTPException(status_code=404, detail="Collection not found")
-    return {"message": f"Collection {collection_id} deleted successfully"}
+    return Response(status_code=204)

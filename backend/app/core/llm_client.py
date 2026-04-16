@@ -23,6 +23,8 @@ _llm_instance = OllamaLLM(
     num_predict=settings.max_tokens,
 )
 
+_chain = _PROMPT | _llm_instance | StrOutputParser()
+
 
 def get_chain():
-    return _PROMPT | _llm_instance | StrOutputParser()
+    return _chain

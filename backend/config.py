@@ -6,7 +6,9 @@ from typing import Optional
 class Settings(BaseSettings):
 
     project_name: str = "Lore Master API"
+    api_version: str = "1.0.0"
     environment: str = "local"
+    allowed_origins: list[str] = ["http://localhost:3000"]
 
     # LLM (Ollama)
     ollama_model: str = "llama3.2:latest"

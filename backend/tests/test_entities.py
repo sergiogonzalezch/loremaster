@@ -4,8 +4,6 @@ import pytest
 from sqlmodel import select
 
 from app.models.collections import Collection
-
-# from app.models.entities import Entity
 from app.models.entity_text_draft import DraftStatus, EntityTextDraft
 
 
@@ -62,11 +60,11 @@ async def test_update_entity(client, sample_collection, sample_entity):
 
 @pytest.mark.anyio
 async def test_delete_entity(client, sample_collection, sample_entity):
-    """ENT-05: Eliminar entidad retorna 200 y luego GET 404."""
+    """ENT-05: Eliminar entidad retorna 204 y luego GET 404."""
     response = await client.delete(
         f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}"
     )
-    assert response.status_code == 200
+    assert response.status_code == 204
 
     get_response = await client.get(
         f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}"
@@ -100,7 +98,7 @@ async def test_delete_entity_discards_pending_drafts(
     response = await client.delete(
         f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}"
     )
-    assert response.status_code == 200
+    assert response.status_code == 204
 
     drafts = db_session.exec(
         select(EntityTextDraft).where(EntityTextDraft.entity_id == sample_entity.id)

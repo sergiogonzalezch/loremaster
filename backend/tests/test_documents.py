@@ -62,11 +62,11 @@ async def test_get_document_by_id(client, sample_collection, sample_document):
 async def test_delete_document(
     client, mock_rag_engine, sample_collection, sample_document
 ):
-    """DOC-05: Eliminar documento retorna 200, GET 404 y borra chunks mock."""
+    """DOC-05: Eliminar documento retorna 204, GET 404 y borra chunks mock."""
     response = await client.delete(
         f"/api/v1/collections/{sample_collection.id}/documents/{sample_document.id}"
     )
-    assert response.status_code == 200
+    assert response.status_code == 204
 
     get_response = await client.get(
         f"/api/v1/collections/{sample_collection.id}/documents/{sample_document.id}"
@@ -125,12 +125,12 @@ async def test_ingest_unsupported_type_400(client, sample_collection):
 
 @pytest.mark.anyio
 async def test_ingest_no_filename_400(client, sample_collection):
-    """DOC-09: Ingesta sin filename retorna 400."""
+    """DOC-09: Ingesta sin filename retorna 422."""
     response = await client.post(
         f"/api/v1/collections/{sample_collection.id}/documents",
         files={"file": ("", b"sin nombre", "text/plain")},
     )
-    assert response.status_code == 400
+    assert response.status_code == 422
 
 
 @pytest.mark.anyio
