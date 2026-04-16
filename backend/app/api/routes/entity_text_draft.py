@@ -27,13 +27,11 @@ router = APIRouter(prefix="/collections", tags=["entity-drafts"])
     status_code=201,
 )
 async def generate_draft(
-    collection_id: str,
-    entity_id: str,
     request: GenerateEntityTextDraftRequest,
-    _: Entity = Depends(get_entity_or_404),
+    entity: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
-    return await generate_draft_service(session, entity_id, collection_id, request)
+    return generate_draft_service(session, entity, request)
 
 
 @router.get(
@@ -75,13 +73,11 @@ async def update_draft(
     response_model=EntityResponse,
 )
 async def confirm_draft(
-    collection_id: str,
-    entity_id: str,
     draft_id: str,
-    _: Entity = Depends(get_entity_or_404),
+    entity: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
-    result = confirm_draft_service(session, draft_id, entity_id, collection_id)
+    result = confirm_draft_service(session, draft_id, entity)
     if not result:
         raise HTTPException(status_code=404, detail="Draft not found")
     return result

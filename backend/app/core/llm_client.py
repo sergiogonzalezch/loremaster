@@ -16,16 +16,11 @@ _PROMPT = ChatPromptTemplate.from_messages(
     ]
 )
 
-
-_llm_instance = OllamaLLM(
+_llm = OllamaLLM(
     model=settings.ollama_model,
     base_url=settings.ollama_base_url,
     temperature=settings.temperature,
     num_predict=settings.max_tokens,
 )
 
-_chain = _PROMPT | _llm_instance | StrOutputParser()
-
-
-def get_chain():
-    return _chain
+chain = _PROMPT | _llm | StrOutputParser()

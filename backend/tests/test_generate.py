@@ -59,9 +59,15 @@ async def test_generate_empty_rag_results(
 
 @pytest.mark.anyio
 async def test_generate_no_documents_422(
-    client, mock_rag_engine, mock_llm, sample_collection
+    client, mock_llm, monkeypatch, sample_collection
 ):
-    """GEN-04: Colección sin documentos retorna 422."""
+    """GEN-04: Colección sin documentos ingested retorna 422 por contexto vacío."""
+
+    def _empty_search(*, collection_id: str, query: str, top_k: int | None = None):
+        return []
+
+    monkeypatch.setattr("app.core.rag_generate.search_context", _empty_search)
+
     response = await client.post(
         f"/api/v1/collections/{sample_collection.id}/generate/text",
         json={"query": "Describe el clima"},
@@ -89,11 +95,7 @@ async def test_generate_llm_unavailable_503(
         def invoke(self, payload: dict):
             raise Exception("LLM down")
 
-    def _broken_get_chain():
-        return BrokenChain()
-
-    monkeypatch.setattr("app.core.llm_client.get_chain", _broken_get_chain)
-    monkeypatch.setattr("app.core.rag_generate.get_chain", _broken_get_chain)
+    monkeypatch.setattr("app.core.rag_generate.chain", BrokenChain())
 
     response = await client.post(
         f"/api/v1/collections/{sample_collection.id}/generate/text",

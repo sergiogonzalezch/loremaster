@@ -38,13 +38,6 @@ def list_collections_service(session: Session) -> list[Collection]:
     return session.exec(stmt).all()
 
 
-def get_collection_service(session: Session, collection_id: str) -> Collection | None:
-    collection = session.get(Collection, collection_id)
-    if not collection or collection.is_deleted:
-        return None
-    return collection
-
-
 def _cascade_soft_delete_children(session: Session, collection_id: str) -> None:
     for model in (Document, Entity):
         stmt = select(model).where(
@@ -58,20 +51,15 @@ def _cascade_soft_delete_children(session: Session, collection_id: str) -> None:
     logger.info("Discarded %d pending draft(s) for collection %s", count, collection_id)
 
 
-def delete_collection_service(session: Session, collection_id: str):
-    collection = session.get(Collection, collection_id)
-    if not collection or collection.is_deleted:
-        return False
-
-    _cascade_soft_delete_children(session, collection_id)
+def delete_collection_service(session: Session, collection: Collection) -> bool:
+    _cascade_soft_delete_children(session, collection.id)
     soft_delete(session, collection)
-
     session.commit()
-    logger.info("Collection %s and its children soft-deleted", collection_id)
+    logger.info("Collection %s and its children soft-deleted", collection.id)
 
     try:
-        delete_collection_vectors(collection_id)
+        delete_collection_vectors(collection.id)
     except Exception as e:
-        logger.error("Failed to delete vectors for collection %s: %s", collection_id, e)
+        logger.error("Failed to delete vectors for collection %s: %s", collection.id, e)
 
     return True

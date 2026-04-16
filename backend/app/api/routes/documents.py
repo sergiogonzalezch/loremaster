@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Response, UploadFile, File
 from sqlmodel import Session
 
-from app.core.valid_collection import get_valid_collection, get_document_or_404
+from app.core.valid_collection import get_collection_or_404, get_document_or_404
 from app.database import get_session
 from app.models.collections import Collection
 from app.models.documents import Document, DocumentResponse, DocumentListResponse
@@ -20,7 +20,7 @@ router = APIRouter(prefix="/collections", tags=["documents"])
 async def ingest(
     collection_id: str,
     file: UploadFile = File(...),
-    _: Collection = Depends(get_valid_collection),
+    _: Collection = Depends(get_collection_or_404),
     session: Session = Depends(get_session),
 ):
     return await ingest_document_service(session, file, collection_id)
@@ -29,7 +29,7 @@ async def ingest(
 @router.get("/{collection_id}/documents", response_model=DocumentListResponse)
 async def get_documents(
     collection_id: str,
-    _: Collection = Depends(get_valid_collection),
+    _: Collection = Depends(get_collection_or_404),
     session: Session = Depends(get_session),
 ):
     docs = list_documents_service(session, collection_id)
@@ -45,10 +45,8 @@ async def get_document(
 
 @router.delete("/{collection_id}/documents/{doc_id}", status_code=204)
 async def delete_document(
-    collection_id: str,
-    doc_id: str,
-    _: Document = Depends(get_document_or_404),
+    doc: Document = Depends(get_document_or_404),
     session: Session = Depends(get_session),
 ):
-    delete_document_service(session, collection_id, doc_id)
+    delete_document_service(session, doc)
     return Response(status_code=204)

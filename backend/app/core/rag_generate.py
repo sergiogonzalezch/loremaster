@@ -1,7 +1,7 @@
 import logging
 
 from app.core.rag_engine import search_context
-from app.core.llm_client import get_chain
+from app.core.llm_client import chain
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ def generate_rag_response(
         raise ValueError("No context available")
 
     try:
-        answer = get_chain().invoke({"context": context, "query": query})
+        answer = chain.invoke({"context": context, "query": query})
     except Exception as e:
         logger.error("LLM generation failed for collection %s: %s", collection_id, e)
         raise RuntimeError("LLM service unavailable") from e

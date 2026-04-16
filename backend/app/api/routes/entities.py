@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Response
 from sqlmodel import Session
 
-from app.core.valid_collection import get_valid_collection, get_entity_or_404
+from app.core.valid_collection import get_collection_or_404, get_entity_or_404
 from app.database import get_session
 from app.models.collections import Collection
 from app.models.entities import (
@@ -25,7 +25,7 @@ router = APIRouter(prefix="/collections", tags=["entities"])
 async def create_entity(
     collection_id: str,
     request: CreateEntityRequest,
-    _: Collection = Depends(get_valid_collection),
+    _: Collection = Depends(get_collection_or_404),
     session: Session = Depends(get_session),
 ):
     return create_entity_service(session, request, collection_id)
@@ -34,7 +34,7 @@ async def create_entity(
 @router.get("/{collection_id}/entities", response_model=EntityListResponse)
 async def list_entities(
     collection_id: str,
-    _: Collection = Depends(get_valid_collection),
+    _: Collection = Depends(get_collection_or_404),
     session: Session = Depends(get_session),
 ):
     entities = list_entities_service(session, collection_id)
@@ -50,21 +50,17 @@ async def get_entity(
 
 @router.put("/{collection_id}/entities/{entity_id}", response_model=EntityResponse)
 async def update_entity(
-    collection_id: str,
-    entity_id: str,
     request: UpdateEntityRequest,
-    _: Entity = Depends(get_entity_or_404),
+    entity: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
-    return update_entity_service(session, entity_id, collection_id, request)
+    return update_entity_service(session, entity, request)
 
 
 @router.delete("/{collection_id}/entities/{entity_id}", status_code=204)
 async def delete_entity(
-    collection_id: str,
-    entity_id: str,
-    _: Entity = Depends(get_entity_or_404),
+    entity: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
-    delete_entity_service(session, entity_id, collection_id)
+    delete_entity_service(session, entity)
     return Response(status_code=204)

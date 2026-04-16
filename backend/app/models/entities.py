@@ -44,16 +44,14 @@ class Entity(SQLModel, table=True):
 # ── API schemas (Pydantic — no generan tablas) ────────────────────────────────
 
 
-class CreateEntityRequest(BaseModel):
+class EntityRequest(BaseModel):
     type: EntityType
-    name: str
-    description: str = ""
+    name: str = Field(..., min_length=1, max_length=255)
+    description: str = Field(default="", max_length=2000)
 
 
-class UpdateEntityRequest(BaseModel):
-    type: EntityType
-    name: str
-    description: str = ""
+CreateEntityRequest = EntityRequest
+UpdateEntityRequest = EntityRequest
 
 
 class EntityResponse(BaseModel):
