@@ -13,7 +13,7 @@ from qdrant_client.models import (
 )
 from sentence_transformers import SentenceTransformer
 
-from config import settings
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
