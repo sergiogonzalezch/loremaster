@@ -30,7 +30,7 @@ async def generate_draft(
     collection_id: str,
     entity_id: str,
     request: GenerateEntityTextDraftRequest,
-    entity: Entity = Depends(get_entity_or_404),
+    _: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
     return await generate_draft_service(session, entity_id, collection_id, request)
@@ -43,7 +43,7 @@ async def generate_draft(
 async def list_drafts(
     collection_id: str,
     entity_id: str,
-    entity: Entity = Depends(get_entity_or_404),
+    _: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
     drafts = list_drafts_service(session, entity_id, collection_id)
@@ -59,7 +59,7 @@ async def update_draft(
     entity_id: str,
     draft_id: str,
     request: UpdateEntityTextDraftContentRequest,
-    entity: Entity = Depends(get_entity_or_404),
+    _: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
     draft = update_draft_content_service(
@@ -78,7 +78,7 @@ async def confirm_draft(
     collection_id: str,
     entity_id: str,
     draft_id: str,
-    entity: Entity = Depends(get_entity_or_404),
+    _: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
     result = confirm_draft_service(session, draft_id, entity_id, collection_id)
@@ -95,7 +95,7 @@ async def discard_draft(
     collection_id: str,
     entity_id: str,
     draft_id: str,
-    entity: Entity = Depends(get_entity_or_404),
+    _: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
     draft = discard_draft_service(session, draft_id, entity_id, collection_id)
