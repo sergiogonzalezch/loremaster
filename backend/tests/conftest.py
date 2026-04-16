@@ -44,6 +44,11 @@ from app.models.documents import Document, DocumentStatus
 from app.models.entities import Entity, EntityType
 
 
+@pytest.fixture(params=["asyncio"])
+def anyio_backend(request):
+    return request.param
+
+
 @pytest.fixture
 def db_session() -> Generator[Session, None, None]:
     """FX-01: SQLite in-memory session with fresh schema per test."""

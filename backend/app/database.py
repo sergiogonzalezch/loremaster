@@ -1,30 +1,24 @@
 from collections.abc import Generator
 
-from sqlalchemy import event
+from sqlalchemy import Engine
 from sqlmodel import SQLModel, Session, create_engine
 from config import settings
 
-connect_args = {}
-if settings.database_url.startswith("sqlite"):
-    connect_args["check_same_thread"] = False
 
-engine = create_engine(
-    settings.database_url,
-    connect_args=connect_args,
-    echo=False,
-)
-
-
-if settings.database_url.startswith("sqlite"):
-
-    @event.listens_for(engine, "connect")
-    def _set_sqlite_pragma(dbapi_connection, _connection_record):
-        cursor = dbapi_connection.cursor()
-        cursor.execute("PRAGMA foreign_keys=ON;")
-        cursor.close()
+def _build_engine() -> Engine:
+    # To switch SQL backends change DATABASE_URL in .env.
+    # Add engine-specific kwargs here if the new engine requires them
+    # (e.g. pool_size, max_overflow, ssl args for MySQL/Aurora, etc.).
+    return create_engine(
+        settings.database_url,
+        pool_pre_ping=True,
+    )
 
 
-def create_db_and_tables():
+engine = _build_engine()
+
+
+def create_db_and_tables() -> None:
     SQLModel.metadata.create_all(engine)
 
 

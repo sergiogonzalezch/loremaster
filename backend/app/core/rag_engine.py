@@ -1,21 +1,21 @@
+import logging
+import uuid
+
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
     Distance,
-    VectorParams,
-    PointStruct,
-    Filter,
     FieldCondition,
+    Filter,
     MatchValue,
+    PointStruct,
+    VectorParams,
 )
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
-import logging
-import uuid
+
 from config import settings
 
 logger = logging.getLogger(__name__)
-
-EMBEDDING_DIMS = 384
 
 _qdrant_client = QdrantClient(url=settings.qdrant_url)
 _embedding_model = SentenceTransformer(settings.embedding_model)
@@ -26,19 +26,23 @@ _splitter = RecursiveCharacterTextSplitter(
 )
 
 
-def _ensure_qdrant_collection(collection_id: str):
+def _collection_exists(name: str) -> bool:
+    existing = {c.name for c in _qdrant_client.get_collections().collections}
+    return name in existing
+
+
+def _ensure_qdrant_collection(collection_id: str) -> None:
     name = f"lm_{collection_id}"
-    existing_collections = {
-        c.name for c in _qdrant_client.get_collections().collections
-    }
-    if name not in existing_collections:
+    if not _collection_exists(name):
         _qdrant_client.create_collection(
             collection_name=name,
-            vectors_config=VectorParams(size=EMBEDDING_DIMS, distance=Distance.COSINE),
+            vectors_config=VectorParams(
+                size=settings.embedding_dims, distance=Distance.COSINE
+            ),
         )
 
 
-def ingest_chunks(doc_id: str, collection_id: str, text: str):
+def ingest_chunks(*, doc_id: str, collection_id: str, text: str) -> int:
     chunks = _splitter.split_text(text)
     if not chunks:
         return 0
@@ -57,10 +61,7 @@ def ingest_chunks(doc_id: str, collection_id: str, text: str):
         )
         for i in range(len(chunks))
     ]
-    _qdrant_client.upsert(
-        collection_name=f"lm_{collection_id}",
-        points=points,
-    )
+    _qdrant_client.upsert(collection_name=f"lm_{collection_id}", points=points)
     logger.info(
         "Ingested %d chunks for doc %s into collection %s",
         len(chunks),
@@ -72,10 +73,7 @@ def ingest_chunks(doc_id: str, collection_id: str, text: str):
 
 def delete_collection_vectors(collection_id: str) -> bool:
     name = f"lm_{collection_id}"
-    existing_collections = {
-        c.name for c in _qdrant_client.get_collections().collections
-    }
-    if name not in existing_collections:
+    if not _collection_exists(name):
         return False
     _qdrant_client.delete_collection(collection_name=name)
     logger.info("Deleted vector collection lm_%s", collection_id)
@@ -84,10 +82,7 @@ def delete_collection_vectors(collection_id: str) -> bool:
 
 def delete_document_chunks(collection_id: str, doc_id: str) -> int:
     name = f"lm_{collection_id}"
-    existing_collections = {
-        c.name for c in _qdrant_client.get_collections().collections
-    }
-    if name not in existing_collections:
+    if not _collection_exists(name):
         return 0
     result = _qdrant_client.delete(
         collection_name=name,
@@ -98,20 +93,18 @@ def delete_document_chunks(collection_id: str, doc_id: str) -> int:
     return result.operation_id if result else 0
 
 
-def search_context(collection_id: str, query: str, top_k: int = 4) -> list[str]:
+def search_context(
+    collection_id: str, query: str, top_k: int | None = None
+) -> list[str]:
     name = f"lm_{collection_id}"
-    existing_collections = {
-        c.name for c in _qdrant_client.get_collections().collections
-    }
-    if name not in existing_collections:
+    if not _collection_exists(name):
         return []
-
+    if top_k is None:
+        top_k = settings.top_k
     query_vector = _embedding_model.encode([query])[0].tolist()
-
     results = _qdrant_client.query_points(
         collection_name=name, query=query_vector, limit=top_k, with_payload=True
     )
-
     logger.debug(
         "Search in lm_%s returned %d results", collection_id, len(results.points)
     )

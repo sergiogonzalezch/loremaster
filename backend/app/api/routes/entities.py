@@ -1,9 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlmodel import Session
 
-from app.api.dependencies import get_valid_collection
+from app.core.valid_collection import get_valid_collection
 from app.database import get_session
-from app.models.common import SuccessResponse
 from app.models.collections import Collection
 from app.models.entities import (
     CreateEntityRequest,
@@ -22,7 +21,7 @@ from app.services.entities_service import (
 router = APIRouter(prefix="/collections", tags=["entities"])
 
 
-@router.post("/{collection_id}/entities", response_model=EntityResponse)
+@router.post("/{collection_id}/entities", response_model=EntityResponse, status_code=201)
 async def create_entity(
     collection_id: str,
     request: CreateEntityRequest,
@@ -69,7 +68,7 @@ async def update_entity(
     return entity
 
 
-@router.delete("/{collection_id}/entities/{entity_id}", response_model=SuccessResponse)
+@router.delete("/{collection_id}/entities/{entity_id}", status_code=204)
 async def delete_entity(
     collection_id: str,
     entity_id: str,
@@ -79,4 +78,4 @@ async def delete_entity(
     success = delete_entity_service(session, entity_id, collection_id)
     if not success:
         raise HTTPException(status_code=404, detail="Entity not found")
-    return {"message": "Deleted successfully"}
+    return Response(status_code=204)
