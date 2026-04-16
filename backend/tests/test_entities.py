@@ -4,7 +4,8 @@ import pytest
 from sqlmodel import select
 
 from app.models.collections import Collection
-from app.models.entities import Entity
+
+# from app.models.entities import Entity
 from app.models.entity_text_draft import DraftStatus, EntityTextDraft
 
 
@@ -27,7 +28,9 @@ async def test_list_entities(client, sample_collection):
         {"type": "faction", "name": "C", "description": "c"},
     ]
     for payload in payloads:
-        await client.post(f"/api/v1/collections/{sample_collection.id}/entities", json=payload)
+        await client.post(
+            f"/api/v1/collections/{sample_collection.id}/entities", json=payload
+        )
 
     response = await client.get(f"/api/v1/collections/{sample_collection.id}/entities")
     assert response.status_code == 200
@@ -72,7 +75,9 @@ async def test_delete_entity(client, sample_collection, sample_entity):
 
 
 @pytest.mark.anyio
-async def test_delete_entity_discards_pending_drafts(client, db_session, sample_collection, sample_entity):
+async def test_delete_entity_discards_pending_drafts(
+    client, db_session, sample_collection, sample_entity
+):
     """ENT-06: Eliminar entidad descarta sus drafts pending."""
     d1 = EntityTextDraft(
         entity_id=sample_entity.id,
@@ -107,7 +112,9 @@ async def test_delete_entity_discards_pending_drafts(client, db_session, sample_
 @pytest.mark.anyio
 async def test_deleted_entity_not_in_list(client, sample_collection, sample_entity):
     """ENT-07: Entidad eliminada no aparece en list."""
-    await client.delete(f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}")
+    await client.delete(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}"
+    )
 
     response = await client.get(f"/api/v1/collections/{sample_collection.id}/entities")
     assert response.status_code == 200
@@ -121,7 +128,11 @@ async def test_all_entity_types(client, sample_collection):
     for entity_type in ("character", "scene", "faction", "item"):
         response = await client.post(
             f"/api/v1/collections/{sample_collection.id}/entities",
-            json={"type": entity_type, "name": f"{entity_type}-name", "description": "ok"},
+            json={
+                "type": entity_type,
+                "name": f"{entity_type}-name",
+                "description": "ok",
+            },
         )
         assert response.status_code == 201
 
@@ -139,7 +150,9 @@ async def test_create_invalid_type_422(client, sample_collection):
 @pytest.mark.anyio
 async def test_get_nonexistent_entity_404(client, sample_collection):
     """ENT-10: GET entidad inexistente retorna 404."""
-    response = await client.get(f"/api/v1/collections/{sample_collection.id}/entities/{uuid.uuid4()}")
+    response = await client.get(
+        f"/api/v1/collections/{sample_collection.id}/entities/{uuid.uuid4()}"
+    )
     assert response.status_code == 404
 
 
@@ -161,5 +174,7 @@ async def test_entity_wrong_collection_404(client, db_session, sample_entity):
     db_session.commit()
     db_session.refresh(col_b)
 
-    response = await client.get(f"/api/v1/collections/{col_b.id}/entities/{sample_entity.id}")
+    response = await client.get(
+        f"/api/v1/collections/{col_b.id}/entities/{sample_entity.id}"
+    )
     assert response.status_code == 404
