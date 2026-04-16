@@ -3,7 +3,7 @@ import uuid
 import pytest
 from sqlmodel import select
 
-# from app.models.collections import Collection
+from app.models.collections import Collection
 from app.models.documents import Document
 from app.models.entities import Entity
 from app.models.entity_text_draft import DraftStatus, EntityTextDraft
