@@ -1,5 +1,6 @@
 from collections.abc import Generator
 
+from sqlalchemy import event
 from sqlmodel import SQLModel, Session, create_engine
 from config import settings
 
@@ -12,6 +13,16 @@ engine = create_engine(
     connect_args=connect_args,
     echo=False,
 )
+
+
+# Ensure SQLite enforces FK constraints for every new DB-API connection.
+if settings.database_url.startswith("sqlite"):
+
+    @event.listens_for(engine, "connect")
+    def _set_sqlite_pragma(dbapi_connection, _connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON;")
+        cursor.close()
 
 
 def create_db_and_tables():
