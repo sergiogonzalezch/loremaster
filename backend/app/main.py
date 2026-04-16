@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import create_db_and_tables
-from config import settings
+from app.core.config import settings
 from app.api.routes import generate, documents, collections, entities, entity_text_draft
 
 logger = logging.getLogger(__name__)
