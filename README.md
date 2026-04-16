@@ -9,23 +9,22 @@ Plataforma RAG para escritores, narradores de rol (RPG) y diseñadores de mundos
 - Genera texto narrativo expandido, anclado en el lore cargado por el usuario.
 - Gestiona entidades del mundo (personajes, escenarios, facciones, ítems).
 - Genera borradores de lore para entidades usando RAG y permite confirmarlos o descartarlos.
-- (Roadmap) Generación de imágenes con ComfyUI + Flux.2 Klein 4B.
 
 ## Stack
 
-| Capa | Tecnología |
-|---|---|
-| API | FastAPI + Uvicorn |
-| Validación | Pydantic v2 |
-| RAG | LangChain |
-| Embeddings | sentence-transformers (`paraphrase-multilingual-MiniLM-L12-v2`, 384d) |
-| Vector DB | Qdrant |
-| LLM local | Ollama (`llama3.2:latest`) |
-| Caché semántico | Redis (similitud ≥ 0.95, TTL 3600s) |
-| BD relacional | PostgreSQL |
-| Almacenamiento | LocalStack S3 (dev) / AWS S3 o Cloudflare R2 (prod) |
-| Observabilidad | Prometheus + Grafana |
-| Contenerización | Docker Compose |
+| Capa | Tecnología | Estado |
+|---|---|---|
+| API | FastAPI + Uvicorn | ✅ activo |
+| Validación | Pydantic v2 + SQLModel | ✅ activo |
+| RAG | LangChain | ✅ activo |
+| Embeddings | sentence-transformers (`paraphrase-multilingual-MiniLM-L12-v2`, 384d) | ✅ activo |
+| Vector DB | Qdrant | ✅ activo |
+| LLM local | Ollama (`llama3.2:latest`) | ✅ activo |
+| BD relacional | PostgreSQL (SQLModel) | 🔜 staged |
+| Caché semántico | Redis (similitud ≥ 0.95, TTL 3600s) | 🔜 staged |
+| Almacenamiento | LocalStack S3 (dev) / AWS S3 (prod) | 🔜 staged |
+| Observabilidad | Prometheus + Grafana | 🔜 staged |
+| Contenerización | Docker Compose | 🔜 staged |
 
 ## Puesta en marcha local
 
@@ -50,20 +49,19 @@ pip install -r requirements.txt
 ### Variables de entorno
 
 ```bash
-cp .env.example .env
+cp backend/.env.example backend/.env
 ```
 
 Variables clave en `backend/.env`:
 
-| Variable | Por defecto |
-|---|---|
-| `OLLAMA_BASE_URL` | `http://localhost:11434` |
-| `OLLAMA_MODEL` | `llama3.2:latest` |
-| `QDRANT_URL` | `http://localhost:6333` |
-| `QDRANT_COLLECTION` | `loremaster` |
-| `REDIS_URL` | `redis://localhost:6379/0` |
-| `DATABASE_URL` | `postgresql://loremaster:loremaster@localhost:5432/loremaster` |
-| `ALLOWED_ORIGINS` | `["http://localhost:3000"]` |
+| Variable | Por defecto | Propósito |
+|---|---|---|
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Endpoint de Ollama |
+| `OLLAMA_MODEL` | `llama3.2:latest` | Modelo LLM |
+| `QDRANT_URL` | `http://localhost:6333` | Base de datos vectorial |
+| `REDIS_URL` | `redis://localhost:6379/0` | Caché semántico (no integrado aún) |
+| `DATABASE_URL` | `postgresql://loremaster:loremaster@localhost:5432/loremaster` | PostgreSQL |
+| `ALLOWED_ORIGINS` | `["http://localhost:3000"]` | CORS |
 
 ### Levantar servicios de soporte
 
@@ -72,16 +70,14 @@ cd backend
 docker-compose up -d
 ```
 
-Servicios disponibles:
-
 | Servicio | Puerto | Propósito |
 |---|---|---|
 | Qdrant | 6333 | Base de datos vectorial |
 | PostgreSQL | 5432 | Metadatos relacionales |
-| Redis | 6379 | Caché semántico |
-| LocalStack | 4566 | S3 local |
-| Prometheus | 9090 | Scraping de métricas |
-| Grafana | 3000 | Dashboard (admin/admin) |
+| Redis | 6379 | Caché semántico (staged) |
+| LocalStack | 4566 | S3 local (staged) |
+| Prometheus | 9090 | Scraping de métricas (staged) |
+| Grafana | 3000 | Dashboard — admin/admin (staged) |
 
 ### Ejecutar la API
 
@@ -92,85 +88,113 @@ uvicorn app.main:app --reload
 
 Swagger UI disponible en: `http://localhost:8000/docs`
 
-## API — Endpoints principales
+## API — Endpoints
 
 Todos bajo `/api/v1/`:
 
 ### Colecciones
-- `POST /collections/` — crear colección → `201`
-- `GET /collections/` — listar colecciones
-- `GET /collections/{id}` — obtener colección
-- `DELETE /collections/{id}` — eliminar colección → `204`
+
+| Método | Ruta | Descripción | Status |
+|---|---|---|---|
+| `POST` | `/collections/` | Crear colección | 201 |
+| `GET` | `/collections/` | Listar colecciones | 200 |
+| `GET` | `/collections/{id}` | Obtener colección | 200 |
+| `DELETE` | `/collections/{id}` | Eliminar colección (cascade) | 204 |
 
 ### Documentos
-- `POST /collections/{id}/documents` — subir documento (PDF/TXT, max 50 MB) → `201`
-- `GET /collections/{id}/documents` — listar documentos
-- `GET /collections/{id}/documents/{doc_id}` — obtener documento
-- `DELETE /collections/{id}/documents/{doc_id}` — eliminar documento → `204`
+
+| Método | Ruta | Descripción | Status |
+|---|---|---|---|
+| `POST` | `/collections/{id}/documents` | Subir documento PDF/TXT (max 50 MB) | 201 |
+| `GET` | `/collections/{id}/documents` | Listar documentos | 200 |
+| `GET` | `/collections/{id}/documents/{doc_id}` | Obtener documento | 200 |
+| `DELETE` | `/collections/{id}/documents/{doc_id}` | Eliminar documento | 204 |
 
 ### Entidades
-- `POST /collections/{id}/entities` — crear entidad → `201`
-- `GET /collections/{id}/entities` — listar entidades
-- `GET /collections/{id}/entities/{entity_id}` — obtener entidad
-- `PUT /collections/{id}/entities/{entity_id}` — actualizar entidad
-- `DELETE /collections/{id}/entities/{entity_id}` — eliminar entidad → `204`
 
-### Borradores de entidad
-- `POST /collections/{id}/entities/{entity_id}/generate` — generar borrador RAG → `201`
-- `GET /collections/{id}/entities/{entity_id}/drafts` — listar borradores
-- `PATCH /collections/{id}/entities/{entity_id}/drafts/{draft_id}` — editar contenido
-- `POST /collections/{id}/entities/{entity_id}/drafts/{draft_id}/confirm` — confirmar borrador (actualiza la entidad)
-- `DELETE /collections/{id}/entities/{entity_id}/drafts/{draft_id}` — descartar borrador
+| Método | Ruta | Descripción | Status |
+|---|---|---|---|
+| `POST` | `/collections/{id}/entities` | Crear entidad | 201 |
+| `GET` | `/collections/{id}/entities` | Listar entidades | 200 |
+| `GET` | `/collections/{id}/entities/{entity_id}` | Obtener entidad | 200 |
+| `PUT` | `/collections/{id}/entities/{entity_id}` | Actualizar entidad | 200 |
+| `DELETE` | `/collections/{id}/entities/{entity_id}` | Eliminar entidad | 204 |
+
+Tipos de entidad: `character`, `scene`, `faction`, `item`.
+
+### Borradores de entidad (RAG)
+
+| Método | Ruta | Descripción | Status |
+|---|---|---|---|
+| `POST` | `/collections/{id}/entities/{entity_id}/generate` | Generar borrador con RAG | 201 |
+| `GET` | `/collections/{id}/entities/{entity_id}/drafts` | Listar borradores | 200 |
+| `PATCH` | `/collections/{id}/entities/{entity_id}/drafts/{draft_id}` | Editar contenido | 200 |
+| `POST` | `/collections/{id}/entities/{entity_id}/drafts/{draft_id}/confirm` | Confirmar borrador → actualiza la entidad | 200 |
+| `DELETE` | `/collections/{id}/entities/{entity_id}/drafts/{draft_id}` | Descartar borrador | 200 |
+
+Máximo 5 borradores pendientes por entidad. Confirmar uno descarta automáticamente los demás.
 
 ### Generación
-- `POST /collections/{id}/generate/text` — generar texto RAG a partir de una query
+
+| Método | Ruta | Descripción | Status |
+|---|---|---|---|
+| `POST` | `/collections/{id}/generate/text` | Generar texto RAG a partir de una query | 200 |
 
 ## Estructura del proyecto
 
 ```
 loremaster/
 ├── backend/
-│   ├── config.py                   # Settings via pydantic-settings (.env)
 │   ├── requirements.txt
+│   ├── requirements-dev.txt
 │   ├── docker-compose.yml
 │   ├── .env.example
 │   └── app/
-│       ├── main.py                 # FastAPI app, CORS, lifespan, routers
-│       ├── database.py             # Engine SQL y sesión (SQLModel)
+│       ├── main.py                     # FastAPI app, CORS, lifespan, routers
+│       ├── database.py                 # Engine SQL y sesión (SQLModel)
 │       ├── models/
+│       │   ├── collections.py          # Collection + schemas de request/response
+│       │   ├── documents.py            # Document + DocumentStatus
+│       │   ├── entities.py             # Entity + EntityType + EntityRequest
+│       │   ├── entity_text_draft.py    # EntityTextDraft + DraftStatus
+│       │   └── generate.py             # GenerateTextRequest/Response
+│       ├── api/routes/
 │       │   ├── collections.py
 │       │   ├── documents.py
 │       │   ├── entities.py
 │       │   ├── entity_text_draft.py
 │       │   └── generate.py
-│       ├── api/
-│       │   └── routes/
-│       │       ├── collections.py
-│       │       ├── documents.py
-│       │       ├── entities.py
-│       │       ├── entity_text_draft.py
-│       │       └── generate.py
 │       ├── core/
-│       │   ├── rag_engine.py       # Qdrant: ingest, search, delete
-│       │   ├── rag_generate.py     # Orquestador RAG → LLM
-│       │   ├── llm_client.py       # Ollama via LangChain
-│       │   ├── text_extractor.py   # Extracción PDF/TXT
-│       │   ├── valid_collection.py # Dependency FastAPI: valida colección activa
-│       │   └── common.py           # Helpers genéricos de DB (soft_delete, queries)
+│       │   ├── config.py               # Pydantic Settings — carga desde .env
+│       │   ├── lifespan.py             # Health checks al arrancar (Qdrant, Ollama)
+│       │   ├── rag_engine.py           # Qdrant: ingest, search, delete, ping
+│       │   ├── rag_generate.py         # Orquestador RAG → LLM
+│       │   ├── llm_client.py           # OllamaLLM + LangChain chain
+│       │   ├── text_extractor.py       # Extracción de texto PDF/TXT
+│       │   ├── valid_collection.py     # Dependencies FastAPI: get_collection_or_404, get_entity_or_404, get_document_or_404
+│       │   └── common.py              # Helpers genéricos de DB (soft_delete, get_active_by_id, list_active_by_collection)
 │       └── services/
-│           ├── collection_service.py
-│           ├── documents_service.py
-│           ├── entities_service.py
-│           ├── entity_text_draft_service.py
-│           └── generate_service.py
-└── docs/
-    ├── DOCUMENTATION.md
-    └── WEEKLY_CHECKLISTS.md
+│           ├── collection_service.py   # CRUD + cascade soft-delete
+│           ├── documents_service.py    # Ingest (PDF/TXT), list, delete
+│           ├── entities_service.py     # CRUD con unicidad de nombre por colección
+│           ├── entity_text_draft_service.py  # Generación, confirmación y descarte de borradores RAG
+│           └── generate_service.py     # Generación de texto libre vía RAG
+└── tests/
+    ├── conftest.py                     # Fixtures: DB in-memory, client, mocks LLM/RAG
+    ├── test_collections.py
+    ├── test_documents.py
+    ├── test_entities.py
+    ├── test_entity_drafts.py
+    └── test_generate.py
 ```
 
-## Estado actual
+## Flujo de datos
 
-> **Pipeline RAG funcional end-to-end.** Ingesta de documentos (PDF/TXT) → chunking → embeddings → Qdrant → búsqueda semántica → Ollama → respuesta. Persistencia en PostgreSQL via SQLModel. Gestión completa de entidades con sistema de borradores RAG confirmables. Tests: 58 passing.
+```
+Usuario → POST /documents  →  text_extractor  →  chunking  →  embeddings  →  Qdrant
+Usuario → POST /generate   →  Qdrant search   →  LangChain prompt  →  Ollama  →  respuesta
+Usuario → POST /entities/{id}/generate  →  entity context + Qdrant  →  Ollama  →  draft
+```
 
 ## Desarrollo
 
@@ -180,4 +204,13 @@ cd backend && black .
 
 # Ejecutar tests
 cd backend && pytest
+
+# Tests con detalle
+cd backend && pytest -v
 ```
+
+## Estado actual
+
+Pipeline RAG funcional end-to-end. Ingesta de documentos → chunking → embeddings → Qdrant → búsqueda semántica → Ollama → respuesta. Persistencia relacional en PostgreSQL via SQLModel. Gestión completa de entidades con sistema de borradores RAG confirmables. **58 tests passing.**
+
+Redis, LocalStack S3 y Prometheus/Grafana están presentes en el stack Docker pero pendientes de integración en la capa de servicios.
