@@ -15,7 +15,6 @@ engine = create_engine(
 )
 
 
-# Ensure SQLite enforces FK constraints for every new DB-API connection.
 if settings.database_url.startswith("sqlite"):
 
     @event.listens_for(engine, "connect")
