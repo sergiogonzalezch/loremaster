@@ -5,7 +5,9 @@ import pytest
 
 
 @pytest.mark.anyio
-async def test_generate_text(client, mock_rag_engine, mock_llm, sample_collection, sample_document):
+async def test_generate_text(
+    client, mock_rag_engine, mock_llm, sample_collection, sample_document
+):
     """GEN-01: Generación de texto retorna answer, query y sources_count."""
     response = await client.post(
         f"/api/v1/collections/{sample_collection.id}/generate/text",
@@ -19,7 +21,9 @@ async def test_generate_text(client, mock_rag_engine, mock_llm, sample_collectio
 
 
 @pytest.mark.anyio
-async def test_generate_uses_rag_context(client, mock_rag_engine, mock_llm, sample_collection, sample_document):
+async def test_generate_uses_rag_context(
+    client, mock_rag_engine, mock_llm, sample_collection, sample_document
+):
     """GEN-02: generate usa search_context con collection_id y query."""
     query = "Qué facciones existen"
     response = await client.post(
@@ -34,7 +38,9 @@ async def test_generate_uses_rag_context(client, mock_rag_engine, mock_llm, samp
 
 
 @pytest.mark.anyio
-async def test_generate_empty_rag_results(client, mock_llm, monkeypatch, sample_collection, sample_document):
+async def test_generate_empty_rag_results(
+    client, mock_llm, monkeypatch, sample_collection, sample_document
+):
     """GEN-03: Si search_context retorna [], responde 422 por no context."""
 
     def _empty_search(*, collection_id: str, query: str, top_k: int | None = None):
@@ -52,7 +58,9 @@ async def test_generate_empty_rag_results(client, mock_llm, monkeypatch, sample_
 
 
 @pytest.mark.anyio
-async def test_generate_no_documents_422(client, mock_rag_engine, mock_llm, sample_collection):
+async def test_generate_no_documents_422(
+    client, mock_rag_engine, mock_llm, sample_collection
+):
     """GEN-04: Colección sin documentos retorna 422."""
     response = await client.post(
         f"/api/v1/collections/{sample_collection.id}/generate/text",
@@ -72,7 +80,9 @@ async def test_generate_nonexistent_collection_404(client, mock_rag_engine, mock
 
 
 @pytest.mark.anyio
-async def test_generate_llm_unavailable_503(client, mock_rag_engine, monkeypatch, sample_collection, sample_document):
+async def test_generate_llm_unavailable_503(
+    client, mock_rag_engine, monkeypatch, sample_collection, sample_document
+):
     """GEN-06: Si chain.invoke falla, retorna 503."""
 
     class BrokenChain:
@@ -93,7 +103,9 @@ async def test_generate_llm_unavailable_503(client, mock_rag_engine, monkeypatch
 
 
 @pytest.mark.anyio
-async def test_generate_qdrant_unavailable_503(client, mock_llm, monkeypatch, sample_collection, sample_document):
+async def test_generate_qdrant_unavailable_503(
+    client, mock_llm, monkeypatch, sample_collection, sample_document
+):
     """GEN-07: Si search_context falla, retorna 503."""
 
     def _broken_search(*, collection_id: str, query: str, top_k: int | None = None):

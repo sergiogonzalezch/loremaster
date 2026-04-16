@@ -3,7 +3,7 @@ import uuid
 import pytest
 from sqlmodel import select
 
-from app.models.collections import Collection
+# from app.models.collections import Collection
 from app.models.documents import Document
 from app.models.entities import Entity
 from app.models.entity_text_draft import DraftStatus, EntityTextDraft
@@ -96,7 +96,9 @@ async def test_delete_cascades_entities(client, db_session, sample_collection):
 
 
 @pytest.mark.anyio
-async def test_delete_cascades_pending_drafts(client, db_session, sample_collection, sample_entity):
+async def test_delete_cascades_pending_drafts(
+    client, db_session, sample_collection, sample_entity
+):
     """COL-07: Eliminar colección descarta drafts pending."""
     draft = EntityTextDraft(
         entity_id=sample_entity.id,
@@ -112,7 +114,9 @@ async def test_delete_cascades_pending_drafts(client, db_session, sample_collect
     response = await client.delete(f"/api/v1/collections/{sample_collection.id}")
     assert response.status_code == 200
 
-    db_draft = db_session.exec(select(EntityTextDraft).where(EntityTextDraft.id == draft.id)).first()
+    db_draft = db_session.exec(
+        select(EntityTextDraft).where(EntityTextDraft.id == draft.id)
+    ).first()
     assert db_draft is not None
     assert db_draft.status == DraftStatus.discarded
 

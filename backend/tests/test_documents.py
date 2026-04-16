@@ -21,7 +21,9 @@ async def test_ingest_txt(client, mock_rag_engine, sample_collection):
 
 
 @pytest.mark.anyio
-async def test_ingest_pdf(client, mock_rag_engine, mock_text_extractor, sample_collection):
+async def test_ingest_pdf(
+    client, mock_rag_engine, mock_text_extractor, sample_collection
+):
     """DOC-02: Ingesta PDF retorna 201 con extractor mock."""
     response = await client.post(
         f"/api/v1/collections/{sample_collection.id}/documents",
@@ -57,7 +59,9 @@ async def test_get_document_by_id(client, sample_collection, sample_document):
 
 
 @pytest.mark.anyio
-async def test_delete_document(client, mock_rag_engine, sample_collection, sample_document):
+async def test_delete_document(
+    client, mock_rag_engine, sample_collection, sample_document
+):
     """DOC-05: Eliminar documento retorna 200, GET 404 y borra chunks mock."""
     response = await client.delete(
         f"/api/v1/collections/{sample_collection.id}/documents/{sample_document.id}"
@@ -74,7 +78,9 @@ async def test_delete_document(client, mock_rag_engine, sample_collection, sampl
 @pytest.mark.anyio
 async def test_deleted_doc_not_in_list(client, sample_collection, sample_document):
     """DOC-06: Documento eliminado no aparece en listado."""
-    await client.delete(f"/api/v1/collections/{sample_collection.id}/documents/{sample_document.id}")
+    await client.delete(
+        f"/api/v1/collections/{sample_collection.id}/documents/{sample_document.id}"
+    )
 
     response = await client.get(f"/api/v1/collections/{sample_collection.id}/documents")
     assert response.status_code == 200
@@ -82,7 +88,9 @@ async def test_deleted_doc_not_in_list(client, sample_collection, sample_documen
 
 
 @pytest.mark.anyio
-async def test_ingest_qdrant_failure_marks_failed(client, monkeypatch, db_session, sample_collection):
+async def test_ingest_qdrant_failure_marks_failed(
+    client, monkeypatch, db_session, sample_collection
+):
     """DOC-07: Falla en ingest_chunks retorna 502 y status failed en DB."""
 
     def _raise_ingest(*args, **kwargs):

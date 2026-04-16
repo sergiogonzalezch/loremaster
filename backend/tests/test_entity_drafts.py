@@ -6,7 +6,9 @@ from sqlmodel import select
 from app.models.entity_text_draft import EntityTextDraft
 
 
-async def _create_draft(client, collection_id: str, entity_id: str, query: str = "consulta lore"):
+async def _create_draft(
+    client, collection_id: str, entity_id: str, query: str = "consulta lore"
+):
     return await client.post(
         f"/api/v1/collections/{collection_id}/entities/{entity_id}/generate",
         json={"query": query},
@@ -14,7 +16,9 @@ async def _create_draft(client, collection_id: str, entity_id: str, query: str =
 
 
 @pytest.mark.anyio
-async def test_generate_draft(client, mock_rag_engine, mock_llm, sample_collection, sample_entity):
+async def test_generate_draft(
+    client, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
     """DRF-01: Generar draft retorna 201 con status pending."""
     response = await _create_draft(client, sample_collection.id, sample_entity.id)
     assert response.status_code == 201
@@ -24,10 +28,16 @@ async def test_generate_draft(client, mock_rag_engine, mock_llm, sample_collecti
 
 
 @pytest.mark.anyio
-async def test_list_drafts(client, mock_rag_engine, mock_llm, sample_collection, sample_entity):
+async def test_list_drafts(
+    client, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
     """DRF-02: Listar drafts retorna count=2 en orden desc por created_at."""
-    first = await _create_draft(client, sample_collection.id, sample_entity.id, "consulta uno")
-    second = await _create_draft(client, sample_collection.id, sample_entity.id, "consulta dos")
+    first = await _create_draft(
+        client, sample_collection.id, sample_entity.id, "consulta uno"
+    )
+    second = await _create_draft(
+        client, sample_collection.id, sample_entity.id, "consulta dos"
+    )
     assert first.status_code == 201
     assert second.status_code == 201
 
@@ -42,7 +52,9 @@ async def test_list_drafts(client, mock_rag_engine, mock_llm, sample_collection,
 
 
 @pytest.mark.anyio
-async def test_update_draft_content(client, mock_rag_engine, mock_llm, sample_collection, sample_entity):
+async def test_update_draft_content(
+    client, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
     """DRF-03: Actualizar contenido de draft retorna 200."""
     created = await _create_draft(client, sample_collection.id, sample_entity.id)
     draft_id = created.json()["id"]
@@ -56,7 +68,9 @@ async def test_update_draft_content(client, mock_rag_engine, mock_llm, sample_co
 
 
 @pytest.mark.anyio
-async def test_confirm_draft_updates_entity(client, mock_rag_engine, mock_llm, sample_collection, sample_entity):
+async def test_confirm_draft_updates_entity(
+    client, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
     """DRF-04: Confirmar draft actualiza descripción de entidad."""
     created = await _create_draft(client, sample_collection.id, sample_entity.id)
     draft = created.json()
@@ -71,7 +85,9 @@ async def test_confirm_draft_updates_entity(client, mock_rag_engine, mock_llm, s
 
 
 @pytest.mark.anyio
-async def test_discard_draft(client, mock_rag_engine, mock_llm, sample_collection, sample_entity):
+async def test_discard_draft(
+    client, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
     """DRF-05: Descartar draft cambia status a discarded."""
     created = await _create_draft(client, sample_collection.id, sample_entity.id)
     draft_id = created.json()["id"]
@@ -84,11 +100,15 @@ async def test_discard_draft(client, mock_rag_engine, mock_llm, sample_collectio
 
 
 @pytest.mark.anyio
-async def test_confirm_auto_discards_other_pending(client, db_session, mock_rag_engine, mock_llm, sample_collection, sample_entity):
+async def test_confirm_auto_discards_other_pending(
+    client, db_session, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
     """DRF-06: Confirmar un draft descarta automáticamente otros pending."""
     drafts = []
     for i in range(3):
-        resp = await _create_draft(client, sample_collection.id, sample_entity.id, f"query {i} lore")
+        resp = await _create_draft(
+            client, sample_collection.id, sample_entity.id, f"query {i} lore"
+        )
         drafts.append(resp.json())
 
     confirm_resp = await client.post(
@@ -106,7 +126,9 @@ async def test_confirm_auto_discards_other_pending(client, db_session, mock_rag_
 
 
 @pytest.mark.anyio
-async def test_discarded_drafts_not_in_list(client, mock_rag_engine, mock_llm, sample_collection, sample_entity):
+async def test_discarded_drafts_not_in_list(
+    client, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
     """DRF-07: Draft descartado no aparece en list."""
     created = await _create_draft(client, sample_collection.id, sample_entity.id)
     draft_id = created.json()["id"]
@@ -122,7 +144,9 @@ async def test_discarded_drafts_not_in_list(client, mock_rag_engine, mock_llm, s
 
 
 @pytest.mark.anyio
-async def test_confirmed_drafts_in_list(client, mock_rag_engine, mock_llm, sample_collection, sample_entity):
+async def test_confirmed_drafts_in_list(
+    client, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
     """DRF-08: Draft confirmado aparece en list con status confirmed."""
     created = await _create_draft(client, sample_collection.id, sample_entity.id)
     draft_id = created.json()["id"]
@@ -139,9 +163,13 @@ async def test_confirmed_drafts_in_list(client, mock_rag_engine, mock_llm, sampl
 
 
 @pytest.mark.anyio
-async def test_generate_uses_entity_description_as_context(client, mock_rag_engine, mock_llm, sample_collection, sample_entity):
+async def test_generate_uses_entity_description_as_context(
+    client, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
     """DRF-09: Generar draft usa descripción de entidad en el contexto del LLM."""
-    response = await _create_draft(client, sample_collection.id, sample_entity.id, "Expande su historia")
+    response = await _create_draft(
+        client, sample_collection.id, sample_entity.id, "Expande su historia"
+    )
     assert response.status_code == 201
 
     assert len(mock_llm["invocations"]) >= 1
@@ -150,18 +178,26 @@ async def test_generate_uses_entity_description_as_context(client, mock_rag_engi
 
 
 @pytest.mark.anyio
-async def test_max_pending_drafts_409(client, mock_rag_engine, mock_llm, sample_collection, sample_entity):
+async def test_max_pending_drafts_409(
+    client, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
     """DRF-10: Máximo 5 drafts pending; sexto retorna 409."""
     for i in range(5):
-        resp = await _create_draft(client, sample_collection.id, sample_entity.id, f"query larga {i}")
+        resp = await _create_draft(
+            client, sample_collection.id, sample_entity.id, f"query larga {i}"
+        )
         assert resp.status_code == 201
 
-    sixth = await _create_draft(client, sample_collection.id, sample_entity.id, "query sexta")
+    sixth = await _create_draft(
+        client, sample_collection.id, sample_entity.id, "query sexta"
+    )
     assert sixth.status_code == 409
 
 
 @pytest.mark.anyio
-async def test_generate_nonexistent_entity_404(client, mock_rag_engine, mock_llm, sample_collection):
+async def test_generate_nonexistent_entity_404(
+    client, mock_rag_engine, mock_llm, sample_collection
+):
     """DRF-11: Generar draft para entidad inexistente retorna 404."""
     response = await client.post(
         f"/api/v1/collections/{sample_collection.id}/entities/{uuid.uuid4()}/generate",
@@ -190,7 +226,9 @@ async def test_query_too_short_422(client, sample_collection, sample_entity):
 
 
 @pytest.mark.anyio
-async def test_update_confirmed_draft_404(client, mock_rag_engine, mock_llm, sample_collection, sample_entity):
+async def test_update_confirmed_draft_404(
+    client, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
     """DRF-14: Actualizar draft confirmado retorna 404 (solo pending)."""
     created = await _create_draft(client, sample_collection.id, sample_entity.id)
     draft_id = created.json()["id"]
