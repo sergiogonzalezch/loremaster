@@ -8,6 +8,7 @@ Plataforma RAG para escritores, narradores de rol (RPG) y diseñadores de mundos
 - Recupera contexto relevante antes de cada generación de texto.
 - Genera texto narrativo expandido, anclado en el lore cargado por el usuario.
 - Gestiona entidades del mundo (personajes, escenarios, facciones, ítems).
+- Genera borradores de lore para entidades usando RAG y permite confirmarlos o descartarlos.
 - (Roadmap) Generación de imágenes con ComfyUI + Flux.2 Klein 4B.
 
 ## Stack
@@ -21,7 +22,7 @@ Plataforma RAG para escritores, narradores de rol (RPG) y diseñadores de mundos
 | Vector DB | Qdrant |
 | LLM local | Ollama (`llama3.2:latest`) |
 | Caché semántico | Redis (similitud ≥ 0.95, TTL 3600s) |
-| BD relacional | PostgreSQL (SQLite en prototipo) |
+| BD relacional | PostgreSQL |
 | Almacenamiento | LocalStack S3 (dev) / AWS S3 o Cloudflare R2 (prod) |
 | Observabilidad | Prometheus + Grafana |
 | Contenerización | Docker Compose |
@@ -61,7 +62,8 @@ Variables clave en `backend/.env`:
 | `QDRANT_URL` | `http://localhost:6333` |
 | `QDRANT_COLLECTION` | `loremaster` |
 | `REDIS_URL` | `redis://localhost:6379/0` |
-| `DATABASE_URL` | `sqlite:///./loremaster.db` |
+| `DATABASE_URL` | `postgresql://loremaster:loremaster@localhost:5432/loremaster` |
+| `ALLOWED_ORIGINS` | `["http://localhost:3000"]` |
 
 ### Levantar servicios de soporte
 
@@ -95,62 +97,72 @@ Swagger UI disponible en: `http://localhost:8000/docs`
 Todos bajo `/api/v1/`:
 
 ### Colecciones
-- `POST /collections` — crear colección
-- `GET /collections` — listar colecciones
+- `POST /collections/` — crear colección → `201`
+- `GET /collections/` — listar colecciones
 - `GET /collections/{id}` — obtener colección
-- `DELETE /collections/{id}` — eliminar colección
+- `DELETE /collections/{id}` — eliminar colección → `204`
 
 ### Documentos
-- `POST /collections/{id}/documents` — subir documento (PDF/TXT, max 50 MB)
+- `POST /collections/{id}/documents` — subir documento (PDF/TXT, max 50 MB) → `201`
 - `GET /collections/{id}/documents` — listar documentos
 - `GET /collections/{id}/documents/{doc_id}` — obtener documento
-- `DELETE /collections/{id}/documents/{doc_id}` — eliminar documento
-
-### Generación
-- `POST /collections/{id}/text` — generar texto RAG a partir de una query
+- `DELETE /collections/{id}/documents/{doc_id}` — eliminar documento → `204`
 
 ### Entidades
-- `POST /collections/{id}/entities` — crear entidad
+- `POST /collections/{id}/entities` — crear entidad → `201`
 - `GET /collections/{id}/entities` — listar entidades
 - `GET /collections/{id}/entities/{entity_id}` — obtener entidad
 - `PUT /collections/{id}/entities/{entity_id}` — actualizar entidad
-- `DELETE /collections/{id}/entities/{entity_id}` — eliminar entidad
+- `DELETE /collections/{id}/entities/{entity_id}` — eliminar entidad → `204`
+
+### Borradores de entidad
+- `POST /collections/{id}/entities/{entity_id}/generate` — generar borrador RAG → `201`
+- `GET /collections/{id}/entities/{entity_id}/drafts` — listar borradores
+- `PATCH /collections/{id}/entities/{entity_id}/drafts/{draft_id}` — editar contenido
+- `POST /collections/{id}/entities/{entity_id}/drafts/{draft_id}/confirm` — confirmar borrador (actualiza la entidad)
+- `DELETE /collections/{id}/entities/{entity_id}/drafts/{draft_id}` — descartar borrador
+
+### Generación
+- `POST /collections/{id}/generate/text` — generar texto RAG a partir de una query
 
 ## Estructura del proyecto
 
 ```
 loremaster/
 ├── backend/
-│   ├── config.py                   # Settings via pydantic-settings
+│   ├── config.py                   # Settings via pydantic-settings (.env)
 │   ├── requirements.txt
 │   ├── docker-compose.yml
 │   ├── .env.example
 │   └── app/
-│       ├── main.py                 # FastAPI app + routers
-│       ├── database.py             # SQLModel session y engine (SQLite/PostgreSQL)
+│       ├── main.py                 # FastAPI app, CORS, lifespan, routers
+│       ├── database.py             # Engine SQL y sesión (SQLModel)
 │       ├── models/
 │       │   ├── collections.py
 │       │   ├── documents.py
 │       │   ├── entities.py
-│       │   ├── generate.py
-│       │   └── common.py
+│       │   ├── entity_text_draft.py
+│       │   └── generate.py
 │       ├── api/
-│       │   ├── dependencies.py     # Inyección de dependencias (DB session)
 │       │   └── routes/
 │       │       ├── collections.py
 │       │       ├── documents.py
-│       │       ├── generate.py
-│       │       └── entities.py
+│       │       ├── entities.py
+│       │       ├── entity_text_draft.py
+│       │       └── generate.py
 │       ├── core/
 │       │   ├── rag_engine.py       # Qdrant: ingest, search, delete
+│       │   ├── rag_generate.py     # Orquestador RAG → LLM
 │       │   ├── llm_client.py       # Ollama via LangChain
 │       │   ├── text_extractor.py   # Extracción PDF/TXT
-│       │   └── common.py           # Helpers de consulta SQLModel
+│       │   ├── valid_collection.py # Dependency FastAPI: valida colección activa
+│       │   └── common.py           # Helpers genéricos de DB (soft_delete, queries)
 │       └── services/
 │           ├── collection_service.py
 │           ├── documents_service.py
-│           ├── generate_service.py
-│           └── entities_service.py
+│           ├── entities_service.py
+│           ├── entity_text_draft_service.py
+│           └── generate_service.py
 └── docs/
     ├── DOCUMENTATION.md
     └── WEEKLY_CHECKLISTS.md
@@ -158,7 +170,7 @@ loremaster/
 
 ## Estado actual
 
-> **Fase 1 — Semanas 1-3 completadas.** Pipeline RAG funcional end-to-end: ingesta de documentos (PDF/TXT) → chunking → embeddings → Qdrant → búsqueda semántica → Ollama → respuesta. Persistencia en SQLite via SQLModel. Semana 4 en curso: refinamiento del prompt template y endpoints de cierre de fase.
+> **Pipeline RAG funcional end-to-end.** Ingesta de documentos (PDF/TXT) → chunking → embeddings → Qdrant → búsqueda semántica → Ollama → respuesta. Persistencia en PostgreSQL via SQLModel. Gestión completa de entidades con sistema de borradores RAG confirmables. Tests: 58 passing.
 
 ## Desarrollo
 
