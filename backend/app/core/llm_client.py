@@ -1,7 +1,7 @@
 from langchain_ollama import OllamaLLM
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from config import settings
+from app.core.config import settings
 
 _PROMPT = ChatPromptTemplate.from_messages(
     [
