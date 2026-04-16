@@ -38,7 +38,7 @@ async def ingest_document_service(
         filename=data.filename,
         file_type=data.content_type,
         chunk_count=0,
-        status=DocumentStatus.completed,
+        status=DocumentStatus.processing,
     )
     session.add(document)
     session.commit()
@@ -60,6 +60,7 @@ async def ingest_document_service(
             detail=f"Failed to ingest document into vector store: {e}",
         )
 
+    document.status = DocumentStatus.completed
     document.chunk_count = chunk_count
     session.add(document)
     session.commit()
