@@ -1,6 +1,5 @@
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Optional
 
 
 class Settings(BaseSettings):
@@ -12,7 +11,7 @@ class Settings(BaseSettings):
 
     # LLM (Ollama)
     ollama_model: str = "llama3.2:latest"
-    ollama_base_url: Optional[str] = None
+    ollama_base_url: str = "http://localhost:11434"
 
     # LLM parameters
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
@@ -33,8 +32,8 @@ class Settings(BaseSettings):
     cache_ttl: int = 3600
     cache_threshold: float = 0.95
 
-    # Database
-    database_url: str = "postgresql://loremaster:loremaster@localhost:5432/loremaster"
+    # Database (default SQLite for local dev; set DATABASE_URL in .env for PostgreSQL)
+    database_url: str = "sqlite:///./loremaster.db"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

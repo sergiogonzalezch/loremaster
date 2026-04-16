@@ -1,7 +1,8 @@
 import logging
 from datetime import datetime, timezone
 
-from sqlmodel import Session
+from fastapi import HTTPException
+from sqlmodel import Session, select
 
 from app.models.entities import Entity, CreateEntityRequest, UpdateEntityRequest
 from app.core.common import get_active_by_id, list_active_by_collection, soft_delete
@@ -10,9 +11,26 @@ from app.services.entity_text_draft_service import discard_pending_drafts
 logger = logging.getLogger(__name__)
 
 
+def _find_active_by_name(
+    session: Session, collection_id: str, name: str
+) -> Entity | None:
+    return session.exec(
+        select(Entity).where(
+            Entity.collection_id == collection_id,
+            Entity.name == name,
+            Entity.is_deleted == False,
+        )
+    ).first()
+
+
 def create_entity_service(
     session: Session, request: CreateEntityRequest, collection_id: str
 ) -> Entity:
+    if _find_active_by_name(session, collection_id, request.name):
+        raise HTTPException(
+            status_code=409,
+            detail=f"An entity named '{request.name}' already exists in this collection.",
+        )
     entity = Entity(
         collection_id=collection_id,
         type=request.type,
@@ -42,6 +60,11 @@ def update_entity_service(
     entity = get_active_by_id(session, Entity, entity_id, collection_id)
     if not entity:
         return None
+    if request.name != entity.name and _find_active_by_name(session, collection_id, request.name):
+        raise HTTPException(
+            status_code=409,
+            detail=f"An entity named '{request.name}' already exists in this collection.",
+        )
     entity.type = request.type
     entity.name = request.name
     entity.description = request.description
