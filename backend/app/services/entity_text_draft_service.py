@@ -104,7 +104,7 @@ def update_draft_content_service(
     collection_id: str,
     content: str,
 ) -> EntityTextDraft | None:
-    draft = _get_active_draft(session, draft_id, entity_id, collection_id)
+    draft = _get_pending_draft(session, draft_id, entity_id, collection_id)
     if not draft:
         return None
     draft.content = content
@@ -120,7 +120,7 @@ def confirm_draft_service(
     entity_id: str,
     collection_id: str,
 ) -> Entity | None:
-    draft = _get_active_draft(session, draft_id, entity_id, collection_id)
+    draft = _get_pending_draft(session, draft_id, entity_id, collection_id)
     if not draft:
         return None
 
@@ -128,8 +128,9 @@ def confirm_draft_service(
     if not entity:
         raise HTTPException(status_code=404, detail="Entity not found")
 
+    now = datetime.now(timezone.utc)
     draft.status = DraftStatus.confirmed
-    draft.confirmed_at = datetime.now(timezone.utc)
+    draft.confirmed_at = now
     session.add(draft)
 
     pending_stmt = select(EntityTextDraft).where(
@@ -149,7 +150,7 @@ def confirm_draft_service(
     )
 
     entity.description = draft.content
-    entity.updated_at = datetime.now(timezone.utc)
+    entity.updated_at = now
     session.add(entity)
 
     session.commit()
@@ -166,7 +167,7 @@ def discard_draft_service(
     entity_id: str,
     collection_id: str,
 ) -> EntityTextDraft | None:
-    draft = _get_active_draft(session, draft_id, entity_id, collection_id)
+    draft = _get_pending_draft(session, draft_id, entity_id, collection_id)
     if not draft:
         return None
     draft.status = DraftStatus.discarded
@@ -202,7 +203,7 @@ def discard_pending_drafts(
     return len(drafts)
 
 
-def _get_active_draft(
+def _get_pending_draft(
     session: Session,
     draft_id: str,
     entity_id: str,

@@ -12,10 +12,10 @@ logger = logging.getLogger(__name__)
 
 
 async def text_generation_service(
-    session: Session, query: str, collection_id: str = None
+    session: Session, query: str, collection_id: str
 ):
     logger.info(
-        "Generating text for collection %s, query: '%.50s...'", collection_id, query
+        "Generating text for collection %s, query: '%.50s'", collection_id, query
     )
 
     col_docs = list_active_by_collection(session, Document, collection_id)
