@@ -37,8 +37,13 @@ def list_active_by_collection(
     model: Type[T],
     collection_id: str,
 ) -> list[T]:
-    stmt = select(model).where(
+    filters = [
         model.collection_id == collection_id,
         model.is_deleted == False,
-    )
+    ]
+
+    if hasattr(model, "status"):
+        filters.append(getattr(model, "status") != "processing")
+
+    stmt = select(model).where(*filters)
     return session.exec(stmt).all()
