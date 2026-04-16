@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, Response
 from sqlmodel import Session
 
+from app.core.valid_collection import get_collection_or_404
 from app.database import get_session
 from app.models.collections import (
+    Collection,
     CreateCollectionRequest,
     CollectionResponse,
     CollectionListResponse,
@@ -10,7 +12,6 @@ from app.models.collections import (
 from app.services.collection_service import (
     create_collection_service,
     list_collections_service,
-    get_collection_service,
     delete_collection_service,
 )
 
@@ -33,21 +34,15 @@ async def get_collections(session: Session = Depends(get_session)):
 
 @router.get("/{collection_id}", response_model=CollectionResponse)
 async def get_collection(
-    collection_id: str,
-    session: Session = Depends(get_session),
+    collection: Collection = Depends(get_collection_or_404),
 ):
-    collection = get_collection_service(session, collection_id)
-    if not collection:
-        raise HTTPException(status_code=404, detail="Collection not found")
     return collection
 
 
 @router.delete("/{collection_id}", status_code=204)
 async def delete_collection(
-    collection_id: str,
+    collection: Collection = Depends(get_collection_or_404),
     session: Session = Depends(get_session),
 ):
-    result = delete_collection_service(session, collection_id)
-    if not result:
-        raise HTTPException(status_code=404, detail="Collection not found")
+    delete_collection_service(session, collection)
     return Response(status_code=204)

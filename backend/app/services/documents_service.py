@@ -1,10 +1,10 @@
 import logging
 
 from fastapi import HTTPException, UploadFile
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.models.documents import Document, DocumentStatus
-from app.core.common import get_active_by_id, list_active_by_collection, soft_delete
+from app.core.common import get_active_by_id, soft_delete
 from app.core.text_extractor import extract_text
 from app.core.rag_engine import ingest_chunks, delete_document_chunks
 
@@ -69,7 +69,12 @@ async def ingest_document_service(
 
 
 def list_documents_service(session: Session, collection_id: str) -> list[Document]:
-    return list_active_by_collection(session, Document, collection_id)
+    stmt = select(Document).where(
+        Document.collection_id == collection_id,
+        Document.is_deleted == False,
+        Document.status != DocumentStatus.processing,
+    )
+    return session.exec(stmt).all()
 
 
 def get_document_service(
@@ -78,15 +83,12 @@ def get_document_service(
     return get_active_by_id(session, Document, doc_id, collection_id)
 
 
-def delete_document_service(session: Session, collection_id: str, doc_id: str):
-    document = get_active_by_id(session, Document, doc_id, collection_id)
-    if not document:
-        return False
+def delete_document_service(session: Session, document: Document) -> bool:
     try:
-        delete_document_chunks(collection_id, doc_id)
+        delete_document_chunks(document.collection_id, document.id)
     except Exception as e:
-        logger.error("Failed to delete vector chunks for doc %s: %s", doc_id, e)
+        logger.error("Failed to delete vector chunks for doc %s: %s", document.id, e)
     soft_delete(session, document)
     session.commit()
-    logger.info("Document %s soft-deleted from collection %s", doc_id, collection_id)
+    logger.info("Document %s soft-deleted from collection %s", document.id, document.collection_id)
     return True

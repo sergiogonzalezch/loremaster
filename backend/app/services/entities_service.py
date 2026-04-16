@@ -55,12 +55,9 @@ def list_entities_service(session: Session, collection_id: str) -> list[Entity]:
 
 
 def update_entity_service(
-    session: Session, entity_id: str, collection_id: str, request: UpdateEntityRequest
-) -> Entity | None:
-    entity = get_active_by_id(session, Entity, entity_id, collection_id)
-    if not entity:
-        return None
-    if request.name != entity.name and _find_active_by_name(session, collection_id, request.name):
+    session: Session, entity: Entity, request: UpdateEntityRequest
+) -> Entity:
+    if request.name != entity.name and _find_active_by_name(session, entity.collection_id, request.name):
         raise HTTPException(
             status_code=409,
             detail=f"An entity named '{request.name}' already exists in this collection.",
@@ -75,15 +72,12 @@ def update_entity_service(
     return entity
 
 
-def delete_entity_service(session: Session, entity_id: str, collection_id: str) -> bool:
-    entity = get_active_by_id(session, Entity, entity_id, collection_id)
-    if not entity:
-        return False
+def delete_entity_service(session: Session, entity: Entity) -> bool:
     discarded = discard_pending_drafts(
-        session, entity_id=entity_id, collection_id=collection_id
+        session, entity_id=entity.id, collection_id=entity.collection_id
     )
-    logger.info("Discarded %d pending draft(s) for entity %s", discarded, entity_id)
+    logger.info("Discarded %d pending draft(s) for entity %s", discarded, entity.id)
     soft_delete(session, entity)
     session.commit()
-    logger.info("Entity %s soft-deleted from collection %s", entity_id, collection_id)
+    logger.info("Entity %s soft-deleted from collection %s", entity.id, entity.collection_id)
     return True

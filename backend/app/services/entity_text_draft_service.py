@@ -12,22 +12,19 @@ from app.models.entity_text_draft import (
 )
 from app.models.entities import Entity
 from app.core.rag_generate import generate_rag_response
-from app.core.common import get_active_by_id
 
 logger = logging.getLogger(__name__)
 
 MAX_PENDING_DRAFTS = 5
 
 
-async def generate_draft_service(
+def generate_draft_service(
     session: Session,
-    entity_id: str,
-    collection_id: str,
+    entity: Entity,
     request: GenerateEntityTextDraftRequest,
 ) -> EntityTextDraft:
-    entity = get_active_by_id(session, Entity, entity_id, collection_id)
-    if not entity:
-        raise HTTPException(status_code=404, detail="Entity not found")
+    entity_id = entity.id
+    collection_id = entity.collection_id
 
     pending_count = session.exec(
         select(func.count())
@@ -82,9 +79,6 @@ def list_drafts_service(
     entity_id: str,
     collection_id: str,
 ) -> list[EntityTextDraft]:
-    entity = get_active_by_id(session, Entity, entity_id, collection_id)
-    if not entity:
-        raise HTTPException(status_code=404, detail="Entity not found")
     stmt = (
         select(EntityTextDraft)
         .where(
@@ -117,36 +111,32 @@ def update_draft_content_service(
 def confirm_draft_service(
     session: Session,
     draft_id: str,
-    entity_id: str,
-    collection_id: str,
+    entity: Entity,
 ) -> Entity | None:
-    draft = _get_pending_draft(session, draft_id, entity_id, collection_id)
+    draft = _get_pending_draft(session, draft_id, entity.id, entity.collection_id)
     if not draft:
         return None
-
-    entity = get_active_by_id(session, Entity, entity_id, collection_id)
-    if not entity:
-        raise HTTPException(status_code=404, detail="Entity not found")
 
     now = datetime.now(timezone.utc)
     draft.status = DraftStatus.confirmed
     draft.confirmed_at = now
     session.add(draft)
 
-    pending_stmt = select(EntityTextDraft).where(
-        EntityTextDraft.entity_id == entity_id,
-        EntityTextDraft.collection_id == collection_id,
-        EntityTextDraft.id != draft_id,
-        EntityTextDraft.status == DraftStatus.pending,
-    )
-    pending_drafts = session.exec(pending_stmt).all()
+    pending_drafts = session.exec(
+        select(EntityTextDraft).where(
+            EntityTextDraft.entity_id == entity.id,
+            EntityTextDraft.collection_id == entity.collection_id,
+            EntityTextDraft.id != draft_id,
+            EntityTextDraft.status == DraftStatus.pending,
+        )
+    ).all()
     for pending in pending_drafts:
         pending.status = DraftStatus.discarded
         session.add(pending)
     logger.info(
         "Auto-discarded %d pending draft(s) for entity %s",
         len(pending_drafts),
-        entity_id,
+        entity.id,
     )
 
     entity.description = draft.content
@@ -156,7 +146,7 @@ def confirm_draft_service(
     session.commit()
     session.refresh(entity)
     logger.info(
-        "Draft %s confirmed → entity %s description updated", draft_id, entity_id
+        "Draft %s confirmed → entity %s description updated", draft_id, entity.id
     )
     return entity
 

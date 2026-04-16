@@ -1,13 +1,14 @@
 from fastapi import Depends, HTTPException
 from sqlmodel import Session
 
+from app.core.common import get_active_by_id
 from app.database import get_session
 from app.models.collections import Collection
 from app.models.documents import Document
 from app.models.entities import Entity
 
 
-def get_valid_collection(
+def get_collection_or_404(
     collection_id: str,
     session: Session = Depends(get_session),
 ) -> Collection:
@@ -19,11 +20,10 @@ def get_valid_collection(
 
 def get_entity_or_404(
     entity_id: str,
-    collection: Collection = Depends(get_valid_collection),
+    collection: Collection = Depends(get_collection_or_404),
     session: Session = Depends(get_session),
 ) -> Entity:
-    from app.services.entities_service import get_entity_service
-    entity = get_entity_service(session, entity_id, collection.id)
+    entity = get_active_by_id(session, Entity, entity_id, collection.id)
     if not entity:
         raise HTTPException(status_code=404, detail="Entity not found")
     return entity
@@ -31,11 +31,10 @@ def get_entity_or_404(
 
 def get_document_or_404(
     doc_id: str,
-    collection: Collection = Depends(get_valid_collection),
+    collection: Collection = Depends(get_collection_or_404),
     session: Session = Depends(get_session),
 ) -> Document:
-    from app.services.documents_service import get_document_service
-    doc = get_document_service(session, collection.id, doc_id)
+    doc = get_active_by_id(session, Document, doc_id, collection.id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     return doc

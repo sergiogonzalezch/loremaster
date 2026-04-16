@@ -4,8 +4,6 @@ from typing import TypeVar, Type, Optional
 
 from sqlmodel import Session, select, SQLModel
 
-from app.models.documents import DocumentStatus
-
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=SQLModel)
@@ -40,13 +38,8 @@ def list_active_by_collection(
     model: Type[T],
     collection_id: str,
 ) -> list[T]:
-    filters = [
+    stmt = select(model).where(
         model.collection_id == collection_id,
         model.is_deleted == False,
-    ]
-
-    if hasattr(model, "status"):
-        filters.append(getattr(model, "status") != DocumentStatus.processing)
-
-    stmt = select(model).where(*filters)
+    )
     return session.exec(stmt).all()
