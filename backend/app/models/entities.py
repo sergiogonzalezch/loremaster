@@ -3,6 +3,7 @@ from typing import List, Optional
 from datetime import datetime, timezone
 
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy import Column, ForeignKey, String
 from sqlmodel import SQLModel, Field
 import uuid
 
@@ -23,7 +24,14 @@ class Entity(SQLModel, table=True):
     id: str = Field(
         default_factory=lambda: str(uuid.uuid4()), primary_key=True, max_length=36
     )
-    collection_id: str = Field(index=True, max_length=36)
+    collection_id: str = Field(
+        sa_column=Column(
+            String(36),
+            ForeignKey("collections.id"),
+            nullable=False,
+            index=True,
+        )
+    )
     type: EntityType = Field(index=True, max_length=50)
     name: str = Field(max_length=255)
     description: str = Field(default="", max_length=2000)
