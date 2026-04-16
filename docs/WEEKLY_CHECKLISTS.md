@@ -84,7 +84,7 @@ Nota de Mike:
 
 - [x] Extraccion de texto de PDF con `pypdf`
 - [x] Lectura directa de archivos TXT (UTF-8)
-- [ ] Manejo de PDFs con paginas sin texto (fallback a string vacio por pagina)
+- [x] Manejo de PDFs con paginas sin texto (fallback a string vacio por pagina)
 
 ### Chunking
 
