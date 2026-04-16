@@ -1,18 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, Response
 from sqlmodel import Session
 
-from app.core.valid_collection import get_valid_collection
+from app.core.valid_collection import get_valid_collection, get_entity_or_404
 from app.database import get_session
 from app.models.collections import Collection
 from app.models.entities import (
     CreateEntityRequest,
     UpdateEntityRequest,
+    Entity,
     EntityResponse,
     EntityListResponse,
 )
 from app.services.entities_service import (
     create_entity_service,
-    get_entity_service,
     delete_entity_service,
     list_entities_service,
     update_entity_service,
@@ -43,14 +43,8 @@ async def list_entities(
 
 @router.get("/{collection_id}/entities/{entity_id}", response_model=EntityResponse)
 async def get_entity(
-    collection_id: str,
-    entity_id: str,
-    collection: Collection = Depends(get_valid_collection),
-    session: Session = Depends(get_session),
+    entity: Entity = Depends(get_entity_or_404),
 ):
-    entity = get_entity_service(session, entity_id, collection_id)
-    if not entity:
-        raise HTTPException(status_code=404, detail="Entity not found")
     return entity
 
 
@@ -59,23 +53,18 @@ async def update_entity(
     collection_id: str,
     entity_id: str,
     request: UpdateEntityRequest,
-    collection: Collection = Depends(get_valid_collection),
+    _: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
-    entity = update_entity_service(session, entity_id, collection_id, request)
-    if not entity:
-        raise HTTPException(status_code=404, detail="Entity not found")
-    return entity
+    return update_entity_service(session, entity_id, collection_id, request)
 
 
 @router.delete("/{collection_id}/entities/{entity_id}", status_code=204)
 async def delete_entity(
     collection_id: str,
     entity_id: str,
-    collection: Collection = Depends(get_valid_collection),
+    _: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
-    success = delete_entity_service(session, entity_id, collection_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Entity not found")
+    delete_entity_service(session, entity_id, collection_id)
     return Response(status_code=204)

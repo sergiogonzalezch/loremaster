@@ -93,6 +93,10 @@ def delete_document_chunks(collection_id: str, doc_id: str) -> int:
     return result.operation_id if result else 0
 
 
+def ping_qdrant() -> None:
+    _qdrant_client.get_collections()
+
+
 def search_context(
     collection_id: str, query: str, top_k: int | None = None
 ) -> list[str]:

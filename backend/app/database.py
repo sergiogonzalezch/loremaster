@@ -18,10 +18,6 @@ def _build_engine() -> Engine:
 engine = _build_engine()
 
 
-def create_db_and_tables() -> None:
-    SQLModel.metadata.create_all(engine)
-
-
 def get_session() -> Generator[Session, None, None]:
     with Session(engine) as session:
         yield session
