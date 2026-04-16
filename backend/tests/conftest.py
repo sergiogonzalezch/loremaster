@@ -9,8 +9,7 @@ from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
 # Ensure backend package imports resolve as `app.*`
-ROOT = os.path.dirname(os.path.dirname(__file__))
-BACKEND_DIR = os.path.join(ROOT, "backend")
+BACKEND_DIR = os.path.dirname(os.path.dirname(__file__))
 if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
 
