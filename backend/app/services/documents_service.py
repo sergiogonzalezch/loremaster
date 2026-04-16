@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import HTTPException, UploadFile, File
+from fastapi import HTTPException, UploadFile
 from sqlmodel import Session
 
 from app.models.documents import Document, DocumentStatus
@@ -16,8 +16,8 @@ MAX_BYTES = 50 * 1024 * 1024
 
 async def ingest_document_service(
     session: Session,
-    data: UploadFile = File(...),
-    collection_id: str = None,
+    data: UploadFile,
+    collection_id: str,
 ) -> Document:
     if data.content_type not in ALLOWED_MIME_TYPES:
         raise HTTPException(status_code=400, detail="Unsupported file type")
