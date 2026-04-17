@@ -17,6 +17,4 @@ async def generate(
     _: Collection = Depends(get_collection_or_404),
     session: Session = Depends(get_session),
 ):
-    return text_generation_service(
-        session, request.query, collection_id=collection_id
-    )
+    return text_generation_service(session, request.query, collection_id=collection_id)

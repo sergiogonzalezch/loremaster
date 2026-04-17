@@ -5,7 +5,6 @@ from app.core.config import settings
 from app.core.lifespan import lifespan
 from app.api.routes import generate, documents, collections, entities, entity_text_draft
 
-
 app = FastAPI(
     title=settings.project_name,
     version=settings.api_version,
