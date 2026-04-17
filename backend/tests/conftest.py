@@ -133,7 +133,7 @@ def mock_rag_engine(monkeypatch: pytest.MonkeyPatch) -> dict:
     )
     monkeypatch.setattr("app.core.rag_generate.search_context", _search_context)
     monkeypatch.setattr(
-        "app.services.collection_service.delete_collection_vectors",
+        "app.services.deletion_service.delete_collection_vectors",
         _delete_collection_vectors,
     )
 
