@@ -1,22 +1,22 @@
 # Lore Master — Frontend
 
-SPA React para interactuar con la API de Lore Master.
+SPA React para interactuar con la API de Lore Master. Permite gestionar colecciones de documentos, entidades narrativas y generar texto con RAG.
 
 ## Stack
 
 | | |
 |---|---|
 | Framework | React 19 |
-| Lenguaje | TypeScript |
-| Bundler | Vite |
+| Lenguaje | TypeScript 6 |
+| Bundler | Vite 8 |
 | UI | React Bootstrap 2 + Bootstrap 5 |
 | Routing | React Router 7 |
-| HTTP | fetch nativo |
+| HTTP | `fetch` nativo (sin axios) |
 
 ## Requisitos
 
 - Node.js 18+
-- Backend corriendo en `http://localhost:8000`
+- Backend corriendo en `http://localhost:8000` (ver `backend/README.md`)
 
 ## Instalación y ejecución
 
@@ -30,39 +30,72 @@ Disponible en `http://localhost:5173`.
 
 ## Variables de entorno
 
-Crea un archivo `.env` en `frontend/`:
+El archivo `.env` usa una URL relativa para que el proxy de Vite gestione las peticiones:
 
 ```env
-VITE_API_BASE_URL=http://localhost:8000/api/v1
+VITE_API_BASE_URL=/api/v1
 ```
+
+El proxy (`vite.config.ts`) redirige `/api/*` → `http://localhost:8000/api/*` en desarrollo, evitando problemas de CORS sin configuración adicional en el backend.
 
 ## Estructura del proyecto
 
 ```
 src/
-├── api/           → Funciones fetch tipadas por recurso
-├── types/         → Interfaces TypeScript (mirror de schemas backend)
-├── components/    → Layout, Navbar, modales reutilizables
-└── pages/         → CollectionsPage, CollectionDetailPage, EntityDetailPage, GeneratePage
+├── api/
+│   ├── apiClient.ts        → apiFetch y apiUpload (fetch + error handling)
+│   ├── collections.ts      → CRUD de colecciones
+│   ├── documents.ts        → upload, listado y eliminación de documentos
+│   ├── entities.ts         → CRUD de entidades
+│   ├── drafts.ts           → generación, edición, confirmación, descarte y eliminación de borradores
+│   ├── generate.ts         → consulta RAG libre
+│   └── index.ts            → barrel export
+├── types/
+│   ├── collection.ts       → Collection, CreateCollectionRequest, CollectionListResponse
+│   ├── document.ts         → Document, DocumentListResponse
+│   ├── entity.ts           → Entity, CreateEntityRequest, UpdateEntityRequest, EntityListResponse
+│   ├── draft.ts            → Draft, GenerateDraftRequest, UpdateDraftContentRequest, DraftListResponse
+│   ├── generate.ts         → GenerateTextRequest, GenerateTextResponse
+│   └── index.ts            → barrel export
+├── utils/
+│   └── enums.ts            → DocumentStatus, EntityType, DraftStatus
+├── components/
+│   ├── Layout.tsx          → Navbar + Outlet (React Router)
+│   ├── ConfirmModal.tsx    → Modal de confirmación reutilizable
+│   └── LoadingSpinner.tsx  → Spinner centrado con texto
+└── pages/
+    ├── CollectionsPage.tsx       → Listado, creación y eliminación de colecciones
+    ├── CollectionDetailPage.tsx  → Tabs: Documentos / Entidades / Generar texto
+    ├── EntityDetailPage.tsx      → Detalle de entidad + ciclo de vida de borradores
+    └── GeneratePage.tsx          → Consulta RAG libre contra una colección
 ```
 
 ## Pantallas
 
-| Página | Descripción |
+| Ruta | Página | Descripción |
+|---|---|---|
+| `/` | Colecciones | Cards con todas las colecciones; crear nueva (modal) o eliminar con confirmación |
+| `/collections/:id` | Detalle colección | Tab **Documentos**: upload PDF/TXT, tabla con estado y badges; Tab **Entidades**: tabla con badges por tipo, navegación al detalle; Tab **Generar texto**: consulta RAG libre |
+| `/collections/:id/entities/:eid` | Detalle entidad | Card de entidad editable (PATCH); generador de borradores; lista de borradores con acciones según estado |
+| `/collections/:id/generate` | Generar texto | Consulta RAG libre con manejo de errores 422 / 503 |
+
+## Ciclo de vida de borradores
+
+| Estado | Acciones disponibles |
 |---|---|
-| **Colecciones** | Listado de colecciones, crear nueva, eliminar |
-| **Detalle colección** | Tabs con documentos, entidades y generación de texto libre |
-| **Detalle entidad** | Información de la entidad y sistema de borradores RAG (generar, editar, confirmar, descartar) |
-| **Generar texto** | Consulta libre contra el lore cargado en la colección |
+| `pending` | Confirmar · Editar · Descartar · Eliminar |
+| `discarded` | Eliminar |
+| `confirmed` | — (solo muestra fecha de confirmación) |
 
-## Conexión con backend
+- **Confirmar** → actualiza la descripción de la entidad y descarta el resto de borradores pendientes.
+- **Descartar** → cambia el estado a `discarded` (`PATCH .../discard`), el borrador sigue visible.
+- **Eliminar** → soft-delete real (`DELETE`), el borrador desaparece del listado.
 
-El frontend consume la API en `VITE_API_BASE_URL`. Para que las peticiones no sean bloqueadas por CORS, añade `http://localhost:5173` a `ALLOWED_ORIGINS` en `backend/.env`.
+## Scripts disponibles
 
-## Build para producción
-
-```bash
-npm run build
-```
-
-Los artefactos se generan en `frontend/dist/`.
+| Script | Descripción |
+|---|---|
+| `npm run dev` | Servidor de desarrollo con HMR en `localhost:5173` |
+| `npm run build` | Compilación TypeScript + bundle de producción en `dist/` |
+| `npm run lint` | ESLint sobre todo el proyecto |
+| `npm run preview` | Sirve el build de producción localmente |

@@ -1,0 +1,41 @@
+/* ── Navbar ──────────────────────────────────────────────────────────────── */
+.navbar {
+  background-color: #1a1a2e !important;
+}
+
+.navbar-brand .lore {
+  color: #ef9f27;
+}
+
+/* ── Cards ───────────────────────────────────────────────────────────────── */
+.card {
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+/* ── Warning buttons (amber) ─────────────────────────────────────────────── */
+.btn-warning {
+  background-color: #ef9f27;
+  border-color: #ef9f27;
+  color: #1a1a1a;
+}
+
+.btn-warning:hover,
+.btn-warning:focus,
+.btn-warning:active {
+  background-color: #d88e1f;
+  border-color: #d88e1f;
+  color: #1a1a1a;
+}
+
+.btn-warning:disabled {
+  background-color: #ef9f27;
+  border-color: #ef9f27;
+  opacity: 0.65;
+}
+
+/* ── Breadcrumb ──────────────────────────────────────────────────────────── */
+.breadcrumb-item + .breadcrumb-item::before {
+  content: "/";
+}

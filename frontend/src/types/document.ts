@@ -1,16 +1,16 @@
-export type DocumentStatus = 'processing' | 'completed' | 'failed'
+import type { DocumentStatus } from "../utils/enums";
 
 export interface Document {
-  id: number
-  collection_id: number
-  filename: string
-  file_type: string
-  chunk_count: number
-  status: DocumentStatus
-  created_at: string
+  id: string;
+  collection_id: string;
+  filename: string;
+  file_type: string;
+  chunk_count: number;
+  status: DocumentStatus;
+  created_at: string;
 }
 
 export interface DocumentListResponse {
-  data: Document[]
-  count: number
+  data: Document[];
+  count: number;
 }

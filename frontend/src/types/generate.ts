@@ -1,9 +1,9 @@
 export interface GenerateTextRequest {
-  query: string
+  query: string;
 }
 
 export interface GenerateTextResponse {
-  answer: string
-  query: string
-  sources_count: number
+  answer: string;
+  query: string;
+  sources_count: number;
 }
