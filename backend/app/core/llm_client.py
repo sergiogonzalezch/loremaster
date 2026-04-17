@@ -1,19 +1,26 @@
 from langchain_ollama import OllamaLLM
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from app.core.config import settings
 
-_PROMPT = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            "Eres un asistente experto en narrativa y worldbuilding.\n"
-            "Responde usando ÚNICAMENTE la información del contexto proporcionado.\n"
-            "Si el contexto no contiene información suficiente, indícalo claramente.\n\n"
-            "CONTEXTO:\n{context}",
-        ),
-        ("human", "{query}"),
-    ]
+_PROMPT = PromptTemplate.from_template(
+    """
+    Eres un asistente experto en narrativa y worldbuilding.\n
+    Responde usando ÚNICAMENTE la información del contexto proporcionado.\n
+    Si el contexto no contiene información suficiente, indícalo claramente.\n\n
+    CONTEXTO:\n{context},\n
+    PREGUNTA:\n{query}.
+    """
+    # [
+    #     (
+    #         "system",
+    #         "Eres un asistente experto en narrativa y worldbuilding.\n"
+    #         "Responde usando ÚNICAMENTE la información del contexto proporcionado.\n"
+    #         "Si el contexto no contiene información suficiente, indícalo claramente.\n\n"
+    #         "CONTEXTO:\n{context}",
+    #     ),
+    #     ("human", "{query}"),
+    # ]
 )
 
 _llm = OllamaLLM(
