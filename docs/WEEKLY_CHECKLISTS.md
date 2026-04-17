@@ -154,45 +154,80 @@ Nota de Mike:
 
 ### Integracion Ollama
 
-- [ ] Agregar a `requirements.txt`: `langchain-ollama`
-- [ ] Variables en `.env.example`: `OLLAMA_BASE_URL`, `OLLAMA_MODEL`
+- [x] Agregar a `requirements.txt`: `langchain-ollama`
+- [x] Variables en `.env.example`: `OLLAMA_BASE_URL`, `OLLAMA_MODEL`
 - [ ] Verificar que Ollama esta corriendo con modelo `llama3.2` disponible
-- [ ] `config.py` con Pydantic Settings: `TEMPERATURE` (0.7), `MAX_TOKENS` (500)
+- [x] `config.py` con Pydantic Settings: `TEMPERATURE` (0.7), `MAX_TOKENS` (500)
 
 ### Generate Service
 
-- [ ] `generate_service.py` orquesta: query → retrieval → prompt → LLM → response
-- [ ] Prompt template en espanol para narrativa/worldbuilding
-- [ ] Parametros de generacion configurables: `temperature`, `max_tokens`
-- [ ] Respuesta incluye texto generado y conteo de fuentes usadas
+- [x] `generate_service.py` orquesta: query → retrieval → prompt → LLM → response
+- [x] Prompt template en espanol para narrativa/worldbuilding
+- [x] Parametros de generacion configurables: `temperature`, `max_tokens`
+- [x] Respuesta incluye texto generado y conteo de fuentes usadas
 
 ### Endpoints Completos Fase 1
 
-- [ ] `POST /collections` — creacion con nombre unico (409 si duplicado)
-- [ ] `GET /collections` — listado completo
-- [ ] `GET /collections/{id}` — detalle
-- [ ] `DELETE /collections/{id}` — eliminacion
-- [ ] `POST /collections/{id}/documents` — ingesta completa
-- [ ] `GET /collections/{id}/documents` — listado de documentos
-- [ ] `POST /collections/{id}/generate/text` — generacion RAG completa
+- [x] `POST /collections` — creacion con nombre unico (409 si duplicado)
+- [x] `GET /collections` — listado completo
+- [x] `GET /collections/{id}` — detalle
+- [x] `DELETE /collections/{id}` — eliminacion
+- [x] `POST /collections/{id}/documents` — ingesta completa
+- [x] `GET /collections/{id}/documents` — listado de documentos
+- [x] `POST /collections/{id}/generate/text` — generacion RAG completa
 
 ### Criterios de aceptacion Semana 4
 
-- [ ] Flujo completo: crear coleccion → subir PDF → hacer query → recibir respuesta coherente del LLM
+- [x] Flujo completo: crear coleccion → subir PDF → hacer query → recibir respuesta coherente del LLM
 - [ ] La respuesta del LLM esta fundamentada en el contenido del documento (no inventa)
-- [ ] Si el contexto no tiene informacion suficiente, el LLM lo indica
-- [ ] Todos los endpoints documentados en Swagger
-- [ ] Crear coleccion con nombre duplicado retorna 409
+- [x] Si el contexto no tiene informacion suficiente, el LLM lo indica
+- [x] Todos los endpoints documentados en Swagger
+- [x] Crear coleccion con nombre duplicado retorna 409
 
 ### Checklist de Cierre Fase 1
 
-- [ ] Todos los criterios de Semanas 1-4 cumplidos
-- [ ] Pipeline RAG funcional de extremo a extremo
-- [ ] Cero errores criticos en flujo principal
-- [ ] Swagger documenta todos los endpoints activos
-- [ ] README actualizado con instrucciones de setup local
+- [x] Todos los criterios de Semanas 1-4 cumplidos
+- [x] Pipeline RAG funcional de extremo a extremo
+- [x] Cero errores criticos en flujo principal
+- [x] Swagger documenta todos los endpoints activos
+- [x] README actualizado con instrucciones de setup local
 
 ---
+
+---
+
+## Nota — Funcionalidades de Semana 8 implementadas anticipadamente
+
+Las funcionalidades de gestión de entidades y borradores RAG, planificadas originalmente para la Semana 8, fueron implementadas durante las Semanas 4-5 junto con el pipeline RAG base. A continuación el estado real de cada ítem:
+
+### CRUD de Entidades (previsto Semana 8 → implementado en Semana 5)
+
+- [x] `POST /api/v1/collections/{id}/entities` — crear entidad (type, name, description)
+- [x] `GET /api/v1/collections/{id}/entities` — listar entidades activas
+- [x] `GET /api/v1/collections/{id}/entities/{entity_id}` — detalle
+- [x] `PATCH /api/v1/collections/{id}/entities/{entity_id}` — actualización parcial (campos opcionales)
+- [x] `DELETE /api/v1/collections/{id}/entities/{entity_id}` — soft-delete con cascada a drafts
+- [x] Tipos soportados: `character`, `scene`, `faction`, `item`
+- [x] Unicidad de nombre por colección (409 si duplicado)
+- [x] Soft-delete: `is_deleted` + `deleted_at` en todos los modelos
+
+### Sistema de Borradores RAG (previsto Semana 8 → implementado en Semana 5)
+
+| Método | Ruta | Descripción | Status |
+|---|---|---|---|
+| `POST` | `.../entities/{eid}/generate` | Generar borrador con RAG | 201 |
+| `GET` | `.../entities/{eid}/drafts` | Listar borradores activos (excluye discarded y soft-deleted) | 200 |
+| `PATCH` | `.../entities/{eid}/drafts/{did}` | Editar contenido (solo pending) | 200 |
+| `POST` | `.../entities/{eid}/drafts/{did}/confirm` | Confirmar → actualiza descripción de entidad | 200 |
+| `PATCH` | `.../entities/{eid}/drafts/{did}/discard` | Cambiar status a descartado (acción reversible) | 200 |
+| `DELETE` | `.../entities/{eid}/drafts/{did}` | Soft-delete real del borrador (`is_deleted=True`) | 204 |
+
+- [x] Máximo 5 borradores `pending` por entidad (409 si se supera)
+- [x] Confirmar un borrador auto-descarta los demás pending de la misma entidad
+- [x] Eliminación en cascada: colección → documentos + entidades + drafts (soft-delete)
+- [x] Eliminación de entidad → soft-delete de todos sus drafts (cualquier status)
+- [x] Guards en `discard_pending_drafts` y `soft_delete_all_drafts`: requieren al menos un filtro
+- [x] 64 tests passing (collections, documents, entities, entity_drafts, generate)
 
 # Fase 2 — RAG Avanzado + Imagenes Locales (Semanas 5-8)
 
@@ -209,15 +244,15 @@ Nota de Mike:
 
 ### Mejora de Chunking
 
-- [ ] Parametros de chunking configurables via `.env`: `CHUNK_SIZE`, `CHUNK_OVERLAP`
+- [x] Parametros de chunking configurables via `.env`: `CHUNK_SIZE`, `CHUNK_OVERLAP`
 - [ ] Experimentar con chunk sizes (256, 512, 1024) y documentar resultados
 - [ ] Verificar que overlap previene perdida de contexto en fronteras de chunks
 
 ### Mejora de Retrieval
 
 - [ ] `score_threshold` configurable para filtrar resultados de baja relevancia
-- [ ] `top_k` configurable (default 4, permitir ajuste por request)
-- [ ] Logging basico de queries y scores de retrieval
+- [x] `top_k` configurable (default 4, se lee de `config.py` y se pasa como parametro)
+- [x] Logging basico de queries y scores de retrieval
 
 ### Soporte Documentos Grandes
 
@@ -228,16 +263,16 @@ Nota de Mike:
 
 ### Gestion de Documentos
 
-- [ ] `GET /collections/{id}/documents/{doc_id}` — detalle de documento con metadata
-- [ ] `DELETE /collections/{id}/documents/{doc_id}` — eliminar documento y sus chunks de Qdrant
-- [ ] Verificar que la eliminacion de chunks en Qdrant es efectiva
+- [x] `GET /collections/{id}/documents/{doc_id}` — detalle de documento con metadata
+- [x] `DELETE /collections/{id}/documents/{doc_id}` — eliminar documento y sus chunks de Qdrant
+- [x] Verificar que la eliminacion de chunks en Qdrant es efectiva
 
 ### Criterios de aceptacion Semana 5
 
 - [ ] Documento de 100+ paginas se ingesta correctamente
 - [ ] Queries retornan chunks mas relevantes (mejora cualitativa vs Semana 4)
-- [ ] Eliminacion de documento limpia chunks de Qdrant
-- [ ] Parametros de chunking se leen de configuracion
+- [x] Eliminacion de documento limpia chunks de Qdrant
+- [x] Parametros de chunking se leen de configuracion
 
 ---
 

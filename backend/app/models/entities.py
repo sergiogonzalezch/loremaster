@@ -51,7 +51,12 @@ class EntityRequest(BaseModel):
 
 
 CreateEntityRequest = EntityRequest
-UpdateEntityRequest = EntityRequest
+
+
+class UpdateEntityRequest(BaseModel):
+    type: EntityType | None = None
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=2000)
 
 
 class EntityResponse(BaseModel):

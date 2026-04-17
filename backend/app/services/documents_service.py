@@ -21,8 +21,8 @@ async def ingest_document_service(
 ) -> Document:
     if data.content_type not in ALLOWED_MIME_TYPES:
         raise HTTPException(status_code=400, detail="Unsupported file type")
-    if not data.filename:
-        raise HTTPException(status_code=400, detail="Filename is required")
+    if not data.filename or not data.filename.strip():
+        raise HTTPException(status_code=422, detail="Filename is required")
 
     content_bytes = await data.read()
     if len(content_bytes) > MAX_BYTES:

@@ -282,3 +282,12 @@ async def test_update_confirmed_draft_404(
         json={"content": "intento posterior"},
     )
     assert response.status_code == 404
+
+
+@pytest.mark.anyio
+async def test_discard_pending_drafts_requires_filter(db_session):
+    """DRF-17: discard_pending_drafts sin filtros lanza ValueError."""
+    from app.services.entity_text_draft_service import discard_pending_drafts
+
+    with pytest.raises(ValueError, match="requires at least"):
+        discard_pending_drafts(db_session)

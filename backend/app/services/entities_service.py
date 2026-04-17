@@ -57,16 +57,20 @@ def list_entities_service(session: Session, collection_id: str) -> list[Entity]:
 def update_entity_service(
     session: Session, entity: Entity, request: UpdateEntityRequest
 ) -> Entity:
-    if request.name != entity.name and _find_active_by_name(
-        session, entity.collection_id, request.name
+    new_name = request.name if request.name is not None else entity.name
+    if new_name != entity.name and _find_active_by_name(
+        session, entity.collection_id, new_name
     ):
         raise HTTPException(
             status_code=409,
-            detail=f"An entity named '{request.name}' already exists in this collection.",
+            detail=f"An entity named '{new_name}' already exists in this collection.",
         )
-    entity.type = request.type
-    entity.name = request.name
-    entity.description = request.description
+    if request.type is not None:
+        entity.type = request.type
+    if request.name is not None:
+        entity.name = request.name
+    if request.description is not None:
+        entity.description = request.description
     entity.updated_at = datetime.now(timezone.utc)
     session.add(entity)
     session.commit()
