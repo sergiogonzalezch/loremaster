@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import HTTPException, UploadFile
+from fastapi import HTTPException, UploadFile  # HTTPException: input validation only
 from sqlmodel import Session, select
 
 from app.models.documents import Document, DocumentStatus
@@ -55,10 +55,7 @@ async def ingest_document_service(
         document.status = DocumentStatus.failed
         session.add(document)
         session.commit()
-        raise HTTPException(
-            status_code=502,
-            detail=f"Failed to ingest document into vector store: {e}",
-        )
+        raise RuntimeError(f"Failed to ingest document into vector store: {e}") from e
 
     document.status = DocumentStatus.completed
     document.chunk_count = chunk_count
@@ -75,12 +72,6 @@ def list_documents_service(session: Session, collection_id: str) -> list[Documen
         Document.status != DocumentStatus.processing,
     )
     return session.exec(stmt).all()
-
-
-def get_document_service(
-    session: Session, collection_id: str, doc_id: str
-) -> Document | None:
-    return get_active_by_id(session, Document, doc_id, collection_id)
 
 
 def delete_document_service(session: Session, document: Document) -> bool:

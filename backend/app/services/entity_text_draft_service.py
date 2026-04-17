@@ -48,16 +48,11 @@ def generate_draft_service(
             f"{entity.description}\n\n"
         )
 
-    try:
-        answer, sources_count = generate_rag_response(
-            collection_id=entity.collection_id,
-            query=request.query,
-            extra_context=extra_context,
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e))
-    except RuntimeError as e:
-        raise HTTPException(status_code=503, detail=str(e))
+    answer, sources_count = generate_rag_response(
+        collection_id=entity.collection_id,
+        query=request.query,
+        extra_context=extra_context,
+    )
 
     draft = EntityTextDraft(
         entity_id=entity.id,
@@ -91,7 +86,7 @@ def list_drafts_service(
     return session.exec(stmt).all()
 
 
-def update_draft_content_service(
+def edit_draft_service(
     session: Session,
     draft_id: str,
     entity_id: str,

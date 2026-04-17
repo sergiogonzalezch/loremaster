@@ -13,7 +13,7 @@ from app.models.entity_text_draft import (
 from app.services.entity_text_draft_service import (
     generate_draft_service,
     list_drafts_service,
-    update_draft_content_service,
+    edit_draft_service,
     confirm_draft_service,
     discard_draft_service,
     soft_delete_draft_service,
@@ -32,7 +32,12 @@ async def generate_draft(
     entity: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
-    return generate_draft_service(session, entity, request)
+    try:
+        return generate_draft_service(session, entity, request)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
 
 
 @router.get(
@@ -61,7 +66,7 @@ async def update_draft(
     _: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
-    draft = update_draft_content_service(
+    draft = edit_draft_service(
         session, draft_id, entity_id, collection_id, request.content
     )
     if not draft:
