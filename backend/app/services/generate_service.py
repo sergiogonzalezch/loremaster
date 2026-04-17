@@ -1,30 +1,20 @@
 import logging
 
-from fastapi import HTTPException
-
 from app.models.generate import GenerateTextResponse
 from app.core.rag_generate import generate_rag_response
 
 logger = logging.getLogger(__name__)
 
 
-def text_generation_service(query: str, collection_id: str):
+def text_generation_service(query: str, collection_id: str) -> GenerateTextResponse:
     logger.info(
         "Generating text for collection %s, query: '%.50s'", collection_id, query
     )
-
-    try:
-        answer, sources_count = generate_rag_response(
-            collection_id=collection_id,
-            query=query,
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e))
-    except RuntimeError as e:
-        raise HTTPException(status_code=503, detail=str(e))
-
+    answer, sources_count = generate_rag_response(
+        collection_id=collection_id,
+        query=query,
+    )
     logger.info("Generated response using %d context chunks", sources_count)
-
     return GenerateTextResponse(
         query=query,
         answer=answer,

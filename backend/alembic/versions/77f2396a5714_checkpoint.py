@@ -1,8 +1,8 @@
 """Checkpoint
 
-Revision ID: 43f63814f4e1
+Revision ID: 77f2396a5714
 Revises:
-Create Date: 2026-04-16 22:22:56.365404
+Create Date: 2026-04-17 14:17:18.702291
 
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 import sqlmodel
 
 # revision identifiers, used by Alembic.
-revision: str = "43f63814f4e1"
+revision: str = "77f2396a5714"
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -116,6 +116,7 @@ def upgrade() -> None:
         ),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("confirmed_at", sa.DateTime(), nullable=True),
+        sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.Column("is_deleted", sa.Boolean(), nullable=False),
         sa.Column("deleted_at", sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(

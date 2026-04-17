@@ -42,6 +42,7 @@ class EntityTextDraft(SQLModel, table=True):
     status: DraftStatus = Field(default=DraftStatus.pending)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     confirmed_at: Optional[datetime] = Field(default=None)
+    updated_at: Optional[datetime] = Field(default=None)
     is_deleted: bool = Field(default=False)
     deleted_at: Optional[datetime] = Field(default=None)
 
@@ -69,6 +70,7 @@ class EntityTextDraftResponse(BaseModel):
     status: DraftStatus
     created_at: datetime
     confirmed_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
 
 class EntityTextDraftListResponse(BaseModel):
