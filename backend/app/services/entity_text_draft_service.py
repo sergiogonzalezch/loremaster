@@ -11,6 +11,7 @@ from app.models.entity_text_draft import (
     GenerateEntityTextDraftRequest,
 )
 from app.models.entities import Entity
+from app.core.common import soft_delete
 from app.core.rag_generate import generate_rag_response
 
 logger = logging.getLogger(__name__)
@@ -23,16 +24,14 @@ def generate_draft_service(
     entity: Entity,
     request: GenerateEntityTextDraftRequest,
 ) -> EntityTextDraft:
-    entity_id = entity.id
-    collection_id = entity.collection_id
-
     pending_count = session.exec(
         select(func.count())
         .select_from(EntityTextDraft)
         .where(
-            EntityTextDraft.entity_id == entity_id,
-            EntityTextDraft.collection_id == collection_id,
+            EntityTextDraft.entity_id == entity.id,
+            EntityTextDraft.collection_id == entity.collection_id,
             EntityTextDraft.status == DraftStatus.pending,
+            EntityTextDraft.is_deleted == False,
         )
     ).one()
     if pending_count >= MAX_PENDING_DRAFTS:
@@ -51,7 +50,7 @@ def generate_draft_service(
 
     try:
         answer, sources_count = generate_rag_response(
-            collection_id=collection_id,
+            collection_id=entity.collection_id,
             query=request.query,
             extra_context=extra_context,
         )
@@ -61,8 +60,8 @@ def generate_draft_service(
         raise HTTPException(status_code=503, detail=str(e))
 
     draft = EntityTextDraft(
-        entity_id=entity_id,
-        collection_id=collection_id,
+        entity_id=entity.id,
+        collection_id=entity.collection_id,
         query=request.query,
         content=answer,
         sources_count=sources_count,
@@ -70,7 +69,7 @@ def generate_draft_service(
     session.add(draft)
     session.commit()
     session.refresh(draft)
-    logger.info("Draft %s created for entity %s", draft.id, entity_id)
+    logger.info("Draft %s created for entity %s", draft.id, entity.id)
     return draft
 
 
@@ -85,6 +84,7 @@ def list_drafts_service(
             EntityTextDraft.entity_id == entity_id,
             EntityTextDraft.collection_id == collection_id,
             EntityTextDraft.status != DraftStatus.discarded,
+            EntityTextDraft.is_deleted == False,
         )
         .order_by(EntityTextDraft.created_at.desc())
     )
@@ -128,6 +128,7 @@ def confirm_draft_service(
             EntityTextDraft.collection_id == entity.collection_id,
             EntityTextDraft.id != draft_id,
             EntityTextDraft.status == DraftStatus.pending,
+            EntityTextDraft.is_deleted == False,
         )
     ).all()
     for pending in pending_drafts:
@@ -173,7 +174,10 @@ def discard_pending_drafts(
     entity_id: str | None = None,
     collection_id: str | None = None,
 ) -> int:
-    stmt = select(EntityTextDraft).where(EntityTextDraft.status == DraftStatus.pending)
+    stmt = select(EntityTextDraft).where(
+        EntityTextDraft.status == DraftStatus.pending,
+        EntityTextDraft.is_deleted == False,
+    )
     if entity_id is not None:
         stmt = stmt.where(EntityTextDraft.entity_id == entity_id)
     if collection_id is not None:
@@ -193,16 +197,66 @@ def discard_pending_drafts(
     return len(drafts)
 
 
+def soft_delete_draft_service(
+    session: Session,
+    draft_id: str,
+    entity_id: str,
+    collection_id: str,
+) -> bool:
+    draft = _get_active_draft(session, draft_id, entity_id, collection_id)
+    if not draft:
+        return False
+    soft_delete(session, draft)
+    session.commit()
+    logger.info("Draft %s soft-deleted", draft_id)
+    return True
+
+
+def soft_delete_all_drafts(
+    session: Session,
+    entity_id: str | None = None,
+    collection_id: str | None = None,
+) -> int:
+    stmt = select(EntityTextDraft).where(EntityTextDraft.is_deleted == False)
+    if entity_id is not None:
+        stmt = stmt.where(EntityTextDraft.entity_id == entity_id)
+    if collection_id is not None:
+        stmt = stmt.where(EntityTextDraft.collection_id == collection_id)
+
+    drafts = session.exec(stmt).all()
+    for draft in drafts:
+        soft_delete(session, draft)
+
+    logger.info(
+        "Soft-deleted %d draft(s) [entity_id=%s, collection_id=%s]",
+        len(drafts),
+        entity_id,
+        collection_id,
+    )
+    return len(drafts)
+
+
+def _get_active_draft(
+    session: Session,
+    draft_id: str,
+    entity_id: str,
+    collection_id: str,
+) -> EntityTextDraft | None:
+    return session.exec(
+        select(EntityTextDraft).where(
+            EntityTextDraft.id == draft_id,
+            EntityTextDraft.entity_id == entity_id,
+            EntityTextDraft.collection_id == collection_id,
+            EntityTextDraft.is_deleted == False,
+        )
+    ).first()
+
+
 def _get_pending_draft(
     session: Session,
     draft_id: str,
     entity_id: str,
     collection_id: str,
 ) -> EntityTextDraft | None:
-    stmt = select(EntityTextDraft).where(
-        EntityTextDraft.id == draft_id,
-        EntityTextDraft.entity_id == entity_id,
-        EntityTextDraft.collection_id == collection_id,
-        EntityTextDraft.status == DraftStatus.pending,
-    )
-    return session.exec(stmt).first()
+    draft = _get_active_draft(session, draft_id, entity_id, collection_id)
+    return draft if draft and draft.status == DraftStatus.pending else None

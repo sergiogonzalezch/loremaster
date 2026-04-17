@@ -92,8 +92,8 @@ async def test_discard_draft(
     created = await _create_draft(client, sample_collection.id, sample_entity.id)
     draft_id = created.json()["id"]
 
-    response = await client.delete(
-        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts/{draft_id}"
+    response = await client.patch(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts/{draft_id}/discard"
     )
     assert response.status_code == 200
     assert response.json()["status"] == "discarded"
@@ -132,8 +132,8 @@ async def test_discarded_drafts_not_in_list(
     """DRF-07: Draft descartado no aparece en list."""
     created = await _create_draft(client, sample_collection.id, sample_entity.id)
     draft_id = created.json()["id"]
-    await client.delete(
-        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts/{draft_id}"
+    await client.patch(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts/{draft_id}/discard"
     )
 
     listed = await client.get(
@@ -223,6 +223,46 @@ async def test_query_too_short_422(client, sample_collection, sample_entity):
         json={"query": "abc"},
     )
     assert response.status_code == 422
+
+
+@pytest.mark.anyio
+async def test_soft_delete_draft(
+    client, mock_rag_engine, mock_llm, db_session, sample_collection, sample_entity
+):
+    """DRF-15: DELETE real hace soft-delete del draft, retorna 204."""
+    created = await _create_draft(client, sample_collection.id, sample_entity.id)
+    draft_id = created.json()["id"]
+
+    response = await client.delete(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts/{draft_id}"
+    )
+    assert response.status_code == 204
+
+    from app.models.entity_text_draft import EntityTextDraft
+    db_draft = db_session.exec(
+        select(EntityTextDraft).where(EntityTextDraft.id == draft_id)
+    ).first()
+    assert db_draft is not None
+    assert db_draft.is_deleted is True
+
+
+@pytest.mark.anyio
+async def test_soft_deleted_draft_not_in_list(
+    client, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
+    """DRF-16: Draft soft-deleted no aparece en listado."""
+    created = await _create_draft(client, sample_collection.id, sample_entity.id)
+    draft_id = created.json()["id"]
+
+    await client.delete(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts/{draft_id}"
+    )
+
+    listed = await client.get(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts"
+    )
+    ids = [item["id"] for item in listed.json()["data"]]
+    assert draft_id not in ids
 
 
 @pytest.mark.anyio
