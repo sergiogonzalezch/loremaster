@@ -6,7 +6,7 @@ from sqlmodel import Session, select
 
 from app.models.entities import Entity, CreateEntityRequest, UpdateEntityRequest
 from app.core.common import get_active_by_id, list_active_by_collection, soft_delete
-from app.services.entity_text_draft_service import discard_pending_drafts
+from app.services.entity_text_draft_service import soft_delete_all_drafts
 
 logger = logging.getLogger(__name__)
 
@@ -57,14 +57,20 @@ def list_entities_service(session: Session, collection_id: str) -> list[Entity]:
 def update_entity_service(
     session: Session, entity: Entity, request: UpdateEntityRequest
 ) -> Entity:
-    if request.name != entity.name and _find_active_by_name(session, entity.collection_id, request.name):
+    new_name = request.name if request.name is not None else entity.name
+    if new_name != entity.name and _find_active_by_name(
+        session, entity.collection_id, new_name
+    ):
         raise HTTPException(
             status_code=409,
-            detail=f"An entity named '{request.name}' already exists in this collection.",
+            detail=f"An entity named '{new_name}' already exists in this collection.",
         )
-    entity.type = request.type
-    entity.name = request.name
-    entity.description = request.description
+    if request.type is not None:
+        entity.type = request.type
+    if request.name is not None:
+        entity.name = request.name
+    if request.description is not None:
+        entity.description = request.description
     entity.updated_at = datetime.now(timezone.utc)
     session.add(entity)
     session.commit()
@@ -73,11 +79,13 @@ def update_entity_service(
 
 
 def delete_entity_service(session: Session, entity: Entity) -> bool:
-    discarded = discard_pending_drafts(
+    deleted = soft_delete_all_drafts(
         session, entity_id=entity.id, collection_id=entity.collection_id
     )
-    logger.info("Discarded %d pending draft(s) for entity %s", discarded, entity.id)
+    logger.info("Soft-deleted %d draft(s) for entity %s", deleted, entity.id)
     soft_delete(session, entity)
     session.commit()
-    logger.info("Entity %s soft-deleted from collection %s", entity.id, entity.collection_id)
+    logger.info(
+        "Entity %s soft-deleted from collection %s", entity.id, entity.collection_id
+    )
     return True

@@ -48,7 +48,7 @@ async def test_get_entity_by_id(client, sample_collection, sample_entity):
 @pytest.mark.anyio
 async def test_update_entity(client, sample_collection, sample_entity):
     """ENT-04: Actualizar entidad retorna 200 y updated_at seteado."""
-    response = await client.put(
+    response = await client.patch(
         f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}",
         json={"type": "character", "name": "Aragorn II", "description": "King"},
     )
@@ -104,7 +104,48 @@ async def test_delete_entity_discards_pending_drafts(
         select(EntityTextDraft).where(EntityTextDraft.entity_id == sample_entity.id)
     ).all()
     assert len(drafts) == 2
-    assert all(d.status == DraftStatus.discarded for d in drafts)
+    assert all(d.is_deleted is True for d in drafts)
+
+
+@pytest.mark.anyio
+async def test_partial_update_entity(client, sample_collection, sample_entity):
+    """ENT-14: Actualización parcial solo modifica campos enviados."""
+    response = await client.patch(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}",
+        json={"description": "King of Gondor"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["name"] == "Aragorn"
+    assert data["type"] == "character"
+    assert data["description"] == "King of Gondor"
+
+
+@pytest.mark.anyio
+async def test_delete_entity_soft_deletes_confirmed_drafts(
+    client, db_session, sample_collection, sample_entity
+):
+    """ENT-13: Eliminar entidad hace soft-delete de drafts confirmed."""
+    draft = EntityTextDraft(
+        entity_id=sample_entity.id,
+        collection_id=sample_collection.id,
+        query="query confirmada",
+        content="contenido confirmado",
+        status=DraftStatus.confirmed,
+    )
+    db_session.add(draft)
+    db_session.commit()
+    db_session.refresh(draft)
+
+    await client.delete(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}"
+    )
+
+    db_draft = db_session.exec(
+        select(EntityTextDraft).where(EntityTextDraft.id == draft.id)
+    ).first()
+    assert db_draft is not None
+    assert db_draft.is_deleted is True
 
 
 @pytest.mark.anyio
@@ -156,8 +197,8 @@ async def test_get_nonexistent_entity_404(client, sample_collection):
 
 @pytest.mark.anyio
 async def test_update_nonexistent_404(client, sample_collection):
-    """ENT-11: PUT entidad inexistente retorna 404."""
-    response = await client.put(
+    """ENT-11: PATCH entidad inexistente retorna 404."""
+    response = await client.patch(
         f"/api/v1/collections/{sample_collection.id}/entities/{uuid.uuid4()}",
         json={"type": "character", "name": "Ghost", "description": "none"},
     )

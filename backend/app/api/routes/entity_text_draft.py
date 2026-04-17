@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlmodel import Session
 
 from app.core.valid_collection import get_entity_or_404
@@ -16,6 +16,7 @@ from app.services.entity_text_draft_service import (
     update_draft_content_service,
     confirm_draft_service,
     discard_draft_service,
+    soft_delete_draft_service,
 )
 
 router = APIRouter(prefix="/collections", tags=["entity-drafts"])
@@ -83,8 +84,8 @@ async def confirm_draft(
     return result
 
 
-@router.delete(
-    "/{collection_id}/entities/{entity_id}/drafts/{draft_id}",
+@router.patch(
+    "/{collection_id}/entities/{entity_id}/drafts/{draft_id}/discard",
     response_model=EntityTextDraftResponse,
 )
 async def discard_draft(
@@ -98,3 +99,20 @@ async def discard_draft(
     if not draft:
         raise HTTPException(status_code=404, detail="Draft not found")
     return draft
+
+
+@router.delete(
+    "/{collection_id}/entities/{entity_id}/drafts/{draft_id}",
+    status_code=204,
+)
+async def delete_draft(
+    collection_id: str,
+    entity_id: str,
+    draft_id: str,
+    _: Entity = Depends(get_entity_or_404),
+    session: Session = Depends(get_session),
+):
+    result = soft_delete_draft_service(session, draft_id, entity_id, collection_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Draft not found")
+    return Response(status_code=204)

@@ -1,3 +1,6 @@
+import logging
+
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -5,6 +8,7 @@ from app.core.config import settings
 from app.core.lifespan import lifespan
 from app.api.routes import generate, documents, collections, entities, entity_text_draft
 
+logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(
     title=settings.project_name,

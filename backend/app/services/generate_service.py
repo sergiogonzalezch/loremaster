@@ -1,7 +1,6 @@
 import logging
 
 from fastapi import HTTPException
-from sqlmodel import Session
 
 from app.models.generate import GenerateTextResponse
 from app.core.rag_generate import generate_rag_response
@@ -9,7 +8,7 @@ from app.core.rag_generate import generate_rag_response
 logger = logging.getLogger(__name__)
 
 
-def text_generation_service(session: Session, query: str, collection_id: str):
+def text_generation_service(query: str, collection_id: str):
     logger.info(
         "Generating text for collection %s, query: '%.50s'", collection_id, query
     )
