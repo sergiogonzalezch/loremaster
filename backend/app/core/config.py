@@ -14,18 +14,18 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://localhost:11434"
 
     # LLM parameters
-    temperature: float = Field(default=0.7, ge=0.0, le=2.0)
-    max_tokens: int = Field(default=500, gt=0, le=8192)
+    temperature: float = 0.7
+    max_tokens: int = 500
 
     # Vector DB (Qdrant)
     qdrant_url: str = "http://localhost:6333"
 
     # Embeddings
     embedding_model: str = "paraphrase-multilingual-MiniLM-L12-v2"
-    embedding_dims: int = Field(default=384, gt=0)
-    chunk_size: int = Field(default=512, gt=0)
-    chunk_overlap: int = Field(default=50, ge=0)
-    top_k: int = Field(default=4, gt=0)
+    embedding_dims: int = 384
+    chunk_size: int = 512
+    chunk_overlap: int = 50
+    top_k: int = 4
 
     # Redis
     redis_url: str = "redis://localhost:6379/0"

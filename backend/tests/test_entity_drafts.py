@@ -267,10 +267,10 @@ async def test_soft_deleted_draft_not_in_list(
 
 
 @pytest.mark.anyio
-async def test_update_confirmed_draft_404(
+async def test_update_confirmed_draft_200(
     client, mock_rag_engine, mock_llm, sample_collection, sample_entity
 ):
-    """DRF-14: Actualizar draft confirmado retorna 404 (solo pending)."""
+    """DRF-14: Actualizar draft confirmado retorna 200 (editable)."""
     created = await _create_draft(client, sample_collection.id, sample_entity.id)
     draft_id = created.json()["id"]
     await client.post(
@@ -279,9 +279,10 @@ async def test_update_confirmed_draft_404(
 
     response = await client.patch(
         f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts/{draft_id}",
-        json={"content": "intento posterior"},
+        json={"content": "contenido editado post-confirm"},
     )
-    assert response.status_code == 404
+    assert response.status_code == 200
+    assert response.json()["content"] == "contenido editado post-confirm"
 
 
 @pytest.mark.anyio
@@ -291,3 +292,93 @@ async def test_discard_pending_drafts_requires_filter(db_session):
 
     with pytest.raises(ValueError, match="requires at least"):
         discard_pending_drafts(db_session)
+
+
+@pytest.mark.anyio
+async def test_confirm_second_cycle_discards_previous_confirmed(
+    client, db_session, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
+    """DRF-18: Segundo ciclo de confirmación descarta el confirmed anterior."""
+    first = await _create_draft(
+        client, sample_collection.id, sample_entity.id, "primer ciclo lore"
+    )
+    first_id = first.json()["id"]
+    await client.post(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts/{first_id}/confirm"
+    )
+
+    second = await _create_draft(
+        client, sample_collection.id, sample_entity.id, "segundo ciclo lore"
+    )
+    second_id = second.json()["id"]
+    await client.post(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts/{second_id}/confirm"
+    )
+
+    db_drafts = db_session.exec(
+        select(EntityTextDraft).where(EntityTextDraft.entity_id == sample_entity.id)
+    ).all()
+    status_by_id = {d.id: d.status.value for d in db_drafts}
+    assert status_by_id[first_id] == "discarded"
+    assert status_by_id[second_id] == "confirmed"
+
+
+@pytest.mark.anyio
+async def test_edit_confirmed_draft_updates_entity(
+    client, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
+    """DRF-19: Editar draft confirmed actualiza descripción de la entidad."""
+    created = await _create_draft(client, sample_collection.id, sample_entity.id)
+    draft_id = created.json()["id"]
+
+    await client.post(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts/{draft_id}/confirm"
+    )
+
+    response = await client.patch(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts/{draft_id}",
+        json={"content": "Descripción corregida"},
+    )
+    assert response.status_code == 200
+    assert response.json()["content"] == "Descripción corregida"
+    assert response.json()["updated_at"] is not None
+
+    entity_resp = await client.get(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}"
+    )
+    assert entity_resp.json()["description"] == "Descripción corregida"
+
+
+@pytest.mark.anyio
+async def test_edit_draft_sets_updated_at(
+    client, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
+    """DRF-20: Editar draft pending setea updated_at."""
+    created = await _create_draft(client, sample_collection.id, sample_entity.id)
+    draft_id = created.json()["id"]
+    assert created.json()["updated_at"] is None
+
+    response = await client.patch(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts/{draft_id}",
+        json={"content": "Editado"},
+    )
+    assert response.status_code == 200
+    assert response.json()["updated_at"] is not None
+
+
+@pytest.mark.anyio
+async def test_update_discarded_draft_404(
+    client, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
+    """DRF-21: Actualizar draft descartado retorna 404."""
+    created = await _create_draft(client, sample_collection.id, sample_entity.id)
+    draft_id = created.json()["id"]
+    await client.patch(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts/{draft_id}/discard"
+    )
+
+    response = await client.patch(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts/{draft_id}",
+        json={"content": "intento de editar descartado"},
+    )
+    assert response.status_code == 404

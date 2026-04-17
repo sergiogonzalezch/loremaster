@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Response, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, File
 from sqlmodel import Session
 
 from app.core.valid_collection import get_collection_or_404, get_document_or_404
@@ -23,7 +23,10 @@ async def ingest(
     _: Collection = Depends(get_collection_or_404),
     session: Session = Depends(get_session),
 ):
-    return await ingest_document_service(session, file, collection_id)
+    try:
+        return await ingest_document_service(session, file, collection_id)
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e))
 
 
 @router.get("/{collection_id}/documents", response_model=DocumentListResponse)

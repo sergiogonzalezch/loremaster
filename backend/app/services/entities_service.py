@@ -5,8 +5,8 @@ from fastapi import HTTPException
 from sqlmodel import Session, select
 
 from app.models.entities import Entity, CreateEntityRequest, UpdateEntityRequest
-from app.core.common import get_active_by_id, list_active_by_collection, soft_delete
-from app.services.entity_text_draft_service import soft_delete_all_drafts
+from app.core.common import list_active_by_collection
+from app.services.deletion_service import cascade_delete_entity
 
 logger = logging.getLogger(__name__)
 
@@ -44,12 +44,6 @@ def create_entity_service(
     return entity
 
 
-def get_entity_service(
-    session: Session, entity_id: str, collection_id: str
-) -> Entity | None:
-    return get_active_by_id(session, Entity, entity_id, collection_id)
-
-
 def list_entities_service(session: Session, collection_id: str) -> list[Entity]:
     return list_active_by_collection(session, Entity, collection_id)
 
@@ -79,13 +73,6 @@ def update_entity_service(
 
 
 def delete_entity_service(session: Session, entity: Entity) -> bool:
-    deleted = soft_delete_all_drafts(
-        session, entity_id=entity.id, collection_id=entity.collection_id
-    )
-    logger.info("Soft-deleted %d draft(s) for entity %s", deleted, entity.id)
-    soft_delete(session, entity)
+    cascade_delete_entity(session, entity)
     session.commit()
-    logger.info(
-        "Entity %s soft-deleted from collection %s", entity.id, entity.collection_id
-    )
     return True
