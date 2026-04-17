@@ -118,7 +118,32 @@ async def test_delete_cascades_pending_drafts(
         select(EntityTextDraft).where(EntityTextDraft.id == draft.id)
     ).first()
     assert db_draft is not None
-    assert db_draft.status == DraftStatus.discarded
+    assert db_draft.is_deleted is True
+
+
+@pytest.mark.anyio
+async def test_delete_collection_soft_deletes_confirmed_drafts(
+    client, db_session, sample_collection, sample_entity
+):
+    """COL-13: Eliminar colección hace soft-delete de drafts confirmed."""
+    draft = EntityTextDraft(
+        entity_id=sample_entity.id,
+        collection_id=sample_collection.id,
+        query="query lore confirmada",
+        content="lore confirmado",
+        status=DraftStatus.confirmed,
+    )
+    db_session.add(draft)
+    db_session.commit()
+    db_session.refresh(draft)
+
+    await client.delete(f"/api/v1/collections/{sample_collection.id}")
+
+    db_draft = db_session.exec(
+        select(EntityTextDraft).where(EntityTextDraft.id == draft.id)
+    ).first()
+    assert db_draft is not None
+    assert db_draft.is_deleted is True
 
 
 @pytest.mark.anyio

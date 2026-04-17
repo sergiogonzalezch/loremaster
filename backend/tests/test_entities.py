@@ -104,7 +104,34 @@ async def test_delete_entity_discards_pending_drafts(
         select(EntityTextDraft).where(EntityTextDraft.entity_id == sample_entity.id)
     ).all()
     assert len(drafts) == 2
-    assert all(d.status == DraftStatus.discarded for d in drafts)
+    assert all(d.is_deleted is True for d in drafts)
+
+
+@pytest.mark.anyio
+async def test_delete_entity_soft_deletes_confirmed_drafts(
+    client, db_session, sample_collection, sample_entity
+):
+    """ENT-13: Eliminar entidad hace soft-delete de drafts confirmed."""
+    draft = EntityTextDraft(
+        entity_id=sample_entity.id,
+        collection_id=sample_collection.id,
+        query="query confirmada",
+        content="contenido confirmado",
+        status=DraftStatus.confirmed,
+    )
+    db_session.add(draft)
+    db_session.commit()
+    db_session.refresh(draft)
+
+    await client.delete(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}"
+    )
+
+    db_draft = db_session.exec(
+        select(EntityTextDraft).where(EntityTextDraft.id == draft.id)
+    ).first()
+    assert db_draft is not None
+    assert db_draft.is_deleted is True
 
 
 @pytest.mark.anyio
