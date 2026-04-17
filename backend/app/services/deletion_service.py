@@ -34,7 +34,9 @@ def cascade_delete_collection(session: Session, collection: Collection) -> None:
     ).all()
     for doc in docs:
         soft_delete(session, doc)
-    logger.info("Soft-deleted %d document(s) for collection %s", len(docs), collection.id)
+    logger.info(
+        "Soft-deleted %d document(s) for collection %s", len(docs), collection.id
+    )
 
     entities = session.exec(
         select(Entity).where(
@@ -44,11 +46,17 @@ def cascade_delete_collection(session: Session, collection: Collection) -> None:
     ).all()
     for entity in entities:
         cascade_delete_entity(session, entity)
-    logger.info("Soft-deleted %d entity(ies) for collection %s", len(entities), collection.id)
+    logger.info(
+        "Soft-deleted %d entity(ies) for collection %s", len(entities), collection.id
+    )
 
     remaining = soft_delete_all_drafts(session, collection_id=collection.id)
     if remaining > 0:
-        logger.info("Soft-deleted %d orphan draft(s) for collection %s", remaining, collection.id)
+        logger.info(
+            "Soft-deleted %d orphan draft(s) for collection %s",
+            remaining,
+            collection.id,
+        )
 
     soft_delete(session, collection)
     logger.info("Collection %s soft-deleted", collection.id)

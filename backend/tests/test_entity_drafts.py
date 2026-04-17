@@ -299,13 +299,17 @@ async def test_confirm_second_cycle_discards_previous_confirmed(
     client, db_session, mock_rag_engine, mock_llm, sample_collection, sample_entity
 ):
     """DRF-18: Segundo ciclo de confirmación descarta el confirmed anterior."""
-    first = await _create_draft(client, sample_collection.id, sample_entity.id, "primer ciclo lore")
+    first = await _create_draft(
+        client, sample_collection.id, sample_entity.id, "primer ciclo lore"
+    )
     first_id = first.json()["id"]
     await client.post(
         f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts/{first_id}/confirm"
     )
 
-    second = await _create_draft(client, sample_collection.id, sample_entity.id, "segundo ciclo lore")
+    second = await _create_draft(
+        client, sample_collection.id, sample_entity.id, "segundo ciclo lore"
+    )
     second_id = second.json()["id"]
     await client.post(
         f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts/{second_id}/confirm"

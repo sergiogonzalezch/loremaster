@@ -114,7 +114,9 @@ def edit_draft_service(
             entity.description = content
             entity.updated_at = now
             session.add(entity)
-            logger.info("Updated entity %s description from confirmed draft edit", entity_id)
+            logger.info(
+                "Updated entity %s description from confirmed draft edit", entity_id
+            )
 
     session.commit()
     session.refresh(draft)
@@ -143,7 +145,9 @@ def confirm_draft_service(
         draft_id,
         statuses=[DraftStatus.pending, DraftStatus.confirmed],
     )
-    logger.info("Auto-discarded %d sibling draft(s) for entity %s", discarded, entity.id)
+    logger.info(
+        "Auto-discarded %d sibling draft(s) for entity %s", discarded, entity.id
+    )
 
     entity.description = draft.content
     entity.updated_at = now
