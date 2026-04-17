@@ -50,7 +50,7 @@ async def get_entity(
     return entity
 
 
-@router.put("/{collection_id}/entities/{entity_id}", response_model=EntityResponse)
+@router.patch("/{collection_id}/entities/{entity_id}", response_model=EntityResponse)
 async def update_entity(
     request: UpdateEntityRequest,
     entity: Entity = Depends(get_entity_or_404),

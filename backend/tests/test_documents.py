@@ -124,8 +124,8 @@ async def test_ingest_unsupported_type_400(client, sample_collection):
 
 
 @pytest.mark.anyio
-async def test_ingest_no_filename_400(client, sample_collection):
-    """DOC-09: Ingesta sin filename retorna 422."""
+async def test_ingest_empty_filename_422(client, sample_collection):
+    """DOC-09: Ingesta con filename vacío retorna 422 (validación FastAPI)."""
     response = await client.post(
         f"/api/v1/collections/{sample_collection.id}/documents",
         files={"file": ("", b"sin nombre", "text/plain")},

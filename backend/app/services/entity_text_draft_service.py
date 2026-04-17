@@ -174,6 +174,11 @@ def discard_pending_drafts(
     entity_id: str | None = None,
     collection_id: str | None = None,
 ) -> int:
+    if entity_id is None and collection_id is None:
+        raise ValueError(
+            "discard_pending_drafts requires at least entity_id or collection_id"
+        )
+
     stmt = select(EntityTextDraft).where(
         EntityTextDraft.status == DraftStatus.pending,
         EntityTextDraft.is_deleted == False,
@@ -217,6 +222,11 @@ def soft_delete_all_drafts(
     entity_id: str | None = None,
     collection_id: str | None = None,
 ) -> int:
+    if entity_id is None and collection_id is None:
+        raise ValueError(
+            "soft_delete_all_drafts requires at least entity_id or collection_id"
+        )
+
     stmt = select(EntityTextDraft).where(EntityTextDraft.is_deleted == False)
     if entity_id is not None:
         stmt = stmt.where(EntityTextDraft.entity_id == entity_id)
