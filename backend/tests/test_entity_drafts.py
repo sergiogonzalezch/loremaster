@@ -239,6 +239,7 @@ async def test_soft_delete_draft(
     assert response.status_code == 204
 
     from app.models.entity_text_draft import EntityTextDraft
+
     db_draft = db_session.exec(
         select(EntityTextDraft).where(EntityTextDraft.id == draft_id)
     ).first()
