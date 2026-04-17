@@ -90,5 +90,9 @@ def delete_document_service(session: Session, document: Document) -> bool:
         logger.error("Failed to delete vector chunks for doc %s: %s", document.id, e)
     soft_delete(session, document)
     session.commit()
-    logger.info("Document %s soft-deleted from collection %s", document.id, document.collection_id)
+    logger.info(
+        "Document %s soft-deleted from collection %s",
+        document.id,
+        document.collection_id,
+    )
     return True

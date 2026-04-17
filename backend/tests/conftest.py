@@ -99,7 +99,9 @@ def mock_rag_engine(monkeypatch: pytest.MonkeyPatch) -> dict:
         )
         return 5
 
-    def _search_context(*, collection_id: str, query: str, top_k: int | None = None) -> list[str]:
+    def _search_context(
+        *, collection_id: str, query: str, top_k: int | None = None
+    ) -> list[str]:
         calls["search_context"].append(
             {"collection_id": collection_id, "query": query, "top_k": top_k}
         )
@@ -118,13 +120,22 @@ def mock_rag_engine(monkeypatch: pytest.MonkeyPatch) -> dict:
     rag_engine_mod = importlib.import_module("app.core.rag_engine")
     monkeypatch.setattr(rag_engine_mod, "ingest_chunks", _ingest_chunks)
     monkeypatch.setattr(rag_engine_mod, "search_context", _search_context)
-    monkeypatch.setattr(rag_engine_mod, "delete_document_chunks", _delete_document_chunks)
-    monkeypatch.setattr(rag_engine_mod, "delete_collection_vectors", _delete_collection_vectors)
+    monkeypatch.setattr(
+        rag_engine_mod, "delete_document_chunks", _delete_document_chunks
+    )
+    monkeypatch.setattr(
+        rag_engine_mod, "delete_collection_vectors", _delete_collection_vectors
+    )
 
     monkeypatch.setattr("app.services.documents_service.ingest_chunks", _ingest_chunks)
-    monkeypatch.setattr("app.services.documents_service.delete_document_chunks", _delete_document_chunks)
+    monkeypatch.setattr(
+        "app.services.documents_service.delete_document_chunks", _delete_document_chunks
+    )
     monkeypatch.setattr("app.core.rag_generate.search_context", _search_context)
-    monkeypatch.setattr("app.services.collection_service.delete_collection_vectors", _delete_collection_vectors)
+    monkeypatch.setattr(
+        "app.services.collection_service.delete_collection_vectors",
+        _delete_collection_vectors,
+    )
 
     return calls
 
