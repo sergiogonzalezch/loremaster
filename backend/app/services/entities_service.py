@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from sqlmodel import Session, select
 
 from app.models.entities import Entity, CreateEntityRequest, UpdateEntityRequest
-from app.core.common import get_active_by_id, list_active_by_collection
+from app.core.common import list_active_by_collection
 from app.services.deletion_service import cascade_delete_entity
 
 logger = logging.getLogger(__name__)
@@ -42,12 +42,6 @@ def create_entity_service(
     session.refresh(entity)
     logger.info("Entity '%s' created in collection %s", request.name, collection_id)
     return entity
-
-
-def get_entity_service(
-    session: Session, entity_id: str, collection_id: str
-) -> Entity | None:
-    return get_active_by_id(session, Entity, entity_id, collection_id)
 
 
 def list_entities_service(session: Session, collection_id: str) -> list[Entity]:

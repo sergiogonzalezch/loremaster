@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.core.valid_collection import get_collection_or_404
 from app.models.collections import Collection
@@ -14,4 +14,9 @@ async def generate(
     collection_id: str,
     _: Collection = Depends(get_collection_or_404),
 ):
-    return text_generation_service(request.query, collection_id=collection_id)
+    try:
+        return text_generation_service(request.query, collection_id=collection_id)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
