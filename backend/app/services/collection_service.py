@@ -8,7 +8,7 @@ from app.models.documents import Document
 from app.models.entities import Entity
 from app.core.common import soft_delete
 from app.core.rag_engine import delete_collection_vectors
-from app.services.entity_text_draft_service import discard_pending_drafts
+from app.services.entity_text_draft_service import soft_delete_all_drafts
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +47,8 @@ def _cascade_soft_delete_children(session: Session, collection_id: str) -> None:
         for record in session.exec(stmt).all():
             soft_delete(session, record)
 
-    count = discard_pending_drafts(session, collection_id=collection_id)
-    logger.info("Discarded %d pending draft(s) for collection %s", count, collection_id)
+    deleted = soft_delete_all_drafts(session, collection_id=collection_id)
+    logger.info("Soft-deleted %d draft(s) for collection %s", deleted, collection_id)
 
 
 def delete_collection_service(session: Session, collection: Collection) -> bool:

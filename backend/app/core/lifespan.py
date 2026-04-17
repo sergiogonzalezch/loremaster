@@ -29,6 +29,7 @@ async def lifespan(app: FastAPI):
 
     try:
         from app.core.rag_engine import ping_qdrant
+
         ping_qdrant()
         logger.info("Qdrant connection OK (%s)", settings.qdrant_url)
     except Exception as e:

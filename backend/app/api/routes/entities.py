@@ -21,7 +21,9 @@ from app.services.entities_service import (
 router = APIRouter(prefix="/collections", tags=["entities"])
 
 
-@router.post("/{collection_id}/entities", response_model=EntityResponse, status_code=201)
+@router.post(
+    "/{collection_id}/entities", response_model=EntityResponse, status_code=201
+)
 async def create_entity(
     collection_id: str,
     request: CreateEntityRequest,
@@ -48,7 +50,7 @@ async def get_entity(
     return entity
 
 
-@router.put("/{collection_id}/entities/{entity_id}", response_model=EntityResponse)
+@router.patch("/{collection_id}/entities/{entity_id}", response_model=EntityResponse)
 async def update_entity(
     request: UpdateEntityRequest,
     entity: Entity = Depends(get_entity_or_404),

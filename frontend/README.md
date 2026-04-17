@@ -1,73 +1,68 @@
-# React + TypeScript + Vite
+# Lore Master — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+SPA React para interactuar con la API de Lore Master.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+| | |
+|---|---|
+| Framework | React 19 |
+| Lenguaje | TypeScript |
+| Bundler | Vite |
+| UI | React Bootstrap 2 + Bootstrap 5 |
+| Routing | React Router 7 |
+| HTTP | fetch nativo |
 
-## React Compiler
+## Requisitos
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Node.js 18+
+- Backend corriendo en `http://localhost:8000`
 
-## Expanding the ESLint configuration
+## Instalación y ejecución
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Disponible en `http://localhost:5173`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Variables de entorno
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Crea un archivo `.env` en `frontend/`:
+
+```env
+VITE_API_BASE_URL=http://localhost:8000/api/v1
 ```
+
+## Estructura del proyecto
+
+```
+src/
+├── api/           → Funciones fetch tipadas por recurso
+├── types/         → Interfaces TypeScript (mirror de schemas backend)
+├── components/    → Layout, Navbar, modales reutilizables
+└── pages/         → CollectionsPage, CollectionDetailPage, EntityDetailPage, GeneratePage
+```
+
+## Pantallas
+
+| Página | Descripción |
+|---|---|
+| **Colecciones** | Listado de colecciones, crear nueva, eliminar |
+| **Detalle colección** | Tabs con documentos, entidades y generación de texto libre |
+| **Detalle entidad** | Información de la entidad y sistema de borradores RAG (generar, editar, confirmar, descartar) |
+| **Generar texto** | Consulta libre contra el lore cargado en la colección |
+
+## Conexión con backend
+
+El frontend consume la API en `VITE_API_BASE_URL`. Para que las peticiones no sean bloqueadas por CORS, añade `http://localhost:5173` a `ALLOWED_ORIGINS` en `backend/.env`.
+
+## Build para producción
+
+```bash
+npm run build
+```
+
+Los artefactos se generan en `frontend/dist/`.
