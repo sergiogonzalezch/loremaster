@@ -102,22 +102,6 @@ def edit_draft_service(
     draft.updated_at = now
     session.add(draft)
 
-    if draft.status == DraftStatus.confirmed:
-        entity = session.exec(
-            select(Entity).where(
-                Entity.id == entity_id,
-                Entity.collection_id == collection_id,
-                Entity.is_deleted == False,
-            )
-        ).first()
-        if entity:
-            entity.description = content
-            entity.updated_at = now
-            session.add(entity)
-            logger.info(
-                "Updated entity %s description from confirmed draft edit", entity_id
-            )
-
     session.commit()
     session.refresh(draft)
     return draft
@@ -149,15 +133,9 @@ def confirm_draft_service(
         "Auto-discarded %d sibling draft(s) for entity %s", discarded, entity.id
     )
 
-    entity.description = draft.content
-    entity.updated_at = now
-    session.add(entity)
-
     session.commit()
     session.refresh(entity)
-    logger.info(
-        "Draft %s confirmed → entity %s description updated", draft_id, entity.id
-    )
+    logger.info("Draft %s confirmed for entity %s", draft_id, entity.id)
     return entity
 
 
