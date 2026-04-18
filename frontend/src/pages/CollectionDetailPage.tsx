@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import {
   Alert,
@@ -17,7 +18,7 @@ import { getCollection, getDocuments, uploadDocument, deleteDocument, getEntitie
 import LoadingSpinner from "../components/LoadingSpinner";
 import ConfirmModal from "../components/ConfirmModal";
 import type { Collection, Document, Entity, CreateEntityRequest } from "../types";
-import { DocumentStatus, EntityType } from "../utils/enums";
+import type { EntityType } from "../utils/enums";
 import { formatDate } from "../utils/formatters";
 import { getErrorMessage } from "../utils/errors";
 import { ENTITY_TYPE_BADGE } from "../utils/constants";
@@ -49,7 +50,7 @@ function DocumentsTab({ collectionId }: { collectionId: string }) {
 
   useEffect(() => { fetchDocuments(); }, [collectionId]);
 
-  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleUpload(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
@@ -137,9 +138,9 @@ function DocumentsTab({ collectionId }: { collectionId: string }) {
                 <td>{doc.file_type.toUpperCase()}</td>
                 <td>{doc.chunk_count}</td>
                 <td>
-                  {doc.status === DocumentStatus.Completed && <Badge bg="success">Completado</Badge>}
-                  {doc.status === DocumentStatus.Failed && <Badge bg="danger">Error</Badge>}
-                  {doc.status === DocumentStatus.Processing && (
+                  {doc.status === "completed" && <Badge bg="success">Completado</Badge>}
+                  {doc.status === "failed" && <Badge bg="danger">Error</Badge>}
+                  {doc.status === "processing" && (
                     <Badge bg="secondary">Procesando</Badge>
                   )}
                 </td>
@@ -183,7 +184,7 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
 
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState<CreateEntityRequest>({
-    type: EntityType.Character,
+    type: "character",
     name: "",
     description: "",
   });
@@ -204,13 +205,13 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
 
   useEffect(() => { fetchEntities(); }, [collectionId]);
 
-  async function handleCreate(e: React.FormEvent) {
+  async function handleCreate(e: FormEvent) {
     e.preventDefault();
     setCreating(true);
     try {
       await createEntity(collectionId, form);
       setShowCreate(false);
-      setForm({ type: EntityType.Character, name: "", description: "" });
+      setForm({ type: "character", name: "", description: "" });
       await fetchEntities();
     } catch (err) {
       setError(getErrorMessage(err, "Error al crear entidad"));
@@ -325,10 +326,10 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
                 value={form.type}
                 onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as EntityType }))}
               >
-                <option value={EntityType.Character}>Personaje</option>
-                <option value={EntityType.Scene}>Escena</option>
-                <option value={EntityType.Faction}>Facción</option>
-                <option value={EntityType.Item}>Objeto</option>
+                <option value="character">Personaje</option>
+                <option value="scene">Escena</option>
+                <option value="faction">Facción</option>
+                <option value="item">Objeto</option>
               </Form.Select>
             </Form.Group>
             <Form.Group className="mb-3">
@@ -375,7 +376,7 @@ function GenerateTab({ collectionId }: { collectionId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ answer: string; query: string; sources_count: number } | null>(null);
 
-  async function handleGenerate(e: React.FormEvent) {
+  async function handleGenerate(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);

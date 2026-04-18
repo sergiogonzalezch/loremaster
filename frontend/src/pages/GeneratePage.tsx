@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Alert, Badge, Breadcrumb, Button, Card, Form, Spinner } from "react-bootstrap";
 import { getCollection, generateText } from "../api";
@@ -21,7 +22,7 @@ export default function GeneratePage() {
       .catch(() => {});
   }, [collectionId]);
 
-  async function handleGenerate(e: React.FormEvent) {
+  async function handleGenerate(e: FormEvent) {
     e.preventDefault();
     if (!collectionId) return;
     setLoading(true);

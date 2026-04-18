@@ -1,10 +1,13 @@
-import { apiFetch, apiUpload } from "./apiClient";
+import { apiFetch } from "./apiClient";
 import type { Document, DocumentListResponse } from "../types";
 
 export function uploadDocument(collectionId: string, file: File): Promise<Document> {
   const formData = new FormData();
   formData.append("file", file);
-  return apiUpload<Document>(`/collections/${collectionId}/documents`, formData);
+  return apiFetch<Document>(`/collections/${collectionId}/documents`, {
+    method: "POST",
+    body: formData,
+  });
 }
 
 export function getDocuments(collectionId: string): Promise<DocumentListResponse> {

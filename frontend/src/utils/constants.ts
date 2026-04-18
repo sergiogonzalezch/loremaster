@@ -1,8 +1,8 @@
-import { EntityType } from "./enums";
+import type { EntityType } from "./enums";
 
 export const ENTITY_TYPE_BADGE: Record<EntityType, string> = {
-  [EntityType.Character]: "primary",
-  [EntityType.Scene]: "success",
-  [EntityType.Faction]: "warning",
-  [EntityType.Item]: "info",
+  character: "primary",
+  scene: "success",
+  faction: "warning",
+  item: "info",
 };
