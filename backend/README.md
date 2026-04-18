@@ -91,19 +91,19 @@ Tipos válidos: `character`, `scene`, `faction`, `item`.
 | `POST` | `/collections/{id}/entities` | Crear entidad | 201 |
 | `GET` | `/collections/{id}/entities` | Listar entidades | 200 |
 | `GET` | `/collections/{id}/entities/{eid}` | Obtener entidad | 200 |
-| `PUT` | `/collections/{id}/entities/{eid}` | Actualizar entidad | 200 |
+| `PATCH` | `/collections/{id}/entities/{eid}` | Actualizar entidad (parcial) | 200 |
 | `DELETE` | `/collections/{id}/entities/{eid}` | Eliminar entidad | 204 |
 
 ### Borradores de entidad (RAG)
 
-Máximo 5 borradores `pending` por entidad. Confirmar uno descarta automáticamente los demás.
+Máximo 5 borradores `pending` por entidad. Confirmar uno descarta automáticamente los demás. La descripción de la entidad solo la modifica el usuario — confirmar un borrador no la sobreescribe.
 
 | Método | Ruta | Descripción | Status |
 |---|---|---|---|
 | `POST` | `/collections/{id}/entities/{eid}/generate` | Generar borrador con RAG | 201 |
 | `GET` | `/collections/{id}/entities/{eid}/drafts` | Listar borradores (excluye soft-deleted y discarded) | 200 |
-| `PATCH` | `/collections/{id}/entities/{eid}/drafts/{did}` | Editar contenido del borrador | 200 |
-| `POST` | `/collections/{id}/entities/{eid}/drafts/{did}/confirm` | Confirmar borrador → actualiza descripción de la entidad | 200 |
+| `PATCH` | `/collections/{id}/entities/{eid}/drafts/{did}` | Editar contenido del borrador (pending o confirmed) | 200 |
+| `POST` | `/collections/{id}/entities/{eid}/drafts/{did}/confirm` | Confirmar borrador (status → confirmed, descarta hermanos) | 200 |
 | `PATCH` | `/collections/{id}/entities/{eid}/drafts/{did}/discard` | Cambiar estado a descartado | 200 |
 | `DELETE` | `/collections/{id}/entities/{eid}/drafts/{did}` | Soft-delete del borrador | 204 |
 

@@ -33,8 +33,6 @@ loremaster/
 
 3. Levantar el backend: ver [`backend/README.md`](backend/README.md)
 
-4. Levantar el frontend: ver [`frontend/README.md`](frontend/README.md)
-
 ## Documentación
 
 Arquitectura, decisiones técnicas y roadmap en [`docs/DOCUMENTATION.md`](docs/DOCUMENTATION.md).
