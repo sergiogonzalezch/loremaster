@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import type { FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -250,33 +250,43 @@ export default function EntityDetailPage() {
   });
   const [saving, setSaving] = useState(false);
 
-  async function fetchDrafts() {
-    if (!collectionId || !entityId) return;
-    setLoadingDrafts(true);
-    setDraftsError(null);
-    try {
-      const res = await getDrafts(collectionId, entityId);
-      setDrafts(res.data);
-    } catch (e) {
-      setDraftsError(getErrorMessage(e, "Error al cargar borradores"));
-    } finally {
-      setLoadingDrafts(false);
-    }
+const fetchDrafts = useCallback(async () => {
+  if (!collectionId || !entityId) return;
+  setLoadingDrafts(true);
+  setDraftsError(null);
+  try {
+    const res = await getDrafts(collectionId, entityId);
+    setDrafts(res.data);
+  } catch (e) {
+    setDraftsError(getErrorMessage(e, "Error al cargar borradores"));
+  } finally {
+    setLoadingDrafts(false);
   }
+}, [collectionId, entityId]);
 
-  useEffect(() => {
-    if (!collectionId || !entityId) return;
-    setLoadingEntity(true);
-    Promise.all([
-      getCollection(collectionId),
-      getEntity(collectionId, entityId),
-    ])
-      .then(([col, ent]) => { setCollection(col); setEntity(ent); })
-      .catch((e) => setEntityError(getErrorMessage(e, "Error al cargar")))
-      .finally(() => setLoadingEntity(false));
+useEffect(() => {
+  if (!collectionId || !entityId) return;
 
-    fetchDrafts();
-  }, [collectionId, entityId]);
+  setLoadingEntity(true);
+
+  const load = async () => {
+    try {
+      const [col, ent] = await Promise.all([
+        getCollection(collectionId),
+        getEntity(collectionId, entityId),
+      ]);
+      setCollection(col);
+      setEntity(ent);
+    } catch (e) {
+      setEntityError(getErrorMessage(e, "Error al cargar"));
+    } finally {
+      setLoadingEntity(false);
+    }
+  };
+
+  load();
+  fetchDrafts();
+}, [collectionId, entityId, fetchDrafts]);
 
   async function handleGenerate(e: FormEvent) {
     e.preventDefault();
