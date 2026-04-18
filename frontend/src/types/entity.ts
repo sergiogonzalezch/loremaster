@@ -16,7 +16,11 @@ export interface CreateEntityRequest {
   description: string;
 }
 
-export type UpdateEntityRequest = CreateEntityRequest;
+export interface UpdateEntityRequest {
+  type?: EntityType;
+  name?: string;
+  description?: string;
+}
 
 export interface EntityListResponse {
   data: Entity[];

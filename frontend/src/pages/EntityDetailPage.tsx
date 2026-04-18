@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   Alert,
@@ -14,7 +15,7 @@ import { getEntity, updateEntity, getCollection, generateDraft, getDrafts, updat
 import LoadingSpinner from "../components/LoadingSpinner";
 import ConfirmModal from "../components/ConfirmModal";
 import type { Collection, Draft, Entity, UpdateEntityRequest } from "../types";
-import { DraftStatus, EntityType } from "../utils/enums";
+import type { EntityType } from "../utils/enums";
 import { formatDate } from "../utils/formatters";
 import { getErrorMessage } from "../utils/errors";
 import { ENTITY_TYPE_BADGE } from "../utils/constants";
@@ -26,10 +27,9 @@ interface DraftCardProps {
   collectionId: string;
   entityId: string;
   onAction: () => void;
-  onEntityRefresh: () => void;
 }
 
-function DraftCard({ draft, collectionId, entityId, onAction, onEntityRefresh }: DraftCardProps) {
+function DraftCard({ draft, collectionId, entityId, onAction }: DraftCardProps) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -45,7 +45,6 @@ function DraftCard({ draft, collectionId, entityId, onAction, onEntityRefresh }:
     setError(null);
     try {
       await confirmDraft(collectionId, entityId, draft.id);
-      onEntityRefresh();
       onAction();
     } catch (e) {
       setError(getErrorMessage(e, "Error al confirmar"));
@@ -54,7 +53,7 @@ function DraftCard({ draft, collectionId, entityId, onAction, onEntityRefresh }:
     }
   }
 
-  async function handleSaveEdit(e: React.FormEvent) {
+  async function handleSaveEdit(e: FormEvent) {
     e.preventDefault();
     setSaving(true);
     try {
@@ -98,17 +97,17 @@ function DraftCard({ draft, collectionId, entityId, onAction, onEntityRefresh }:
     }
   }
 
-  const isPending = draft.status === DraftStatus.Pending;
-  const isDiscarded = draft.status === DraftStatus.Discarded;
+  const isPending = draft.status === "pending";
+  const isConfirmed = draft.status === "confirmed";
 
   return (
     <>
       <Card className="mb-3">
         <Card.Header className="d-flex justify-content-between align-items-center">
           <em className="text-muted small">{draft.query}</em>
-          {draft.status === DraftStatus.Pending && <Badge bg="warning" text="dark">Borrador</Badge>}
-          {draft.status === DraftStatus.Confirmed && <Badge bg="success">Confirmado</Badge>}
-          {draft.status === DraftStatus.Discarded && <Badge bg="secondary">Descartado</Badge>}
+          {draft.status === "pending" && <Badge bg="warning" text="dark">Borrador</Badge>}
+          {draft.status === "confirmed" && <Badge bg="success">Confirmado</Badge>}
+          {draft.status === "discarded" && <Badge bg="secondary">Descartado</Badge>}
         </Card.Header>
         <Card.Body>
           {error && (
@@ -151,25 +150,34 @@ function DraftCard({ draft, collectionId, entityId, onAction, onEntityRefresh }:
                 Eliminar
               </Button>
             </div>
-          ) : isDiscarded ? (
-            <div className="d-flex align-items-center gap-3">
-              <small className="text-muted fst-italic">Descartado</small>
-              <Button
-                variant="outline-danger"
-                size="sm"
-                onClick={() => setShowDelete(true)}
-                disabled={busy}
-              >
-                Eliminar
-              </Button>
+          ) : isConfirmed ? (
+            <div className="d-flex align-items-center justify-content-between">
+              {draft.confirmed_at && (
+                <small className="text-muted">Confirmado el {formatDate(draft.confirmed_at, true)}</small>
+              )}
+              <div className="d-flex gap-2">
+                <Button
+                  variant="outline-secondary"
+                  size="sm"
+                  onClick={() => { setEditContent(draft.content); setShowEdit(true); }}
+                  disabled={busy}
+                >
+                  Editar
+                </Button>
+                <Button
+                  variant="outline-danger"
+                  size="sm"
+                  onClick={() => setShowDelete(true)}
+                  disabled={busy}
+                >
+                  Eliminar
+                </Button>
+              </div>
             </div>
-          ) : draft.status === DraftStatus.Confirmed && draft.confirmed_at ? (
-            <small className="text-muted">Confirmado el {formatDate(draft.confirmed_at, true)}</small>
           ) : null}
         </Card.Footer>
       </Card>
 
-      {/* Edit modal */}
       <Modal show={showEdit} onHide={() => setShowEdit(false)} centered size="lg">
         <Modal.Header closeButton>
           <Modal.Title>Editar borrador</Modal.Title>
@@ -230,29 +238,17 @@ export default function EntityDetailPage() {
   const [loadingDrafts, setLoadingDrafts] = useState(true);
   const [draftsError, setDraftsError] = useState<string | null>(null);
 
-  // Generate
   const [query, setQuery] = useState("");
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
 
-  // Edit entity modal
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState<UpdateEntityRequest>({
-    type: EntityType.Character,
+    type: "character",
     name: "",
     description: "",
   });
   const [saving, setSaving] = useState(false);
-
-  async function fetchEntity() {
-    if (!collectionId || !entityId) return;
-    try {
-      const e = await getEntity(collectionId, entityId);
-      setEntity(e);
-    } catch (e) {
-      setEntityError(getErrorMessage(e, "Error al cargar la entidad"));
-    }
-  }
 
   async function fetchDrafts() {
     if (!collectionId || !entityId) return;
@@ -282,7 +278,7 @@ export default function EntityDetailPage() {
     fetchDrafts();
   }, [collectionId, entityId]);
 
-  async function handleGenerate(e: React.FormEvent) {
+  async function handleGenerate(e: FormEvent) {
     e.preventDefault();
     if (!collectionId || !entityId) return;
     setGenerating(true);
@@ -304,7 +300,7 @@ export default function EntityDetailPage() {
     setShowEdit(true);
   }
 
-  async function handleSaveEntity(e: React.FormEvent) {
+  async function handleSaveEntity(e: FormEvent) {
     e.preventDefault();
     if (!collectionId || !entityId) return;
     setSaving(true);
@@ -325,7 +321,6 @@ export default function EntityDetailPage() {
 
   return (
     <>
-      {/* Breadcrumb */}
       <Breadcrumb>
         <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/" }}>
           Colecciones
@@ -336,7 +331,6 @@ export default function EntityDetailPage() {
         <Breadcrumb.Item active>{entity.name}</Breadcrumb.Item>
       </Breadcrumb>
 
-      {/* Entity header card */}
       <Card className="mb-4">
         <Card.Body>
           <div className="d-flex justify-content-between align-items-start">
@@ -358,7 +352,6 @@ export default function EntityDetailPage() {
         </Card.Body>
       </Card>
 
-      {/* Generate draft */}
       <h5 className="mb-3">Generar borrador</h5>
       {generateError && (
         <Alert variant="danger" onClose={() => setGenerateError(null)} dismissible>
@@ -395,7 +388,6 @@ export default function EntityDetailPage() {
         </div>
       </Form>
 
-      {/* Drafts list */}
       <h5 className="mb-3">Borradores</h5>
       {draftsError && (
         <Alert variant="danger" onClose={() => setDraftsError(null)} dismissible>
@@ -414,12 +406,10 @@ export default function EntityDetailPage() {
             collectionId={collectionId}
             entityId={entityId}
             onAction={fetchDrafts}
-            onEntityRefresh={fetchEntity}
           />
         ))
       )}
 
-      {/* Edit entity modal */}
       <Modal show={showEdit} onHide={() => setShowEdit(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>Editar entidad</Modal.Title>
@@ -434,10 +424,10 @@ export default function EntityDetailPage() {
                   setEditForm((f) => ({ ...f, type: e.target.value as EntityType }))
                 }
               >
-                <option value={EntityType.Character}>Personaje</option>
-                <option value={EntityType.Scene}>Escena</option>
-                <option value={EntityType.Faction}>Facción</option>
-                <option value={EntityType.Item}>Objeto</option>
+                <option value="character">Personaje</option>
+                <option value="scene">Escena</option>
+                <option value="faction">Facción</option>
+                <option value="item">Objeto</option>
               </Form.Select>
             </Form.Group>
             <Form.Group className="mb-3">
@@ -463,7 +453,7 @@ export default function EntityDetailPage() {
             <Button variant="secondary" onClick={() => setShowEdit(false)} disabled={saving}>
               Cancelar
             </Button>
-            <Button variant="warning" type="submit" disabled={saving || !editForm.name.trim()}>
+            <Button variant="warning" type="submit" disabled={saving || !editForm.name?.trim()}>
               {saving ? "Guardando..." : "Guardar"}
             </Button>
           </Modal.Footer>

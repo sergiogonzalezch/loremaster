@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Row, Col, Card, Button, Alert, Modal, Form } from "react-bootstrap";
 import { getCollections, createCollection, deleteCollection } from "../api";
@@ -55,7 +56,7 @@ export default function CollectionsPage() {
     }
   }
 
-  async function handleCreate(e: React.FormEvent) {
+  async function handleCreate(e: FormEvent) {
     e.preventDefault();
     setCreating(true);
     try {
