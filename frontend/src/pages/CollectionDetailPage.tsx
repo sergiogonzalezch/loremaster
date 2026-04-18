@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import {
@@ -35,7 +35,7 @@ function DocumentsTab({ collectionId }: { collectionId: string }) {
   const [deleteTarget, setDeleteTarget] = useState<Document | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  async function fetchDocuments() {
+  const fetchDocuments = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -46,9 +46,9 @@ function DocumentsTab({ collectionId }: { collectionId: string }) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [collectionId]);
 
-  useEffect(() => { fetchDocuments(); }, [collectionId]);
+  useEffect(() => { fetchDocuments(); }, [fetchDocuments]);
 
   async function handleUpload(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -118,7 +118,11 @@ function DocumentsTab({ collectionId }: { collectionId: string }) {
       {loading ? (
         <LoadingSpinner />
       ) : documents.length === 0 ? (
-        <p className="text-muted">No hay documentos en esta colección.</p>
+        <div className="lm-empty">
+          <span className="lm-empty-glyph">✦</span>
+          <p>No hay documentos en esta colección.</p>
+          <p>Sube un PDF o TXT para comenzar.</p>
+        </div>
       ) : (
         <Table striped hover responsive>
           <thead>
@@ -190,7 +194,7 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
   });
   const [creating, setCreating] = useState(false);
 
-  async function fetchEntities() {
+  const fetchEntities = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -201,9 +205,9 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [collectionId]);
 
-  useEffect(() => { fetchEntities(); }, [collectionId]);
+  useEffect(() => { fetchEntities(); }, [fetchEntities]);
 
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
@@ -252,7 +256,11 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
       {loading ? (
         <LoadingSpinner />
       ) : entities.length === 0 ? (
-        <p className="text-muted">No hay entidades en esta colección.</p>
+        <div className="lm-empty">
+          <span className="lm-empty-glyph">✦</span>
+          <p>No hay entidades en esta colección.</p>
+          <p>Crea personajes, escenas, facciones u objetos.</p>
+        </div>
       ) : (
         <Table striped hover responsive>
           <thead>
@@ -456,21 +464,30 @@ export default function CollectionDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchCollection = useCallback(async () => {
     if (!collectionId) return;
+    setError(null);
     setLoading(true);
-    getCollection(collectionId)
-      .then(setCollection)
-      .catch((e) => setError(getErrorMessage(e, "Error al cargar la colección")))
-      .finally(() => setLoading(false));
+    try {
+      const col = await getCollection(collectionId);
+      setCollection(col);
+    } catch (e) {
+      setError(getErrorMessage(e, "Error al cargar la colección"));
+    } finally {
+      setLoading(false);
+    }
   }, [collectionId]);
+
+  useEffect(() => {
+    fetchCollection();
+  }, [fetchCollection]);
 
   if (loading) return <LoadingSpinner />;
   if (error) return <Alert variant="danger">{error}</Alert>;
   if (!collection || !collectionId) return null;
 
   return (
-    <>
+    <div className="lm-page">
       <Breadcrumb>
         <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/" }}>
           Colecciones
@@ -491,6 +508,6 @@ export default function CollectionDetailPage() {
           <GenerateTab collectionId={collectionId} />
         </Tab>
       </Tabs>
-    </>
+    </div>
   );
 }

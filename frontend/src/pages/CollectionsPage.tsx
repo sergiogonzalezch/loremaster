@@ -73,7 +73,7 @@ export default function CollectionsPage() {
   }
 
   return (
-    <>
+    <div className="lm-page">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2 className="mb-0">Colecciones</h2>
         <Button variant="warning" onClick={() => setShowCreate(true)}>
@@ -90,17 +90,17 @@ export default function CollectionsPage() {
       {loading ? (
         <LoadingSpinner />
       ) : collections.length === 0 ? (
-        <div className="text-center py-5 text-muted">
-          <p className="fs-5">No hay colecciones todavía.</p>
+        <div className="lm-empty">
+          <span className="lm-empty-glyph">✦</span>
+          <p>No hay colecciones todavía.</p>
           <p>Crea tu primera colección para empezar a construir tu mundo.</p>
         </div>
       ) : (
-        <Row className="g-4">
+        <Row className="g-4 lm-stagger">
           {collections.map((col) => (
             <Col key={col.id} md={4}>
               <Card
-                className="h-100"
-                style={{ cursor: "pointer" }}
+                className="h-100 lm-collection-card"
                 onClick={() => navigate(`/collections/${col.id}`)}
               >
                 <Card.Body>
@@ -183,6 +183,6 @@ export default function CollectionsPage() {
           </Modal.Footer>
         </Form>
       </Modal>
-    </>
+    </div>
   );
 }

@@ -250,26 +250,24 @@ export default function EntityDetailPage() {
   });
   const [saving, setSaving] = useState(false);
 
-const fetchDrafts = useCallback(async () => {
-  if (!collectionId || !entityId) return;
-  setLoadingDrafts(true);
-  setDraftsError(null);
-  try {
-    const res = await getDrafts(collectionId, entityId);
-    setDrafts(res.data);
-  } catch (e) {
-    setDraftsError(getErrorMessage(e, "Error al cargar borradores"));
-  } finally {
-    setLoadingDrafts(false);
-  }
-}, [collectionId, entityId]);
+  const fetchDrafts = useCallback(async () => {
+    if (!collectionId || !entityId) return;
+    setLoadingDrafts(true);
+    setDraftsError(null);
+    try {
+      const res = await getDrafts(collectionId, entityId);
+      setDrafts(res.data);
+    } catch (e) {
+      setDraftsError(getErrorMessage(e, "Error al cargar borradores"));
+    } finally {
+      setLoadingDrafts(false);
+    }
+  }, [collectionId, entityId]);
 
-useEffect(() => {
-  if (!collectionId || !entityId) return;
-
-  setLoadingEntity(true);
-
-  const load = async () => {
+  const fetchEntityData = useCallback(async () => {
+    if (!collectionId || !entityId) return;
+    setEntityError(null);
+    setLoadingEntity(true);
     try {
       const [col, ent] = await Promise.all([
         getCollection(collectionId),
@@ -282,11 +280,12 @@ useEffect(() => {
     } finally {
       setLoadingEntity(false);
     }
-  };
+  }, [collectionId, entityId]);
 
-  load();
-  fetchDrafts();
-}, [collectionId, entityId, fetchDrafts]);
+  useEffect(() => {
+    fetchEntityData();
+    fetchDrafts();
+  }, [fetchEntityData, fetchDrafts]);
 
   async function handleGenerate(e: FormEvent) {
     e.preventDefault();
@@ -330,7 +329,7 @@ useEffect(() => {
   if (!entity || !collectionId || !entityId) return null;
 
   return (
-    <>
+    <div className="lm-page">
       <Breadcrumb>
         <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/" }}>
           Colecciones
@@ -362,7 +361,7 @@ useEffect(() => {
         </Card.Body>
       </Card>
 
-      <h5 className="mb-3">Generar borrador</h5>
+      <p className="lm-section-title">Generar borrador</p>
       {generateError && (
         <Alert variant="danger" onClose={() => setGenerateError(null)} dismissible>
           {generateError}
@@ -398,7 +397,7 @@ useEffect(() => {
         </div>
       </Form>
 
-      <h5 className="mb-3">Borradores</h5>
+      <p className="lm-section-title">Borradores</p>
       {draftsError && (
         <Alert variant="danger" onClose={() => setDraftsError(null)} dismissible>
           {draftsError}
@@ -407,7 +406,11 @@ useEffect(() => {
       {loadingDrafts ? (
         <LoadingSpinner text="Cargando borradores..." />
       ) : drafts.length === 0 ? (
-        <p className="text-muted">No hay borradores todavía. Genera el primero arriba.</p>
+        <div className="lm-empty">
+          <span className="lm-empty-glyph">✦</span>
+          <p>No hay borradores todavía.</p>
+          <p>Genera el primero usando el formulario de arriba.</p>
+        </div>
       ) : (
         drafts.map((draft) => (
           <DraftCard
@@ -469,6 +472,6 @@ useEffect(() => {
           </Modal.Footer>
         </Form>
       </Modal>
-    </>
+    </div>
   );
 }

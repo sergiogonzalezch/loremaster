@@ -7,6 +7,7 @@ export default function Layout() {
       <Navbar variant="dark">
         <Container fluid="lg">
           <Navbar.Brand as={Link} to="/">
+            <span className="lm-brand-glyph">✦</span>
             <span className="lore">Lore</span>
             <span>Master</span>
           </Navbar.Brand>

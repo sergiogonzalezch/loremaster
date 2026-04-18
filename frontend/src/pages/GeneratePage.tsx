@@ -39,7 +39,7 @@ export default function GeneratePage() {
   }
 
   return (
-    <>
+    <div className="lm-page">
       <Breadcrumb>
         <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/" }}>
           Colecciones
@@ -112,6 +112,6 @@ export default function GeneratePage() {
           </Card.Body>
         </Card>
       )}
-    </>
+    </div>
   );
 }
