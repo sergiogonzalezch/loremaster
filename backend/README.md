@@ -96,14 +96,16 @@ Tipos válidos: `character`, `scene`, `faction`, `item`.
 
 ### Borradores de entidad (RAG)
 
-Máximo 5 borradores `pending` por entidad. Confirmar uno descarta automáticamente los demás. La descripción de la entidad solo la modifica el usuario — confirmar un borrador no la sobreescribe.
+Los borradores son textos narrativos generados por el LLM (historia de fondo, lore expandido) asociados a una entidad. No deben confundirse con la descripción de la entidad, que es metadata escrita por el usuario (rasgos, notas, contexto) y solo se modifica via PATCH directo.
+
+Máximo 5 borradores `pending` por entidad. Confirmar uno lo marca como texto definitivo y descarta automáticamente los demás pendientes y el confirmed anterior. Editar un borrador pending o confirmed es posible; editar uno descartado no.
 
 | Método | Ruta | Descripción | Status |
 |---|---|---|---|
 | `POST` | `/collections/{id}/entities/{eid}/generate` | Generar borrador con RAG | 201 |
 | `GET` | `/collections/{id}/entities/{eid}/drafts` | Listar borradores (excluye soft-deleted y discarded) | 200 |
-| `PATCH` | `/collections/{id}/entities/{eid}/drafts/{did}` | Editar contenido del borrador (pending o confirmed) | 200 |
-| `POST` | `/collections/{id}/entities/{eid}/drafts/{did}/confirm` | Confirmar borrador (status → confirmed, descarta hermanos) | 200 |
+| `PATCH` | `/collections/{id}/entities/{eid}/drafts/{did}` | Editar contenido del borrador (solo pending o confirmed, no descartado) | 200 |
+| `POST` | `/collections/{id}/entities/{eid}/drafts/{did}/confirm` | Confirmar borrador como texto definitivo (descarta pending y confirmed anteriores) | 200 |
 | `PATCH` | `/collections/{id}/entities/{eid}/drafts/{did}/discard` | Cambiar estado a descartado | 200 |
 | `DELETE` | `/collections/{id}/entities/{eid}/drafts/{did}` | Soft-delete del borrador | 204 |
 
