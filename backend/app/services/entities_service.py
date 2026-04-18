@@ -1,11 +1,11 @@
 import logging
 from datetime import datetime, timezone
 
-from fastapi import HTTPException
 from sqlmodel import Session, select
 
 from app.models.entities import Entity, CreateEntityRequest, UpdateEntityRequest
 from app.core.common import list_active_by_collection
+from app.core.exceptions import DuplicateNameError
 from app.services.deletion_service import cascade_delete_entity
 
 logger = logging.getLogger(__name__)
@@ -27,9 +27,8 @@ def create_entity_service(
     session: Session, request: CreateEntityRequest, collection_id: str
 ) -> Entity:
     if _find_active_by_name(session, collection_id, request.name):
-        raise HTTPException(
-            status_code=409,
-            detail=f"An entity named '{request.name}' already exists in this collection.",
+        raise DuplicateNameError(
+            f"An entity named '{request.name}' already exists in this collection."
         )
     entity = Entity(
         collection_id=collection_id,
@@ -55,9 +54,8 @@ def update_entity_service(
     if new_name != entity.name and _find_active_by_name(
         session, entity.collection_id, new_name
     ):
-        raise HTTPException(
-            status_code=409,
-            detail=f"An entity named '{new_name}' already exists in this collection.",
+        raise DuplicateNameError(
+            f"An entity named '{new_name}' already exists in this collection."
         )
     if request.type is not None:
         entity.type = request.type

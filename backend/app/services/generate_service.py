@@ -1,16 +1,16 @@
 import logging
 
 from app.models.generate import GenerateTextResponse
-from app.core.rag_generate import generate_rag_response
+from app.core.rag_generate import generate_rag_response_async
 
 logger = logging.getLogger(__name__)
 
 
-def text_generation_service(query: str, collection_id: str) -> GenerateTextResponse:
+async def text_generation_service(query: str, collection_id: str) -> GenerateTextResponse:
     logger.info(
         "Generating text for collection %s, query: '%.50s'", collection_id, query
     )
-    answer, sources_count = generate_rag_response(
+    answer, sources_count = await generate_rag_response_async(
         collection_id=collection_id,
         query=query,
     )

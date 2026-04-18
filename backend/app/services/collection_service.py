@@ -1,9 +1,9 @@
 import logging
 
-from fastapi import HTTPException
 from sqlmodel import Session, select
 
 from app.models.collections import Collection
+from app.core.exceptions import DuplicateNameError
 from app.services.deletion_service import cascade_delete_collection
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ def create_collection_service(
         )
     ).first()
     if existing:
-        raise HTTPException(status_code=409, detail="Collection name already exists")
+        raise DuplicateNameError("Collection name already exists")
 
     collection = Collection(name=name, description=description)
     session.add(collection)

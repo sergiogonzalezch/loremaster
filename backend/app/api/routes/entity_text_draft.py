@@ -33,7 +33,7 @@ async def generate_draft(
     session: Session = Depends(get_session),
 ):
     try:
-        return generate_draft_service(session, entity, request)
+        return await generate_draft_service(session, entity, request)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except RuntimeError as e:
@@ -66,12 +66,7 @@ async def update_draft(
     _: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
-    draft = edit_draft_service(
-        session, draft_id, entity_id, collection_id, request.content
-    )
-    if not draft:
-        raise HTTPException(status_code=404, detail="Draft not found")
-    return draft
+    return edit_draft_service(session, draft_id, entity_id, collection_id, request.content)
 
 
 @router.post(
@@ -83,10 +78,7 @@ async def confirm_draft(
     entity: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
-    result = confirm_draft_service(session, draft_id, entity)
-    if not result:
-        raise HTTPException(status_code=404, detail="Draft not found")
-    return result
+    return confirm_draft_service(session, draft_id, entity)
 
 
 @router.patch(
@@ -100,10 +92,7 @@ async def discard_draft(
     _: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
-    draft = discard_draft_service(session, draft_id, entity_id, collection_id)
-    if not draft:
-        raise HTTPException(status_code=404, detail="Draft not found")
-    return draft
+    return discard_draft_service(session, draft_id, entity_id, collection_id)
 
 
 @router.delete(
@@ -117,7 +106,5 @@ async def delete_draft(
     _: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
-    result = soft_delete_draft_service(session, draft_id, entity_id, collection_id)
-    if not result:
-        raise HTTPException(status_code=404, detail="Draft not found")
+    soft_delete_draft_service(session, draft_id, entity_id, collection_id)
     return Response(status_code=204)

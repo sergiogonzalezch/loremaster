@@ -1,7 +1,6 @@
 import logging
 from datetime import datetime, timezone
 
-from fastapi import HTTPException
 from sqlalchemy import func
 from sqlmodel import Session, select
 
@@ -12,14 +11,20 @@ from app.models.entity_text_draft import (
 )
 from app.models.entities import Entity
 from app.core.common import soft_delete
-from app.core.rag_generate import generate_rag_response
+from app.core.exceptions import (
+    DraftNotEditableError,
+    DraftNotFoundError,
+    DraftNotPendingError,
+    MaxPendingDraftsError,
+)
+from app.core.rag_generate import generate_rag_response_async
 
 logger = logging.getLogger(__name__)
 
 MAX_PENDING_DRAFTS = 5
 
 
-def generate_draft_service(
+async def generate_draft_service(
     session: Session,
     entity: Entity,
     request: GenerateEntityTextDraftRequest,
@@ -35,10 +40,9 @@ def generate_draft_service(
         )
     ).one()
     if pending_count >= MAX_PENDING_DRAFTS:
-        raise HTTPException(
-            status_code=409,
-            detail=f"Entity has {pending_count} pending drafts (max {MAX_PENDING_DRAFTS}). "
-            "Confirm or discard existing drafts first.",
+        raise MaxPendingDraftsError(
+            f"Entity has {pending_count} pending drafts (max {MAX_PENDING_DRAFTS}). "
+            "Confirm or discard existing drafts first."
         )
 
     extra_context = ""
@@ -48,7 +52,7 @@ def generate_draft_service(
             f"{entity.description}\n\n"
         )
 
-    answer, sources_count = generate_rag_response(
+    answer, sources_count = await generate_rag_response_async(
         collection_id=entity.collection_id,
         query=request.query,
         extra_context=extra_context,
@@ -92,10 +96,8 @@ def edit_draft_service(
     entity_id: str,
     collection_id: str,
     content: str,
-) -> EntityTextDraft | None:
+) -> EntityTextDraft:
     draft = _get_editable_draft(session, draft_id, entity_id, collection_id)
-    if not draft:
-        return None
 
     now = datetime.now(timezone.utc)
     draft.content = content
@@ -111,10 +113,8 @@ def confirm_draft_service(
     session: Session,
     draft_id: str,
     entity: Entity,
-) -> Entity | None:
+) -> Entity:
     draft = _get_pending_draft(session, draft_id, entity.id, entity.collection_id)
-    if not draft:
-        return None
 
     now = datetime.now(timezone.utc)
     draft.status = DraftStatus.confirmed
@@ -144,11 +144,10 @@ def discard_draft_service(
     draft_id: str,
     entity_id: str,
     collection_id: str,
-) -> EntityTextDraft | None:
+) -> EntityTextDraft:
     draft = _get_pending_draft(session, draft_id, entity_id, collection_id)
-    if not draft:
-        return None
     draft.status = DraftStatus.discarded
+    draft.updated_at = datetime.now(timezone.utc)
     session.add(draft)
     session.commit()
     session.refresh(draft)
@@ -186,7 +185,7 @@ def soft_delete_draft_service(
 ) -> bool:
     draft = _get_active_draft(session, draft_id, entity_id, collection_id)
     if not draft:
-        return False
+        raise DraftNotFoundError(f"Draft {draft_id} not found")
     soft_delete(session, draft)
     session.commit()
     logger.info("Draft %s soft-deleted", draft_id)
@@ -231,9 +230,15 @@ def _get_pending_draft(
     draft_id: str,
     entity_id: str,
     collection_id: str,
-) -> EntityTextDraft | None:
+) -> EntityTextDraft:
     draft = _get_active_draft(session, draft_id, entity_id, collection_id)
-    return draft if draft and draft.status == DraftStatus.pending else None
+    if not draft:
+        raise DraftNotFoundError(f"Draft {draft_id} not found")
+    if draft.status != DraftStatus.pending:
+        raise DraftNotPendingError(
+            f"Draft {draft_id} has status '{draft.status.value}', only pending drafts can be modified"
+        )
+    return draft
 
 
 def _get_editable_draft(
@@ -241,13 +246,15 @@ def _get_editable_draft(
     draft_id: str,
     entity_id: str,
     collection_id: str,
-) -> EntityTextDraft | None:
+) -> EntityTextDraft:
     draft = _get_active_draft(session, draft_id, entity_id, collection_id)
     if not draft:
-        return None
-    if draft.status in (DraftStatus.pending, DraftStatus.confirmed):
-        return draft
-    return None
+        raise DraftNotFoundError(f"Draft {draft_id} not found")
+    if draft.status not in (DraftStatus.pending, DraftStatus.confirmed):
+        raise DraftNotEditableError(
+            f"Draft {draft_id} has status '{draft.status.value}' and cannot be edited"
+        )
+    return draft
 
 
 def _active_drafts_stmt(entity_id: str | None, collection_id: str | None):

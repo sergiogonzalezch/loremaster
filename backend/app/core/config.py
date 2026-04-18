@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     api_version: str = "1.0.0"
     environment: str = "local"
     allowed_origins: list[str] = ["http://localhost:3000"]
+    api_key: str | None = None
 
     # LLM (Ollama)
     ollama_model: str = "llama3.2:latest"

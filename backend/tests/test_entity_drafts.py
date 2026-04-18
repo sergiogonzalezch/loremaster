@@ -47,9 +47,6 @@ async def test_list_drafts_visibility(
     client, mock_rag_engine, mock_llm, sample_collection, sample_entity
 ):
     """DRF-03: Solo pending y confirmed aparecen en listado; discarded y soft-deleted no."""
-    pending = await _create_draft(
-        client, sample_collection.id, sample_entity.id, "query pending"
-    )
     to_discard = await _create_draft(
         client, sample_collection.id, sample_entity.id, "query discard"
     )
@@ -60,7 +57,6 @@ async def test_list_drafts_visibility(
         client, sample_collection.id, sample_entity.id, "query delete"
     )
 
-    pending_id = pending.json()["id"]
     discard_id = to_discard.json()["id"]
     confirm_id = to_confirm.json()["id"]
     delete_id = to_delete.json()["id"]
@@ -74,6 +70,12 @@ async def test_list_drafts_visibility(
     await client.delete(
         f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts/{delete_id}"
     )
+
+    # Create a pending draft after the confirm so it is not auto-discarded
+    pending = await _create_draft(
+        client, sample_collection.id, sample_entity.id, "query pending after confirm"
+    )
+    pending_id = pending.json()["id"]
 
     listed = await client.get(
         f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts"

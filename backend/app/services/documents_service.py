@@ -1,10 +1,13 @@
+import asyncio
 import logging
+from functools import partial
 
-from fastapi import HTTPException, UploadFile  # HTTPException: input validation only
+from fastapi import UploadFile
 from sqlmodel import Session, select
 
 from app.models.documents import Document, DocumentStatus
 from app.core.common import get_active_by_id, soft_delete
+from app.core.exceptions import FileTooLargeError, FilenameRequiredError, UnsupportedFileTypeError
 from app.core.text_extractor import extract_text
 from app.core.rag_engine import ingest_chunks, delete_document_chunks
 
@@ -12,6 +15,20 @@ logger = logging.getLogger(__name__)
 
 ALLOWED_MIME_TYPES = ["text/plain", "application/pdf"]
 MAX_BYTES = 50 * 1024 * 1024
+_MAGIC_BYTES: dict[str, bytes] = {
+    "application/pdf": b"%PDF",
+}
+
+
+def _validate_magic_bytes(content_type: str, content_bytes: bytes) -> None:
+    magic = _MAGIC_BYTES.get(content_type)
+    if magic and not content_bytes.startswith(magic):
+        raise UnsupportedFileTypeError("File content does not match declared type")
+    if content_type == "text/plain":
+        try:
+            content_bytes[:512].decode("utf-8")
+        except UnicodeDecodeError:
+            raise UnsupportedFileTypeError("File does not appear to be valid UTF-8 text")
 
 
 async def ingest_document_service(
@@ -20,13 +37,15 @@ async def ingest_document_service(
     collection_id: str,
 ) -> Document:
     if data.content_type not in ALLOWED_MIME_TYPES:
-        raise HTTPException(status_code=400, detail="Unsupported file type")
+        raise UnsupportedFileTypeError("Unsupported file type")
     if not data.filename or not data.filename.strip():
-        raise HTTPException(status_code=422, detail="Filename is required")
+        raise FilenameRequiredError("Filename is required")
 
     content_bytes = await data.read()
     if len(content_bytes) > MAX_BYTES:
-        raise HTTPException(status_code=400, detail="File too large")
+        raise FileTooLargeError("File too large")
+
+    _validate_magic_bytes(data.content_type, content_bytes)
 
     logger.info(
         "Ingesting document '%s' into collection %s", data.filename, collection_id
@@ -45,10 +64,10 @@ async def ingest_document_service(
     session.refresh(document)
 
     try:
-        chunk_count = ingest_chunks(
-            doc_id=document.id,
-            collection_id=collection_id,
-            text=content,
+        loop = asyncio.get_running_loop()
+        chunk_count = await loop.run_in_executor(
+            None,
+            partial(ingest_chunks, doc_id=document.id, collection_id=collection_id, text=content),
         )
     except Exception as e:
         logger.error("Ingestion failed for '%s': %s", data.filename, e)

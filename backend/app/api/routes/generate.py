@@ -15,7 +15,7 @@ async def generate(
     _: Collection = Depends(get_collection_or_404),
 ):
     try:
-        return text_generation_service(request.query, collection_id=collection_id)
+        return await text_generation_service(request.query, collection_id=collection_id)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except RuntimeError as e:

@@ -1,4 +1,6 @@
+import asyncio
 import logging
+from functools import partial
 
 from app.core.rag_engine import search_context
 from app.core.llm_client import chain
@@ -51,3 +53,16 @@ def generate_rag_response(
         len(context_chunks),
     )
     return answer, len(context_chunks)
+
+
+async def generate_rag_response_async(
+    collection_id: str,
+    query: str,
+    extra_context: str = "",
+    top_k: int | None = None,
+) -> tuple[str, int]:
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(
+        None,
+        partial(generate_rag_response, collection_id, query, extra_context, top_k),
+    )
