@@ -13,11 +13,13 @@ const base = (collectionId: string, entityId: string) =>
 export function generateDraft(
   collectionId: string,
   entityId: string,
-  data: GenerateDraftRequest
+  data: GenerateDraftRequest,
+  signal?: AbortSignal
 ): Promise<Draft> {
   return apiFetch<Draft>(`${base(collectionId, entityId)}/generate`, {
     method: "POST",
     body: JSON.stringify(data),
+    signal,
   });
 }
 
