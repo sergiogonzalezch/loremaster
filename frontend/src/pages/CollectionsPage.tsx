@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Row, Col, Card, Button, Alert, Modal, Form } from "react-bootstrap";
@@ -24,7 +24,7 @@ export default function CollectionsPage() {
   const [createDescription, setCreateDescription] = useState("");
   const [creating, setCreating] = useState(false);
 
-  async function fetchCollections() {
+  const fetchCollections = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -35,11 +35,11 @@ export default function CollectionsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     fetchCollections();
-  }, []);
+  }, [fetchCollections]);
 
   async function handleDelete() {
     if (!deleteTarget) return;
