@@ -7,6 +7,13 @@ export class ApiError extends Error {
   }
 }
 
+export class ApiAbortError extends Error {
+  constructor() {
+    super("Solicitud cancelada");
+    this.name = "ApiAbortError";
+  }
+}
+
 export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
@@ -15,7 +22,15 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
     headers["Content-Type"] = "application/json";
   }
 
-  const response = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers });
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new ApiAbortError();
+    }
+    throw err;
+  }
 
   if (!response.ok) {
     let message = `Error ${response.status}`;

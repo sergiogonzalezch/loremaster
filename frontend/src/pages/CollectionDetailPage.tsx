@@ -17,10 +17,13 @@ import {
 import { getCollection, getDocuments, uploadDocument, deleteDocument, getEntities, createEntity, deleteEntity, generateText } from "../api";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ConfirmModal from "../components/ConfirmModal";
+import MarkdownContent from "../components/MarkdownContent";
+import TokenCounter from "../components/TokenCounter";
+import { useGenerate } from "../hooks/useGenerate";
 import type { Collection, Document, Entity, CreateEntityRequest } from "../types";
 import type { EntityType } from "../utils/enums";
 import { formatDate } from "../utils/formatters";
-import { getErrorMessage } from "../utils/errors";
+import { getErrorMessage, parseApiError } from "../utils/errors";
 import { ENTITY_TYPE_BADGE } from "../utils/constants";
 
 // ─── Documents tab ──────────────────────────────────────────────────────────
@@ -380,30 +383,24 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
 
 function GenerateTab({ collectionId }: { collectionId: string }) {
   const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ answer: string; query: string; sources_count: number } | null>(null);
+  const { data: result, error, isLoading, isCancelled, run, cancel } = useGenerate(generateText);
+  const parsedError = error ? parseApiError(error) : null;
 
   async function handleGenerate(e: FormEvent) {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setResult(null);
-    try {
-      const res = await generateText(collectionId, { query });
-      setResult(res);
-    } catch (err) {
-      setError(getErrorMessage(err, "Error al generar texto"));
-    } finally {
-      setLoading(false);
-    }
+    await run(collectionId, { query });
   }
 
   return (
     <>
-      {error && (
-        <Alert variant="danger" onClose={() => setError(null)} dismissible>
-          {error}
+      {parsedError && (
+        <Alert variant={parsedError.variant} dismissible>
+          {parsedError.text}
+        </Alert>
+      )}
+      {isCancelled && (
+        <Alert variant="secondary" dismissible>
+          Generación cancelada.
         </Alert>
       )}
 
@@ -418,22 +415,31 @@ function GenerateTab({ collectionId }: { collectionId: string }) {
             placeholder="Escribe tu consulta al mundo narrativo..."
             minLength={5}
             required
+            disabled={isLoading}
           />
+          <TokenCounter text={query} />
         </Form.Group>
-        <Button
-          variant="warning"
-          type="submit"
-          disabled={loading || query.trim().length < 5}
-        >
-          {loading ? (
-            <>
-              <Spinner animation="border" size="sm" className="me-2" />
-              Generando...
-            </>
-          ) : (
-            "Generar"
+        <div className="d-flex gap-2">
+          <Button
+            variant="warning"
+            type="submit"
+            disabled={isLoading || query.trim().length < 5}
+          >
+            {isLoading ? (
+              <>
+                <Spinner animation="border" size="sm" className="me-2" />
+                Generando...
+              </>
+            ) : (
+              "Generar"
+            )}
+          </Button>
+          {isLoading && (
+            <Button variant="outline-secondary" type="button" onClick={cancel}>
+              Cancelar
+            </Button>
           )}
-        </Button>
+        </div>
       </Form>
 
       {result && (
@@ -446,9 +452,7 @@ function GenerateTab({ collectionId }: { collectionId: string }) {
             <p className="text-muted mb-2">
               <small>Consulta: {result.query}</small>
             </p>
-            <p className="mb-0" style={{ whiteSpace: "pre-wrap" }}>
-              {result.answer}
-            </p>
+            <MarkdownContent>{result.answer}</MarkdownContent>
           </Card.Body>
         </Card>
       )}
