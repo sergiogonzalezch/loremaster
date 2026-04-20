@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     # Database (default SQLite for local dev; set DATABASE_URL in .env for PostgreSQL)
     database_url: str = "sqlite:///./loremaster.db"
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 
 settings = Settings()
