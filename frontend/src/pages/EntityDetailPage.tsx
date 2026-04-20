@@ -14,11 +14,14 @@ import {
 import { getEntity, updateEntity, getCollection, generateDraft, getDrafts, updateDraftContent, confirmDraft, discardDraft, deleteDraft } from "../api";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ConfirmModal from "../components/ConfirmModal";
+import MarkdownContent from "../components/MarkdownContent";
+import TokenCounter from "../components/TokenCounter";
+import { useGenerate } from "../hooks/useGenerate";
 import type { Collection, Draft, Entity, UpdateEntityRequest } from "../types";
 import type { EntityType } from "../utils/enums";
 import { formatDate } from "../utils/formatters";
 import { getErrorMessage } from "../utils/errors";
-import { ENTITY_TYPE_BADGE } from "../utils/constants";
+import { ENTITY_TYPE_BADGE, MAX_PENDING_DRAFTS } from "../utils/constants";
 
 // ─── Draft card ───────────────────────────────────────────────────────────────
 
@@ -115,9 +118,7 @@ function DraftCard({ draft, collectionId, entityId, onAction }: DraftCardProps) 
               {error}
             </Alert>
           )}
-          <p className="mb-0" style={{ whiteSpace: "pre-wrap" }}>
-            {draft.content}
-          </p>
+          <MarkdownContent>{draft.content}</MarkdownContent>
         </Card.Body>
         <Card.Footer>
           {isPending ? (
@@ -238,9 +239,18 @@ export default function EntityDetailPage() {
   const [loadingDrafts, setLoadingDrafts] = useState(true);
   const [draftsError, setDraftsError] = useState<string | null>(null);
 
+  const pendingCount = drafts.filter((d) => d.status === "pending").length;
+  const pendingLimitReached = pendingCount >= MAX_PENDING_DRAFTS;
+
   const [query, setQuery] = useState("");
-  const [generating, setGenerating] = useState(false);
-  const [generateError, setGenerateError] = useState<string | null>(null);
+  const {
+    error: generateError,
+    isLoading: generating,
+    isCancelled: generateCancelled,
+    run: runGenerateDraft,
+    cancel: cancelGenerate,
+    reset: resetGenerate,
+  } = useGenerate(generateDraft);
 
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState<UpdateEntityRequest>({
@@ -282,6 +292,20 @@ export default function EntityDetailPage() {
     }
   }, [collectionId, entityId]);
 
+  const refreshEntityQuiet = useCallback(async () => {
+    if (!collectionId || !entityId) return;
+    try {
+      const ent = await getEntity(collectionId, entityId);
+      setEntity(ent);
+    } catch {
+      // silent: la acción principal ya reporta errores
+    }
+  }, [collectionId, entityId]);
+
+  const handleDraftAction = useCallback(async () => {
+    await Promise.all([fetchDrafts(), refreshEntityQuiet()]);
+  }, [fetchDrafts, refreshEntityQuiet]);
+
   useEffect(() => {
     fetchEntityData();
     fetchDrafts();
@@ -290,16 +314,10 @@ export default function EntityDetailPage() {
   async function handleGenerate(e: FormEvent) {
     e.preventDefault();
     if (!collectionId || !entityId) return;
-    setGenerating(true);
-    setGenerateError(null);
-    try {
-      await generateDraft(collectionId, entityId, { query });
+    const result = await runGenerateDraft(collectionId, entityId, { query });
+    if (result) {
       setQuery("");
       await fetchDrafts();
-    } catch (err) {
-      setGenerateError(getErrorMessage(err, "Error al generar borrador"));
-    } finally {
-      setGenerating(false);
     }
   }
 
@@ -362,9 +380,20 @@ export default function EntityDetailPage() {
       </Card>
 
       <p className="lm-section-title">Generar borrador</p>
-      {generateError && (
-        <Alert variant="danger" onClose={() => setGenerateError(null)} dismissible>
-          {generateError}
+      {generateError != null && (
+        <Alert variant="danger" onClose={resetGenerate} dismissible>
+          {getErrorMessage(generateError, "Error al generar borrador")}
+        </Alert>
+      )}
+      {generateCancelled && (
+        <Alert variant="secondary" dismissible>
+          Generación cancelada.
+        </Alert>
+      )}
+      {pendingLimitReached && (
+        <Alert variant="warning">
+          Ya tienes {pendingCount} borradores pendientes (máximo {MAX_PENDING_DRAFTS}).
+          Confirma o descarta alguno antes de generar uno nuevo.
         </Alert>
       )}
       <Form onSubmit={handleGenerate} className="mb-4">
@@ -377,13 +406,14 @@ export default function EntityDetailPage() {
             placeholder="Describe qué quieres generar sobre esta entidad..."
             minLength={5}
             required
-            disabled={generating}
+            disabled={generating || pendingLimitReached}
           />
           <Button
             variant="warning"
             type="submit"
-            disabled={generating || query.trim().length < 5}
+            disabled={generating || pendingLimitReached || query.trim().length < 5}
             style={{ whiteSpace: "nowrap" }}
+            title={pendingLimitReached ? `Máximo ${MAX_PENDING_DRAFTS} borradores pendientes` : undefined}
           >
             {generating ? (
               <>
@@ -394,6 +424,24 @@ export default function EntityDetailPage() {
               "Generar borrador"
             )}
           </Button>
+          {generating && (
+            <Button
+              variant="outline-secondary"
+              type="button"
+              onClick={cancelGenerate}
+              style={{ whiteSpace: "nowrap" }}
+            >
+              Cancelar
+            </Button>
+          )}
+        </div>
+        <div className="d-flex justify-content-between mt-1">
+          <TokenCounter text={query} />
+          {!pendingLimitReached && pendingCount > 0 && (
+            <small className="text-muted">
+              {pendingCount} / {MAX_PENDING_DRAFTS} borradores pendientes.
+            </small>
+          )}
         </div>
       </Form>
 
@@ -418,7 +466,7 @@ export default function EntityDetailPage() {
             draft={draft}
             collectionId={collectionId}
             entityId={entityId}
-            onAction={fetchDrafts}
+            onAction={handleDraftAction}
           />
         ))
       )}

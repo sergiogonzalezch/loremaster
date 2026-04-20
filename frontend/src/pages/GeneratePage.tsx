@@ -3,17 +3,17 @@ import type { FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Alert, Badge, Breadcrumb, Button, Card, Form, Spinner } from "react-bootstrap";
 import { getCollection, generateText } from "../api";
-import type { GenerateTextResponse } from "../types";
 import { parseApiError } from "../utils/errors";
+import MarkdownContent from "../components/MarkdownContent";
+import TokenCounter from "../components/TokenCounter";
+import { useGenerate } from "../hooks/useGenerate";
 
 export default function GeneratePage() {
   const { collectionId } = useParams<{ collectionId: string }>();
 
   const [collectionName, setCollectionName] = useState<string>("");
   const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<GenerateTextResponse | null>(null);
-  const [error, setError] = useState<{ variant: "warning" | "danger"; text: string } | null>(null);
+  const { data: result, error, isLoading, isCancelled, run, cancel } = useGenerate(generateText);
 
   useEffect(() => {
     if (!collectionId) return;
@@ -22,20 +22,12 @@ export default function GeneratePage() {
       .catch(() => {});
   }, [collectionId]);
 
+  const parsedError = error ? parseApiError(error) : null;
+
   async function handleGenerate(e: FormEvent) {
     e.preventDefault();
     if (!collectionId) return;
-    setLoading(true);
-    setError(null);
-    setResult(null);
-    try {
-      const res = await generateText(collectionId, { query });
-      setResult(res);
-    } catch (err) {
-      setError(parseApiError(err));
-    } finally {
-      setLoading(false);
-    }
+    await run(collectionId, { query });
   }
 
   return (
@@ -60,9 +52,14 @@ export default function GeneratePage() {
         </Link>
       </div>
 
-      {error && (
-        <Alert variant={error.variant} onClose={() => setError(null)} dismissible>
-          {error.text}
+      {parsedError && (
+        <Alert variant={parsedError.variant} dismissible>
+          {parsedError.text}
+        </Alert>
+      )}
+      {isCancelled && (
+        <Alert variant="secondary" dismissible>
+          Generación cancelada.
         </Alert>
       )}
 
@@ -77,23 +74,31 @@ export default function GeneratePage() {
             placeholder="Escribe tu consulta al mundo narrativo..."
             minLength={5}
             required
-            disabled={loading}
+            disabled={isLoading}
           />
+          <TokenCounter text={query} />
         </Form.Group>
-        <Button
-          variant="warning"
-          type="submit"
-          disabled={loading || query.trim().length < 5}
-        >
-          {loading ? (
-            <>
-              <Spinner animation="border" size="sm" className="me-2" />
-              Generando...
-            </>
-          ) : (
-            "Generar"
+        <div className="d-flex gap-2">
+          <Button
+            variant="warning"
+            type="submit"
+            disabled={isLoading || query.trim().length < 5}
+          >
+            {isLoading ? (
+              <>
+                <Spinner animation="border" size="sm" className="me-2" />
+                Generando...
+              </>
+            ) : (
+              "Generar"
+            )}
+          </Button>
+          {isLoading && (
+            <Button variant="outline-secondary" type="button" onClick={cancel}>
+              Cancelar
+            </Button>
           )}
-        </Button>
+        </div>
       </Form>
 
       {result && (
@@ -103,12 +108,7 @@ export default function GeneratePage() {
             <Badge bg="secondary">{result.sources_count} fuentes</Badge>
           </Card.Header>
           <Card.Body>
-            <p
-              className="mb-0"
-              style={{ whiteSpace: "pre-wrap", lineHeight: "1.7" }}
-            >
-              {result.answer}
-            </p>
+            <MarkdownContent>{result.answer}</MarkdownContent>
           </Card.Body>
         </Card>
       )}
