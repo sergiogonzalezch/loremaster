@@ -11,6 +11,7 @@ A diferencia de los asistentes de IA genéricos basados en chat, Lore Master ofr
 - Ingesta y vectoriza documentos de lore (PDF/TXT) proporcionados por el usuario.
 - Recupera contexto relevante del lore antes de cada generación de texto o imagen.
 - Genera texto narrativo expandido, consistente con la lore cargada.
+- Genera **borradores de texto RAG** por entidad: el usuario puede editar, confirmar (actualiza la descripción de la entidad y descarta los demás pendientes) o descartar cada borrador.
 - Construye prompts visuales automáticamente y genera imágenes a través de ComfyUI + Flux.2 Klein 4B.
 - Gestiona entidades del mundo (personajes, escenarios, facciones, ítems) con atributos estructurados.
 - Almacena todas las imágenes y metadatos generados en S3 (local o nube).
@@ -74,6 +75,7 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 | **HU-03** | Generación de texto (RAG) | Como creador de mundos, quiero hacer consultas sobre una colección para obtener texto coherente basado en el lore cargado.                             |
 | **HU-04** | Generación de imágenes    | Como creador de mundos, quiero generar imágenes consistentes con mi lore utilizando contexto de la colección.                                          |
 | **HU-05** | Gestión de entidades      | Como creador de mundos, quiero gestionar personajes, escenarios y objetos dentro de una colección para estructurar mi mundo.                           |
+| **HU-06** | Borradores de texto (RAG) | Como creador de mundos, quiero generar borradores de texto RAG para una entidad y confirmar el mejor para actualizar su descripción automáticamente.   |
 
 ---
 
@@ -83,11 +85,11 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 - Diagrama de flujo — Creación de colección
 
-![Diagrama de flujo](mermaid-diagram.png)
+> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
 
 - Diagrama de secuencia — Cliente → FastAPI → DB
 
-![Diagrama de secuencia](mermaid-diagram_(1).png)
+> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
 
 ### Criterios de aceptación
 
@@ -102,11 +104,11 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 - Diagrama de flujo — Ingestión de documentos
 
-![Diagrama de flujo](mermaid-diagram_(4).png)
+> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
 
 - Diagrama de secuencia — Cliente → FastAPI → Qdrant
 
-![Diagrama de secuencia](mermaid-diagram_(5).png)
+> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
 
 ### Criterios de aceptación (corregidos)
 
@@ -133,11 +135,11 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 - Diagrama de flujo — Generación de texto RAG
 
-![Diagrama de flujo](mermaid-diagram_1.png)
+> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
 
 - Diagrama de secuencia — Cliente → FastAPI → Qdrant → LLM
 
-![Diagrama de secuencia](mermaid-diagram_(1)_1.png)
+> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
 
 ### Criterios de aceptación (MVP ajustado)
 
@@ -163,11 +165,11 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 - Diagrama de flujo — Generación de imágenes
 
-![Diagrama de flujo](mermaid-diagram_(2).png)
+> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
 
 - Diagrama de secuencia — Cliente → FastAPI → ComfyUI / RunPod
 
-![Diagrama de secuencia](mermaid-diagram_(3).png)
+> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
 
 ### Criterios de aceptación (ajustados)
 
@@ -196,18 +198,57 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 - Diagrama de flujo — CRUD de entidades
 
-![Diagrama de flujo](mermaid-diagram_(4)_1.png)
+> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
 
 - Diagrama de secuencia — Cliente → FastAPI → DB
 
-![Diagrama de secuencia](mermaid-diagram_(5)_1.png)
+> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
 
 ### Criterios de aceptación
 
 - CRUD completo: character, scene, faction, item
 - Soft delete (`deleted_at`)
-- Relación entre entidades (`entity_relations`)
-- Cada entidad puede tener múltiples imágenes
+- Nombre único por colección (validado en capa de servicio)
+- Relación entre entidades (`entity_relations`) — planificada
+- Cada entidad puede tener múltiples imágenes — planificado
+
+# HU-06 — Borradores de texto RAG para entidades
+
+### Diagrama de flujo — Generación de borrador RAG
+
+> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
+
+### Criterios de aceptación
+
+- Se genera un borrador invocando el pipeline RAG con un `query` libre del usuario
+- Máximo 5 borradores `pending` simultáneos por entidad (`HTTP 409` si se supera)
+- El usuario puede editar el contenido del borrador antes de confirmar
+- **Confirmar** un borrador: actualiza `description` de la entidad + descarta automáticamente los demás `pending`
+- **Descartar** un borrador (PATCH): cambia `status → discarded` sin eliminar el registro
+- Los borradores `discarded` no pueden editarse ni eliminarse via API
+- Soft-delete independiente del estado (DELETE endpoint → `is_deleted=True`, `HTTP 204`)
+
+### Secuencia
+
+| **Paso** | **Actor → Actor**  | **Mensaje / Operación**                                          |
+| -------- | ------------------ | ---------------------------------------------------------------- |
+| 1        | Cliente → FastAPI  | POST /collections/{id}/entities/{eid}/generate                   |
+| 2        | FastAPI → Qdrant   | search(filter=collection_id, top_k=4)                            |
+| 3        | Qdrant → FastAPI   | chunks relevantes                                                |
+| 4        | FastAPI            | Construye prompt con query + contexto                            |
+| 5        | FastAPI → Ollama   | Genera texto (llama3.2:latest)                                   |
+| 6        | FastAPI → DB       | Guarda EntityTextDraft (status=pending)                          |
+| 7        | FastAPI → Cliente  | HTTP 201 { draft_id, content, sources_count }                    |
+
+### Confirmar borrador (secuencia)
+
+| **Paso** | **Actor → Actor** | **Mensaje / Operación**                                   |
+| -------- | ----------------- | --------------------------------------------------------- |
+| 1        | Cliente → FastAPI | POST /collections/{id}/entities/{eid}/drafts/{did}/confirm|
+| 2        | FastAPI → DB      | Draft.status = confirmed, Draft.confirmed_at = now()      |
+| 3        | FastAPI → DB      | Entity.description = draft.content, Entity.updated_at     |
+| 4        | FastAPI → DB      | Otros pending → status = discarded                        |
+| 5        | FastAPI → Cliente | HTTP 200 { draft actualizado }                            |
 
 # 4. Arquitectura Técnica
 
@@ -220,7 +261,7 @@ La arquitectura se divide en dos configuraciones que comparten el mismo codebase
 | **FastAPI + Uvicorn**         | Backend / API REST         | Framework async de alto rendimiento. Soporta SSE para streaming. Swagger UI incluido.     |
 | **Pydantic v2**               | Validación de datos        | Modelos tipados para request/response. Valida el JSONB de attributes por tipo de entidad. |
 | **LangChain**                 | Pipeline RAG               | Orquestación completa: carga → chunking → embeddings → retrieval → prompt building.       |
-| **sentence-transformers**     | Embeddings locales         | Modelo all-MiniLM-L6-v2, 384-d. Sin APIs externas. Vectoriza el lore del usuario.         |
+| **sentence-transformers**     | Embeddings locales         | Modelo `paraphrase-multilingual-MiniLM-L12-v2`, 384-d. Sin APIs externas. Vectoriza el lore del usuario.         |
 | **Qdrant**                    | Base de datos vectorial    | Servidor Docker con persistencia en disco. Filtros por metadatos. Escalable a cloud.      |
 | **Ollama**                    | LLM local (dev/proto)      | Sirve Llama 3.2, Mistral, Qwen2 localmente. Acceso directo a GPU del host.                |
 | **ComfyUI**                   | Motor de difusión          | API HTTP/WebSocket para generación de imágenes. Acepta workflows JSON.                    |
@@ -234,7 +275,7 @@ La arquitectura se divide en dos configuraciones que comparten el mismo codebase
 
 ## Diagrama de arquitectura general
 
-![Diagrama de flujo](mermaid-diagram_(11).png)
+> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
 
 **Diagrama de Arquitectura — Vista General Local y Cloud**
 
@@ -248,35 +289,62 @@ En modo local, ComfyUI y Ollama corren en el host para acceder directamente a la
 loremaster/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py                    # Punto de entrada FastAPI
-│   │   ├── api/
-│   │   │   └── routes/
-│   │   │       ├── documents.py        # HU-01
-│   │   │       ├── generate.py         # HU-02 y HU-03
-│   │   │       └── entities.py         # HU-04
+│   │   ├── main.py                        # FastAPI app, CORS, lifespan, registro de routers
+│   │   ├── database.py                    # SQLModel engine + dependencia get_session
+│   │   ├── api/routes/
+│   │   │   ├── collections.py             # HU-01: CRUD colecciones
+│   │   │   ├── documents.py               # HU-02: ingestión PDF/TXT
+│   │   │   ├── generate.py                # HU-03: RAG free-form por colección
+│   │   │   ├── entities.py                # HU-05: CRUD entidades
+│   │   │   └── entity_text_draft.py       # HU-06: borradores RAG por entidad
+│   │   ├── models/                        # SQLModel (tabla ORM) + Pydantic (schemas) co-localizados
+│   │   │   ├── collections.py             # Collection, CreateCollectionRequest, CollectionResponse
+│   │   │   ├── documents.py               # Document, DocumentStatus (processing|completed|failed)
+│   │   │   ├── entities.py                # Entity, EntityType (character|scene|faction|item)
+│   │   │   ├── entity_text_draft.py       # EntityTextDraft, DraftStatus (pending|confirmed|discarded)
+│   │   │   └── generate.py                # GenerateTextRequest, GenerateTextResponse
 │   │   ├── core/
-│   │   │   ├── config.py               # Pydantic Settings (lee .env)
-│   │   │   └── database.py             # Conexión a PostgreSQL/SQLite
-│   │   ├── models/                     # Modelos SQLAlchemy (ORM)
-│   │   │   ├── document.py
-│   │   │   ├── entity.py
-│   │   │   └── generated_image.py
-│   │   ├── schemas/                    # Schemas Pydantic (request/response)
-│   │   │   ├── document.py
-│   │   │   ├── entity.py
-│   │   │   └── image.py
-│   │   └── services/
-│   │       ├── rag_engine.py           # Chunking, embed, retrieval, prompt
-│   │       ├── comfy_client.py         # Cliente para ComfyUI LOCAL
-│   │       ├── storage.py              # Abstracción S3/LocalStack
-│   │       └── prompt_builder.py       # Construcción de visual prompts
-│   ├── workflows/
-│   │   └── flux2_klein_t2i.json        # Workflow ComfyUI (API format)
-│   ├── Dockerfile
-│   └── requirements.txt
+│   │   │   ├── config.py                  # Pydantic Settings (lee .env)
+│   │   │   ├── lifespan.py                # Startup: migraciones Alembic (crítico) + health checks
+│   │   │   ├── rag_engine.py              # Qdrant: ingest_chunks, search_context, delete, ping
+│   │   │   ├── rag_generate.py            # RAG orchestrator: search → prompt → chain.invoke
+│   │   │   ├── llm_client.py              # OllamaLLM + LangChain RunnableSequence (singleton)
+│   │   │   ├── text_extractor.py          # Extracción de texto PDF/TXT
+│   │   │   ├── valid_collection.py        # Dependencias FastAPI: get_collection_or_404, etc.
+│   │   │   └── common.py                  # Helpers DB: soft_delete, get_active_by_id, list_active_by_collection
+│   │   └── services/                      # Lógica de negocio (reciben objetos ORM, no IDs)
+│   │       ├── collection_service.py
+│   │       ├── deletion_service.py        # cascade_delete_entity / cascade_delete_collection
+│   │       ├── documents_service.py       # ingest (async), list, get, delete
+│   │       ├── entities_service.py        # CRUD + nombre único por colección
+│   │       ├── entity_text_draft_service.py  # CRUD drafts + confirm + discard + soft-delete
+│   │       └── generate_service.py        # RAG free-form (sin session, sólo Qdrant + Ollama)
+│   ├── alembic/                           # Migraciones (render_as_batch=True para SQLite)
+│   ├── tests/                             # pytest con SQLite in-memory; stubs de rag_engine y LLM
+│   ├── Makefile
+│   ├── requirements.txt
+│   ├── requirements-dev.txt
+│   └── .env.example
+│
+├── frontend/
+│   ├── src/
+│   │   ├── App.tsx                        # BrowserRouter + rutas principales
+│   │   ├── api/                           # Capa de acceso al backend
+│   │   │   ├── apiClient.ts               # fetch wrapper: apiFetch<T>, ApiError, ApiAbortError
+│   │   │   ├── collections.ts / documents.ts / entities.ts / drafts.ts / generate.ts
+│   │   │   └── index.ts                   # Re-exporta todos los módulos de api/
+│   │   ├── pages/                         # CollectionsPage, CollectionDetailPage,
+│   │   │                                  # EntityDetailPage, GeneratePage
+│   │   ├── components/                    # Layout, ConfirmModal, LoadingSpinner,
+│   │   │                                  # MarkdownContent, TokenCounter
+│   │   ├── hooks/useGenerate.ts           # Hook para peticiones LLM cancelables con AbortSignal
+│   │   ├── types/                         # Tipos TypeScript (espejo exacto de schemas del backend)
+│   │   └── utils/                         # enums.ts, constants.ts, errors.ts (mensajes en español),
+│   │                                      # formatters.ts, tokens.ts
+│   └── package.json
 │
 ├── docker-compose.yml
-│   # Servicios: FastAPI · Qdrant · Redis · PostgreSQL · Prometheus · Grafana · LocalStack
+│   # Servicios: Qdrant · PostgreSQL · Redis · LocalStack · Prometheus · Grafana
 │
 ├── monitoring/
 │   ├── prometheus.yml
@@ -297,7 +365,7 @@ ENVIRONMENT="local"
 
 # LLM
 OLLAMA_URL=http://host.docker.internal:11434
-OLLAMA_MODEL=llama3.2:3b
+OLLAMA_MODEL=llama3.2:latest
 
 # ComfyUI local
 COMFY_BACKEND=local
@@ -369,7 +437,7 @@ ENVIRONMENT=production
 
 # LLM (puede ser Ollama en VPS o RunPod también)
 OLLAMA_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.2:3b
+OLLAMA_MODEL=llama3.2:latest
 
 # ComfyUI via RunPod Serverless
 COMFY_BACKEND=runpod
@@ -414,15 +482,16 @@ DATABASE_URL=postgresql://user:pass@postgres:5432/loremaster
 
 | **Tabla** | **Campos principales** | **Notas / Restricciones** |
 |---|---|---|
-| **collections** | id (UUID PK), name, description, status, created_at, updated_at, is_deleted, deleted_at | Unidad principal del sistema (world). |
-| **documents** | id (UUID PK), collection_id (FK), filename, file_type, chunk_count, status, created_at, is_deleted, deleted_at | Sin campo content — el texto vive en Qdrant. Sin updated_at — los documentos no se editan. status: completed \| failed. |
-| **entities** | id (UUID PK), collection_id (FK), type (ENUM), name, description, created_at, updated_at, is_deleted, deleted_at | type: character \| scene \| faction \| item. Soft-delete con deleted_at. |
-| **generated_images** | id (UUID PK), collection_id (FK), entity_id (FK?), image_url, visual_prompt, seed, model_version, generation_ms, backend, created_at | Imagen asociada a colección y opcionalmente a entidad. backend: local \| runpod. |
-| **entity_relations** | id (UUID PK), source_id (FK entities), target_id (FK entities), relation_type, created_at | ENUM: belongs_to, contains, allied_with, enemy_of. Sem. 4+. |
+| **collections** | id (UUID PK), name (unique), description, created_at, updated_at, is_deleted, deleted_at | Unidad principal del sistema (world). |
+| **documents** | id (UUID PK), collection_id (FK), filename, file_type, chunk_count, status, created_at, is_deleted, deleted_at | Sin campo `content` — el texto vive en Qdrant. Sin `updated_at` — los documentos no se editan. `status`: processing \| completed \| failed. |
+| **entities** | id (UUID PK), collection_id (FK), type (ENUM), name, description, created_at, updated_at, is_deleted, deleted_at | `type`: character \| scene \| faction \| item. Nombre único por colección (validado en servicio). |
+| **entity_text_drafts** | id (UUID PK), entity_id (FK), collection_id (FK), query, content (max 10 000 chars), sources_count, status, created_at, confirmed_at, updated_at, is_deleted, deleted_at | `status`: pending \| confirmed \| discarded. Máx. 5 `pending` por entidad. `confirmed_at` se establece al confirmar. |
+| **generated_images** | id (UUID PK), collection_id (FK), entity_id (FK?), image_url, visual_prompt, seed, model_version, generation_ms, backend, created_at | Planificado (Fase 3). backend: local \| runpod. |
+| **entity_relations** | id (UUID PK), source_id (FK entities), target_id (FK entities), relation_type, created_at | Planificado. ENUM: belongs_to, contains, allied_with, enemy_of. |
 
 ### Diagrama ERD
 
-![Diagrama de flujo](image.png)
+> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
 
 **Diagrama ERD — Modelo de datos Lore Master**
 
