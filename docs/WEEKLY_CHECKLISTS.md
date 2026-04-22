@@ -138,7 +138,7 @@ Nota de Mike:
 
 ### Criterios de aceptacion Semana 3
 
-- [ ] `docker compose up qdrant` levanta sin errores
+- [x] `docker compose up qdrant` levanta sin errores
 - [x] Ingestar documento → chunks aparecen en Qdrant dashboard
 - [x] Query semantica retorna chunks relevantes del documento ingestado
 - [x] Query en coleccion vacia retorna 422
@@ -156,7 +156,7 @@ Nota de Mike:
 
 - [x] Agregar a `requirements.txt`: `langchain-ollama`
 - [x] Variables en `.env.example`: `OLLAMA_BASE_URL`, `OLLAMA_MODEL`
-- [ ] Verificar que Ollama esta corriendo con modelo `llama3.2` disponible
+- [x] Verificar que Ollama esta corriendo con modelo `llama3.2` disponible
 - [x] `config.py` con Pydantic Settings: `TEMPERATURE` (0.7), `MAX_TOKENS` (500)
 
 ### Generate Service
@@ -179,7 +179,7 @@ Nota de Mike:
 ### Criterios de aceptacion Semana 4
 
 - [x] Flujo completo: crear coleccion → subir PDF → hacer query → recibir respuesta coherente del LLM
-- [ ] La respuesta del LLM esta fundamentada en el contenido del documento (no inventa)
+- [x] La respuesta del LLM esta fundamentada en el contenido del documento (no inventa)
 - [x] Si el contexto no tiene informacion suficiente, el LLM lo indica
 - [x] Todos los endpoints documentados en Swagger
 - [x] Crear coleccion con nombre duplicado retorna 409

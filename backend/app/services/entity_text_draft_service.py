@@ -111,7 +111,7 @@ def confirm_draft_service(
     session: Session,
     draft_id: str,
     entity: Entity,
-) -> Entity | None:
+) -> EntityTextDraft | None:
     draft = _get_pending_draft(session, draft_id, entity.id, entity.collection_id)
     if not draft:
         return None
@@ -134,9 +134,9 @@ def confirm_draft_service(
     )
 
     session.commit()
-    session.refresh(entity)
+    session.refresh(draft)
     logger.info("Draft %s confirmed for entity %s", draft_id, entity.id)
-    return entity
+    return draft
 
 
 def discard_draft_service(

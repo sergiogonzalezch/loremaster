@@ -3,7 +3,7 @@ from sqlmodel import Session
 
 from app.core.valid_collection import get_entity_or_404
 from app.database import get_session
-from app.models.entities import Entity, EntityResponse
+from app.models.entities import Entity
 from app.models.entity_text_draft import (
     GenerateEntityTextDraftRequest,
     UpdateEntityTextDraftContentRequest,
@@ -76,7 +76,7 @@ async def update_draft(
 
 @router.post(
     "/{collection_id}/entities/{entity_id}/drafts/{draft_id}/confirm",
-    response_model=EntityResponse,
+    response_model=EntityTextDraftResponse,
 )
 async def confirm_draft(
     draft_id: str,
