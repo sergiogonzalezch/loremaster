@@ -27,7 +27,7 @@ async def test_list_collections(client):
 
     response = await client.get("/api/v1/collections/")
     assert response.status_code == 200
-    assert response.json()["count"] == 2
+    assert response.json()["meta"]["total"] == 2
 
 
 @pytest.mark.anyio

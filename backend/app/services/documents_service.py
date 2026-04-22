@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import HTTPException, UploadFile  # HTTPException: input validation only
+from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.models.documents import Document, DocumentStatus
@@ -65,13 +66,24 @@ async def ingest_document_service(
     return document
 
 
-def list_documents_service(session: Session, collection_id: str) -> list[Document]:
-    stmt = select(Document).where(
+def list_documents_service(
+    session: Session, collection_id: str, page: int = 1, page_size: int = 20
+) -> tuple[list[Document], int]:
+    base_filter = (
         Document.collection_id == collection_id,
         Document.is_deleted == False,
         Document.status != DocumentStatus.processing,
     )
-    return session.exec(stmt).all()
+    total = session.exec(
+        select(func.count()).select_from(
+            select(Document).where(*base_filter).subquery()
+        )
+    ).one()
+    skip = (page - 1) * page_size
+    items = session.exec(
+        select(Document).where(*base_filter).offset(skip).limit(page_size)
+    ).all()
+    return list(items), total
 
 
 def delete_document_service(session: Session, document: Document) -> bool:

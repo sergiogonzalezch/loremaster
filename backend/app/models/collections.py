@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 from datetime import datetime, timezone
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -40,6 +40,3 @@ class CollectionResponse(BaseModel):
     updated_at: Optional[datetime] = None
 
 
-class CollectionListResponse(BaseModel):
-    data: List[CollectionResponse]
-    count: int

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlmodel import Session
 
 from app.core.valid_collection import get_entity_or_404
@@ -8,8 +8,8 @@ from app.models.entity_text_draft import (
     GenerateEntityTextDraftRequest,
     UpdateEntityTextDraftContentRequest,
     EntityTextDraftResponse,
-    EntityTextDraftListResponse,
 )
+from app.models.shared import PaginatedResponse
 from app.services.entity_text_draft_service import (
     generate_draft_service,
     list_drafts_service,
@@ -42,16 +42,18 @@ async def generate_draft(
 
 @router.get(
     "/{collection_id}/entities/{entity_id}/drafts",
-    response_model=EntityTextDraftListResponse,
+    response_model=PaginatedResponse[EntityTextDraftResponse],
 )
 async def list_drafts(
     collection_id: str,
     entity_id: str,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
     _: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
-    drafts = list_drafts_service(session, entity_id, collection_id)
-    return EntityTextDraftListResponse(data=drafts, count=len(drafts))
+    drafts, total = list_drafts_service(session, entity_id, collection_id, page, page_size)
+    return PaginatedResponse.build(drafts, total, page, page_size)
 
 
 @router.patch(

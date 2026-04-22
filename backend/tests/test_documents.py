@@ -44,7 +44,7 @@ async def test_list_documents(client, mock_rag_engine, sample_collection):
 
     response = await client.get(f"/api/v1/collections/{sample_collection.id}/documents")
     assert response.status_code == 200
-    assert response.json()["count"] == 2
+    assert response.json()["meta"]["total"] == 2
 
 
 @pytest.mark.anyio

@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Optional
+from typing import Optional
 from datetime import datetime, timezone
 
 from pydantic import BaseModel, ConfigDict
@@ -73,6 +73,3 @@ class EntityTextDraftResponse(BaseModel):
     updated_at: Optional[datetime] = None
 
 
-class EntityTextDraftListResponse(BaseModel):
-    data: List[EntityTextDraftResponse]
-    count: int
