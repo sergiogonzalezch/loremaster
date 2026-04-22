@@ -3,5 +3,6 @@
 # ========================
 .agents
 .claude/
+CLAUDE.local.md
 CLAUDE.md
 skills-lock.json

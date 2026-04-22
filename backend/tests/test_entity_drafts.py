@@ -47,9 +47,6 @@ async def test_list_drafts_visibility(
     client, mock_rag_engine, mock_llm, sample_collection, sample_entity
 ):
     """DRF-03: Solo pending y confirmed aparecen en listado; discarded y soft-deleted no."""
-    pending = await _create_draft(
-        client, sample_collection.id, sample_entity.id, "query pending"
-    )
     to_discard = await _create_draft(
         client, sample_collection.id, sample_entity.id, "query discard"
     )
@@ -60,7 +57,6 @@ async def test_list_drafts_visibility(
         client, sample_collection.id, sample_entity.id, "query delete"
     )
 
-    pending_id = pending.json()["id"]
     discard_id = to_discard.json()["id"]
     confirm_id = to_confirm.json()["id"]
     delete_id = to_delete.json()["id"]
@@ -74,6 +70,12 @@ async def test_list_drafts_visibility(
     await client.delete(
         f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts/{delete_id}"
     )
+
+    # Crear el draft pending después de la confirmación para que no sea auto-descartado.
+    pending = await _create_draft(
+        client, sample_collection.id, sample_entity.id, "query pending"
+    )
+    pending_id = pending.json()["id"]
 
     listed = await client.get(
         f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts"
@@ -138,6 +140,30 @@ async def test_edit_discarded_draft_404(
         json={"content": "intento de editar descartado"},
     )
     assert response.status_code == 404
+
+
+@pytest.mark.anyio
+async def test_confirm_returns_draft_response(
+    client, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
+    """DRF-07: Confirmar draft retorna EntityTextDraftResponse con status confirmed."""
+    created = await _create_draft(client, sample_collection.id, sample_entity.id)
+    draft_id = created.json()["id"]
+
+    response = await client.post(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts/{draft_id}/confirm"
+    )
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["id"] == draft_id
+    assert data["status"] == "confirmed"
+    assert data["confirmed_at"] is not None
+    assert data["entity_id"] == sample_entity.id
+    assert data["collection_id"] == sample_collection.id
+    assert "content" in data
+    assert "query" in data
+    assert "name" not in data
 
 
 @pytest.mark.anyio
