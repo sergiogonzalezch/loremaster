@@ -122,3 +122,71 @@ async def test_get_doc_wrong_collection_404(client, db_session, sample_document)
         f"/api/v1/collections/{another.id}/documents/{sample_document.id}"
     )
     assert response.status_code == 404
+
+
+@pytest.mark.anyio
+async def test_filter_documents_by_filename(client, mock_rag_engine, sample_collection):
+    """DOC-09: Filtrar documentos por nombre de archivo retorna solo los que coinciden."""
+    for name in ("alpha.txt", "beta.txt", "alpha_v2.txt"):
+        await client.post(
+            f"/api/v1/collections/{sample_collection.id}/documents",
+            files={"file": (name, b"contenido", "text/plain")},
+        )
+
+    response = await client.get(
+        f"/api/v1/collections/{sample_collection.id}/documents?filename=alpha"
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["meta"]["total"] == 2
+    filenames = [d["filename"] for d in body["data"]]
+    assert "alpha.txt" in filenames
+    assert "alpha_v2.txt" in filenames
+    assert "beta.txt" not in filenames
+
+
+@pytest.mark.anyio
+async def test_filter_documents_by_status(client, mock_rag_engine, sample_collection):
+    """DOC-10: Filtrar documentos por status completed retorna solo los completados."""
+    await client.post(
+        f"/api/v1/collections/{sample_collection.id}/documents",
+        files={"file": ("ok.txt", b"contenido", "text/plain")},
+    )
+
+    response = await client.get(
+        f"/api/v1/collections/{sample_collection.id}/documents?status=completed"
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["meta"]["total"] == 1
+    assert body["data"][0]["status"] == "completed"
+
+
+@pytest.mark.anyio
+async def test_filter_documents_by_file_type(client, mock_rag_engine, sample_collection):
+    """DOC-11: Filtrar documentos por file_type retorna solo los de ese tipo."""
+    await client.post(
+        f"/api/v1/collections/{sample_collection.id}/documents",
+        files={"file": ("plain.txt", b"txt content", "text/plain")},
+    )
+
+    response = await client.get(
+        f"/api/v1/collections/{sample_collection.id}/documents?file_type=text%2Fplain"
+    )
+    assert response.status_code == 200
+    assert response.json()["meta"]["total"] == 1
+
+
+@pytest.mark.anyio
+async def test_filter_documents_created_after_future(client, mock_rag_engine, sample_collection):
+    """DOC-12: created_after en el futuro retorna lista vacía."""
+    await client.post(
+        f"/api/v1/collections/{sample_collection.id}/documents",
+        files={"file": ("future.txt", b"content", "text/plain")},
+    )
+
+    response = await client.get(
+        f"/api/v1/collections/{sample_collection.id}/documents?created_after=2099-01-01T00:00:00"
+    )
+    assert response.status_code == 200
+    assert response.json()["meta"]["total"] == 0

@@ -128,3 +128,57 @@ async def test_delete_cascades_all_drafts(
             select(EntityTextDraft).where(EntityTextDraft.id == draft_id)
         ).first()
         assert db_draft.is_deleted is True
+
+
+@pytest.mark.anyio
+async def test_filter_collections_by_name(client):
+    """COL-09: Filtrar colecciones por nombre retorna solo las que coinciden."""
+    await client.post("/api/v1/collections/", json={"name": "Middle Earth", "description": ""})
+    await client.post("/api/v1/collections/", json={"name": "Westeros", "description": ""})
+    await client.post("/api/v1/collections/", json={"name": "Middle Ages Lore", "description": ""})
+
+    response = await client.get("/api/v1/collections/?name=middle")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["meta"]["total"] == 2
+    names = [item["name"] for item in body["data"]]
+    assert "Middle Earth" in names
+    assert "Middle Ages Lore" in names
+    assert "Westeros" not in names
+
+
+@pytest.mark.anyio
+async def test_filter_collections_by_created_after(client):
+    """COL-10: Filtrar colecciones con created_after en el futuro retorna lista vacía."""
+    await client.post("/api/v1/collections/", json={"name": "World X", "description": ""})
+
+    response = await client.get("/api/v1/collections/?created_after=2099-01-01T00:00:00")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["meta"]["total"] == 0
+    assert body["data"] == []
+
+
+@pytest.mark.anyio
+async def test_filter_collections_by_created_before(client):
+    """COL-11: Filtrar colecciones con created_before en el pasado retorna lista vacía."""
+    await client.post("/api/v1/collections/", json={"name": "World Y", "description": ""})
+
+    response = await client.get("/api/v1/collections/?created_before=2000-01-01T00:00:00")
+    assert response.status_code == 200
+    assert response.json()["meta"]["total"] == 0
+
+
+@pytest.mark.anyio
+async def test_filter_and_pagination_combined(client):
+    """COL-12: Filtro por nombre y paginación combinados funcionan correctamente."""
+    for i in range(5):
+        await client.post("/api/v1/collections/", json={"name": f"Lore World {i}", "description": ""})
+    await client.post("/api/v1/collections/", json={"name": "Unrelated", "description": ""})
+
+    response = await client.get("/api/v1/collections/?name=lore&page=1&page_size=3")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["meta"]["total"] == 5
+    assert body["meta"]["page_size"] == 3
+    assert len(body["data"]) == 3

@@ -1,3 +1,6 @@
+from datetime import datetime
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlmodel import Session
 
@@ -5,6 +8,7 @@ from app.core.valid_collection import get_entity_or_404
 from app.database import get_session
 from app.models.entities import Entity
 from app.models.entity_text_draft import (
+    DraftStatus,
     GenerateEntityTextDraftRequest,
     UpdateEntityTextDraftContentRequest,
     EntityTextDraftResponse,
@@ -49,10 +53,16 @@ async def list_drafts(
     entity_id: str,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
+    status: Optional[DraftStatus] = Query(default=None),
+    created_after: Optional[datetime] = Query(default=None),
+    created_before: Optional[datetime] = Query(default=None),
     _: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
-    drafts, total = list_drafts_service(session, entity_id, collection_id, page, page_size)
+    drafts, total = list_drafts_service(
+        session, entity_id, collection_id, page, page_size,
+        status=status, created_after=created_after, created_before=created_before,
+    )
     return PaginatedResponse.build(drafts, total, page, page_size)
 
 

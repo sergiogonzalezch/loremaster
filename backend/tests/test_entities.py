@@ -133,3 +133,84 @@ async def test_entity_wrong_collection_404(client, db_session, sample_entity):
         f"/api/v1/collections/{col_b.id}/entities/{sample_entity.id}"
     )
     assert response.status_code == 404
+
+
+@pytest.mark.anyio
+async def test_filter_entities_by_name(client, sample_collection):
+    """ENT-09: Filtrar entidades por nombre retorna solo las que coinciden."""
+    for payload in [
+        {"type": "character", "name": "Gandalf the Grey", "description": ""},
+        {"type": "character", "name": "Gandalf the White", "description": ""},
+        {"type": "faction", "name": "Fellowship", "description": ""},
+    ]:
+        await client.post(
+            f"/api/v1/collections/{sample_collection.id}/entities", json=payload
+        )
+
+    response = await client.get(
+        f"/api/v1/collections/{sample_collection.id}/entities?name=gandalf"
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["meta"]["total"] == 2
+    names = [e["name"] for e in body["data"]]
+    assert "Gandalf the Grey" in names
+    assert "Gandalf the White" in names
+    assert "Fellowship" not in names
+
+
+@pytest.mark.anyio
+async def test_filter_entities_by_type(client, sample_collection):
+    """ENT-10: Filtrar entidades por tipo retorna solo las de ese tipo."""
+    for payload in [
+        {"type": "character", "name": "Frodo", "description": ""},
+        {"type": "character", "name": "Sam", "description": ""},
+        {"type": "item", "name": "One Ring", "description": ""},
+    ]:
+        await client.post(
+            f"/api/v1/collections/{sample_collection.id}/entities", json=payload
+        )
+
+    response = await client.get(
+        f"/api/v1/collections/{sample_collection.id}/entities?type=character"
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["meta"]["total"] == 2
+    assert all(e["type"] == "character" for e in body["data"])
+
+
+@pytest.mark.anyio
+async def test_filter_entities_name_and_type_combined(client, sample_collection):
+    """ENT-11: Filtrar por nombre y tipo combinados retorna solo el cruce exacto."""
+    for payload in [
+        {"type": "character", "name": "Arwen", "description": ""},
+        {"type": "scene", "name": "Arwen's Camp", "description": ""},
+        {"type": "character", "name": "Aragorn", "description": ""},
+    ]:
+        await client.post(
+            f"/api/v1/collections/{sample_collection.id}/entities", json=payload
+        )
+
+    response = await client.get(
+        f"/api/v1/collections/{sample_collection.id}/entities?name=arwen&type=character"
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["meta"]["total"] == 1
+    assert body["data"][0]["name"] == "Arwen"
+
+
+@pytest.mark.anyio
+async def test_filter_entities_created_after_future(client, sample_collection):
+    """ENT-12: created_after en el futuro retorna lista vacía."""
+    await client.post(
+        f"/api/v1/collections/{sample_collection.id}/entities",
+        json={"type": "character", "name": "Legolas", "description": ""},
+    )
+
+    response = await client.get(
+        f"/api/v1/collections/{sample_collection.id}/entities?created_after=2099-01-01T00:00:00"
+    )
+    assert response.status_code == 200
+    assert response.json()["meta"]["total"] == 0

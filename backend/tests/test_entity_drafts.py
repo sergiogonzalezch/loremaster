@@ -269,3 +269,72 @@ async def test_generate_uses_entity_description_as_context(
     assert len(mock_llm["invocations"]) >= 1
     payload = mock_llm["invocations"][-1]
     assert "A ranger" in payload["context"]
+
+
+@pytest.mark.anyio
+async def test_filter_drafts_by_status_pending(
+    client, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
+    """DRF-13: Filtrar drafts por status=pending retorna solo los pendientes."""
+    created = await _create_draft(client, sample_collection.id, sample_entity.id, "query pending lore")
+    draft_id = created.json()["id"]
+
+    to_confirm = await _create_draft(
+        client, sample_collection.id, sample_entity.id, "query to confirm lore"
+    )
+    # Crear un segundo pending antes de confirmar para que no sea auto-descartado
+    # Confirmamos el primero — el segundo queda discarded por auto-discard
+    await client.post(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts/{to_confirm.json()['id']}/confirm"
+    )
+
+    # Ahora draft_id fue auto-descartado; creamos uno nuevo pending
+    new_pending = await _create_draft(
+        client, sample_collection.id, sample_entity.id, "nuevo pending lore"
+    )
+    new_pending_id = new_pending.json()["id"]
+
+    response = await client.get(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts?status=pending"
+    )
+    assert response.status_code == 200
+    body = response.json()
+    ids = [d["id"] for d in body["data"]]
+    assert new_pending_id in ids
+    assert all(d["status"] == "pending" for d in body["data"])
+
+
+@pytest.mark.anyio
+async def test_filter_drafts_by_status_confirmed(
+    client, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
+    """DRF-14: Filtrar drafts por status=confirmed retorna solo los confirmados."""
+    created = await _create_draft(
+        client, sample_collection.id, sample_entity.id, "query confirm lore"
+    )
+    draft_id = created.json()["id"]
+    await client.post(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts/{draft_id}/confirm"
+    )
+
+    response = await client.get(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts?status=confirmed"
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["meta"]["total"] == 1
+    assert body["data"][0]["status"] == "confirmed"
+
+
+@pytest.mark.anyio
+async def test_filter_drafts_created_after_future(
+    client, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
+    """DRF-15: created_after en el futuro retorna lista vacía."""
+    await _create_draft(client, sample_collection.id, sample_entity.id, "query future lore")
+
+    response = await client.get(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/drafts?created_after=2099-01-01T00:00:00"
+    )
+    assert response.status_code == 200
+    assert response.json()["meta"]["total"] == 0

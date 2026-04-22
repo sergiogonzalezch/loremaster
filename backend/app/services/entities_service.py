@@ -1,11 +1,13 @@
 import logging
 from datetime import datetime, timezone
+from typing import Optional
 
 from fastapi import HTTPException
+from sqlalchemy import func
 from sqlmodel import Session, select
 
-from app.models.entities import Entity, CreateEntityRequest, UpdateEntityRequest
-from app.core.common import list_active_by_collection, list_active_paginated
+from app.models.entities import Entity, EntityType, CreateEntityRequest, UpdateEntityRequest
+from app.core.common import list_active_by_collection
 from app.services.deletion_service import cascade_delete_entity
 
 logger = logging.getLogger(__name__)
@@ -45,10 +47,38 @@ def create_entity_service(
 
 
 def list_entities_service(
-    session: Session, collection_id: str, page: int = 1, page_size: int = 20
+    session: Session,
+    collection_id: str,
+    page: int = 1,
+    page_size: int = 20,
+    name: Optional[str] = None,
+    entity_type: Optional[EntityType] = None,
+    created_after: Optional[datetime] = None,
+    created_before: Optional[datetime] = None,
 ) -> tuple[list[Entity], int]:
+    conditions = [
+        Entity.collection_id == collection_id,
+        Entity.is_deleted == False,
+    ]
+    if name:
+        conditions.append(Entity.name.ilike(f"%{name}%"))
+    if entity_type:
+        conditions.append(Entity.type == entity_type)
+    if created_after:
+        conditions.append(Entity.created_at >= created_after)
+    if created_before:
+        conditions.append(Entity.created_at <= created_before)
+
+    total = session.exec(
+        select(func.count()).select_from(
+            select(Entity).where(*conditions).subquery()
+        )
+    ).one()
     skip = (page - 1) * page_size
-    return list_active_paginated(session, Entity, collection_id, skip, page_size)
+    items = session.exec(
+        select(Entity).where(*conditions).offset(skip).limit(page_size)
+    ).all()
+    return list(items), total
 
 
 def update_entity_service(

@@ -1,3 +1,6 @@
+from datetime import datetime
+from typing import Optional
+
 from fastapi import APIRouter, Depends, Query, Response
 from sqlmodel import Session
 
@@ -8,7 +11,7 @@ from app.models.collections import (
     CreateCollectionRequest,
     CollectionResponse,
 )
-from app.models.shared import PaginatedResponse, PaginationMeta
+from app.models.shared import PaginatedResponse
 from app.services.collection_service import (
     create_collection_service,
     list_collections_service,
@@ -30,9 +33,15 @@ async def create_collection(
 async def get_collections(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
+    name: Optional[str] = Query(default=None),
+    created_after: Optional[datetime] = Query(default=None),
+    created_before: Optional[datetime] = Query(default=None),
     session: Session = Depends(get_session),
 ):
-    items, total = list_collections_service(session, page, page_size)
+    items, total = list_collections_service(
+        session, page, page_size,
+        name=name, created_after=created_after, created_before=created_before,
+    )
     return PaginatedResponse.build(items, total, page, page_size)
 
 
