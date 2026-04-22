@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile, File
 from sqlmodel import Session
 
 from app.core.valid_collection import get_collection_or_404, get_document_or_404
 from app.database import get_session
 from app.models.collections import Collection
-from app.models.documents import Document, DocumentResponse, DocumentListResponse
+from app.models.documents import Document, DocumentResponse
+from app.models.shared import PaginatedResponse
 from app.services.documents_service import (
     ingest_document_service,
     list_documents_service,
@@ -29,14 +30,16 @@ async def ingest(
         raise HTTPException(status_code=502, detail=str(e))
 
 
-@router.get("/{collection_id}/documents", response_model=DocumentListResponse)
+@router.get("/{collection_id}/documents", response_model=PaginatedResponse[DocumentResponse])
 async def get_documents(
     collection_id: str,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
     _: Collection = Depends(get_collection_or_404),
     session: Session = Depends(get_session),
 ):
-    docs = list_documents_service(session, collection_id)
-    return DocumentListResponse(data=docs, count=len(docs))
+    docs, total = list_documents_service(session, collection_id, page, page_size)
+    return PaginatedResponse.build(docs, total, page, page_size)
 
 
 @router.get("/{collection_id}/documents/{doc_id}", response_model=DocumentResponse)

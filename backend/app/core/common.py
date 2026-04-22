@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timezone
 from typing import TypeVar, Type, Optional
 
+from sqlalchemy import func
 from sqlmodel import Session, select, SQLModel
 
 logger = logging.getLogger(__name__)
@@ -43,3 +44,25 @@ def list_active_by_collection(
         model.is_deleted == False,
     )
     return session.exec(stmt).all()
+
+
+def list_active_paginated(
+    session: Session,
+    model: Type[T],
+    collection_id: str,
+    skip: int,
+    limit: int,
+) -> tuple[list[T], int]:
+    base_filter = (
+        model.collection_id == collection_id,
+        model.is_deleted == False,
+    )
+    total = session.exec(
+        select(func.count()).select_from(
+            select(model).where(*base_filter).subquery()
+        )
+    ).one()
+    items = session.exec(
+        select(model).where(*base_filter).offset(skip).limit(limit)
+    ).all()
+    return list(items), total

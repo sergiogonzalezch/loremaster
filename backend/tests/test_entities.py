@@ -30,7 +30,7 @@ async def test_list_entities(client, sample_collection):
 
     response = await client.get(f"/api/v1/collections/{sample_collection.id}/entities")
     assert response.status_code == 200
-    assert response.json()["count"] == 3
+    assert response.json()["meta"]["total"] == 3
 
 
 @pytest.mark.anyio

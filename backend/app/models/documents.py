@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Optional
+from typing import Optional
 from datetime import datetime, timezone
 
 from pydantic import BaseModel, ConfigDict
@@ -55,6 +55,3 @@ class DocumentResponse(BaseModel):
     created_at: datetime
 
 
-class DocumentListResponse(BaseModel):
-    data: List[DocumentResponse]
-    count: int

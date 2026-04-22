@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Query, Response
 from sqlmodel import Session
 
 from app.core.valid_collection import get_collection_or_404
@@ -7,8 +7,8 @@ from app.models.collections import (
     Collection,
     CreateCollectionRequest,
     CollectionResponse,
-    CollectionListResponse,
 )
+from app.models.shared import PaginatedResponse, PaginationMeta
 from app.services.collection_service import (
     create_collection_service,
     list_collections_service,
@@ -26,10 +26,14 @@ async def create_collection(
     return create_collection_service(session, request.name, request.description)
 
 
-@router.get("/", response_model=CollectionListResponse)
-async def get_collections(session: Session = Depends(get_session)):
-    items = list_collections_service(session)
-    return CollectionListResponse(data=items, count=len(items))
+@router.get("/", response_model=PaginatedResponse[CollectionResponse])
+async def get_collections(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    session: Session = Depends(get_session),
+):
+    items, total = list_collections_service(session, page, page_size)
+    return PaginatedResponse.build(items, total, page, page_size)
 
 
 @router.get("/{collection_id}", response_model=CollectionResponse)

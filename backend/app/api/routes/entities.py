@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Query, Response
 from sqlmodel import Session
 
 from app.core.valid_collection import get_collection_or_404, get_entity_or_404
@@ -9,8 +9,8 @@ from app.models.entities import (
     UpdateEntityRequest,
     Entity,
     EntityResponse,
-    EntityListResponse,
 )
+from app.models.shared import PaginatedResponse
 from app.services.entities_service import (
     create_entity_service,
     delete_entity_service,
@@ -33,14 +33,16 @@ async def create_entity(
     return create_entity_service(session, request, collection_id)
 
 
-@router.get("/{collection_id}/entities", response_model=EntityListResponse)
+@router.get("/{collection_id}/entities", response_model=PaginatedResponse[EntityResponse])
 async def list_entities(
     collection_id: str,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
     _: Collection = Depends(get_collection_or_404),
     session: Session = Depends(get_session),
 ):
-    entities = list_entities_service(session, collection_id)
-    return EntityListResponse(data=entities, count=len(entities))
+    entities, total = list_entities_service(session, collection_id, page, page_size)
+    return PaginatedResponse.build(entities, total, page, page_size)
 
 
 @router.get("/{collection_id}/entities/{entity_id}", response_model=EntityResponse)

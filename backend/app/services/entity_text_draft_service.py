@@ -72,18 +72,29 @@ def list_drafts_service(
     session: Session,
     entity_id: str,
     collection_id: str,
-) -> list[EntityTextDraft]:
-    stmt = (
-        select(EntityTextDraft)
-        .where(
-            EntityTextDraft.entity_id == entity_id,
-            EntityTextDraft.collection_id == collection_id,
-            EntityTextDraft.status != DraftStatus.discarded,
-            EntityTextDraft.is_deleted == False,
-        )
-        .order_by(EntityTextDraft.created_at.desc())
+    page: int = 1,
+    page_size: int = 20,
+) -> tuple[list[EntityTextDraft], int]:
+    base_filter = (
+        EntityTextDraft.entity_id == entity_id,
+        EntityTextDraft.collection_id == collection_id,
+        EntityTextDraft.status != DraftStatus.discarded,
+        EntityTextDraft.is_deleted == False,
     )
-    return session.exec(stmt).all()
+    total = session.exec(
+        select(func.count()).select_from(
+            select(EntityTextDraft).where(*base_filter).subquery()
+        )
+    ).one()
+    skip = (page - 1) * page_size
+    items = session.exec(
+        select(EntityTextDraft)
+        .where(*base_filter)
+        .order_by(EntityTextDraft.created_at.desc())
+        .offset(skip)
+        .limit(page_size)
+    ).all()
+    return list(items), total
 
 
 def edit_draft_service(

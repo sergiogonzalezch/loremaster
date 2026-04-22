@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from sqlmodel import Session, select
 
 from app.models.entities import Entity, CreateEntityRequest, UpdateEntityRequest
-from app.core.common import list_active_by_collection
+from app.core.common import list_active_by_collection, list_active_paginated
 from app.services.deletion_service import cascade_delete_entity
 
 logger = logging.getLogger(__name__)
@@ -44,8 +44,11 @@ def create_entity_service(
     return entity
 
 
-def list_entities_service(session: Session, collection_id: str) -> list[Entity]:
-    return list_active_by_collection(session, Entity, collection_id)
+def list_entities_service(
+    session: Session, collection_id: str, page: int = 1, page_size: int = 20
+) -> tuple[list[Entity], int]:
+    skip = (page - 1) * page_size
+    return list_active_paginated(session, Entity, collection_id, skip, page_size)
 
 
 def update_entity_service(
