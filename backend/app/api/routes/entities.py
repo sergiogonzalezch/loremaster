@@ -1,3 +1,6 @@
+from datetime import datetime
+from typing import Optional
+
 from fastapi import APIRouter, Depends, Query, Response
 from sqlmodel import Session
 
@@ -8,6 +11,7 @@ from app.models.entities import (
     CreateEntityRequest,
     UpdateEntityRequest,
     Entity,
+    EntityType,
     EntityResponse,
 )
 from app.models.shared import PaginatedResponse
@@ -38,10 +42,18 @@ async def list_entities(
     collection_id: str,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
+    name: Optional[str] = Query(default=None),
+    type: Optional[EntityType] = Query(default=None),
+    created_after: Optional[datetime] = Query(default=None),
+    created_before: Optional[datetime] = Query(default=None),
     _: Collection = Depends(get_collection_or_404),
     session: Session = Depends(get_session),
 ):
-    entities, total = list_entities_service(session, collection_id, page, page_size)
+    entities, total = list_entities_service(
+        session, collection_id, page, page_size,
+        name=name, entity_type=type,
+        created_after=created_after, created_before=created_before,
+    )
     return PaginatedResponse.build(entities, total, page, page_size)
 
 

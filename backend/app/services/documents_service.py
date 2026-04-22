@@ -1,4 +1,6 @@
 import logging
+from datetime import datetime
+from typing import Optional
 
 from fastapi import HTTPException, UploadFile  # HTTPException: input validation only
 from sqlalchemy import func
@@ -67,21 +69,40 @@ async def ingest_document_service(
 
 
 def list_documents_service(
-    session: Session, collection_id: str, page: int = 1, page_size: int = 20
+    session: Session,
+    collection_id: str,
+    page: int = 1,
+    page_size: int = 20,
+    filename: Optional[str] = None,
+    file_type: Optional[str] = None,
+    status: Optional[DocumentStatus] = None,
+    created_after: Optional[datetime] = None,
+    created_before: Optional[datetime] = None,
 ) -> tuple[list[Document], int]:
-    base_filter = (
+    conditions = [
         Document.collection_id == collection_id,
         Document.is_deleted == False,
         Document.status != DocumentStatus.processing,
-    )
+    ]
+    if filename:
+        conditions.append(Document.filename.ilike(f"%{filename}%"))
+    if file_type:
+        conditions.append(Document.file_type == file_type)
+    if status:
+        conditions.append(Document.status == status)
+    if created_after:
+        conditions.append(Document.created_at >= created_after)
+    if created_before:
+        conditions.append(Document.created_at <= created_before)
+
     total = session.exec(
         select(func.count()).select_from(
-            select(Document).where(*base_filter).subquery()
+            select(Document).where(*conditions).subquery()
         )
     ).one()
     skip = (page - 1) * page_size
     items = session.exec(
-        select(Document).where(*base_filter).offset(skip).limit(page_size)
+        select(Document).where(*conditions).offset(skip).limit(page_size)
     ).all()
     return list(items), total
 

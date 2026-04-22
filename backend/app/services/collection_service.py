@@ -1,4 +1,6 @@
 import logging
+from datetime import datetime
+from typing import Optional
 
 from fastapi import HTTPException
 from sqlalchemy import func
@@ -31,17 +33,29 @@ def create_collection_service(
 
 
 def list_collections_service(
-    session: Session, page: int = 1, page_size: int = 20
+    session: Session,
+    page: int = 1,
+    page_size: int = 20,
+    name: Optional[str] = None,
+    created_after: Optional[datetime] = None,
+    created_before: Optional[datetime] = None,
 ) -> tuple[list[Collection], int]:
-    base_filter = (Collection.is_deleted == False,)
+    conditions = [Collection.is_deleted == False]
+    if name:
+        conditions.append(Collection.name.ilike(f"%{name}%"))
+    if created_after:
+        conditions.append(Collection.created_at >= created_after)
+    if created_before:
+        conditions.append(Collection.created_at <= created_before)
+
     total = session.exec(
         select(func.count()).select_from(
-            select(Collection).where(*base_filter).subquery()
+            select(Collection).where(*conditions).subquery()
         )
     ).one()
     skip = (page - 1) * page_size
     items = session.exec(
-        select(Collection).where(*base_filter).offset(skip).limit(page_size)
+        select(Collection).where(*conditions).offset(skip).limit(page_size)
     ).all()
     return list(items), total
 

@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timezone
+from typing import Optional
 
 from fastapi import HTTPException
 from sqlalchemy import func
@@ -74,22 +75,32 @@ def list_drafts_service(
     collection_id: str,
     page: int = 1,
     page_size: int = 20,
+    status: Optional[DraftStatus] = None,
+    created_after: Optional[datetime] = None,
+    created_before: Optional[datetime] = None,
 ) -> tuple[list[EntityTextDraft], int]:
-    base_filter = (
+    conditions = [
         EntityTextDraft.entity_id == entity_id,
         EntityTextDraft.collection_id == collection_id,
         EntityTextDraft.status != DraftStatus.discarded,
         EntityTextDraft.is_deleted == False,
-    )
+    ]
+    if status:
+        conditions.append(EntityTextDraft.status == status)
+    if created_after:
+        conditions.append(EntityTextDraft.created_at >= created_after)
+    if created_before:
+        conditions.append(EntityTextDraft.created_at <= created_before)
+
     total = session.exec(
         select(func.count()).select_from(
-            select(EntityTextDraft).where(*base_filter).subquery()
+            select(EntityTextDraft).where(*conditions).subquery()
         )
     ).one()
     skip = (page - 1) * page_size
     items = session.exec(
         select(EntityTextDraft)
-        .where(*base_filter)
+        .where(*conditions)
         .order_by(EntityTextDraft.created_at.desc())
         .offset(skip)
         .limit(page_size)
