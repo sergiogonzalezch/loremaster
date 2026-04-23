@@ -11,221 +11,23 @@ import {
   Modal,
   Spinner,
 } from "react-bootstrap";
-import { getEntity, updateEntity, getCollection, generateDraft, getDrafts, updateDraftContent, confirmDraft, discardDraft, deleteDraft } from "../api";
+import { getEntity, updateEntity, getCollection, generateContent } from "../api";
+import ContentCard from "../components/ContentCard";
 import LoadingSpinner from "../components/LoadingSpinner";
-import ConfirmModal from "../components/ConfirmModal";
 import MarkdownContent from "../components/MarkdownContent";
 import TokenCounter from "../components/TokenCounter";
 import { useGenerate } from "../hooks/useGenerate";
-import type { Collection, Draft, Entity, UpdateEntityRequest } from "../types";
-import type { EntityType } from "../utils/enums";
-import { formatDate } from "../utils/formatters";
+import { useEntityContents } from "../hooks/useEntityContents";
+import type { Collection, Entity, UpdateEntityRequest } from "../types";
+import type { ContentCategory, EntityType } from "../utils/enums";
 import { getErrorMessage } from "../utils/errors";
-import { ENTITY_TYPE_BADGE, MAX_PENDING_DRAFTS } from "../utils/constants";
-
-// ─── Draft card ───────────────────────────────────────────────────────────────
-
-interface DraftCardProps {
-  draft: Draft;
-  collectionId: string;
-  entityId: string;
-  onAction: () => void;
-}
-
-function DraftCard({ draft, collectionId, entityId, onAction }: DraftCardProps) {
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  const [showEdit, setShowEdit] = useState(false);
-  const [editContent, setEditContent] = useState(draft.content);
-  const [saving, setSaving] = useState(false);
-
-  const [showDiscard, setShowDiscard] = useState(false);
-  const [showDelete, setShowDelete] = useState(false);
-
-  async function handleConfirm() {
-    setBusy(true);
-    setError(null);
-    try {
-      await confirmDraft(collectionId, entityId, draft.id);
-      onAction();
-    } catch (e) {
-      setError(getErrorMessage(e, "Error al confirmar"));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleSaveEdit(e: FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      await updateDraftContent(collectionId, entityId, draft.id, { content: editContent });
-      setShowEdit(false);
-      onAction();
-    } catch (e) {
-      setError(getErrorMessage(e, "Error al guardar"));
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleDiscard() {
-    setBusy(true);
-    setError(null);
-    try {
-      await discardDraft(collectionId, entityId, draft.id);
-      setShowDiscard(false);
-      onAction();
-    } catch (e) {
-      setError(getErrorMessage(e, "Error al descartar"));
-      setShowDiscard(false);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleDelete() {
-    setBusy(true);
-    setError(null);
-    try {
-      await deleteDraft(collectionId, entityId, draft.id);
-      setShowDelete(false);
-      onAction();
-    } catch (e) {
-      setError(getErrorMessage(e, "Error al eliminar"));
-      setShowDelete(false);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const isPending = draft.status === "pending";
-  const isConfirmed = draft.status === "confirmed";
-
-  return (
-    <>
-      <Card className="mb-3">
-        <Card.Header className="d-flex justify-content-between align-items-center">
-          <em className="text-muted small">{draft.query}</em>
-          {draft.status === "pending" && <Badge bg="warning" text="dark">Borrador</Badge>}
-          {draft.status === "confirmed" && <Badge bg="success">Confirmado</Badge>}
-          {draft.status === "discarded" && <Badge bg="secondary">Descartado</Badge>}
-        </Card.Header>
-        <Card.Body>
-          {error && (
-            <Alert variant="danger" onClose={() => setError(null)} dismissible className="py-2">
-              {error}
-            </Alert>
-          )}
-          <MarkdownContent>{draft.content}</MarkdownContent>
-        </Card.Body>
-        <Card.Footer>
-          {isPending ? (
-            <div className="d-flex gap-2">
-              <Button variant="success" size="sm" onClick={handleConfirm} disabled={busy}>
-                {busy ? <Spinner animation="border" size="sm" /> : "Confirmar"}
-              </Button>
-              <Button
-                variant="outline-secondary"
-                size="sm"
-                onClick={() => { setEditContent(draft.content); setShowEdit(true); }}
-                disabled={busy}
-              >
-                Editar
-              </Button>
-              <Button
-                variant="outline-warning"
-                size="sm"
-                onClick={() => setShowDiscard(true)}
-                disabled={busy}
-              >
-                Descartar
-              </Button>
-              <Button
-                variant="outline-danger"
-                size="sm"
-                onClick={() => setShowDelete(true)}
-                disabled={busy}
-              >
-                Eliminar
-              </Button>
-            </div>
-          ) : isConfirmed ? (
-            <div className="d-flex align-items-center justify-content-between">
-              {draft.confirmed_at && (
-                <small className="text-muted">Confirmado el {formatDate(draft.confirmed_at, true)}</small>
-              )}
-              <div className="d-flex gap-2">
-                <Button
-                  variant="outline-secondary"
-                  size="sm"
-                  onClick={() => { setEditContent(draft.content); setShowEdit(true); }}
-                  disabled={busy}
-                >
-                  Editar
-                </Button>
-                <Button
-                  variant="outline-danger"
-                  size="sm"
-                  onClick={() => setShowDelete(true)}
-                  disabled={busy}
-                >
-                  Eliminar
-                </Button>
-              </div>
-            </div>
-          ) : null}
-        </Card.Footer>
-      </Card>
-
-      <Modal show={showEdit} onHide={() => setShowEdit(false)} centered size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>Editar borrador</Modal.Title>
-        </Modal.Header>
-        <Form onSubmit={handleSaveEdit}>
-          <Modal.Body>
-            <Form.Control
-              as="textarea"
-              rows={10}
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              required
-            />
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowEdit(false)} disabled={saving}>
-              Cancelar
-            </Button>
-            <Button variant="warning" type="submit" disabled={saving || !editContent.trim()}>
-              {saving ? "Guardando..." : "Guardar"}
-            </Button>
-          </Modal.Footer>
-        </Form>
-      </Modal>
-
-      <ConfirmModal
-        show={showDiscard}
-        title="Descartar borrador"
-        message="¿Descartar este borrador? El contenido no se perderá pero no podrás confirmarlo."
-        onConfirm={handleDiscard}
-        onCancel={() => setShowDiscard(false)}
-        variant="warning"
-      />
-
-      <ConfirmModal
-        show={showDelete}
-        title="Eliminar borrador"
-        message="¿Eliminar este borrador permanentemente? Desaparecerá del listado."
-        onConfirm={handleDelete}
-        onCancel={() => setShowDelete(false)}
-        variant="danger"
-      />
-    </>
-  );
-}
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
+import {
+  CATEGORY_LABELS,
+  ENTITY_CATEGORY_MAP,
+  ENTITY_TYPE_BADGE,
+  ENTITY_TYPE_LABELS,
+  MAX_PENDING_CONTENTS,
+} from "../utils/constants";
 
 export default function EntityDetailPage() {
   const { collectionId, entityId } = useParams<{ collectionId: string; entityId: string }>();
@@ -235,22 +37,34 @@ export default function EntityDetailPage() {
   const [loadingEntity, setLoadingEntity] = useState(true);
   const [entityError, setEntityError] = useState<string | null>(null);
 
-  const [drafts, setDrafts] = useState<Draft[]>([]);
-  const [loadingDrafts, setLoadingDrafts] = useState(true);
-  const [draftsError, setDraftsError] = useState<string | null>(null);
+  const {
+    contents,
+    loading: loadingContents,
+    error: contentsError,
+    refresh: refreshContents,
+    setError: setContentsError,
+  } = useEntityContents(collectionId, entityId);
 
-  const pendingCount = drafts.filter((d) => d.status === "pending").length;
-  const pendingLimitReached = pendingCount >= MAX_PENDING_DRAFTS;
-
+  const [selectedCategory, setSelectedCategory] = useState<ContentCategory | "">("");
   const [query, setQuery] = useState("");
+
+  const availableCategories: ContentCategory[] = entity
+    ? ENTITY_CATEGORY_MAP[entity.type] ?? []
+    : [];
+
+  const pendingInCategory = contents.filter(
+    (c) => c.status === "pending" && c.category === selectedCategory
+  ).length;
+  const pendingLimitReached = selectedCategory !== "" && pendingInCategory >= MAX_PENDING_CONTENTS;
+
   const {
     error: generateError,
     isLoading: generating,
     isCancelled: generateCancelled,
-    run: runGenerateDraft,
+    run: runGenerateContent,
     cancel: cancelGenerate,
     reset: resetGenerate,
-  } = useGenerate(generateDraft);
+  } = useGenerate(generateContent);
 
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState<UpdateEntityRequest>({
@@ -259,20 +73,6 @@ export default function EntityDetailPage() {
     description: "",
   });
   const [saving, setSaving] = useState(false);
-
-  const fetchDrafts = useCallback(async () => {
-    if (!collectionId || !entityId) return;
-    setLoadingDrafts(true);
-    setDraftsError(null);
-    try {
-      const res = await getDrafts(collectionId, entityId);
-      setDrafts(res.data);
-    } catch (e) {
-      setDraftsError(getErrorMessage(e, "Error al cargar borradores"));
-    } finally {
-      setLoadingDrafts(false);
-    }
-  }, [collectionId, entityId]);
 
   const fetchEntityData = useCallback(async () => {
     if (!collectionId || !entityId) return;
@@ -302,22 +102,28 @@ export default function EntityDetailPage() {
     }
   }, [collectionId, entityId]);
 
-  const handleDraftAction = useCallback(async () => {
-    await Promise.all([fetchDrafts(), refreshEntityQuiet()]);
-  }, [fetchDrafts, refreshEntityQuiet]);
+  const handleContentAction = useCallback(async () => {
+    await Promise.all([refreshContents(), refreshEntityQuiet()]);
+  }, [refreshContents, refreshEntityQuiet]);
 
   useEffect(() => {
     fetchEntityData();
-    fetchDrafts();
-  }, [fetchEntityData, fetchDrafts]);
+  }, [fetchEntityData]);
+
+  // Inicializar la categoría seleccionada cuando se cargan las categorías disponibles
+  useEffect(() => {
+    if (availableCategories.length > 0 && selectedCategory === "") {
+      setSelectedCategory(availableCategories[0]);
+    }
+  }, [availableCategories, selectedCategory]);
 
   async function handleGenerate(e: FormEvent) {
     e.preventDefault();
-    if (!collectionId || !entityId) return;
-    const result = await runGenerateDraft(collectionId, entityId, { query });
+    if (!collectionId || !entityId || selectedCategory === "") return;
+    const result = await runGenerateContent(collectionId, entityId, selectedCategory, { query });
     if (result) {
       setQuery("");
-      await fetchDrafts();
+      await refreshContents();
     }
   }
 
@@ -364,13 +170,15 @@ export default function EntityDetailPage() {
             <div>
               <div className="mb-2">
                 <Badge bg={ENTITY_TYPE_BADGE[entity.type]} className="me-2">
-                  {entity.type}
+                  {ENTITY_TYPE_LABELS[entity.type]}
                 </Badge>
               </div>
               <h3 className="mb-1">{entity.name}</h3>
-              <p className="text-muted mb-0">
-                {entity.description || <em>Sin descripción</em>}
-              </p>
+              {entity.description ? (
+                <MarkdownContent>{entity.description}</MarkdownContent>
+              ) : (
+                <p className="text-muted mb-0"><em>Sin descripción</em></p>
+              )}
             </div>
             <Button variant="outline-secondary" size="sm" onClick={openEdit}>
               Editar
@@ -379,10 +187,10 @@ export default function EntityDetailPage() {
         </Card.Body>
       </Card>
 
-      <p className="lm-section-title">Generar borrador</p>
+      <p className="lm-section-title">Generar contenido</p>
       {generateError != null && (
         <Alert variant="danger" onClose={resetGenerate} dismissible>
-          {getErrorMessage(generateError, "Error al generar borrador")}
+          {getErrorMessage(generateError, "Error al generar contenido")}
         </Alert>
       )}
       {generateCancelled && (
@@ -392,11 +200,27 @@ export default function EntityDetailPage() {
       )}
       {pendingLimitReached && (
         <Alert variant="warning">
-          Ya tienes {pendingCount} borradores pendientes (máximo {MAX_PENDING_DRAFTS}).
-          Confirma o descarta alguno antes de generar uno nuevo.
+          Ya tienes {pendingInCategory} contenidos pendientes en esta categoría (máximo{" "}
+          {MAX_PENDING_CONTENTS}). Confirma o descarta alguno antes de generar uno nuevo.
         </Alert>
       )}
+
       <Form onSubmit={handleGenerate} className="mb-4">
+        <Form.Group className="mb-2">
+          <Form.Label className="fw-semibold">Categoría</Form.Label>
+          <Form.Select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value as ContentCategory)}
+            disabled={generating}
+            style={{ maxWidth: 280 }}
+          >
+            {availableCategories.map((cat) => (
+              <option key={cat} value={cat}>
+                {CATEGORY_LABELS[cat]}
+              </option>
+            ))}
+          </Form.Select>
+        </Form.Group>
         <div className="d-flex gap-2 align-items-start">
           <Form.Control
             as="textarea"
@@ -411,9 +235,9 @@ export default function EntityDetailPage() {
           <Button
             variant="warning"
             type="submit"
-            disabled={generating || pendingLimitReached || query.trim().length < 5}
+            disabled={generating || pendingLimitReached || query.trim().length < 5 || selectedCategory === ""}
             style={{ whiteSpace: "nowrap" }}
-            title={pendingLimitReached ? `Máximo ${MAX_PENDING_DRAFTS} borradores pendientes` : undefined}
+            title={pendingLimitReached ? `Máximo ${MAX_PENDING_CONTENTS} contenidos pendientes por categoría` : undefined}
           >
             {generating ? (
               <>
@@ -421,7 +245,7 @@ export default function EntityDetailPage() {
                 Generando...
               </>
             ) : (
-              "Generar borrador"
+              "Generar"
             )}
           </Button>
           {generating && (
@@ -437,36 +261,36 @@ export default function EntityDetailPage() {
         </div>
         <div className="d-flex justify-content-between mt-1">
           <TokenCounter text={query} />
-          {!pendingLimitReached && pendingCount > 0 && (
+          {selectedCategory !== "" && !pendingLimitReached && pendingInCategory > 0 && (
             <small className="text-muted">
-              {pendingCount} / {MAX_PENDING_DRAFTS} borradores pendientes.
+              {pendingInCategory} / {MAX_PENDING_CONTENTS} borradores pendientes en esta categoría.
             </small>
           )}
         </div>
       </Form>
 
-      <p className="lm-section-title">Borradores</p>
-      {draftsError && (
-        <Alert variant="danger" onClose={() => setDraftsError(null)} dismissible>
-          {draftsError}
+      <p className="lm-section-title">Contenidos generados</p>
+      {contentsError && (
+        <Alert variant="danger" onClose={() => setContentsError(null)} dismissible>
+          {contentsError}
         </Alert>
       )}
-      {loadingDrafts ? (
-        <LoadingSpinner text="Cargando borradores..." />
-      ) : drafts.length === 0 ? (
+      {loadingContents ? (
+        <LoadingSpinner text="Cargando contenidos..." />
+      ) : contents.length === 0 ? (
         <div className="lm-empty">
           <span className="lm-empty-glyph">✦</span>
-          <p>No hay borradores todavía.</p>
+          <p>No hay contenidos todavía.</p>
           <p>Genera el primero usando el formulario de arriba.</p>
         </div>
       ) : (
-        drafts.map((draft) => (
-          <DraftCard
-            key={draft.id}
-            draft={draft}
+        contents.map((content) => (
+          <ContentCard
+            key={content.id}
+            content={content}
             collectionId={collectionId}
             entityId={entityId}
-            onAction={handleDraftAction}
+            onAction={handleContentAction}
           />
         ))
       )}
@@ -485,10 +309,9 @@ export default function EntityDetailPage() {
                   setEditForm((f) => ({ ...f, type: e.target.value as EntityType }))
                 }
               >
-                <option value="character">Personaje</option>
-                <option value="scene">Escena</option>
-                <option value="faction">Facción</option>
-                <option value="item">Objeto</option>
+                {(Object.keys(ENTITY_TYPE_LABELS) as EntityType[]).map((t) => (
+                  <option key={t} value={t}>{ENTITY_TYPE_LABELS[t]}</option>
+                ))}
               </Form.Select>
             </Form.Group>
             <Form.Group className="mb-3">
