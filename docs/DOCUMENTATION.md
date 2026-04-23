@@ -43,7 +43,7 @@ Construir un prototipo funcional y escalable de Lore Master que demuestre la via
 
 ## Objetivos específicos y entregables
 
-| **#**   | **Objetivo**                               | **Entregable verificable**                                                        | **Fase** |
+| **Numero**   | **Objetivo**                               | **Entregable verificable**                                                        | **Fase** |
 | ------- | ------------------------------------------ | --------------------------------------------------------------------------------- | -------- |
 | **O-1** | Implementar el pipeline RAG completo       | Endpoint /generate/text retorna texto fundamentado en el lore con fuentes citadas | Fase 1   |
 | **O-2** | Integrar ComfyUI con Flux.2 Klein 4B       | Endpoint /generate/image retorna URL de imagen generada en < 30 s localmente      | Fase 1   |
@@ -68,7 +68,7 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 ## Tabla de historias
 
-| **ID**    | **Historia**              | **Enunciado completo**                                                                                                                                 |
+| **Identificador**    | **Historia**              | **Enunciado completo**                                                                                                                                 |
 | --------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **HU-01** | Crear colección           | Como creador de mundos, quiero crear una colección (world) para organizar documentos, entidades e imágenes dentro de un mismo contexto narrativo.      |
 | **HU-02** | Ingestión de documentos   | Como creador de mundos, quiero subir archivos PDF o TXT a una colección para que el sistema los procese y los use como base para futuras generaciones. |
@@ -76,6 +76,16 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 | **HU-04** | Generación de imágenes    | Como creador de mundos, quiero generar imágenes consistentes con mi lore utilizando contexto de la colección.                                          |
 | **HU-05** | Gestión de entidades      | Como creador de mundos, quiero gestionar personajes, escenarios y objetos dentro de una colección para estructurar mi mundo.                           |
 | **HU-06** | Contenidos RAG por categoría | Como creador de mundos, quiero generar contenidos RAG por categoría para una entidad y confirmar el mejor para actualizar su descripción automáticamente.   |
+
+### Diagramas
+
+- Diagrama de flujo RAG
+  
+![Diagrama de flujo RAG](./diagrams/Diagrama-Flujo-RAG.png)
+
+- Diagrama de secuencia RAG
+
+![Diagrama de secuencia RAG](./diagrams/Diagrama-Secuencia-RAG.png)
 
 ---
 
@@ -85,11 +95,11 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 - Diagrama de flujo — Creación de colección
 
-> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
+![Diagrama de flujo HU-01](./diagrams/Diagrama-Flujo-HU-01.png)
 
 - Diagrama de secuencia — Cliente → FastAPI → DB
 
-> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
+![Diagrama de secuencia HU-01](./diagrams/Diagrama-Secuencia-HU-01.png)
 
 ### Criterios de aceptación
 
@@ -104,11 +114,11 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 - Diagrama de flujo — Ingestión de documentos
 
-> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
+![Diagrama de flujo HU-02](./diagrams/Diagrama-Flujo-HU-02.png)
 
 - Diagrama de secuencia — Cliente → FastAPI → Qdrant
 
-> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
+![Diagrama de secuencia HU-02](./diagrams/Diagrama-Secuencia-HU-02.png)
 
 ### Criterios de aceptación (corregidos)
 
@@ -135,11 +145,11 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 - Diagrama de flujo — Generación de texto RAG
 
-> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
+![Diagrama de flujo HU-03](./diagrams/Diagrama-Flujo-HU-03.png)
 
 - Diagrama de secuencia — Cliente → FastAPI → Qdrant → LLM
 
-> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
+![Diagrama de secuencia HU-03](./diagrams/Diagrama-Secuencia-HU-03.png)
 
 ### Criterios de aceptación (MVP ajustado)
 
@@ -165,11 +175,11 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 - Diagrama de flujo — Generación de imágenes
 
-> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
+![Diagrama de flujo HU-04](./diagrams/Diagrama-Flujo-HU-04.png)
 
 - Diagrama de secuencia — Cliente → FastAPI → ComfyUI / RunPod
 
-> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
+![Diagrama de secuencia HU-04](./diagrams/Diagrama-Secuencia-HU-04.png)
 
 ### Criterios de aceptación (ajustados)
 
@@ -198,11 +208,11 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 - Diagrama de flujo — CRUD de entidades
 
-> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
+![Diagrama de flujo HU-05](./diagrams/Diagrama-Flujo-HU-05.png)
 
 - Diagrama de secuencia — Cliente → FastAPI → DB
 
-> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
+![Diagrama de secuencia HU-05](./diagrams/Diagrama-Secuencia-HU-05.png)
 
 ### Criterios de aceptación
 
@@ -218,11 +228,16 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 - Diagrama de flujo — Generación de contenido RAG por categoría
 
-> *Diagrama pendiente de generación — ver carpeta `docs/diagrams/`*
+![Diagrama de flujo HU-06](./diagrams/Diagrama-Flujo-HU-06.png)
 
-- Diagrama de secuencia — Cliente → FastAPI → Qdrant → LLM → DB
+- Diagrama de secuencia (generación) — Cliente → FastAPI → Qdrant → LLM → DB
 
-> *Diagrama pendiente de generación — ver carpeta `docs/diagrams/`*
+![Diagrama de secuencia HU-06](./diagrams/Diagrama-Secuencia-HU-06-(Generacion).png)
+
+- Diagrama de secuencia (confirmación) — Cliente → FastAPI → DB
+
+![Diagrama de secuencia HU-06](./diagrams/Diagrama-Secuencia-HU-06-(Confirmar).png)
+
 
 ### Criterios de aceptación
 
@@ -284,7 +299,7 @@ La arquitectura se divide en dos configuraciones que comparten el mismo codebase
 
 ## Diagrama de arquitectura general
 
-> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
+![Diagrama arquitectura general](./diagrams/Diagrama-Arquitectura-General.png)
 
 **Diagrama de Arquitectura — Vista General Local y Cloud**
 
@@ -508,9 +523,7 @@ DATABASE_URL=postgresql://user:pass@postgres:5432/loremaster
 
 ### Diagrama ERD
 
-> *Diagrama pendiente de generación — ver carpeta `docs/diagrams/`*
->
-> Tablas a incluir: collections, documents, entities, generated_texts, entity_contents (+ relaciones planificadas: generated_images, entity_relations)
+![Diagrama ERD](./diagrams/Diagrama-ERD.png)
 
 # 7. Roadmap de Desarrollo — 12 Semanas (Final Ajustado)
 
