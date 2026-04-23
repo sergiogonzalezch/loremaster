@@ -24,7 +24,7 @@ import type { Collection, Document, Entity, CreateEntityRequest } from "../types
 import type { EntityType } from "../utils/enums";
 import { formatDate } from "../utils/formatters";
 import { getErrorMessage, parseApiError } from "../utils/errors";
-import { ENTITY_TYPE_BADGE } from "../utils/constants";
+import { ENTITY_TYPE_BADGE, ENTITY_TYPE_LABELS } from "../utils/constants";
 
 // ─── Documents tab ──────────────────────────────────────────────────────────
 
@@ -337,10 +337,9 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
                 value={form.type}
                 onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as EntityType }))}
               >
-                <option value="character">Personaje</option>
-                <option value="scene">Escena</option>
-                <option value="faction">Facción</option>
-                <option value="item">Objeto</option>
+                {(Object.keys(ENTITY_TYPE_LABELS) as EntityType[]).map((t) => (
+                  <option key={t} value={t}>{ENTITY_TYPE_LABELS[t]}</option>
+                ))}
               </Form.Select>
             </Form.Group>
             <Form.Group className="mb-3">
