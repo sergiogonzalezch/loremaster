@@ -14,7 +14,7 @@ API REST con pipeline RAG. FastAPI + SQLModel + LangChain + Qdrant + Ollama.
 cd backend
 python -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
-pip install -r requirements.txt
+make install-dev                # instala requirements.txt + requirements-dev.txt
 ```
 
 ## Variables de entorno
@@ -27,11 +27,22 @@ cp .env.example .env
 
 | Variable | Por defecto | Propósito |
 |---|---|---|
+| `DATABASE_URL` | `sqlite:///./loremaster.db` | SQLite (dev) / PostgreSQL (prod): `postgresql://loremaster:loremaster@localhost:5432/loremaster` |
+| `QDRANT_URL` | `http://localhost:6333` | Base de datos vectorial |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Endpoint de Ollama |
 | `OLLAMA_MODEL` | `llama3.2:latest` | Modelo LLM |
-| `QDRANT_URL` | `http://localhost:6333` | Base de datos vectorial |
-| `DATABASE_URL` | `postgresql://loremaster:loremaster@localhost:5432/loremaster` | PostgreSQL |
-| `ALLOWED_ORIGINS` | `["http://localhost:5173"]` | Orígenes permitidos por CORS |
+| `MAX_TOKENS` | `500` | Máximo de tokens en la respuesta del LLM |
+| `TEMPERATURE` | `0.7` | Temperatura del LLM |
+| `EMBEDDING_MODEL` | `paraphrase-multilingual-MiniLM-L12-v2` | Modelo de embeddings |
+| `EMBEDDING_DIMS` | `384` | Dimensiones del vector de embedding |
+| `CHUNK_SIZE` | `512` | Tamaño de chunk en caracteres |
+| `CHUNK_OVERLAP` | `50` | Solapamiento entre chunks |
+| `TOP_K` | `4` | Chunks de contexto recuperados por RAG |
+| `ALLOWED_ORIGINS` | `["http://localhost:3000","http://localhost:5173"]` | Orígenes permitidos por CORS |
+| `REDIS_URL` | `redis://redis:6379/0` | Caché semántico (staged) |
+| `CACHE_TTL` | `3600` | TTL del caché en segundos (staged) |
+
+> Las variables de S3/LocalStack y ComfyUI aparecen en `.env.example` pero los servicios no están integrados aún.
 
 ## Servicios de soporte
 
@@ -43,12 +54,11 @@ docker-compose up -d
 docker-compose --profile tools up -d
 ```
 
-| Servicio | Puerto | Propósito | Profile |
+| Servicio | Puerto (host) | Propósito | Profile |
 |---|---|---|---|
 | Qdrant | 6333 | Base de datos vectorial | — |
 | PostgreSQL | 5433 | Metadatos relacionales | — |
 | Redis | 6379 | Caché semántico (staged) | — |
-| LocalStack | 4566 | S3 local (staged) | — |
 | sqlite-web | 8080 | Visor web SQLite (`loremaster.db`) | `tools` |
 
 El servicio `sqlite-web` solo arranca con `--profile tools` y abre `http://localhost:8080` directamente sobre el fichero `loremaster.db` local. No requiere credenciales.
@@ -56,6 +66,8 @@ El servicio `sqlite-web` solo arranca con `--profile tools` y abre `http://local
 ## Ejecutar
 
 ```bash
+make run
+# o directamente:
 uvicorn app.main:app --reload
 ```
 
@@ -64,7 +76,11 @@ Swagger UI disponible en `http://localhost:8000/docs`.
 ## Tests
 
 ```bash
+make test
+# o con opciones:
 pytest -v
+pytest tests/test_entities.py       # fichero concreto
+pytest -k "test_create"             # por nombre
 ```
 
 ## Endpoints
@@ -85,36 +101,38 @@ Todos bajo `/api/v1/`.
 | Método | Ruta | Descripción | Status |
 |---|---|---|---|
 | `POST` | `/collections/{id}/documents` | Subir documento PDF/TXT (máx. 50 MB) | 201 |
-| `GET` | `/collections/{id}/documents` | Listar documentos | 200 |
+| `GET` | `/collections/{id}/documents` | Listar documentos (excluye estado `processing`) | 200 |
 | `GET` | `/collections/{id}/documents/{doc_id}` | Obtener documento | 200 |
 | `DELETE` | `/collections/{id}/documents/{doc_id}` | Eliminar documento | 204 |
 
 ### Entidades
 
-Tipos válidos: `character`, `scene`, `faction`, `item`.
+Tipos válidos: `character`, `creature`, `location`, `faction`, `item`.
 
 | Método | Ruta | Descripción | Status |
 |---|---|---|---|
 | `POST` | `/collections/{id}/entities` | Crear entidad | 201 |
 | `GET` | `/collections/{id}/entities` | Listar entidades | 200 |
-| `GET` | `/collections/{id}/entities/{eid}` | Obtener entidad | 200 |
-| `PATCH` | `/collections/{id}/entities/{eid}` | Actualizar entidad (parcial) | 200 |
-| `DELETE` | `/collections/{id}/entities/{eid}` | Eliminar entidad | 204 |
+| `GET` | `/collections/{id}/entities/{entity_id}` | Obtener entidad | 200 |
+| `PATCH` | `/collections/{id}/entities/{entity_id}` | Actualizar entidad (parcial) | 200 |
+| `DELETE` | `/collections/{id}/entities/{entity_id}` | Eliminar entidad | 204 |
 
-### Borradores de entidad (RAG)
+### Contenido de entidad (RAG)
 
-Los borradores son textos narrativos generados por el LLM (historia de fondo, lore expandido) asociados a una entidad. No deben confundirse con la descripción de la entidad, que es metadata escrita por el usuario (rasgos, notas, contexto) y solo se modifica via PATCH directo.
+`EntityContent` es texto narrativo generado por el LLM para una categoría concreta de una entidad. No debe confundirse con `description`, que es metadata escrita directamente por el usuario y solo se modifica via `PATCH` en la ruta de entidades.
 
-Máximo 5 borradores `pending` por entidad. Confirmar uno lo marca como texto definitivo y descarta automáticamente los demás pendientes y el confirmed anterior. Editar un borrador pending o confirmed es posible; editar uno descartado no.
+Categorías válidas: `backstory`, `extended_description`, `scene`, `chapter`.
+
+Estados posibles: `pending` → `confirmed` | `discarded`. Máximo 5 contenidos `pending` por categoría por entidad. Confirmar uno descarta automáticamente los demás `pending` y el `confirmed` anterior **de esa misma categoría**, y actualiza el campo `description` de la entidad. Los contenidos en estado `discarded` no se pueden editar.
 
 | Método | Ruta | Descripción | Status |
 |---|---|---|---|
-| `POST` | `/collections/{id}/entities/{eid}/generate` | Generar borrador con RAG | 201 |
-| `GET` | `/collections/{id}/entities/{eid}/drafts` | Listar borradores (excluye soft-deleted y discarded) | 200 |
-| `PATCH` | `/collections/{id}/entities/{eid}/drafts/{did}` | Editar contenido del borrador (solo pending o confirmed, no descartado) | 200 |
-| `POST` | `/collections/{id}/entities/{eid}/drafts/{did}/confirm` | Confirmar borrador como texto definitivo (descarta pending y confirmed anteriores) | 200 |
-| `PATCH` | `/collections/{id}/entities/{eid}/drafts/{did}/discard` | Cambiar estado a descartado | 200 |
-| `DELETE` | `/collections/{id}/entities/{eid}/drafts/{did}` | Soft-delete del borrador | 204 |
+| `POST` | `/collections/{id}/entities/{entity_id}/generate/{category}` | Generar contenido RAG para una categoría | 201 |
+| `GET` | `/collections/{id}/entities/{entity_id}/contents` | Listar contenidos (filtrables por `?category=`) | 200 |
+| `PATCH` | `/collections/{id}/entities/{entity_id}/contents/{content_id}` | Editar contenido (`pending` o `confirmed`) | 200 |
+| `POST` | `/collections/{id}/entities/{entity_id}/contents/{content_id}/confirm` | Confirmar contenido (actualiza entidad, descarta hermanos de la categoría) | 200 |
+| `PATCH` | `/collections/{id}/entities/{entity_id}/contents/{content_id}/discard` | Cambiar estado a descartado | 200 |
+| `DELETE` | `/collections/{id}/entities/{entity_id}/contents/{content_id}` | Soft-delete del contenido | 204 |
 
 ### Generación libre
 
