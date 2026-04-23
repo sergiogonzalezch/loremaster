@@ -1,8 +1,8 @@
 """Checkpoint
 
-Revision ID: ce94b03b9981
+Revision ID: 9bbb65a621f1
 Revises: 
-Create Date: 2026-04-23 14:22:45.767101
+Create Date: 2026-04-23 17:40:21.506808
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'ce94b03b9981'
+revision: str = '9bbb65a621f1'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -62,7 +62,8 @@ def upgrade() -> None:
     sa.Column('is_deleted', sa.Boolean(), nullable=False),
     sa.Column('deleted_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['collection_id'], ['collections.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('collection_id', 'name', name='uq_entity_collection_name')
     )
     with op.batch_alter_table('entities', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_entities_collection_id'), ['collection_id'], unique=False)
