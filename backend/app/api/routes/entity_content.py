@@ -6,12 +6,12 @@ from app.core.deps import get_entity_or_404
 from app.database import get_session
 from app.models.entities import Entity, EntityResponse
 from app.models.entity_content import (
-    EntityContentListResponse,
     EntityContentResponse,
     GenerateContentRequest,
     UpdateContentRequest,
 )
 from app.models.enums import ContentCategory
+from app.models.shared import PaginatedResponse
 from app.services import content_management_service, generation_service
 
 router = APIRouter(prefix="/collections", tags=["entity-content"])
@@ -38,19 +38,21 @@ async def generate_content(
 
 @router.get(
     "/{collection_id}/entities/{entity_id}/contents",
-    response_model=EntityContentListResponse,
+    response_model=PaginatedResponse[EntityContentResponse],
 )
 async def list_contents(
     entity_id: str,
     collection_id: str,
     category: Optional[ContentCategory] = Query(default=None),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
     _: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
-    items = content_management_service.list_contents(
-        session, entity_id, collection_id, category
+    items, total = content_management_service.list_contents(
+        session, entity_id, collection_id, category, page, page_size
     )
-    return EntityContentListResponse(items=items, total=len(items))
+    return PaginatedResponse.build(items, total, page, page_size)
 
 
 @router.patch(

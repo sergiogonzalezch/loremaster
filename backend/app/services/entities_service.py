@@ -4,6 +4,7 @@ from typing import Optional
 
 from fastapi import HTTPException
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.models.entities import Entity, EntityType, CreateEntityRequest, UpdateEntityRequest
@@ -39,7 +40,14 @@ def create_entity_service(
         description=request.description,
     )
     session.add(entity)
-    session.commit()
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail=f"An entity named '{request.name}' already exists in this collection.",
+        )
     session.refresh(entity)
     logger.info("Entity '%s' created in collection %s", request.name, collection_id)
     return entity
@@ -99,7 +107,14 @@ def update_entity_service(
         entity.description = request.description
     entity.updated_at = datetime.now(timezone.utc)
     session.add(entity)
-    session.commit()
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail=f"An entity named '{entity.name}' already exists in this collection.",
+        )
     session.refresh(entity)
     return entity
 

@@ -1,8 +1,11 @@
+import logging
 from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, Response
 from sqlmodel import Session
+
+logger = logging.getLogger(__name__)
 
 from app.core.deps import get_collection_or_404
 from app.database import get_session
@@ -57,5 +60,10 @@ async def delete_collection(
     collection: Collection = Depends(get_collection_or_404),
     session: Session = Depends(get_session),
 ):
-    delete_collection_service(session, collection)
+    vectors_cleaned = delete_collection_service(session, collection)
+    if not vectors_cleaned:
+        logger.warning(
+            "Collection %s soft-deleted but Qdrant vectors were NOT removed — manual cleanup needed.",
+            collection.id,
+        )
     return Response(status_code=204)

@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     # LLM parameters
     temperature: float = 0.7
     max_tokens: int = 2000
+    max_concurrent_llm_calls: int = 1
 
     # Vector DB (Qdrant)
     qdrant_url: str = "http://localhost:6333"

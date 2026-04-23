@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional
 
+from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.core.common import soft_delete
@@ -17,7 +18,9 @@ def list_contents(
     entity_id: str,
     collection_id: str,
     category: Optional[ContentCategory] = None,
-) -> list[EntityContent]:
+    page: int = 1,
+    page_size: int = 20,
+) -> tuple[list[EntityContent], int]:
     conditions = [
         EntityContent.entity_id == entity_id,
         EntityContent.collection_id == collection_id,
@@ -26,13 +29,24 @@ def list_contents(
     ]
     if category is not None:
         conditions.append(EntityContent.category == category)
-    return list(
+
+    total = session.exec(
+        select(func.count()).select_from(
+            select(EntityContent).where(*conditions).subquery()
+        )
+    ).one()
+
+    skip = (page - 1) * page_size
+    items = list(
         session.exec(
             select(EntityContent)
             .where(*conditions)
             .order_by(EntityContent.created_at.desc())
+            .offset(skip)
+            .limit(page_size)
         ).all()
     )
+    return items, total
 
 
 def edit_content(

@@ -66,5 +66,8 @@ async def delete_document(
     doc: Document = Depends(get_document_or_404),
     session: Session = Depends(get_session),
 ):
-    delete_document_service(session, doc)
+    try:
+        delete_document_service(session, doc)
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
     return Response(status_code=204)

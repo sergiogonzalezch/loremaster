@@ -142,15 +142,16 @@ def mock_rag_engine(monkeypatch: pytest.MonkeyPatch) -> dict:
 
 @pytest.fixture
 def mock_llm(monkeypatch: pytest.MonkeyPatch) -> dict:
-    """FX-04: Monkeypatch chain with deterministic invoke output."""
+    """FX-04: Monkeypatch chain and generation_chain with deterministic invoke output."""
     state = {"invocations": []}
 
     class MockChain:
-        def invoke(self, payload: dict) -> str:
+        def invoke(self, payload) -> str:
             state["invocations"].append(payload)
             return "Texto generado por el LLM mock"
 
     monkeypatch.setattr("app.engine.rag_pipeline.chain", MockChain())
+    monkeypatch.setattr("app.engine.rag_pipeline.generation_chain", MockChain())
     return state
 
 
