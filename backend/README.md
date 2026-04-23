@@ -36,15 +36,22 @@ cp .env.example .env
 ## Servicios de soporte
 
 ```bash
+# Infra base
 docker-compose up -d
+
+# Infra base + visor SQLite (dev)
+docker-compose --profile tools up -d
 ```
 
-| Servicio | Puerto | Propósito |
-|---|---|---|
-| Qdrant | 6333 | Base de datos vectorial |
-| PostgreSQL | 5432 | Metadatos relacionales |
-| Redis | 6379 | Caché semántico (staged) |
-| LocalStack | 4566 | S3 local (staged) |
+| Servicio | Puerto | Propósito | Profile |
+|---|---|---|---|
+| Qdrant | 6333 | Base de datos vectorial | — |
+| PostgreSQL | 5433 | Metadatos relacionales | — |
+| Redis | 6379 | Caché semántico (staged) | — |
+| LocalStack | 4566 | S3 local (staged) | — |
+| sqlite-web | 8080 | Visor web SQLite (`loremaster.db`) | `tools` |
+
+El servicio `sqlite-web` solo arranca con `--profile tools` y abre `http://localhost:8080` directamente sobre el fichero `loremaster.db` local. No requiere credenciales.
 
 ## Ejecutar
 
