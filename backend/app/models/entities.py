@@ -10,8 +10,9 @@ import uuid
 
 class EntityType(str, Enum):
     character = "character"
-    scene = "scene"
+    creature = "creature"
     faction = "faction"
+    location = "location"
     item = "item"
 
 

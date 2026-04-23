@@ -20,7 +20,7 @@ async def test_list_entities(client, sample_collection):
     """ENT-02: Listar entidades retorna count correcto."""
     payloads = [
         {"type": "character", "name": "A", "description": "a"},
-        {"type": "scene", "name": "B", "description": "b"},
+        {"type": "creature", "name": "B", "description": "b"},
         {"type": "faction", "name": "C", "description": "c"},
     ]
     for payload in payloads:
@@ -113,7 +113,7 @@ async def test_delete_entity_cascades_all_drafts(
 @pytest.mark.anyio
 async def test_all_entity_types(client, sample_collection):
     """ENT-07: Todos los tipos válidos de entidad se crean correctamente."""
-    for entity_type in ("character", "scene", "faction", "item"):
+    for entity_type in ("character", "creature", "faction", "location", "item"):
         response = await client.post(
             f"/api/v1/collections/{sample_collection.id}/entities",
             json={"type": entity_type, "name": f"{entity_type}-name", "description": "ok"},
@@ -185,7 +185,7 @@ async def test_filter_entities_name_and_type_combined(client, sample_collection)
     """ENT-11: Filtrar por nombre y tipo combinados retorna solo el cruce exacto."""
     for payload in [
         {"type": "character", "name": "Arwen", "description": ""},
-        {"type": "scene", "name": "Arwen's Camp", "description": ""},
+        {"type": "location", "name": "Arwen's Camp", "description": ""},
         {"type": "character", "name": "Aragorn", "description": ""},
     ]:
         await client.post(
