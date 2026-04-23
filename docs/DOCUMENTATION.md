@@ -45,7 +45,7 @@ Construir un prototipo funcional y escalable de Lore Master que demuestre la via
 
 | **Numero**   | **Objetivo**                               | **Entregable verificable**                                                        | **Fase** |
 | ------- | ------------------------------------------ | --------------------------------------------------------------------------------- | -------- |
-| **O-1** | Implementar el pipeline RAG completo       | Endpoint /generate/text retorna texto fundamentado en el lore con fuentes citadas | Fase 1   |
+| **O-1** | Implementar el pipeline RAG completo       | Endpoint /query retorna texto fundamentado en el lore con `answer`, `query` y `sources_count` | Fase 1   |
 | **O-2** | Integrar ComfyUI con Flux.2 Klein 4B       | Endpoint /generate/image retorna URL de imagen generada en < 30 s localmente      | Fase 1   |
 | **O-3** | Construir la API REST completa con FastAPI | “N” endpoints documentados y funcionales en /docs (Swagger)                       | Fase 1   |
 | **O-4** | Desarrollar la interfaz de usuario web     | SPA con paneles de personajes, escenarios, facciones e ítems                      | Fase 2   |
@@ -160,14 +160,14 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 ### Secuencia corregida
 
-| **Paso** | **Actor → Actor** | **Mensaje / Operación**              |
-| -------- | ----------------- | ------------------------------------ |
-| 1        | Cliente → FastAPI | POST /collections/{id}/generate/text |
-| 2        | FastAPI → Qdrant  | search(filter=collection_id)         |
-| 3        | Qdrant → FastAPI  | chunks relevantes                    |
-| 4        | FastAPI           | Construye prompt                     |
-| 5        | FastAPI → LLM     | Genera respuesta                     |
-| 6        | FastAPI → Cliente | HTTP 200 { response }                |
+| **Paso** | **Actor → Actor** | **Mensaje / Operación**                          |
+| -------- | ----------------- | ------------------------------------------------ |
+| 1        | Cliente → FastAPI | POST /collections/{id}/query                     |
+| 2        | FastAPI → Qdrant  | search_context(collection_id, top_k)             |
+| 3        | Qdrant → FastAPI  | chunks relevantes                                |
+| 4        | FastAPI           | Construye prompt                                 |
+| 5        | FastAPI → LLM     | chain.invoke({ context, query })                 |
+| 6        | FastAPI → Cliente | HTTP 200 { answer, query, sources_count }        |
 
 # HU-04 — Generación de imágenes
 
@@ -318,7 +318,7 @@ loremaster/
 │   │   ├── api/routes/
 │   │   │   ├── collections.py             # HU-01: CRUD colecciones
 │   │   │   ├── documents.py               # HU-02: ingestión PDF/TXT
-│   │   │   ├── generate.py                # HU-03: RAG free-form por colección
+│   │   │   ├── rag_query.py               # HU-03: consulta RAG libre por colección
 │   │   │   ├── entities.py                # HU-05: CRUD entidades
 │   │   │   └── entity_content.py          # HU-06: contenidos RAG por categoría
 │   │   ├── models/                        # SQLModel (tabla ORM) + Pydantic (schemas) co-localizados
@@ -328,7 +328,7 @@ loremaster/
 │   │   │   ├── enums.py                   # ContentCategory, ContentStatus (enums compartidos)
 │   │   │   ├── entity_content.py          # EntityContent + schemas de request/response
 │   │   │   ├── generated_text.py          # GeneratedText — log inmutable de cada llamada RAG
-│   │   │   └── generate.py                # GenerateTextRequest, GenerateTextResponse
+│   │   │   └── rag_query.py               # RagQueryRequest, RagQueryResponse
 │   │   ├── core/
 │   │   │   ├── config.py                  # Pydantic Settings (lee .env)
 │   │   │   ├── lifespan.py                # Startup: migraciones Alembic (crítico) + health checks
@@ -336,7 +336,7 @@ loremaster/
 │   │   │   └── common.py                  # Helpers DB: soft_delete, get_active_by_id, list_active_by_collection
 │   │   ├── engine/                        # Pipeline IA — LLM + Qdrant + RAG
 │   │   │   ├── rag.py                     # Qdrant: ingest_chunks, search_context, delete, ping_qdrant
-│   │   │   ├── generate.py                # RAG orchestrator: search → prompt → chain.invoke
+│   │   │   ├── rag_pipeline.py            # RAG orchestrator compartido: invoke_rag_pipeline()
 │   │   │   ├── llm.py                     # OllamaLLM + LangChain RunnableSequence (singleton)
 │   │   │   └── extractor.py               # Extracción de texto PDF/TXT
 │   │   ├── domain/                        # Lógica de dominio pura — sin I/O ni DB
@@ -349,7 +349,7 @@ loremaster/
 │   │       ├── entities_service.py            # CRUD + nombre único por colección
 │   │       ├── generation_service.py          # generate(): valida categoría, límite pending, RAG → GeneratedText + EntityContent
 │   │       ├── content_management_service.py  # list, edit, confirm (discard category-scoped), discard, soft_delete, cascade
-│   │       └── generate_service.py            # RAG free-form (sin session, sólo Qdrant + Ollama)
+│   │       └── rag_query_service.py           # execute_rag_query(): consulta RAG libre (sin session, solo Qdrant + Ollama)
 │   ├── alembic/                           # Migraciones (render_as_batch=True para SQLite)
 │   ├── tests/                             # pytest con SQLite in-memory; stubs de engine.rag y LLM
 │   ├── Makefile
