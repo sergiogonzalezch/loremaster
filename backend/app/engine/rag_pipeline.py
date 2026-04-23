@@ -7,7 +7,7 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 
-def generate_rag_response(
+def invoke_rag_pipeline(
     collection_id: str,
     query: str,
     extra_context: str = "",

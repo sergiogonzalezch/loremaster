@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.core.lifespan import lifespan
-from app.api.routes import generate, documents, collections, entities, entity_content
+from app.api.routes import rag_query, documents, collections, entities, entity_content
 
 logging.basicConfig(level=logging.INFO)
 
@@ -38,6 +38,6 @@ def health_check():
 
 app.include_router(collections.router, prefix="/api/v1")
 app.include_router(documents.router, prefix="/api/v1")
-app.include_router(generate.router, prefix="/api/v1")
+app.include_router(rag_query.router, prefix="/api/v1")
 app.include_router(entities.router, prefix="/api/v1")
 app.include_router(entity_content.router, prefix="/api/v1")
