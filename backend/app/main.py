@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.core.lifespan import lifespan
-from app.api.routes import generate, documents, collections, entities, entity_text_draft, entity_content
+from app.api.routes import generate, documents, collections, entities, entity_content
 
 logging.basicConfig(level=logging.INFO)
 
@@ -40,5 +40,4 @@ app.include_router(collections.router, prefix="/api/v1")
 app.include_router(documents.router, prefix="/api/v1")
 app.include_router(generate.router, prefix="/api/v1")
 app.include_router(entities.router, prefix="/api/v1")
-app.include_router(entity_text_draft.router, prefix="/api/v1")
 app.include_router(entity_content.router, prefix="/api/v1")

@@ -2,7 +2,8 @@ import pytest
 from sqlmodel import select
 
 from app.models.collections import Collection
-from app.models.entity_text_draft import DraftStatus, EntityTextDraft
+from app.models.entity_content import EntityContent
+from app.models.enums import ContentCategory, ContentStatus
 
 
 @pytest.mark.anyio
@@ -75,23 +76,38 @@ async def test_delete_entity(client, sample_collection, sample_entity):
 
 
 @pytest.mark.anyio
-async def test_delete_entity_cascades_all_drafts(
+async def test_delete_entity_cascades_all_contents(
     client, db_session, sample_collection, sample_entity
 ):
-    """ENT-06: Eliminar entidad hace soft-delete de drafts pending y confirmed."""
-    pending = EntityTextDraft(
+    """ENT-06: Eliminar entidad hace soft-delete de EntityContent pending y confirmed."""
+    from app.models.generated_text import GeneratedText
+
+    gt = GeneratedText(
         entity_id=sample_entity.id,
         collection_id=sample_collection.id,
-        query="q1 lorem",
-        content="draft pending",
-        status=DraftStatus.pending,
+        category=ContentCategory.backstory,
+        query="q cascade test",
+        raw_content="contenido generado",
+        sources_count=1,
     )
-    confirmed = EntityTextDraft(
+    db_session.add(gt)
+    db_session.flush()
+
+    pending = EntityContent(
         entity_id=sample_entity.id,
         collection_id=sample_collection.id,
-        query="q2 lorem",
-        content="draft confirmed",
-        status=DraftStatus.confirmed,
+        generated_text_id=gt.id,
+        category=ContentCategory.backstory,
+        content="contenido pendiente",
+        status=ContentStatus.pending,
+    )
+    confirmed = EntityContent(
+        entity_id=sample_entity.id,
+        collection_id=sample_collection.id,
+        generated_text_id=gt.id,
+        category=ContentCategory.backstory,
+        content="contenido confirmado",
+        status=ContentStatus.confirmed,
     )
     db_session.add(pending)
     db_session.add(confirmed)
@@ -103,11 +119,11 @@ async def test_delete_entity_cascades_all_drafts(
         )
     ).status_code == 204
 
-    drafts = db_session.exec(
-        select(EntityTextDraft).where(EntityTextDraft.entity_id == sample_entity.id)
+    contents = db_session.exec(
+        select(EntityContent).where(EntityContent.entity_id == sample_entity.id)
     ).all()
-    assert len(drafts) == 2
-    assert all(d.is_deleted is True for d in drafts)
+    assert len(contents) == 2
+    assert all(c.is_deleted is True for c in contents)
 
 
 @pytest.mark.anyio
