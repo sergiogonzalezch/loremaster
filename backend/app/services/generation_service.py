@@ -1,0 +1,88 @@
+import logging
+
+from sqlalchemy import func
+from sqlmodel import Session, select
+
+from app.core.category_rules import validate_category_for_entity
+from app.core.rag_generate import generate_rag_response
+from app.models.entities import Entity
+from app.models.entity_content import EntityContent
+from app.models.enums import ContentCategory, ContentStatus
+from app.models.generated_text import GeneratedText
+
+logger = logging.getLogger(__name__)
+
+MAX_PENDING_CONTENTS = 5
+
+
+def generate(
+    session: Session,
+    entity: Entity,
+    category: ContentCategory,
+    query: str,
+) -> EntityContent:
+    if not validate_category_for_entity(entity.type, category):
+        raise ValueError(
+            f"Category '{category}' is not valid for entity type '{entity.type}'."
+        )
+
+    pending_count = session.exec(
+        select(func.count())
+        .select_from(EntityContent)
+        .where(
+            EntityContent.entity_id == entity.id,
+            EntityContent.collection_id == entity.collection_id,
+            EntityContent.category == category,
+            EntityContent.status == ContentStatus.pending,
+            EntityContent.is_deleted == False,
+        )
+    ).one()
+    if pending_count >= MAX_PENDING_CONTENTS:
+        raise ValueError(
+            f"Entity has {pending_count} pending contents for category '{category}' "
+            f"(max {MAX_PENDING_CONTENTS}). Confirm or discard existing contents first."
+        )
+
+    extra_context = ""
+    if entity.description:
+        extra_context = (
+            f"Información actual de '{entity.name}' ({entity.type}):\n"
+            f"{entity.description}\n\n"
+        )
+
+    answer, sources_count = generate_rag_response(
+        collection_id=entity.collection_id,
+        query=query,
+        extra_context=extra_context,
+    )
+
+    generated_text = GeneratedText(
+        entity_id=entity.id,
+        collection_id=entity.collection_id,
+        category=category,
+        query=query,
+        raw_content=answer,
+        sources_count=sources_count,
+    )
+    session.add(generated_text)
+    session.flush()
+
+    content = EntityContent(
+        entity_id=entity.id,
+        collection_id=entity.collection_id,
+        generated_text_id=generated_text.id,
+        category=category,
+        content=answer,
+        status=ContentStatus.pending,
+    )
+    session.add(content)
+    session.commit()
+    session.refresh(content)
+
+    logger.info(
+        "EntityContent %s (category=%s) created for entity %s",
+        content.id,
+        category,
+        entity.id,
+    )
+    return content
