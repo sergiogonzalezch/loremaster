@@ -26,8 +26,12 @@ def cascade_delete_entity(session: Session, entity: Entity) -> None:
     )
 
 
-def cascade_delete_collection(session: Session, collection: Collection) -> None:
-    """Soft-delete docs, entities (with their drafts), and Qdrant vectors."""
+def cascade_delete_collection(session: Session, collection: Collection) -> bool:
+    """Soft-delete docs, entities (with their drafts), and Qdrant vectors.
+
+    Returns True if Qdrant vectors were also cleaned up, False if they remain
+    (orphan vectors — requires manual cleanup or retry when Qdrant is available).
+    """
     docs = session.exec(
         select(Document).where(
             Document.collection_id == collection.id,
@@ -67,5 +71,11 @@ def cascade_delete_collection(session: Session, collection: Collection) -> None:
 
     try:
         delete_collection_vectors(collection.id)
+        return True
     except Exception as e:
-        logger.error("Failed to delete vectors for collection %s: %s", collection.id, e)
+        logger.error(
+            "Orphan vectors remain in Qdrant for collection %s — manual cleanup needed. Cause: %s",
+            collection.id,
+            e,
+        )
+        return False

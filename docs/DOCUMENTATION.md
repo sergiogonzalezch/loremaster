@@ -218,7 +218,7 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 - CRUD completo: character, creature, location, faction, item
 - Soft delete (`deleted_at`)
-- Nombre único por colección (validado en capa de servicio)
+- Nombre único por colección, validado en capa de servicio y reforzado por constraint DB (`uq_entity_collection_name`). Los nombres de entidades eliminadas quedan reservados en esa colección.
 - Relación entre entidades (`entity_relations`) — planificada
 - Cada entidad puede tener múltiples imágenes — planificado
 
@@ -242,6 +242,7 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 ### Criterios de aceptación
 
 - Se genera un contenido invocando el pipeline RAG con una `category` y un `query` libre del usuario
+- Cada categoría usa un prompt específico que incluye `entity_name` y `entity_type` (`domain/prompt_templates.py` → `invoke_generation_pipeline()`)
 - La `category` debe ser válida para el tipo de entidad (`domain/category_rules.py`); de lo contrario `HTTP 422`
 - Máximo 5 contenidos `pending` por entidad **y por categoría** (`HTTP 422` si se supera)
 - El usuario puede editar el contenido antes de confirmar (pending o confirmed)
@@ -250,20 +251,21 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 - Los contenidos `discarded` no pueden editarse via API
 - Soft-delete independiente del estado (DELETE endpoint → `is_deleted=True`, `HTTP 204`)
 - Cada generación registra un `GeneratedText` inmutable (log de la llamada RAG) y un `EntityContent` (contenido editable)
+- El listado de contenidos (`GET /contents`) está paginado (`PaginatedResponse` con `data`, `meta.total`, `meta.page`, `meta.page_size`, `meta.total_pages`)
 
 ### Secuencia — Generar contenido
 
-| **Paso** | **Actor → Actor**  | **Mensaje / Operación**                                                  |
-| -------- | ------------------ | ------------------------------------------------------------------------ |
-| 1        | Cliente → FastAPI  | POST /collections/{id}/entities/{eid}/generate/{category}                |
-| 2        | FastAPI            | Valida categoría para el tipo de entidad                                 |
-| 3        | FastAPI            | Verifica límite de 5 pending por categoría                               |
-| 4        | FastAPI → Qdrant   | search(filter=collection_id, top_k=4)                                    |
-| 5        | Qdrant → FastAPI   | chunks relevantes                                                        |
-| 6        | FastAPI            | Construye prompt con query + contexto + descripción actual de la entidad |
-| 7        | FastAPI → Ollama   | Genera texto (llama3.2:latest)                                           |
-| 8        | FastAPI → DB       | Guarda GeneratedText (log inmutable) + EntityContent (status=pending)    |
-| 9        | FastAPI → Cliente  | HTTP 201 { content_id, content, category, status, sources_count }        |
+| **Paso** | **Actor → Actor**  | **Mensaje / Operación**                                                                        |
+| -------- | ------------------ | ---------------------------------------------------------------------------------------------- |
+| 1        | Cliente → FastAPI  | POST /collections/{id}/entities/{eid}/generate/{category}                                      |
+| 2        | FastAPI            | Valida categoría para el tipo de entidad (`domain/category_rules.py`)                          |
+| 3        | FastAPI            | Verifica límite de 5 pending por categoría                                                     |
+| 4        | FastAPI → Qdrant   | search_context(collection_id, top_k=4)                                                         |
+| 5        | Qdrant → FastAPI   | chunks relevantes                                                                              |
+| 6        | FastAPI            | `render_prompt(category, entity_name, entity_type, context, query)` → prompt string completo   |
+| 7        | FastAPI → Ollama   | `generation_chain.invoke(rendered_prompt)` (semáforo: max 1 llamada concurrente)               |
+| 8        | FastAPI → DB       | Guarda GeneratedText (log inmutable) + EntityContent (status=pending)                          |
+| 9        | FastAPI → Cliente  | HTTP 201 { content_id, content, category, status, sources_count }                              |
 
 ### Secuencia — Confirmar contenido
 
@@ -515,7 +517,7 @@ DATABASE_URL=postgresql://user:pass@postgres:5432/loremaster
 |---|---|---|
 | **collections** | id (UUID PK), name (unique), description, created_at, updated_at, is_deleted, deleted_at | Unidad principal del sistema (world). |
 | **documents** | id (UUID PK), collection_id (FK), filename, file_type, chunk_count, status, created_at, is_deleted, deleted_at | Sin campo `content` — el texto vive en Qdrant. Sin `updated_at` — los documentos no se editan. `status`: processing \| completed \| failed. |
-| **entities** | id (UUID PK), collection_id (FK), type (ENUM), name, description, created_at, updated_at, is_deleted, deleted_at | `type`: character \| creature \| location \| faction \| item. Nombre único por colección (validado en servicio). |
+| **entities** | id (UUID PK), collection_id (FK), type (ENUM), name, description, created_at, updated_at, is_deleted, deleted_at | `type`: character \| creature \| location \| faction \| item. Nombre único por colección: constraint DB `uq_entity_collection_name` (collection_id, name) + validación en servicio. Los nombres de entidades eliminadas quedan reservados. |
 | **generated_texts** | id (UUID PK), entity_id (FK), collection_id (FK), category, query, raw_content, sources_count, created_at | Log inmutable de cada llamada RAG. No se edita. Referenciado por `entity_content`. |
 | **entity_contents** | id (UUID PK), entity_id (FK), collection_id (FK), generated_text_id (FK), category, content, status, created_at, updated_at, is_deleted, deleted_at | `status`: pending \| confirmed \| discarded. Máx. 5 `pending` por entidad **y por categoría**. El discard al confirmar es category-scoped. |
 | **generated_images** | id (UUID PK), collection_id (FK), entity_id (FK?), image_url, visual_prompt, seed, model_version, generation_ms, backend, created_at | Planificado (Fase 3). backend: local \| runpod. |

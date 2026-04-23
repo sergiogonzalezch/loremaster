@@ -66,13 +66,6 @@ class EntityContentResponse(BaseModel):
     updated_at: Optional[datetime] = None
 
 
-class EntityContentListResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    items: list[EntityContentResponse]
-    total: int
-
-
 class GenerateContentRequest(BaseModel):
     query: str = Field(..., min_length=5)
 

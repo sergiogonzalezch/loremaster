@@ -13,11 +13,11 @@ _PROMPT = PromptTemplate.from_template(
     """
 )
 
-_llm = OllamaLLM(
+llm = OllamaLLM(
     model=settings.ollama_model,
     base_url=settings.ollama_base_url,
     temperature=settings.temperature,
     num_predict=settings.max_tokens,
 )
 
-chain = _PROMPT | _llm | StrOutputParser()
+chain = _PROMPT | llm | StrOutputParser()

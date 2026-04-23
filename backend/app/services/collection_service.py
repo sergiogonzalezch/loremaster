@@ -61,6 +61,6 @@ def list_collections_service(
 
 
 def delete_collection_service(session: Session, collection: Collection) -> bool:
-    cascade_delete_collection(session, collection)
+    vectors_cleaned = cascade_delete_collection(session, collection)
     session.commit()
-    return True
+    return vectors_cleaned

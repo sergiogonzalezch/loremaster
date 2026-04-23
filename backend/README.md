@@ -31,8 +31,9 @@ cp .env.example .env
 | `QDRANT_URL` | `http://localhost:6333` | Base de datos vectorial |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Endpoint de Ollama |
 | `OLLAMA_MODEL` | `llama3.2:latest` | Modelo LLM |
-| `MAX_TOKENS` | `500` | Máximo de tokens en la respuesta del LLM |
+| `MAX_TOKENS` | `2000` | Máximo de tokens en la respuesta del LLM |
 | `TEMPERATURE` | `0.7` | Temperatura del LLM |
+| `MAX_CONCURRENT_LLM_CALLS` | `1` | Peticiones simultáneas máximas al LLM (semáforo) |
 | `EMBEDDING_MODEL` | `paraphrase-multilingual-MiniLM-L12-v2` | Modelo de embeddings |
 | `EMBEDDING_DIMS` | `384` | Dimensiones del vector de embedding |
 | `CHUNK_SIZE` | `512` | Tamaño de chunk en caracteres |
@@ -109,10 +110,12 @@ Todos bajo `/api/v1/`.
 
 Tipos válidos: `character`, `creature`, `location`, `faction`, `item`.
 
+El nombre de entidad es único por colección con constraint a nivel de DB (`uq_entity_collection_name`). Los nombres de entidades soft-deleted también quedan reservados (coherente con el audit trail).
+
 | Método | Ruta | Descripción | Status |
 |---|---|---|---|
 | `POST` | `/collections/{id}/entities` | Crear entidad | 201 |
-| `GET` | `/collections/{id}/entities` | Listar entidades | 200 |
+| `GET` | `/collections/{id}/entities` | Listar entidades (paginado, filtrable por `?name=`, `?type=`) | 200 |
 | `GET` | `/collections/{id}/entities/{entity_id}` | Obtener entidad | 200 |
 | `PATCH` | `/collections/{id}/entities/{entity_id}` | Actualizar entidad (parcial) | 200 |
 | `DELETE` | `/collections/{id}/entities/{entity_id}` | Eliminar entidad | 204 |
@@ -127,8 +130,8 @@ Estados posibles: `pending` → `confirmed` | `discarded`. Máximo 5 contenidos 
 
 | Método | Ruta | Descripción | Status |
 |---|---|---|---|
-| `POST` | `/collections/{id}/entities/{entity_id}/generate/{category}` | Generar contenido RAG para una categoría | 201 |
-| `GET` | `/collections/{id}/entities/{entity_id}/contents` | Listar contenidos (filtrables por `?category=`) | 200 |
+| `POST` | `/collections/{id}/entities/{entity_id}/generate/{category}` | Generar contenido RAG para una categoría (prompt específico por categoría) | 201 |
+| `GET` | `/collections/{id}/entities/{entity_id}/contents` | Listar contenidos (paginado; `?category=`, `?page=`, `?page_size=`) | 200 |
 | `PATCH` | `/collections/{id}/entities/{entity_id}/contents/{content_id}` | Editar contenido (`pending` o `confirmed`) | 200 |
 | `POST` | `/collections/{id}/entities/{entity_id}/contents/{content_id}/confirm` | Confirmar contenido (actualiza entidad, descarta hermanos de la categoría) | 200 |
 | `PATCH` | `/collections/{id}/entities/{entity_id}/contents/{content_id}/discard` | Cambiar estado a descartado | 200 |

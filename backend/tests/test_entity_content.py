@@ -126,7 +126,7 @@ async def test_cnt_05_list_excludes_discarded_and_soft_deleted(
         f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/contents"
     )
     assert listed.status_code == 200
-    ids = [c["id"] for c in listed.json()["items"]]
+    ids = [c["id"] for c in listed.json()["data"]]
 
     assert pending_id in ids
     assert discard_id not in ids
@@ -149,7 +149,7 @@ async def test_cnt_06_list_filtered_by_category(
         f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/contents?category=backstory"
     )
     assert response.status_code == 200
-    items = response.json()["items"]
+    items = response.json()["data"]
 
     assert all(c["category"] == "backstory" for c in items)
 
@@ -310,7 +310,7 @@ async def test_cnt_14_generate_includes_entity_description_in_context(
     assert response.status_code == 201
 
     payload = mock_llm["invocations"][-1]
-    assert sample_entity.description in payload["context"]
+    assert sample_entity.description in payload
 
 
 @pytest.mark.anyio
