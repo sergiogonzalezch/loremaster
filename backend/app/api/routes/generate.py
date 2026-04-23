@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.core.valid_collection import get_collection_or_404
+from app.core.deps import get_collection_or_404
 from app.models.collections import Collection
 from app.services.generate_service import text_generation_service
 from app.models.generate import GenerateTextRequest, GenerateTextResponse

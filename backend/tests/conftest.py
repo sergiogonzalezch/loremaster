@@ -16,8 +16,8 @@ if BACKEND_DIR not in sys.path:
 import types
 
 # Prevent heavy external model loading during app import.
-if "app.core.rag_engine" not in sys.modules:
-    rag_stub = types.ModuleType("app.core.rag_engine")
+if "app.engine.rag" not in sys.modules:
+    rag_stub = types.ModuleType("app.engine.rag")
 
     def _stub_ingest_chunks(*args, **kwargs):
         return 1
@@ -35,7 +35,7 @@ if "app.core.rag_engine" not in sys.modules:
     rag_stub.search_context = _stub_search_context
     rag_stub.delete_document_chunks = _stub_delete_document_chunks
     rag_stub.delete_collection_vectors = _stub_delete_collection_vectors
-    sys.modules["app.core.rag_engine"] = rag_stub
+    sys.modules["app.engine.rag"] = rag_stub
 
 from app.database import get_session
 from app.main import app
@@ -117,7 +117,7 @@ def mock_rag_engine(monkeypatch: pytest.MonkeyPatch) -> dict:
         calls["delete_collection_vectors"].append({"collection_id": collection_id})
         return True
 
-    rag_engine_mod = importlib.import_module("app.core.rag_engine")
+    rag_engine_mod = importlib.import_module("app.engine.rag")
     monkeypatch.setattr(rag_engine_mod, "ingest_chunks", _ingest_chunks)
     monkeypatch.setattr(rag_engine_mod, "search_context", _search_context)
     monkeypatch.setattr(
@@ -131,7 +131,7 @@ def mock_rag_engine(monkeypatch: pytest.MonkeyPatch) -> dict:
     monkeypatch.setattr(
         "app.services.documents_service.delete_document_chunks", _delete_document_chunks
     )
-    monkeypatch.setattr("app.core.rag_generate.search_context", _search_context)
+    monkeypatch.setattr("app.engine.generate.search_context", _search_context)
     monkeypatch.setattr(
         "app.services.deletion_service.delete_collection_vectors",
         _delete_collection_vectors,
@@ -150,7 +150,7 @@ def mock_llm(monkeypatch: pytest.MonkeyPatch) -> dict:
             state["invocations"].append(payload)
             return "Texto generado por el LLM mock"
 
-    monkeypatch.setattr("app.core.rag_generate.chain", MockChain())
+    monkeypatch.setattr("app.engine.generate.chain", MockChain())
     return state
 
 
@@ -161,7 +161,7 @@ def mock_text_extractor(monkeypatch: pytest.MonkeyPatch):
     def _extract_text(file_bytes: bytes, content_type: str) -> str:
         return "Texto extraído simulado"
 
-    monkeypatch.setattr("app.core.text_extractor.extract_text", _extract_text)
+    monkeypatch.setattr("app.engine.extractor.extract_text", _extract_text)
     monkeypatch.setattr("app.services.documents_service.extract_text", _extract_text)
 
 

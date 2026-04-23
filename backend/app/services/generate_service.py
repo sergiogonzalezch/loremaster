@@ -1,7 +1,7 @@
 import logging
 
 from app.models.generate import GenerateTextResponse
-from app.core.rag_generate import generate_rag_response
+from app.engine.generate import generate_rag_response
 
 logger = logging.getLogger(__name__)
 

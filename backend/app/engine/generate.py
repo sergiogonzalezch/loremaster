@@ -1,7 +1,7 @@
 import logging
 
-from app.core.rag_engine import search_context
-from app.core.llm_client import chain
+from app.engine.rag import search_context
+from app.engine.llm import chain
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlmodel import Session
 from typing import Optional
 
-from app.core.valid_collection import get_entity_or_404
+from app.core.deps import get_entity_or_404
 from app.database import get_session
 from app.models.entities import Entity, EntityResponse
 from app.models.entity_content import (

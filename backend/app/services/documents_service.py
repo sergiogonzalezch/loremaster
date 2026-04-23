@@ -8,8 +8,8 @@ from sqlmodel import Session, select
 
 from app.models.documents import Document, DocumentStatus
 from app.core.common import get_active_by_id, soft_delete
-from app.core.text_extractor import extract_text
-from app.core.rag_engine import ingest_chunks, delete_document_chunks
+from app.engine.extractor import extract_text
+from app.engine.rag import ingest_chunks, delete_document_chunks
 
 logger = logging.getLogger(__name__)
 

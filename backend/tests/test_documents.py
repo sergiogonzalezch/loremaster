@@ -73,7 +73,7 @@ async def test_ingest_qdrant_failure_marks_failed(
     def _raise_ingest(*args, **kwargs):
         raise Exception("Qdrant down")
 
-    rag_engine_mod = importlib.import_module("app.core.rag_engine")
+    rag_engine_mod = importlib.import_module("app.engine.rag")
     monkeypatch.setattr(rag_engine_mod, "ingest_chunks", _raise_ingest)
     monkeypatch.setattr("app.services.documents_service.ingest_chunks", _raise_ingest)
 

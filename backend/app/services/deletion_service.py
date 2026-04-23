@@ -6,7 +6,7 @@ from app.models.collections import Collection
 from app.models.documents import Document
 from app.models.entities import Entity
 from app.core.common import soft_delete
-from app.core.rag_engine import delete_collection_vectors
+from app.engine.rag import delete_collection_vectors
 from app.services import content_management_service
 
 logger = logging.getLogger(__name__)

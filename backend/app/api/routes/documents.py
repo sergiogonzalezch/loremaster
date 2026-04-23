@@ -4,7 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile, File
 from sqlmodel import Session
 
-from app.core.valid_collection import get_collection_or_404, get_document_or_404
+from app.core.deps import get_collection_or_404, get_document_or_404
 from app.database import get_session
 from app.models.collections import Collection
 from app.models.documents import Document, DocumentResponse, DocumentStatus
