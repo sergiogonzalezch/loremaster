@@ -131,7 +131,7 @@ def mock_rag_engine(monkeypatch: pytest.MonkeyPatch) -> dict:
     monkeypatch.setattr(
         "app.services.documents_service.delete_document_chunks", _delete_document_chunks
     )
-    monkeypatch.setattr("app.engine.generate.search_context", _search_context)
+    monkeypatch.setattr("app.engine.rag_pipeline.search_context", _search_context)
     monkeypatch.setattr(
         "app.services.deletion_service.delete_collection_vectors",
         _delete_collection_vectors,
@@ -150,7 +150,7 @@ def mock_llm(monkeypatch: pytest.MonkeyPatch) -> dict:
             state["invocations"].append(payload)
             return "Texto generado por el LLM mock"
 
-    monkeypatch.setattr("app.engine.generate.chain", MockChain())
+    monkeypatch.setattr("app.engine.rag_pipeline.chain", MockChain())
     return state
 
 

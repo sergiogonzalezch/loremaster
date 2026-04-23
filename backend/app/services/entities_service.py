@@ -7,7 +7,6 @@ from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.models.entities import Entity, EntityType, CreateEntityRequest, UpdateEntityRequest
-from app.core.common import list_active_by_collection
 from app.services.deletion_service import cascade_delete_entity
 
 logger = logging.getLogger(__name__)

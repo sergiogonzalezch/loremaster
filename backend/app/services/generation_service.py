@@ -4,7 +4,7 @@ from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.domain.category_rules import validate_category_for_entity
-from app.engine.generate import generate_rag_response
+from app.engine.rag_pipeline import invoke_rag_pipeline
 from app.models.entities import Entity
 from app.models.entity_content import EntityContent
 from app.models.enums import ContentCategory, ContentStatus
@@ -50,7 +50,7 @@ def generate(
             f"{entity.description}\n\n"
         )
 
-    answer, sources_count = generate_rag_response(
+    answer, sources_count = invoke_rag_pipeline(
         collection_id=entity.collection_id,
         query=query,
         extra_context=extra_context,

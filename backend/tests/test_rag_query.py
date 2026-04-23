@@ -4,12 +4,12 @@ import pytest
 
 
 @pytest.mark.anyio
-async def test_generate_text(
+async def test_rag_query_returns_answer(
     client, mock_rag_engine, mock_llm, sample_collection, sample_document
 ):
-    """GEN-01: Generación de texto retorna answer, query y sources_count."""
+    """GEN-01: La consulta RAG retorna answer, query y sources_count."""
     response = await client.post(
-        f"/api/v1/collections/{sample_collection.id}/generate/text",
+        f"/api/v1/collections/{sample_collection.id}/query",
         json={"query": "Describe el mundo"},
     )
     assert response.status_code == 200
@@ -20,13 +20,13 @@ async def test_generate_text(
 
 
 @pytest.mark.anyio
-async def test_generate_uses_rag_context(
+async def test_rag_query_uses_rag_context(
     client, mock_rag_engine, mock_llm, sample_collection, sample_document
 ):
-    """GEN-02: generate invoca search_context con collection_id y query correctos."""
+    """GEN-02: El endpoint invoca search_context con collection_id y query correctos."""
     query = "Qué facciones existen"
     response = await client.post(
-        f"/api/v1/collections/{sample_collection.id}/generate/text",
+        f"/api/v1/collections/{sample_collection.id}/query",
         json={"query": query},
     )
     assert response.status_code == 200
@@ -36,7 +36,7 @@ async def test_generate_uses_rag_context(
 
 
 @pytest.mark.anyio
-async def test_generate_empty_rag_results_422(
+async def test_rag_query_empty_context_422(
     client, mock_llm, monkeypatch, sample_collection, sample_document
 ):
     """GEN-03: Si search_context no retorna chunks, responde 422 por contexto vacío."""
@@ -46,17 +46,17 @@ async def test_generate_empty_rag_results_422(
 
     rag_engine_mod = importlib.import_module("app.engine.rag")
     monkeypatch.setattr(rag_engine_mod, "search_context", _empty_search)
-    monkeypatch.setattr("app.engine.generate.search_context", _empty_search)
+    monkeypatch.setattr("app.engine.rag_pipeline.search_context", _empty_search)
 
     response = await client.post(
-        f"/api/v1/collections/{sample_collection.id}/generate/text",
+        f"/api/v1/collections/{sample_collection.id}/query",
         json={"query": "Describe el clima"},
     )
     assert response.status_code == 422
 
 
 @pytest.mark.anyio
-async def test_generate_llm_unavailable_503(
+async def test_rag_query_llm_unavailable_503(
     client, mock_rag_engine, monkeypatch, sample_collection, sample_document
 ):
     """GEN-04: Si chain.invoke falla, retorna 503."""
@@ -65,17 +65,17 @@ async def test_generate_llm_unavailable_503(
         def invoke(self, payload: dict):
             raise Exception("LLM down")
 
-    monkeypatch.setattr("app.engine.generate.chain", BrokenChain())
+    monkeypatch.setattr("app.engine.rag_pipeline.chain", BrokenChain())
 
     response = await client.post(
-        f"/api/v1/collections/{sample_collection.id}/generate/text",
+        f"/api/v1/collections/{sample_collection.id}/query",
         json={"query": "Describe el mundo"},
     )
     assert response.status_code == 503
 
 
 @pytest.mark.anyio
-async def test_generate_qdrant_unavailable_503(
+async def test_rag_query_qdrant_unavailable_503(
     client, mock_llm, monkeypatch, sample_collection, sample_document
 ):
     """GEN-05: Si search_context falla, retorna 503."""
@@ -85,10 +85,10 @@ async def test_generate_qdrant_unavailable_503(
 
     rag_engine_mod = importlib.import_module("app.engine.rag")
     monkeypatch.setattr(rag_engine_mod, "search_context", _broken_search)
-    monkeypatch.setattr("app.engine.generate.search_context", _broken_search)
+    monkeypatch.setattr("app.engine.rag_pipeline.search_context", _broken_search)
 
     response = await client.post(
-        f"/api/v1/collections/{sample_collection.id}/generate/text",
+        f"/api/v1/collections/{sample_collection.id}/query",
         json={"query": "Describe el mundo"},
     )
     assert response.status_code == 503

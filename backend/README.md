@@ -134,11 +134,13 @@ Estados posibles: `pending` → `confirmed` | `discarded`. Máximo 5 contenidos 
 | `PATCH` | `/collections/{id}/entities/{entity_id}/contents/{content_id}/discard` | Cambiar estado a descartado | 200 |
 | `DELETE` | `/collections/{id}/entities/{entity_id}/contents/{content_id}` | Soft-delete del contenido | 204 |
 
-### Generación libre
+### Consulta RAG libre
 
 | Método | Ruta | Descripción | Status |
 |---|---|---|---|
-| `POST` | `/collections/{id}/generate/text` | Consulta RAG libre contra el lore cargado | 200 |
+| `POST` | `/collections/{id}/query` | Consulta RAG libre contra el lore cargado | 200 |
+
+Respuesta: `{ answer, query, sources_count }`.
 
 ## Migraciones
 
