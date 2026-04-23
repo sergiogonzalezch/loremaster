@@ -3,8 +3,8 @@ import logging
 from sqlalchemy import func
 from sqlmodel import Session, select
 
-from app.core.category_rules import validate_category_for_entity
-from app.core.rag_generate import generate_rag_response
+from app.domain.category_rules import validate_category_for_entity
+from app.engine.generate import generate_rag_response
 from app.models.entities import Entity
 from app.models.entity_content import EntityContent
 from app.models.enums import ContentCategory, ContentStatus

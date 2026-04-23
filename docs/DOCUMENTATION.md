@@ -11,7 +11,7 @@ A diferencia de los asistentes de IA genéricos basados en chat, Lore Master ofr
 - Ingesta y vectoriza documentos de lore (PDF/TXT) proporcionados por el usuario.
 - Recupera contexto relevante del lore antes de cada generación de texto o imagen.
 - Genera texto narrativo expandido, consistente con la lore cargada.
-- Genera **borradores de texto RAG** por entidad: el usuario puede editar, confirmar (actualiza la descripción de la entidad y descarta los demás pendientes) o descartar cada borrador.
+- Genera **contenidos RAG por categoría** para cada entidad: el usuario puede editar, confirmar (descarta automáticamente los demás pendientes de la misma categoría) o descartar cada contenido.
 - Construye prompts visuales automáticamente y genera imágenes a través de ComfyUI + Flux.2 Klein 4B.
 - Gestiona entidades del mundo (personajes, escenarios, facciones, ítems) con atributos estructurados.
 - Almacena todas las imágenes y metadatos generados en S3 (local o nube).
@@ -59,7 +59,7 @@ Construir un prototipo funcional y escalable de Lore Master que demuestre la via
 - Soporte de archivos PDF y TXT de hasta 50 MB por documento.
 - Generación de texto hasta 2 000 tokens por consulta, con streaming opcional.
 - Generación de imágenes 1024 × 1024 px con Flux.2 Klein 4B Distilled (FP8).
-- Cuatro tipos de entidad: character, scene, faction, item.
+- Cinco tipos de entidad: character, creature, location, faction, item.
 - Un usuario por instancia en el prototipo (multi-tenant fuera del alcance del MVP).
 
 # 3. Características e Historias de Usuario
@@ -75,7 +75,7 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 | **HU-03** | Generación de texto (RAG) | Como creador de mundos, quiero hacer consultas sobre una colección para obtener texto coherente basado en el lore cargado.                             |
 | **HU-04** | Generación de imágenes    | Como creador de mundos, quiero generar imágenes consistentes con mi lore utilizando contexto de la colección.                                          |
 | **HU-05** | Gestión de entidades      | Como creador de mundos, quiero gestionar personajes, escenarios y objetos dentro de una colección para estructurar mi mundo.                           |
-| **HU-06** | Borradores de texto (RAG) | Como creador de mundos, quiero generar borradores de texto RAG para una entidad y confirmar el mejor para actualizar su descripción automáticamente.   |
+| **HU-06** | Contenidos RAG por categoría | Como creador de mundos, quiero generar contenidos RAG por categoría para una entidad y confirmar el mejor para actualizar su descripción automáticamente.   |
 
 ---
 
@@ -206,49 +206,58 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 ### Criterios de aceptación
 
-- CRUD completo: character, scene, faction, item
+- CRUD completo: character, creature, location, faction, item
 - Soft delete (`deleted_at`)
 - Nombre único por colección (validado en capa de servicio)
 - Relación entre entidades (`entity_relations`) — planificada
 - Cada entidad puede tener múltiples imágenes — planificado
 
-# HU-06 — Borradores de texto RAG para entidades
+# HU-06 — Contenidos RAG por categoría para entidades
 
-### Diagrama de flujo — Generación de borrador RAG
+### Diagramas
 
-> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
+- Diagrama de flujo — Generación de contenido RAG por categoría
+
+> *Diagrama pendiente de generación — ver carpeta `docs/diagrams/`*
+
+- Diagrama de secuencia — Cliente → FastAPI → Qdrant → LLM → DB
+
+> *Diagrama pendiente de generación — ver carpeta `docs/diagrams/`*
 
 ### Criterios de aceptación
 
-- Se genera un borrador invocando el pipeline RAG con un `query` libre del usuario
-- Máximo 5 borradores `pending` simultáneos por entidad (`HTTP 409` si se supera)
-- El usuario puede editar el contenido del borrador antes de confirmar
-- **Confirmar** un borrador: actualiza `description` de la entidad + descarta automáticamente los demás `pending`
-- **Descartar** un borrador (PATCH): cambia `status → discarded` sin eliminar el registro
-- Los borradores `discarded` no pueden editarse ni eliminarse via API
+- Se genera un contenido invocando el pipeline RAG con una `category` y un `query` libre del usuario
+- La `category` debe ser válida para el tipo de entidad (`domain/category_rules.py`); de lo contrario `HTTP 422`
+- Máximo 5 contenidos `pending` por entidad **y por categoría** (`HTTP 422` si se supera)
+- El usuario puede editar el contenido antes de confirmar (pending o confirmed)
+- **Confirmar** un contenido: descarta automáticamente los demás `pending` **de la misma categoría** (no afecta otras categorías)
+- **Descartar** un contenido (PATCH): cambia `status → discarded` sin eliminar el registro
+- Los contenidos `discarded` no pueden editarse via API
 - Soft-delete independiente del estado (DELETE endpoint → `is_deleted=True`, `HTTP 204`)
+- Cada generación registra un `GeneratedText` inmutable (log de la llamada RAG) y un `EntityContent` (contenido editable)
 
-### Secuencia
+### Secuencia — Generar contenido
 
-| **Paso** | **Actor → Actor**  | **Mensaje / Operación**                                          |
-| -------- | ------------------ | ---------------------------------------------------------------- |
-| 1        | Cliente → FastAPI  | POST /collections/{id}/entities/{eid}/generate                   |
-| 2        | FastAPI → Qdrant   | search(filter=collection_id, top_k=4)                            |
-| 3        | Qdrant → FastAPI   | chunks relevantes                                                |
-| 4        | FastAPI            | Construye prompt con query + contexto                            |
-| 5        | FastAPI → Ollama   | Genera texto (llama3.2:latest)                                   |
-| 6        | FastAPI → DB       | Guarda EntityTextDraft (status=pending)                          |
-| 7        | FastAPI → Cliente  | HTTP 201 { draft_id, content, sources_count }                    |
+| **Paso** | **Actor → Actor**  | **Mensaje / Operación**                                                  |
+| -------- | ------------------ | ------------------------------------------------------------------------ |
+| 1        | Cliente → FastAPI  | POST /collections/{id}/entities/{eid}/generate/{category}                |
+| 2        | FastAPI            | Valida categoría para el tipo de entidad                                 |
+| 3        | FastAPI            | Verifica límite de 5 pending por categoría                               |
+| 4        | FastAPI → Qdrant   | search(filter=collection_id, top_k=4)                                    |
+| 5        | Qdrant → FastAPI   | chunks relevantes                                                        |
+| 6        | FastAPI            | Construye prompt con query + contexto + descripción actual de la entidad |
+| 7        | FastAPI → Ollama   | Genera texto (llama3.2:latest)                                           |
+| 8        | FastAPI → DB       | Guarda GeneratedText (log inmutable) + EntityContent (status=pending)    |
+| 9        | FastAPI → Cliente  | HTTP 201 { content_id, content, category, status, sources_count }        |
 
-### Confirmar borrador (secuencia)
+### Secuencia — Confirmar contenido
 
-| **Paso** | **Actor → Actor** | **Mensaje / Operación**                                   |
-| -------- | ----------------- | --------------------------------------------------------- |
-| 1        | Cliente → FastAPI | POST /collections/{id}/entities/{eid}/drafts/{did}/confirm|
-| 2        | FastAPI → DB      | Draft.status = confirmed, Draft.confirmed_at = now()      |
-| 3        | FastAPI → DB      | Entity.description = draft.content, Entity.updated_at     |
-| 4        | FastAPI → DB      | Otros pending → status = discarded                        |
-| 5        | FastAPI → Cliente | HTTP 200 { draft actualizado }                            |
+| **Paso** | **Actor → Actor** | **Mensaje / Operación**                                             |
+| -------- | ----------------- | ------------------------------------------------------------------- |
+| 1        | Cliente → FastAPI | POST /collections/{id}/entities/{eid}/contents/{cid}/confirm        |
+| 2        | FastAPI → DB      | EntityContent.status = confirmed, confirmed_at = now()              |
+| 3        | FastAPI → DB      | Otros pending de la misma categoría → status = discarded            |
+| 4        | FastAPI → Cliente | HTTP 200 { entity }                                                 |
 
 # 4. Arquitectura Técnica
 
@@ -296,31 +305,38 @@ loremaster/
 │   │   │   ├── documents.py               # HU-02: ingestión PDF/TXT
 │   │   │   ├── generate.py                # HU-03: RAG free-form por colección
 │   │   │   ├── entities.py                # HU-05: CRUD entidades
-│   │   │   └── entity_text_draft.py       # HU-06: borradores RAG por entidad
+│   │   │   └── entity_content.py          # HU-06: contenidos RAG por categoría
 │   │   ├── models/                        # SQLModel (tabla ORM) + Pydantic (schemas) co-localizados
 │   │   │   ├── collections.py             # Collection, CreateCollectionRequest, CollectionResponse
 │   │   │   ├── documents.py               # Document, DocumentStatus (processing|completed|failed)
-│   │   │   ├── entities.py                # Entity, EntityType (character|scene|faction|item)
-│   │   │   ├── entity_text_draft.py       # EntityTextDraft, DraftStatus (pending|confirmed|discarded)
+│   │   │   ├── entities.py                # Entity, EntityType (character|creature|location|faction|item)
+│   │   │   ├── enums.py                   # ContentCategory, ContentStatus (enums compartidos)
+│   │   │   ├── entity_content.py          # EntityContent + schemas de request/response
+│   │   │   ├── generated_text.py          # GeneratedText — log inmutable de cada llamada RAG
 │   │   │   └── generate.py                # GenerateTextRequest, GenerateTextResponse
 │   │   ├── core/
 │   │   │   ├── config.py                  # Pydantic Settings (lee .env)
 │   │   │   ├── lifespan.py                # Startup: migraciones Alembic (crítico) + health checks
-│   │   │   ├── rag_engine.py              # Qdrant: ingest_chunks, search_context, delete, ping
-│   │   │   ├── rag_generate.py            # RAG orchestrator: search → prompt → chain.invoke
-│   │   │   ├── llm_client.py              # OllamaLLM + LangChain RunnableSequence (singleton)
-│   │   │   ├── text_extractor.py          # Extracción de texto PDF/TXT
-│   │   │   ├── valid_collection.py        # Dependencias FastAPI: get_collection_or_404, etc.
+│   │   │   ├── deps.py                    # Dependencias FastAPI: get_collection_or_404, get_entity_or_404, get_document_or_404
 │   │   │   └── common.py                  # Helpers DB: soft_delete, get_active_by_id, list_active_by_collection
+│   │   ├── engine/                        # Pipeline IA — LLM + Qdrant + RAG
+│   │   │   ├── rag.py                     # Qdrant: ingest_chunks, search_context, delete, ping_qdrant
+│   │   │   ├── generate.py                # RAG orchestrator: search → prompt → chain.invoke
+│   │   │   ├── llm.py                     # OllamaLLM + LangChain RunnableSequence (singleton)
+│   │   │   └── extractor.py               # Extracción de texto PDF/TXT
+│   │   ├── domain/                        # Lógica de dominio pura — sin I/O ni DB
+│   │   │   ├── category_rules.py          # ENTITY_CATEGORY_MAP, validate_category_for_entity()
+│   │   │   └── prompt_templates.py        # _TEMPLATES, get_template(), render_prompt()
 │   │   └── services/                      # Lógica de negocio (reciben objetos ORM, no IDs)
 │   │       ├── collection_service.py
-│   │       ├── deletion_service.py        # cascade_delete_entity / cascade_delete_collection
-│   │       ├── documents_service.py       # ingest (async), list, get, delete
-│   │       ├── entities_service.py        # CRUD + nombre único por colección
-│   │       ├── entity_text_draft_service.py  # CRUD drafts + confirm + discard + soft-delete
-│   │       └── generate_service.py        # RAG free-form (sin session, sólo Qdrant + Ollama)
+│   │       ├── deletion_service.py            # cascade_delete_entity / cascade_delete_collection
+│   │       ├── documents_service.py           # ingest (async), list, get, delete
+│   │       ├── entities_service.py            # CRUD + nombre único por colección
+│   │       ├── generation_service.py          # generate(): valida categoría, límite pending, RAG → GeneratedText + EntityContent
+│   │       ├── content_management_service.py  # list, edit, confirm (discard category-scoped), discard, soft_delete, cascade
+│   │       └── generate_service.py            # RAG free-form (sin session, sólo Qdrant + Ollama)
 │   ├── alembic/                           # Migraciones (render_as_batch=True para SQLite)
-│   ├── tests/                             # pytest con SQLite in-memory; stubs de rag_engine y LLM
+│   ├── tests/                             # pytest con SQLite in-memory; stubs de engine.rag y LLM
 │   ├── Makefile
 │   ├── requirements.txt
 │   ├── requirements-dev.txt
@@ -484,16 +500,17 @@ DATABASE_URL=postgresql://user:pass@postgres:5432/loremaster
 |---|---|---|
 | **collections** | id (UUID PK), name (unique), description, created_at, updated_at, is_deleted, deleted_at | Unidad principal del sistema (world). |
 | **documents** | id (UUID PK), collection_id (FK), filename, file_type, chunk_count, status, created_at, is_deleted, deleted_at | Sin campo `content` — el texto vive en Qdrant. Sin `updated_at` — los documentos no se editan. `status`: processing \| completed \| failed. |
-| **entities** | id (UUID PK), collection_id (FK), type (ENUM), name, description, created_at, updated_at, is_deleted, deleted_at | `type`: character \| scene \| faction \| item. Nombre único por colección (validado en servicio). |
-| **entity_text_drafts** | id (UUID PK), entity_id (FK), collection_id (FK), query, content (max 10 000 chars), sources_count, status, created_at, confirmed_at, updated_at, is_deleted, deleted_at | `status`: pending \| confirmed \| discarded. Máx. 5 `pending` por entidad. `confirmed_at` se establece al confirmar. |
+| **entities** | id (UUID PK), collection_id (FK), type (ENUM), name, description, created_at, updated_at, is_deleted, deleted_at | `type`: character \| creature \| location \| faction \| item. Nombre único por colección (validado en servicio). |
+| **generated_texts** | id (UUID PK), entity_id (FK), collection_id (FK), category, query, raw_content, sources_count, created_at | Log inmutable de cada llamada RAG. No se edita. Referenciado por `entity_content`. |
+| **entity_contents** | id (UUID PK), entity_id (FK), collection_id (FK), generated_text_id (FK), category, content, status, created_at, updated_at, is_deleted, deleted_at | `status`: pending \| confirmed \| discarded. Máx. 5 `pending` por entidad **y por categoría**. El discard al confirmar es category-scoped. |
 | **generated_images** | id (UUID PK), collection_id (FK), entity_id (FK?), image_url, visual_prompt, seed, model_version, generation_ms, backend, created_at | Planificado (Fase 3). backend: local \| runpod. |
 | **entity_relations** | id (UUID PK), source_id (FK entities), target_id (FK entities), relation_type, created_at | Planificado. ENUM: belongs_to, contains, allied_with, enemy_of. |
 
 ### Diagrama ERD
 
-> *Diagrama pendiente de actualización — ver carpeta `docs/diagrams/`*
-
-**Diagrama ERD — Modelo de datos Lore Master**
+> *Diagrama pendiente de generación — ver carpeta `docs/diagrams/`*
+>
+> Tablas a incluir: collections, documents, entities, generated_texts, entity_contents (+ relaciones planificadas: generated_images, entity_relations)
 
 # 7. Roadmap de Desarrollo — 12 Semanas (Final Ajustado)
 

@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI):
         raise
 
     try:
-        from app.core.rag_engine import ping_qdrant
+        from app.engine.rag import ping_qdrant
 
         ping_qdrant()
         logger.info("Qdrant connection OK (%s)", settings.qdrant_url)

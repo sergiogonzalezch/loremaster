@@ -44,9 +44,9 @@ async def test_generate_empty_rag_results_422(
     def _empty_search(*, collection_id: str, query: str, top_k: int | None = None):
         return []
 
-    rag_engine_mod = importlib.import_module("app.core.rag_engine")
+    rag_engine_mod = importlib.import_module("app.engine.rag")
     monkeypatch.setattr(rag_engine_mod, "search_context", _empty_search)
-    monkeypatch.setattr("app.core.rag_generate.search_context", _empty_search)
+    monkeypatch.setattr("app.engine.generate.search_context", _empty_search)
 
     response = await client.post(
         f"/api/v1/collections/{sample_collection.id}/generate/text",
@@ -65,7 +65,7 @@ async def test_generate_llm_unavailable_503(
         def invoke(self, payload: dict):
             raise Exception("LLM down")
 
-    monkeypatch.setattr("app.core.rag_generate.chain", BrokenChain())
+    monkeypatch.setattr("app.engine.generate.chain", BrokenChain())
 
     response = await client.post(
         f"/api/v1/collections/{sample_collection.id}/generate/text",
@@ -83,9 +83,9 @@ async def test_generate_qdrant_unavailable_503(
     def _broken_search(*, collection_id: str, query: str, top_k: int | None = None):
         raise Exception("Qdrant down")
 
-    rag_engine_mod = importlib.import_module("app.core.rag_engine")
+    rag_engine_mod = importlib.import_module("app.engine.rag")
     monkeypatch.setattr(rag_engine_mod, "search_context", _broken_search)
-    monkeypatch.setattr("app.core.rag_generate.search_context", _broken_search)
+    monkeypatch.setattr("app.engine.generate.search_context", _broken_search)
 
     response = await client.post(
         f"/api/v1/collections/{sample_collection.id}/generate/text",
