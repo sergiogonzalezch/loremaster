@@ -11,6 +11,7 @@ import { buildQuery } from "./query";
 
 export interface ContentsQueryParams {
   category?: ContentCategory;
+  status?: "active" | "pending" | "confirmed" | "discarded" | "all";
   page?: number;
   page_size?: number;
   order?: "asc" | "desc";

@@ -194,3 +194,12 @@ async def test_filter_documents_created_after_future(
     )
     assert response.status_code == 200
     assert response.json()["meta"]["total"] == 0
+
+
+@pytest.mark.anyio
+async def test_ingest_blocked_document_returns_422(client, sample_collection):
+    response = await client.post(
+        f"/api/v1/collections/{sample_collection.id}/documents",
+        files={"file": ("bad.txt", b"contenido porno xxx", "text/plain")},
+    )
+    assert response.status_code == 422
