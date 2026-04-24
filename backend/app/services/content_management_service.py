@@ -18,6 +18,7 @@ def list_contents(
     entity_id: str,
     collection_id: str,
     category: Optional[ContentCategory] = None,
+    status: Literal["active", "pending", "confirmed", "discarded", "all"] = "active",
     page: int = 1,
     page_size: int = 20,
     order: Literal["asc", "desc"] = "desc",
@@ -25,9 +26,20 @@ def list_contents(
     conditions = [
         EntityContent.entity_id == entity_id,
         EntityContent.collection_id == collection_id,
-        EntityContent.status != ContentStatus.discarded,
         EntityContent.is_deleted == False,
     ]
+
+    if status == "active":
+        conditions.append(
+            EntityContent.status.in_([ContentStatus.pending, ContentStatus.confirmed])
+        )
+    elif status == "pending":
+        conditions.append(EntityContent.status == ContentStatus.pending)
+    elif status == "confirmed":
+        conditions.append(EntityContent.status == ContentStatus.confirmed)
+    elif status == "discarded":
+        conditions.append(EntityContent.status == ContentStatus.discarded)
+
     if category is not None:
         conditions.append(EntityContent.category == category)
 
