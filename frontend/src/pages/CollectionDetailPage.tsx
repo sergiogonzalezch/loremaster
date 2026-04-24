@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import {
+  Accordion,
   Alert,
   Badge,
   Breadcrumb,
@@ -76,6 +77,7 @@ function DocumentsTab({
   const [totalPages, setTotalPages] = useState(0);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [loadingDocumentDetail, setLoadingDocumentDetail] = useState(false);
+  const [selectedFileName, setSelectedFileName] = useState("");
 
   const fetchDocuments = useCallback(
     async (signal?: AbortSignal) => {
@@ -124,6 +126,7 @@ function DocumentsTab({
   async function handleUpload(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setSelectedFileName(file.name);
     setUploading(true);
     setUploadMsg(null);
     try {
@@ -139,6 +142,7 @@ function DocumentsTab({
       setUploadMsg({ type: variant, text });
     } finally {
       setUploading(false);
+      setSelectedFileName("");
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
@@ -252,16 +256,28 @@ function DocumentsTab({
         <Form.Label className="fw-semibold">
           Subir documento (PDF o TXT)
         </Form.Label>
-        <div className="d-flex align-items-center gap-2">
+        <div className="d-flex align-items-center gap-2 flex-wrap">
           <Form.Control
             ref={fileInputRef}
             type="file"
             accept=".pdf,.txt"
             onChange={handleUpload}
             disabled={uploading}
-            style={{ maxWidth: 360 }}
+            className="d-none"
           />
-          {uploading && <Spinner animation="border" size="sm" />}
+          <Button
+            type="button"
+            variant="outline-secondary"
+            className="lm-upload-trigger"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+          >
+            {uploading ? "Subiendo..." : "↑ Seleccionar archivo"}
+          </Button>
+          <small className="text-muted">
+            {selectedFileName || "Ningún archivo seleccionado"}
+          </small>
+          {uploading && <Spinner animation="border" size="sm" className="lm-spinner-inline" />}
         </div>
         {uploadMsg && (
           <Alert
@@ -294,7 +310,7 @@ function DocumentsTab({
           <p>Sube un PDF o TXT para comenzar.</p>
         </div>
       ) : (
-        <Table striped hover responsive>
+        <Table striped hover responsive className="lm-table">
           <thead>
             <tr>
               <th>Archivo</th>
@@ -601,7 +617,7 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
           <p>Crea personajes, escenas, facciones u objetos.</p>
         </div>
       ) : (
-        <Table striped hover responsive>
+        <Table striped hover responsive className="lm-table">
           <thead>
             <tr>
               <th>Nombre</th>
@@ -778,6 +794,7 @@ function GenerateTab({
   refreshKey: number;
 }) {
   const [query, setQuery] = useState("");
+  const [lastQuery, setLastQuery] = useState("");
   const [errorDismissed, setErrorDismissed] = useState(false);
   const { hasCompletedDocs, refresh } = useCollectionDocumentsStatus(collectionId);
   const {
@@ -803,7 +820,15 @@ function GenerateTab({
 
   async function handleGenerate(e: FormEvent) {
     e.preventDefault();
-    await run(collectionId, { query });
+    const trimmedQuery = query.trim();
+    if (trimmedQuery.length < 5) return;
+    setLastQuery(trimmedQuery);
+    await run(collectionId, { query: trimmedQuery });
+  }
+
+  async function handleRegenerate() {
+    if (lastQuery.trim().length < 5 || !hasCompletedDocs) return;
+    await run(collectionId, { query: lastQuery.trim() });
   }
 
   return (
@@ -858,12 +883,24 @@ function GenerateTab({
               >
                 {isLoading ? (
                   <>
-                    <Spinner animation="border" size="sm" className="me-2" />
+                    <Spinner
+                      animation="border"
+                      size="sm"
+                      className="me-2 lm-spinner-inline"
+                    />
                     Generando...
                   </>
                 ) : (
                   "✦ Generar"
                 )}
+              </Button>
+              <Button
+                variant="outline-secondary"
+                type="button"
+                onClick={handleRegenerate}
+                disabled={isLoading || lastQuery.trim().length < 5 || !hasCompletedDocs}
+              >
+                ↻ Regenerar
               </Button>
               {isLoading && (
                 <Button
@@ -879,28 +916,42 @@ function GenerateTab({
         </div>
 
         {/* Result panel */}
-        {result ? (
+        {isLoading && (
           <div style={{ flex: 1 }}>
-            <Card>
-              <Card.Header className="d-flex justify-content-between align-items-center">
-                <em className="text-muted" style={{ fontSize: "0.88rem" }}>
-                  {result.query}
-                </em>
-                <Badge
-                  style={{
-                    background: "var(--lm-accent-glow)",
-                    color: "var(--lm-accent)",
-                    border: "1px solid var(--lm-border-accent)",
-                    fontSize: "0.65rem",
-                  }}
-                >
-                  {result.sources_count} fuentes
-                </Badge>
-              </Card.Header>
-              <Card.Body>
-                <MarkdownContent>{result.answer}</MarkdownContent>
-              </Card.Body>
-            </Card>
+            <div className="lm-llm-loading h-100">
+              <div className="lm-llm-loading-bar" />
+              <small className="text-muted">
+                Analizando documentos y redactando respuesta...
+              </small>
+            </div>
+          </div>
+        )}
+        {result && !isLoading ? (
+          <div style={{ flex: 1 }}>
+            <Accordion defaultActiveKey="result">
+              <Accordion.Item eventKey="result" className="lm-content-accordion-item">
+                <Accordion.Header>
+                  <div className="d-flex justify-content-between align-items-center w-100 me-2">
+                    <em className="text-muted" style={{ fontSize: "0.88rem" }}>
+                      {result.query}
+                    </em>
+                    <Badge
+                      style={{
+                        background: "var(--lm-accent-glow)",
+                        color: "var(--lm-accent)",
+                        border: "1px solid var(--lm-border-accent)",
+                        fontSize: "0.65rem",
+                      }}
+                    >
+                      {result.sources_count} fuentes
+                    </Badge>
+                  </div>
+                </Accordion.Header>
+                <Accordion.Body>
+                  <MarkdownContent>{result.answer}</MarkdownContent>
+                </Accordion.Body>
+              </Accordion.Item>
+            </Accordion>
           </div>
         ) : (
           !isLoading && (
