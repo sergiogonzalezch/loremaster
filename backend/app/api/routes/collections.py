@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, Response
+from fastapi.responses import JSONResponse
 from sqlmodel import Session
 
 logger = logging.getLogger(__name__)
@@ -42,8 +43,12 @@ async def get_collections(
     session: Session = Depends(get_session),
 ):
     items, total = list_collections_service(
-        session, page, page_size,
-        name=name, created_after=created_after, created_before=created_before,
+        session,
+        page,
+        page_size,
+        name=name,
+        created_after=created_after,
+        created_before=created_before,
     )
     return PaginatedResponse.build(items, total, page, page_size)
 
@@ -65,5 +70,13 @@ async def delete_collection(
         logger.warning(
             "Collection %s soft-deleted but Qdrant vectors were NOT removed — manual cleanup needed.",
             collection.id,
+        )
+        return JSONResponse(
+            status_code=200,
+            content={
+                "deleted": True,
+                "vectors_cleaned": False,
+                "detail": "Colección eliminada, pero los vectores de Qdrant no pudieron ser eliminados. Se requiere limpieza manual.",
+            },
         )
     return Response(status_code=204)

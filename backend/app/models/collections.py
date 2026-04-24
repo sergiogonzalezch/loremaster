@@ -38,5 +38,3 @@ class CollectionResponse(BaseModel):
     description: str
     created_at: datetime
     updated_at: Optional[datetime] = None
-
-

@@ -4,6 +4,7 @@ from typing import Optional
 
 from fastapi import HTTPException
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.models.collections import Collection
@@ -22,11 +23,19 @@ def create_collection_service(
         )
     ).first()
     if existing:
-        raise HTTPException(status_code=409, detail="Collection name already exists")
+        raise HTTPException(
+            status_code=409, detail="Ya existe una colección con ese nombre."
+        )
 
     collection = Collection(name=name, description=description)
     session.add(collection)
-    session.commit()
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(
+            status_code=409, detail="Ya existe una colección con ese nombre."
+        )
     session.refresh(collection)
     logger.info("Collection '%s' created with id %s", name, collection.id)
     return collection

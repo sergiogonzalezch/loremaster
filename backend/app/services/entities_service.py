@@ -7,7 +7,12 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
-from app.models.entities import Entity, EntityType, CreateEntityRequest, UpdateEntityRequest
+from app.models.entities import (
+    Entity,
+    EntityType,
+    CreateEntityRequest,
+    UpdateEntityRequest,
+)
 from app.services.deletion_service import cascade_delete_entity
 
 logger = logging.getLogger(__name__)
@@ -31,7 +36,7 @@ def create_entity_service(
     if _find_active_by_name(session, collection_id, request.name):
         raise HTTPException(
             status_code=409,
-            detail=f"An entity named '{request.name}' already exists in this collection.",
+            detail=f"Ya existe una entidad llamada '{request.name}' en esta colección.",
         )
     entity = Entity(
         collection_id=collection_id,
@@ -46,7 +51,7 @@ def create_entity_service(
         session.rollback()
         raise HTTPException(
             status_code=409,
-            detail=f"An entity named '{request.name}' already exists in this collection.",
+            detail=f"Ya existe una entidad llamada '{request.name}' en esta colección.",
         )
     session.refresh(entity)
     logger.info("Entity '%s' created in collection %s", request.name, collection_id)
@@ -77,9 +82,7 @@ def list_entities_service(
         conditions.append(Entity.created_at <= created_before)
 
     total = session.exec(
-        select(func.count()).select_from(
-            select(Entity).where(*conditions).subquery()
-        )
+        select(func.count()).select_from(select(Entity).where(*conditions).subquery())
     ).one()
     skip = (page - 1) * page_size
     items = session.exec(
@@ -97,7 +100,7 @@ def update_entity_service(
     ):
         raise HTTPException(
             status_code=409,
-            detail=f"An entity named '{new_name}' already exists in this collection.",
+            detail=f"Ya existe una entidad llamada '{new_name}' en esta colección.",
         )
     if request.type is not None:
         entity.type = request.type
@@ -113,7 +116,7 @@ def update_entity_service(
         session.rollback()
         raise HTTPException(
             status_code=409,
-            detail=f"An entity named '{entity.name}' already exists in this collection.",
+            detail=f"Ya existe una entidad llamada '{entity.name}' en esta colección.",
         )
     session.refresh(entity)
     return entity

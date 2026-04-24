@@ -14,7 +14,7 @@ def get_collection_or_404(
 ) -> Collection:
     collection = session.get(Collection, collection_id)
     if not collection or collection.is_deleted:
-        raise HTTPException(status_code=404, detail="Collection not found")
+        raise HTTPException(status_code=404, detail="Colección no encontrada.")
     return collection
 
 
@@ -25,7 +25,7 @@ def get_entity_or_404(
 ) -> Entity:
     entity = get_active_by_id(session, Entity, entity_id, collection.id)
     if not entity:
-        raise HTTPException(status_code=404, detail="Entity not found")
+        raise HTTPException(status_code=404, detail="Entidad no encontrada.")
     return entity
 
 
@@ -36,5 +36,5 @@ def get_document_or_404(
 ) -> Document:
     doc = get_active_by_id(session, Document, doc_id, collection.id)
     if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
+        raise HTTPException(status_code=404, detail="Documento no encontrado.")
     return doc

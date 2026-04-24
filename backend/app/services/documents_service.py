@@ -96,9 +96,7 @@ def list_documents_service(
         conditions.append(Document.created_at <= created_before)
 
     total = session.exec(
-        select(func.count()).select_from(
-            select(Document).where(*conditions).subquery()
-        )
+        select(func.count()).select_from(select(Document).where(*conditions).subquery())
     ).one()
     skip = (page - 1) * page_size
     items = session.exec(

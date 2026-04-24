@@ -15,6 +15,10 @@ logger = logging.getLogger(__name__)
 MAX_PENDING_CONTENTS = 5
 
 
+class PendingLimitExceededError(Exception):
+    pass
+
+
 def generate(
     session: Session,
     entity: Entity,
@@ -38,9 +42,9 @@ def generate(
         )
     ).one()
     if pending_count >= MAX_PENDING_CONTENTS:
-        raise ValueError(
-            f"Entity has {pending_count} pending contents for category '{category}' "
-            f"(max {MAX_PENDING_CONTENTS}). Confirm or discard existing contents first."
+        raise PendingLimitExceededError(
+            f"La entidad ya tiene {pending_count} contenidos pendientes en la categoría '{category}' "
+            f"(máximo {MAX_PENDING_CONTENTS}). Confirma o descarta alguno antes de generar uno nuevo."
         )
 
     extra_context = ""

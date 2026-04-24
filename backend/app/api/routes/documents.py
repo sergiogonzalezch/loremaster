@@ -33,7 +33,9 @@ async def ingest(
         raise HTTPException(status_code=502, detail=str(e))
 
 
-@router.get("/{collection_id}/documents", response_model=PaginatedResponse[DocumentResponse])
+@router.get(
+    "/{collection_id}/documents", response_model=PaginatedResponse[DocumentResponse]
+)
 async def get_documents(
     collection_id: str,
     page: int = Query(default=1, ge=1),
@@ -47,9 +49,15 @@ async def get_documents(
     session: Session = Depends(get_session),
 ):
     docs, total = list_documents_service(
-        session, collection_id, page, page_size,
-        filename=filename, file_type=file_type, status=status,
-        created_after=created_after, created_before=created_before,
+        session,
+        collection_id,
+        page,
+        page_size,
+        filename=filename,
+        file_type=file_type,
+        status=status,
+        created_after=created_after,
+        created_before=created_before,
     )
     return PaginatedResponse.build(docs, total, page, page_size)
 

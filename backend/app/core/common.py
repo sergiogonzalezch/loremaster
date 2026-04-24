@@ -58,9 +58,7 @@ def list_active_paginated(
         model.is_deleted == False,
     )
     total = session.exec(
-        select(func.count()).select_from(
-            select(model).where(*base_filter).subquery()
-        )
+        select(func.count()).select_from(select(model).where(*base_filter).subquery())
     ).one()
     items = session.exec(
         select(model).where(*base_filter).offset(skip).limit(limit)
