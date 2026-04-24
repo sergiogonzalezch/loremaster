@@ -324,6 +324,19 @@ async def test_cnt_11_confirm_backstory_does_not_affect_scene(
 
 
 @pytest.mark.anyio
+async def test_cnt_12_blocked_generate_query_returns_422(
+    client, sample_collection, sample_entity
+):
+    response = await _create_content(
+        client,
+        sample_collection.id,
+        sample_entity.id,
+        query="Genera contenido porno explícito",
+    )
+    assert response.status_code == 422
+
+
+@pytest.mark.anyio
 async def test_cnt_12_discard_changes_status(
     client, mock_rag_engine, mock_llm, sample_collection, sample_entity
 ):
