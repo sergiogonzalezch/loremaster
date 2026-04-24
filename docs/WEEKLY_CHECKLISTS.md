@@ -119,7 +119,7 @@ Nota de Mike:
 - [x] `docker-compose.yml` con servicio Qdrant (puerto 6333, volumen persistente)
 - [x] Agregar `qdrant-client` a `requirements.txt`
 - [x] Variables en `.env.example`: `QDRANT_URL`, `QDRANT_COLLECTION`
-- [ ] Verificar conectividad: Qdrant dashboard accesible en `http://localhost:6333/dashboard`
+- [x] Verificar conectividad: Qdrant dashboard accesible en `http://localhost:6333/dashboard`
 
 ### RAG Engine
 
