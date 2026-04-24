@@ -33,9 +33,9 @@ def generate_content(
     try:
         return generation_service.generate(session, entity, category, request.query)
     except PendingLimitExceededError as e:
-        raise HTTPException(status_code=409, detail=str(e))
+        raise HTTPException(status_code=422, detail=str(e))
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=422, detail=str(e))
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e))
 
@@ -77,9 +77,7 @@ def edit_content(
             session, content_id, entity_id, collection_id, request.content
         )
     except ValueError:
-        raise HTTPException(
-            status_code=409, detail="No se puede editar un contenido descartado."
-        )
+        raise HTTPException(status_code=404, detail="Contenido no encontrado.")
     if not result:
         raise HTTPException(status_code=404, detail="Contenido no encontrado.")
     return result
