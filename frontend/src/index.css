@@ -747,6 +747,7 @@ a:hover {
   border: 1px solid var(--lm-border) !important;
   border-radius: var(--lm-radius-lg) !important;
   overflow: hidden;
+  background: var(--lm-surface) !important;
 }
 
 .lm-content-accordion-item .accordion-button {
@@ -764,7 +765,7 @@ a:hover {
 }
 
 .lm-content-accordion-item .accordion-body {
-  background: rgba(255, 255, 255, 0.02) !important;
+  background: transparent !important;
   color: var(--lm-text) !important;
 }
 
