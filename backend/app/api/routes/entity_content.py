@@ -48,6 +48,9 @@ def list_contents(
     entity_id: str,
     collection_id: str,
     category: Optional[ContentCategory] = Query(default=None),
+    status: Literal["active", "pending", "confirmed", "discarded", "all"] = Query(
+        default="active"
+    ),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     order: Literal["asc", "desc"] = Query(default="desc"),
@@ -55,7 +58,14 @@ def list_contents(
     session: Session = Depends(get_session),
 ):
     items, total = content_management_service.list_contents(
-        session, entity_id, collection_id, category, page, page_size, order
+        session,
+        entity_id,
+        collection_id,
+        category,
+        status,
+        page,
+        page_size,
+        order,
     )
     return PaginatedResponse.build(items, total, page, page_size)
 
