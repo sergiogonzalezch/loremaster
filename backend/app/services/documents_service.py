@@ -8,6 +8,7 @@ from sqlmodel import Session, select
 
 from app.models.documents import Document, DocumentStatus
 from app.core.common import soft_delete
+from app.domain.content_guard import check_document_content
 from app.engine.extractor import extract_text
 from app.engine.rag import ingest_chunks, delete_document_chunks
 
@@ -35,6 +36,10 @@ async def ingest_document_service(
         "Ingesting document '%s' into collection %s", data.filename, collection_id
     )
     content = extract_text(content_bytes, data.content_type)
+    try:
+        check_document_content(content)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     document = Document(
         collection_id=collection_id,
