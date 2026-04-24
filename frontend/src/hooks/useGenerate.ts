@@ -27,7 +27,7 @@ export interface UseGenerateReturn<TArgs extends unknown[], TResult> {
  * Permite cancelar la petición en curso (útil para generaciones LLM largas).
  */
 export function useGenerate<TArgs extends unknown[], TResult>(
-  fn: RunFn<TArgs, TResult>
+  fn: RunFn<TArgs, TResult>,
 ): UseGenerateReturn<TArgs, TResult> {
   const [state, setState] = useState<UseGenerateState<TResult>>({
     data: null,
@@ -59,23 +59,43 @@ export function useGenerate<TArgs extends unknown[], TResult>(
       controllerRef.current?.abort();
       const controller = new AbortController();
       controllerRef.current = controller;
-      setState({ data: null, error: null, isLoading: true, isCancelled: false });
+      setState({
+        data: null,
+        error: null,
+        isLoading: true,
+        isCancelled: false,
+      });
       try {
         const result = await fn(...args, controller.signal);
         if (!isMountedRef.current || controller.signal.aborted) return null;
-        setState({ data: result, error: null, isLoading: false, isCancelled: false });
+        setState({
+          data: result,
+          error: null,
+          isLoading: false,
+          isCancelled: false,
+        });
         return result;
       } catch (err) {
         if (!isMountedRef.current) return null;
         if (err instanceof ApiAbortError) {
-          setState({ data: null, error: null, isLoading: false, isCancelled: true });
+          setState({
+            data: null,
+            error: null,
+            isLoading: false,
+            isCancelled: true,
+          });
           return null;
         }
-        setState({ data: null, error: err, isLoading: false, isCancelled: false });
+        setState({
+          data: null,
+          error: err,
+          isLoading: false,
+          isCancelled: false,
+        });
         return null;
       }
     },
-    [fn]
+    [fn],
   );
 
   return { ...state, run, cancel, reset };

@@ -7,14 +7,17 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import ConfirmModal from "../components/ConfirmModal";
 import type { Collection } from "../types";
 import { formatDate } from "../utils/formatters";
-import { getErrorMessage } from "../utils/errors";
+import { parseApiError } from "../utils/errors";
 
 export default function CollectionsPage() {
   const navigate = useNavigate();
 
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{
+    variant: "warning" | "danger";
+    text: string;
+  } | null>(null);
 
   const [deleteTarget, setDeleteTarget] = useState<Collection | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -31,7 +34,7 @@ export default function CollectionsPage() {
       const res = await getCollections();
       setCollections(res.data);
     } catch (e) {
-      setError(getErrorMessage(e, "Error al cargar las colecciones"));
+      setError(parseApiError(e, "Error al cargar las colecciones"));
     } finally {
       setLoading(false);
     }
@@ -45,7 +48,7 @@ export default function CollectionsPage() {
           collections,
           nav: (id: string) => navigate(`/collections/${id}`),
         },
-      })
+      }),
     );
   }, [collections, navigate]);
 
@@ -61,7 +64,7 @@ export default function CollectionsPage() {
       setDeleteTarget(null);
       await fetchCollections();
     } catch (e) {
-      setError(getErrorMessage(e, "Error al eliminar la colección"));
+      setError(parseApiError(e, "Error al eliminar la colección"));
       setDeleteTarget(null);
     } finally {
       setDeleting(false);
@@ -72,13 +75,16 @@ export default function CollectionsPage() {
     e.preventDefault();
     setCreating(true);
     try {
-      await createCollection({ name: createName, description: createDescription });
+      await createCollection({
+        name: createName,
+        description: createDescription,
+      });
       setShowCreate(false);
       setCreateName("");
       setCreateDescription("");
       await fetchCollections();
     } catch (e) {
-      setError(getErrorMessage(e, "Error al crear la colección"));
+      setError(parseApiError(e, "Error al crear la colección"));
     } finally {
       setCreating(false);
     }
@@ -94,8 +100,12 @@ export default function CollectionsPage() {
       </div>
 
       {error && (
-        <Alert variant="danger" onClose={() => setError(null)} dismissible>
-          {error}
+        <Alert
+          variant={error.variant}
+          onClose={() => setError(null)}
+          dismissible
+        >
+          {error.text}
         </Alert>
       )}
 
@@ -130,20 +140,9 @@ export default function CollectionsPage() {
                   </Card.Text>
                 </Card.Body>
                 <Card.Footer className="d-flex justify-content-between align-items-center">
-                  {col.document_count !== undefined ? (
-                    <div className="d-flex gap-3">
-                      <span className="lm-stat">
-                        <span className="lm-stat-value">{col.document_count}</span>{" "}
-                        documentos
-                      </span>
-                      <span className="lm-stat">
-                        <span className="lm-stat-value">{col.entity_count ?? 0}</span>{" "}
-                        entidades
-                      </span>
-                    </div>
-                  ) : (
-                    <small className="text-muted">{formatDate(col.created_at)}</small>
-                  )}
+                  <small className="text-muted">
+                    {formatDate(col.created_at)}
+                  </small>
                   <Button
                     variant="outline-danger"
                     size="sm"
@@ -199,10 +198,18 @@ export default function CollectionsPage() {
             </Form.Group>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowCreate(false)} disabled={creating}>
+            <Button
+              variant="secondary"
+              onClick={() => setShowCreate(false)}
+              disabled={creating}
+            >
               Cancelar
             </Button>
-            <Button variant="warning" type="submit" disabled={creating || !createName.trim()}>
+            <Button
+              variant="warning"
+              type="submit"
+              disabled={creating || !createName.trim()}
+            >
               {creating ? "Creando..." : "Crear"}
             </Button>
           </Modal.Footer>

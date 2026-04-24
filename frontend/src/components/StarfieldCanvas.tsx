@@ -38,7 +38,10 @@ export interface StarfieldCollectionsEvent {
   nav: (id: string) => void;
 }
 
-function randPos(existing: { nx: number; ny: number }[]): { nx: number; ny: number } {
+function randPos(existing: { nx: number; ny: number }[]): {
+  nx: number;
+  ny: number;
+} {
   const minDist = 0.18;
   for (let attempt = 0; attempt < 60; attempt++) {
     const nx =
@@ -76,7 +79,7 @@ export default function StarfieldCanvas() {
 
     function setCollections(
       cols: { id: string; name: string }[],
-      nav: (id: string) => void
+      nav: (id: string) => void,
     ) {
       navigateFn = nav;
       const existing: { nx: number; ny: number }[] = [];
@@ -237,7 +240,7 @@ export default function StarfieldCanvas() {
             s.x - dx * fLen,
             s.y - dy * fLen,
             s.x + dx * fLen,
-            s.y + dy * fLen
+            s.y + dy * fLen,
           );
           fg.addColorStop(0, "rgba(255,255,255,0)");
           fg.addColorStop(0.5, `rgba(255,240,160,${fA})`);

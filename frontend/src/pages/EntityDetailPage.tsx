@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import type { FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -11,7 +11,13 @@ import {
   Modal,
   Spinner,
 } from "react-bootstrap";
-import { getEntity, updateEntity, getCollection, generateContent } from "../api";
+import {
+  getEntity,
+  updateEntity,
+  getCollection,
+  generateContent,
+} from "../api";
+import { ApiAbortError } from "../api/apiClient";
 import ContentCard from "../components/ContentCard";
 import LoadingSpinner from "../components/LoadingSpinner";
 import MarkdownContent from "../components/MarkdownContent";
@@ -30,7 +36,10 @@ import {
 } from "../utils/constants";
 
 export default function EntityDetailPage() {
-  const { collectionId, entityId } = useParams<{ collectionId: string; entityId: string }>();
+  const { collectionId, entityId } = useParams<{
+    collectionId: string;
+    entityId: string;
+  }>();
 
   const [collection, setCollection] = useState<Collection | null>(null);
   const [entity, setEntity] = useState<Entity | null>(null);
@@ -45,17 +54,21 @@ export default function EntityDetailPage() {
     setError: setContentsError,
   } = useEntityContents(collectionId, entityId);
 
-  const [selectedCategory, setSelectedCategory] = useState<ContentCategory | "">("");
+  const [selectedCategory, setSelectedCategory] = useState<
+    ContentCategory | ""
+  >("");
   const [query, setQuery] = useState("");
 
-  const availableCategories: ContentCategory[] = entity
-    ? ENTITY_CATEGORY_MAP[entity.type] ?? []
-    : [];
+  const availableCategories = useMemo<ContentCategory[]>(
+    () => (entity ? (ENTITY_CATEGORY_MAP[entity.type] ?? []) : []),
+    [entity?.type],
+  );
 
   const pendingInCategory = contents.filter(
-    (c) => c.status === "pending" && c.category === selectedCategory
+    (c) => c.status === "pending" && c.category === selectedCategory,
   ).length;
-  const pendingLimitReached = selectedCategory !== "" && pendingInCategory >= MAX_PENDING_CONTENTS;
+  const pendingLimitReached =
+    selectedCategory !== "" && pendingInCategory >= MAX_PENDING_CONTENTS;
 
   const {
     error: generateError,
@@ -74,31 +87,37 @@ export default function EntityDetailPage() {
   });
   const [saving, setSaving] = useState(false);
 
-  const fetchEntityData = useCallback(async () => {
-    if (!collectionId || !entityId) return;
-    setEntityError(null);
-    setLoadingEntity(true);
-    try {
-      const [col, ent] = await Promise.all([
-        getCollection(collectionId),
-        getEntity(collectionId, entityId),
-      ]);
-      setCollection(col);
-      setEntity(ent);
-    } catch (e) {
-      setEntityError(getErrorMessage(e, "Error al cargar"));
-    } finally {
-      setLoadingEntity(false);
-    }
-  }, [collectionId, entityId]);
+  const fetchEntityData = useCallback(
+    async (signal?: AbortSignal) => {
+      if (!collectionId || !entityId) return;
+      setEntityError(null);
+      setLoadingEntity(true);
+      try {
+        const [col, ent] = await Promise.all([
+          getCollection(collectionId, signal),
+          getEntity(collectionId, entityId, signal),
+        ]);
+        setCollection(col);
+        setEntity(ent);
+      } catch (e) {
+        if (e instanceof ApiAbortError) return;
+        setEntityError(getErrorMessage(e, "Error al cargar"));
+      } finally {
+        setLoadingEntity(false);
+      }
+    },
+    [collectionId, entityId],
+  );
 
   const refreshEntityQuiet = useCallback(async () => {
     if (!collectionId || !entityId) return;
     try {
       const ent = await getEntity(collectionId, entityId);
       setEntity(ent);
-    } catch {
-      // silent: la acción principal ya reporta errores
+    } catch (e) {
+      if (!(e instanceof ApiAbortError)) {
+        // silent: la acción principal ya reporta errores
+      }
     }
   }, [collectionId, entityId]);
 
@@ -107,7 +126,9 @@ export default function EntityDetailPage() {
   }, [refreshContents, refreshEntityQuiet]);
 
   useEffect(() => {
-    fetchEntityData();
+    const controller = new AbortController();
+    fetchEntityData(controller.signal);
+    return () => controller.abort();
   }, [fetchEntityData]);
 
   useEffect(() => {
@@ -128,7 +149,12 @@ export default function EntityDetailPage() {
   async function handleGenerate(e: FormEvent) {
     e.preventDefault();
     if (!collectionId || !entityId || selectedCategory === "") return;
-    const result = await runGenerateContent(collectionId, entityId, selectedCategory, { query });
+    const result = await runGenerateContent(
+      collectionId,
+      entityId,
+      selectedCategory,
+      { query },
+    );
     if (result) {
       setQuery("");
       await refreshContents();
@@ -137,7 +163,11 @@ export default function EntityDetailPage() {
 
   function openEdit() {
     if (!entity) return;
-    setEditForm({ type: entity.type, name: entity.name, description: entity.description });
+    setEditForm({
+      type: entity.type,
+      name: entity.name,
+      description: entity.description,
+    });
     setShowEdit(true);
   }
 
@@ -166,7 +196,10 @@ export default function EntityDetailPage() {
         <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/" }}>
           Colecciones
         </Breadcrumb.Item>
-        <Breadcrumb.Item linkAs={Link} linkProps={{ to: `/collections/${collectionId}` }}>
+        <Breadcrumb.Item
+          linkAs={Link}
+          linkProps={{ to: `/collections/${collectionId}` }}
+        >
           {collection?.name ?? collectionId}
         </Breadcrumb.Item>
         <Breadcrumb.Item active>{entity.name}</Breadcrumb.Item>
@@ -185,7 +218,9 @@ export default function EntityDetailPage() {
               {entity.description ? (
                 <MarkdownContent>{entity.description}</MarkdownContent>
               ) : (
-                <p className="text-muted mb-0"><em>Sin descripción</em></p>
+                <p className="text-muted mb-0">
+                  <em>Sin descripción</em>
+                </p>
               )}
             </div>
             <Button variant="outline-secondary" size="sm" onClick={openEdit}>
@@ -208,8 +243,9 @@ export default function EntityDetailPage() {
       )}
       {pendingLimitReached && (
         <Alert variant="warning">
-          Ya tienes {pendingInCategory} contenidos pendientes en esta categoría (máximo{" "}
-          {MAX_PENDING_CONTENTS}). Confirma o descarta alguno antes de generar uno nuevo.
+          Ya tienes {pendingInCategory} contenidos pendientes en esta categoría
+          (máximo {MAX_PENDING_CONTENTS}). Confirma o descarta alguno antes de
+          generar uno nuevo.
         </Alert>
       )}
 
@@ -218,7 +254,9 @@ export default function EntityDetailPage() {
           <Form.Label className="fw-semibold">Categoría</Form.Label>
           <Form.Select
             value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value as ContentCategory)}
+            onChange={(e) =>
+              setSelectedCategory(e.target.value as ContentCategory)
+            }
             disabled={generating}
             style={{ maxWidth: 280 }}
           >
@@ -243,9 +281,18 @@ export default function EntityDetailPage() {
           <Button
             variant="warning"
             type="submit"
-            disabled={generating || pendingLimitReached || query.trim().length < 5 || selectedCategory === ""}
+            disabled={
+              generating ||
+              pendingLimitReached ||
+              query.trim().length < 5 ||
+              selectedCategory === ""
+            }
             style={{ whiteSpace: "nowrap" }}
-            title={pendingLimitReached ? `Máximo ${MAX_PENDING_CONTENTS} contenidos pendientes por categoría` : undefined}
+            title={
+              pendingLimitReached
+                ? `Máximo ${MAX_PENDING_CONTENTS} contenidos pendientes por categoría`
+                : undefined
+            }
           >
             {generating ? (
               <>
@@ -269,17 +316,24 @@ export default function EntityDetailPage() {
         </div>
         <div className="d-flex justify-content-between mt-1">
           <TokenCounter text={query} />
-          {selectedCategory !== "" && !pendingLimitReached && pendingInCategory > 0 && (
-            <small className="text-muted">
-              {pendingInCategory} / {MAX_PENDING_CONTENTS} borradores pendientes en esta categoría.
-            </small>
-          )}
+          {selectedCategory !== "" &&
+            !pendingLimitReached &&
+            pendingInCategory > 0 && (
+              <small className="text-muted">
+                {pendingInCategory} / {MAX_PENDING_CONTENTS} borradores
+                pendientes en esta categoría.
+              </small>
+            )}
         </div>
       </Form>
 
       <p className="lm-section-title">Contenidos generados</p>
       {contentsError && (
-        <Alert variant="danger" onClose={() => setContentsError(null)} dismissible>
+        <Alert
+          variant="danger"
+          onClose={() => setContentsError(null)}
+          dismissible
+        >
           {contentsError}
         </Alert>
       )}
@@ -314,11 +368,16 @@ export default function EntityDetailPage() {
               <Form.Select
                 value={editForm.type}
                 onChange={(e) =>
-                  setEditForm((f) => ({ ...f, type: e.target.value as EntityType }))
+                  setEditForm((f) => ({
+                    ...f,
+                    type: e.target.value as EntityType,
+                  }))
                 }
               >
                 {(Object.keys(ENTITY_TYPE_LABELS) as EntityType[]).map((t) => (
-                  <option key={t} value={t}>{ENTITY_TYPE_LABELS[t]}</option>
+                  <option key={t} value={t}>
+                    {ENTITY_TYPE_LABELS[t]}
+                  </option>
                 ))}
               </Form.Select>
             </Form.Group>
@@ -327,7 +386,9 @@ export default function EntityDetailPage() {
               <Form.Control
                 type="text"
                 value={editForm.name}
-                onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, name: e.target.value }))
+                }
                 required
               />
             </Form.Group>
@@ -337,15 +398,25 @@ export default function EntityDetailPage() {
                 as="textarea"
                 rows={4}
                 value={editForm.description}
-                onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, description: e.target.value }))
+                }
               />
             </Form.Group>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowEdit(false)} disabled={saving}>
+            <Button
+              variant="secondary"
+              onClick={() => setShowEdit(false)}
+              disabled={saving}
+            >
               Cancelar
             </Button>
-            <Button variant="warning" type="submit" disabled={saving || !editForm.name?.trim()}>
+            <Button
+              variant="warning"
+              type="submit"
+              disabled={saving || !editForm.name?.trim()}
+            >
               {saving ? "Guardando..." : "Guardar"}
             </Button>
           </Modal.Footer>

@@ -18,10 +18,10 @@ export const ENTITY_TYPE_LABELS: Record<EntityType, string> = {
 
 export const ENTITY_CATEGORY_MAP: Record<EntityType, ContentCategory[]> = {
   character: ["backstory", "extended_description", "scene", "chapter"],
-  creature:  ["backstory", "extended_description", "scene"],
-  location:  ["extended_description", "scene"],
-  faction:   ["backstory", "extended_description", "scene"],
-  item:      ["backstory", "extended_description"],
+  creature: ["backstory", "extended_description", "scene"],
+  location: ["extended_description", "scene"],
+  faction: ["backstory", "extended_description", "scene"],
+  item: ["backstory", "extended_description"],
 };
 
 export const CATEGORY_LABELS: Record<ContentCategory, string> = {

@@ -1,4 +1,5 @@
 import type { DocumentStatus } from "../utils/enums";
+import type { PaginatedMeta } from "./content";
 
 export interface Document {
   id: string;
@@ -12,5 +13,5 @@ export interface Document {
 
 export interface DocumentListResponse {
   data: Document[];
-  count: number;
+  meta: PaginatedMeta;
 }

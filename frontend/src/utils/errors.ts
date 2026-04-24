@@ -1,21 +1,30 @@
 import { ApiError } from "../api/apiClient";
 
-export function getErrorMessage(error: unknown, fallback = "Error inesperado"): string {
+export function getErrorMessage(
+  error: unknown,
+  fallback = "Error inesperado",
+): string {
   return error instanceof Error ? error.message : fallback;
 }
 
-export function parseApiError(error: unknown): { variant: "warning" | "danger"; text: string } {
+export function parseApiError(
+  error: unknown,
+  fallback = "Error de conexión con el servidor.",
+): { variant: "warning" | "danger"; text: string } {
   if (error instanceof ApiError) {
-    if (error.status === 400 && error.message === "No context available") {
-      return { variant: "warning", text: "No hay documentos en esta colección. Sube documentos primero." };
+    if (error.status === 409) {
+      return { variant: "warning", text: error.message };
     }
-    if (error.status === 422) {
-      return { variant: "danger", text: "La consulta no cumple los requisitos mínimos." };
+    if (error.status === 400 || error.status === 422) {
+      return { variant: "warning", text: error.message };
     }
     if (error.status === 503) {
-      return { variant: "danger", text: "El servicio de generación no está disponible." };
+      return {
+        variant: "danger",
+        text: "El servicio de generación no está disponible. Inténtalo de nuevo más tarde.",
+      };
     }
     return { variant: "danger", text: error.message };
   }
-  return { variant: "danger", text: "Error de conexión con el servidor." };
+  return { variant: "danger", text: fallback };
 }
