@@ -23,6 +23,7 @@ export function useEntityContents(
     async (options?: {
       signal?: AbortSignal;
       category?: ContentCategory;
+      status?: "active" | "pending" | "confirmed" | "discarded" | "all";
       page?: number;
       page_size?: number;
       order?: "asc" | "desc";
@@ -38,6 +39,7 @@ export function useEntityContents(
             page: options?.page ?? 1,
             page_size: options?.page_size ?? 10,
             category: options?.category,
+            status: options?.status,
             order: options?.order,
           },
           options?.signal,
