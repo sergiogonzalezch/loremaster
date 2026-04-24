@@ -477,6 +477,28 @@ a:hover {
   vertical-align: middle;
 }
 
+.lm-table {
+  border: 1px solid var(--lm-border);
+  border-radius: var(--lm-radius-lg);
+  overflow: hidden;
+  background: rgba(7, 7, 14, 0.5);
+}
+
+.lm-table thead th:first-child,
+.lm-table tbody td:first-child {
+  padding-left: 1.1rem;
+}
+
+.lm-table thead th:last-child,
+.lm-table tbody td:last-child {
+  text-align: right;
+  padding-right: 1.1rem;
+}
+
+.lm-table tbody td {
+  color: #d4d0e8;
+}
+
 /* ─── Alerts ─────────────────────────────────────────────────────────────────*/
 .alert {
   border-radius: var(--lm-radius) !important;
@@ -620,6 +642,10 @@ a:hover {
   border-top-color: var(--lm-accent) !important;
 }
 
+.lm-spinner-inline {
+  animation: spinner-border 0.6s linear infinite;
+}
+
 /* ─── Utilities ──────────────────────────────────────────────────────────────*/
 .text-muted {
   color: var(--lm-text-muted) !important;
@@ -711,6 +737,56 @@ a:hover {
   font-weight: 700;
 }
 
+.lm-upload-trigger {
+  min-width: 172px;
+}
+
+.lm-content-accordion-item {
+  border: 1px solid var(--lm-border) !important;
+  border-radius: var(--lm-radius-lg) !important;
+  overflow: hidden;
+}
+
+.lm-content-accordion-item .accordion-button {
+  background: var(--lm-raised) !important;
+  color: var(--lm-text) !important;
+  box-shadow: none !important;
+}
+
+.lm-content-accordion-item .accordion-button:not(.collapsed) {
+  border-bottom: 1px solid var(--lm-border);
+}
+
+.lm-content-accordion-item .accordion-button::after {
+  filter: invert(0.6);
+}
+
+.lm-content-accordion-item .accordion-body {
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.lm-llm-loading {
+  border: 1px solid var(--lm-border-accent);
+  background: linear-gradient(180deg, var(--lm-surface), rgba(10, 10, 20, 0.5));
+  border-radius: var(--lm-radius-lg);
+  padding: 1rem 1.2rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.lm-llm-loading-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(157, 111, 232, 0.08) 0%,
+    rgba(157, 111, 232, 0.4) 45%,
+    rgba(157, 111, 232, 0.08) 100%
+  );
+  background-size: 230% 100%;
+  animation: lm-shimmer 1.2s linear infinite;
+}
+
 /* ─── Animations ─────────────────────────────────────────────────────────────*/
 @keyframes lm-fade {
   from {
@@ -779,6 +855,15 @@ a:hover {
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+@keyframes lm-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -40% 0;
   }
 }
 
