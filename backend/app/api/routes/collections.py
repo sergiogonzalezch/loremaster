@@ -1,9 +1,8 @@
 import logging
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, Query, Response
-from fastapi.responses import JSONResponse
 from sqlmodel import Session
 
 logger = logging.getLogger(__name__)
@@ -28,7 +27,7 @@ router = APIRouter(prefix="/collections", tags=["collections"])
 
 
 @router.post("/", response_model=CollectionResponse, status_code=201)
-async def create_collection(
+def create_collection(
     request: CreateCollectionRequest,
     session: Session = Depends(get_session),
 ):
@@ -36,12 +35,13 @@ async def create_collection(
 
 
 @router.get("/", response_model=PaginatedResponse[CollectionResponse])
-async def get_collections(
+def get_collections(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     name: Optional[str] = Query(default=None),
     created_after: Optional[datetime] = Query(default=None),
     created_before: Optional[datetime] = Query(default=None),
+    order: Literal["asc", "desc"] = Query(default="desc"),
     session: Session = Depends(get_session),
 ):
     items, total = list_collections_service(
@@ -51,12 +51,13 @@ async def get_collections(
         name=name,
         created_after=created_after,
         created_before=created_before,
+        order=order,
     )
     return PaginatedResponse.build(items, total, page, page_size)
 
 
 @router.get("/{collection_id}", response_model=CollectionResponse)
-async def get_collection(
+def get_collection(
     collection: Collection = Depends(get_collection_or_404),
 ):
     return collection
@@ -72,7 +73,7 @@ def update_collection(
 
 
 @router.delete("/{collection_id}", status_code=204)
-async def delete_collection(
+def delete_collection(
     collection: Collection = Depends(get_collection_or_404),
     session: Session = Depends(get_session),
 ):
@@ -81,13 +82,5 @@ async def delete_collection(
         logger.warning(
             "Collection %s soft-deleted but Qdrant vectors were NOT removed — manual cleanup needed.",
             collection.id,
-        )
-        return JSONResponse(
-            status_code=200,
-            content={
-                "deleted": True,
-                "vectors_cleaned": False,
-                "detail": "Colección eliminada, pero los vectores de Qdrant no pudieron ser eliminados. Se requiere limpieza manual.",
-            },
         )
     return Response(status_code=204)

@@ -49,9 +49,12 @@ def render_prompt(
     context: str,
     query: str,
 ) -> str:
+    def _escape(v: str) -> str:
+        return v.replace("{", "{{").replace("}", "}}")
+
     return get_template(category).format(
-        entity_name=entity_name,
-        entity_type=entity_type,
-        context=context,
-        query=query,
+        entity_name=_escape(entity_name),
+        entity_type=_escape(entity_type),
+        context=_escape(context),
+        query=_escape(query),
     )

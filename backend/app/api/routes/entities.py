@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, Query, Response
 from sqlmodel import Session
@@ -28,7 +28,7 @@ router = APIRouter(prefix="/collections", tags=["entities"])
 @router.post(
     "/{collection_id}/entities", response_model=EntityResponse, status_code=201
 )
-async def create_entity(
+def create_entity(
     collection_id: str,
     request: CreateEntityRequest,
     _: Collection = Depends(get_collection_or_404),
@@ -40,7 +40,7 @@ async def create_entity(
 @router.get(
     "/{collection_id}/entities", response_model=PaginatedResponse[EntityResponse]
 )
-async def list_entities(
+def list_entities(
     collection_id: str,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
@@ -48,6 +48,7 @@ async def list_entities(
     type: Optional[EntityType] = Query(default=None),
     created_after: Optional[datetime] = Query(default=None),
     created_before: Optional[datetime] = Query(default=None),
+    order: Literal["asc", "desc"] = Query(default="desc"),
     _: Collection = Depends(get_collection_or_404),
     session: Session = Depends(get_session),
 ):
@@ -60,19 +61,20 @@ async def list_entities(
         entity_type=type,
         created_after=created_after,
         created_before=created_before,
+        order=order,
     )
     return PaginatedResponse.build(entities, total, page, page_size)
 
 
 @router.get("/{collection_id}/entities/{entity_id}", response_model=EntityResponse)
-async def get_entity(
+def get_entity(
     entity: Entity = Depends(get_entity_or_404),
 ):
     return entity
 
 
 @router.patch("/{collection_id}/entities/{entity_id}", response_model=EntityResponse)
-async def update_entity(
+def update_entity(
     request: UpdateEntityRequest,
     entity: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
@@ -81,7 +83,7 @@ async def update_entity(
 
 
 @router.delete("/{collection_id}/entities/{entity_id}", status_code=204)
-async def delete_entity(
+def delete_entity(
     entity: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):

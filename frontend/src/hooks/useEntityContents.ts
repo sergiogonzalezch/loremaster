@@ -25,6 +25,7 @@ export function useEntityContents(
       category?: ContentCategory;
       page?: number;
       page_size?: number;
+      order?: "asc" | "desc";
     }) => {
       if (!collectionId || !entityId) return;
       setLoading(true);
@@ -37,6 +38,7 @@ export function useEntityContents(
             page: options?.page ?? 1,
             page_size: options?.page_size ?? 10,
             category: options?.category,
+            order: options?.order,
           },
           options?.signal,
         );

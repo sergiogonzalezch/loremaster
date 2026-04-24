@@ -13,6 +13,7 @@ export interface ContentsQueryParams {
   category?: ContentCategory;
   page?: number;
   page_size?: number;
+  order?: "asc" | "desc";
 }
 
 const base = (collectionId: string, entityId: string) =>

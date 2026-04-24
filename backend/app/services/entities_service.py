@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import HTTPException
 from sqlalchemy import func
@@ -67,6 +67,7 @@ def list_entities_service(
     entity_type: Optional[EntityType] = None,
     created_after: Optional[datetime] = None,
     created_before: Optional[datetime] = None,
+    order: Literal["asc", "desc"] = "desc",
 ) -> tuple[list[Entity], int]:
     conditions = [
         Entity.collection_id == collection_id,
@@ -84,9 +85,10 @@ def list_entities_service(
     total = session.exec(
         select(func.count()).select_from(select(Entity).where(*conditions).subquery())
     ).one()
+    sort_col = Entity.created_at.asc() if order == "asc" else Entity.created_at.desc()
     skip = (page - 1) * page_size
     items = session.exec(
-        select(Entity).where(*conditions).offset(skip).limit(page_size)
+        select(Entity).where(*conditions).order_by(sort_col).offset(skip).limit(page_size)
     ).all()
     return list(items), total
 

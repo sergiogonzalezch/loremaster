@@ -40,6 +40,11 @@ def _ensure_qdrant_collection(collection_id: str) -> None:
                 size=settings.embedding_dims, distance=Distance.COSINE
             ),
         )
+        if not _collection_exists(name):
+            raise RuntimeError(
+                f"Qdrant collection '{name}' could not be created. "
+                "Check Qdrant connectivity and configuration."
+            )
 
 
 def ingest_chunks(*, doc_id: str, collection_id: str, text: str) -> int:

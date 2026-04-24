@@ -1,6 +1,7 @@
+from typing import Literal, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlmodel import Session
-from typing import Optional
 
 from app.core.deps import get_entity_or_404
 from app.database import get_session
@@ -23,7 +24,7 @@ router = APIRouter(prefix="/collections", tags=["entity-content"])
     response_model=EntityContentResponse,
     status_code=201,
 )
-async def generate_content(
+def generate_content(
     category: ContentCategory,
     request: GenerateContentRequest,
     entity: Entity = Depends(get_entity_or_404),
@@ -43,17 +44,18 @@ async def generate_content(
     "/{collection_id}/entities/{entity_id}/contents",
     response_model=PaginatedResponse[EntityContentResponse],
 )
-async def list_contents(
+def list_contents(
     entity_id: str,
     collection_id: str,
     category: Optional[ContentCategory] = Query(default=None),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
+    order: Literal["asc", "desc"] = Query(default="desc"),
     _: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
     items, total = content_management_service.list_contents(
-        session, entity_id, collection_id, category, page, page_size
+        session, entity_id, collection_id, category, page, page_size, order
     )
     return PaginatedResponse.build(items, total, page, page_size)
 
@@ -62,7 +64,7 @@ async def list_contents(
     "/{collection_id}/entities/{entity_id}/contents/{content_id}",
     response_model=EntityContentResponse,
 )
-async def edit_content(
+def edit_content(
     entity_id: str,
     collection_id: str,
     content_id: str,
@@ -87,7 +89,7 @@ async def edit_content(
     "/{collection_id}/entities/{entity_id}/contents/{content_id}/confirm",
     response_model=EntityResponse,
 )
-async def confirm_content(
+def confirm_content(
     content_id: str,
     entity: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
@@ -103,7 +105,7 @@ async def confirm_content(
     "/{collection_id}/entities/{entity_id}/contents/{content_id}/discard",
     response_model=EntityContentResponse,
 )
-async def discard_content(
+def discard_content(
     entity_id: str,
     collection_id: str,
     content_id: str,
@@ -122,7 +124,7 @@ async def discard_content(
     "/{collection_id}/entities/{entity_id}/contents/{content_id}",
     status_code=204,
 )
-async def delete_content(
+def delete_content(
     entity_id: str,
     collection_id: str,
     content_id: str,

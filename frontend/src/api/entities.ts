@@ -15,6 +15,7 @@ export interface EntitiesQueryParams {
   type?: EntityType;
   created_after?: string;
   created_before?: string;
+  order?: "asc" | "desc";
 }
 
 export function getEntities(

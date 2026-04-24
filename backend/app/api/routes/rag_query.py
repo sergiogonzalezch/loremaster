@@ -9,7 +9,7 @@ router = APIRouter(prefix="/collections", tags=["rag-query"])
 
 
 @router.post("/{collection_id}/query", response_model=RagQueryResponse)
-async def rag_query(
+def rag_query(
     request: RagQueryRequest,
     collection_id: str,
     _: Collection = Depends(get_collection_or_404),

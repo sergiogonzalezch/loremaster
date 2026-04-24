@@ -28,11 +28,6 @@ class Settings(BaseSettings):
     chunk_overlap: int = 50
     top_k: int = 4
 
-    # Redis
-    redis_url: str = "redis://localhost:6379/0"
-    cache_ttl: int = 3600
-    cache_threshold: float = 0.95
-
     # Database (default SQLite for local dev; set DATABASE_URL in .env for PostgreSQL)
     database_url: str = "sqlite:///./loremaster.db"
 

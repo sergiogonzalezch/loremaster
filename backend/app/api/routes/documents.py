@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile, File
 from sqlmodel import Session
@@ -36,7 +36,7 @@ async def ingest(
 @router.get(
     "/{collection_id}/documents", response_model=PaginatedResponse[DocumentResponse]
 )
-async def get_documents(
+def get_documents(
     collection_id: str,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
@@ -45,6 +45,7 @@ async def get_documents(
     status: Optional[DocumentStatus] = Query(default=None),
     created_after: Optional[datetime] = Query(default=None),
     created_before: Optional[datetime] = Query(default=None),
+    order: Literal["asc", "desc"] = Query(default="desc"),
     _: Collection = Depends(get_collection_or_404),
     session: Session = Depends(get_session),
 ):
@@ -58,19 +59,20 @@ async def get_documents(
         status=status,
         created_after=created_after,
         created_before=created_before,
+        order=order,
     )
     return PaginatedResponse.build(docs, total, page, page_size)
 
 
 @router.get("/{collection_id}/documents/{doc_id}", response_model=DocumentResponse)
-async def get_document(
+def get_document(
     doc: Document = Depends(get_document_or_404),
 ):
     return doc
 
 
 @router.delete("/{collection_id}/documents/{doc_id}", status_code=204)
-async def delete_document(
+def delete_document(
     doc: Document = Depends(get_document_or_404),
     session: Session = Depends(get_session),
 ):

@@ -72,7 +72,6 @@ def generate(
         sources_count=sources_count,
     )
     session.add(generated_text)
-    session.flush()
 
     content = EntityContent(
         entity_id=entity.id,

@@ -72,6 +72,7 @@ function DocumentsTab({
   const [status, setStatus] = useState<
     "" | "processing" | "completed" | "failed"
   >("");
+  const [order, setOrder] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
@@ -91,6 +92,7 @@ function DocumentsTab({
             page_size: pageSize,
             filename: filename || undefined,
             status: status || undefined,
+            order,
           },
           signal,
         );
@@ -103,7 +105,7 @@ function DocumentsTab({
         setLoading(false);
       }
     },
-    [collectionId, filename, page, pageSize, status],
+    [collectionId, filename, order, page, pageSize, status],
   );
 
   useEffect(() => {
@@ -230,6 +232,19 @@ function DocumentsTab({
                 <option value="processing">Procesando</option>
                 <option value="completed">Completado</option>
                 <option value="failed">Error</option>
+              </Form.Select>
+            </Form.Group>
+            <Form.Group style={{ minWidth: 160 }}>
+              <Form.Label>Orden</Form.Label>
+              <Form.Select
+                value={order}
+                onChange={(e) => {
+                  setOrder(e.target.value as "asc" | "desc");
+                  setPage(1);
+                }}
+              >
+                <option value="desc">Más recientes</option>
+                <option value="asc">Más antiguos</option>
               </Form.Select>
             </Form.Group>
             <Form.Group style={{ minWidth: 130 }}>
@@ -454,6 +469,7 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
   const [deleting, setDeleting] = useState(false);
   const [nameFilter, setNameFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState<"" | EntityType>("");
+  const [order, setOrder] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
@@ -475,6 +491,7 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
         page_size: pageSize,
         name: nameFilter || undefined,
         type: typeFilter || undefined,
+        order,
       });
       setEntities(res.data);
       setTotalPages(res.meta.total_pages);
@@ -483,7 +500,7 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
     } finally {
       setLoading(false);
     }
-  }, [collectionId, nameFilter, page, pageSize, typeFilter]);
+  }, [collectionId, nameFilter, order, page, pageSize, typeFilter]);
 
   useEffect(() => {
     fetchEntities();
@@ -570,6 +587,19 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
                     {ENTITY_TYPE_LABELS[t]}
                   </option>
                 ))}
+              </Form.Select>
+            </Form.Group>
+            <Form.Group style={{ minWidth: 160 }}>
+              <Form.Label>Orden</Form.Label>
+              <Form.Select
+                value={order}
+                onChange={(e) => {
+                  setOrder(e.target.value as "asc" | "desc");
+                  setPage(1);
+                }}
+              >
+                <option value="desc">Más recientes</option>
+                <option value="asc">Más antiguos</option>
               </Form.Select>
             </Form.Group>
             <Form.Group style={{ minWidth: 130 }}>
