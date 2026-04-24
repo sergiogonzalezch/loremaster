@@ -49,24 +49,24 @@ async def test_cnt_01_generate_backstory_character_returns_201_pending(
 
 
 @pytest.mark.anyio
-async def test_cnt_02_generate_scene_for_item_returns_422(
+async def test_cnt_02_generate_scene_for_item_returns_400(
     client, mock_rag_engine, mock_llm, db_session, sample_collection
 ):
-    """CNT-02: Generar scene para item retorna 422 (categoría incompatible)."""
+    """CNT-02: Generar scene para item retorna 400 (categoría incompatible)."""
     item = _make_entity(db_session, sample_collection.id, EntityType.item)
 
     response = await _create_content(
         client, sample_collection.id, item.id, category="scene"
     )
 
-    assert response.status_code == 422
+    assert response.status_code == 400
 
 
 @pytest.mark.anyio
-async def test_cnt_03_max_5_pending_per_category_sixth_returns_422(
+async def test_cnt_03_max_5_pending_per_category_sixth_returns_409(
     client, mock_rag_engine, mock_llm, sample_collection, sample_entity
 ):
-    """CNT-03: Máximo 5 pending por categoría; sexto retorna 422."""
+    """CNT-03: Máximo 5 pending por categoría; sexto retorna 409."""
     for i in range(5):
         resp = await _create_content(
             client, sample_collection.id, sample_entity.id, query=f"query {i} extensa"
@@ -77,7 +77,7 @@ async def test_cnt_03_max_5_pending_per_category_sixth_returns_422(
         client, sample_collection.id, sample_entity.id, query="sexta query extensa"
     )
 
-    assert sixth.status_code == 422
+    assert sixth.status_code == 409
 
 
 @pytest.mark.anyio
@@ -157,6 +157,60 @@ async def test_cnt_06_list_filtered_by_category(
 
 
 @pytest.mark.anyio
+async def test_cnt_06b_list_filtered_by_status(
+    client, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
+    """CNT-06b: Listar con filtro de estado retorna solo el estado solicitado."""
+    pending_resp = await _create_content(
+        client,
+        sample_collection.id,
+        sample_entity.id,
+        category="scene",
+        query="pendiente en scene extensa",
+    )
+    to_discard_resp = await _create_content(
+        client, sample_collection.id, sample_entity.id, query="descartar esta extensa"
+    )
+    to_confirm_resp = await _create_content(
+        client, sample_collection.id, sample_entity.id, query="confirmar esta extensa"
+    )
+
+    discarded_id = to_discard_resp.json()["id"]
+    confirmed_id = to_confirm_resp.json()["id"]
+
+    await client.patch(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/contents/{discarded_id}/discard"
+    )
+    await client.post(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/contents/{confirmed_id}/confirm"
+    )
+
+    pending = await client.get(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/contents?status=pending"
+    )
+    discarded = await client.get(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/contents?status=discarded"
+    )
+    all_contents = await client.get(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/contents?status=all"
+    )
+
+    assert pending.status_code == 200
+    assert discarded.status_code == 200
+    assert all_contents.status_code == 200
+
+    pending_statuses = {item["status"] for item in pending.json()["data"]}
+    discarded_statuses = {item["status"] for item in discarded.json()["data"]}
+    all_ids = {item["id"] for item in all_contents.json()["data"]}
+
+    assert pending_statuses == {"pending"}
+    assert discarded_statuses == {"discarded"}
+    assert pending_resp.json()["id"] in all_ids
+    assert discarded_id in all_ids
+    assert confirmed_id in all_ids
+
+
+@pytest.mark.anyio
 async def test_cnt_07_edit_pending_content_returns_200(
     client, mock_rag_engine, mock_llm, sample_collection, sample_entity
 ):
@@ -194,10 +248,10 @@ async def test_cnt_08_edit_confirmed_content_returns_200(
 
 
 @pytest.mark.anyio
-async def test_cnt_09_edit_discarded_content_returns_404(
+async def test_cnt_09_edit_discarded_content_returns_409(
     client, mock_rag_engine, mock_llm, sample_collection, sample_entity
 ):
-    """CNT-09: Editar contenido discarded retorna 404."""
+    """CNT-09: Editar contenido discarded retorna 409."""
     created = await _create_content(client, sample_collection.id, sample_entity.id)
     content_id = created.json()["id"]
     await client.patch(
@@ -209,7 +263,7 @@ async def test_cnt_09_edit_discarded_content_returns_404(
         json={"content": "intento fallido"},
     )
 
-    assert response.status_code == 404
+    assert response.status_code == 409
 
 
 @pytest.mark.anyio
@@ -267,6 +321,19 @@ async def test_cnt_11_confirm_backstory_does_not_affect_scene(
     ).first()
 
     assert scene_row.status == ContentStatus.confirmed
+
+
+@pytest.mark.anyio
+async def test_cnt_12_blocked_generate_query_returns_422(
+    client, sample_collection, sample_entity
+):
+    response = await _create_content(
+        client,
+        sample_collection.id,
+        sample_entity.id,
+        query="Genera contenido porno explícito",
+    )
+    assert response.status_code == 422
 
 
 @pytest.mark.anyio
@@ -333,17 +400,17 @@ async def test_cnt_15_generate_backstory_for_creature_returns_201(
 
 
 @pytest.mark.anyio
-async def test_cnt_16_generate_chapter_for_creature_returns_422(
+async def test_cnt_16_generate_chapter_for_creature_returns_400(
     client, db_session, mock_rag_engine, mock_llm, sample_collection
 ):
-    """CNT-16: Generar chapter para creature retorna 422 (creature no soporta chapter)."""
+    """CNT-16: Generar chapter para creature retorna 400 (creature no soporta chapter)."""
     creature = _make_entity(db_session, sample_collection.id, EntityType.creature)
 
     response = await _create_content(
         client, sample_collection.id, creature.id, category="chapter"
     )
 
-    assert response.status_code == 422
+    assert response.status_code == 400
 
 
 @pytest.mark.anyio

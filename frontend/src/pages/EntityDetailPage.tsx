@@ -9,6 +9,7 @@ import {
   Card,
   Form,
   Modal,
+  Nav,
   Pagination,
   Spinner,
 } from "react-bootstrap";
@@ -62,6 +63,9 @@ export default function EntityDetailPage() {
   const [contentsCategoryFilter, setContentsCategoryFilter] = useState<
     ContentCategory | ""
   >("");
+  const [contentsStatusFilter, setContentsStatusFilter] = useState<
+    "pending" | "confirmed" | "discarded"
+  >("pending");
   const [contentsPage, setContentsPage] = useState(1);
   const [contentsPageSize, setContentsPageSize] = useState(10);
   const [query, setQuery] = useState("");
@@ -72,11 +76,18 @@ export default function EntityDetailPage() {
     refreshContents({
       signal: controller.signal,
       category: contentsCategoryFilter || undefined,
+      status: contentsStatusFilter,
       page: contentsPage,
       page_size: contentsPageSize,
     });
     return () => controller.abort();
-  }, [contentsCategoryFilter, contentsPage, contentsPageSize, refreshContents]);
+  }, [
+    contentsCategoryFilter,
+    contentsStatusFilter,
+    contentsPage,
+    contentsPageSize,
+    refreshContents,
+  ]);
 
   const availableCategories = useMemo<ContentCategory[]>(
     () => (entity ? (ENTITY_CATEGORY_MAP[entity.type] ?? []) : []),
@@ -144,6 +155,7 @@ export default function EntityDetailPage() {
     await Promise.all([
       refreshContents({
         category: contentsCategoryFilter || undefined,
+        status: contentsStatusFilter,
         page: contentsPage,
         page_size: contentsPageSize,
       }),
@@ -151,6 +163,7 @@ export default function EntityDetailPage() {
     ]);
   }, [
     contentsCategoryFilter,
+    contentsStatusFilter,
     contentsPage,
     contentsPageSize,
     refreshContents,
@@ -199,6 +212,7 @@ export default function EntityDetailPage() {
     if (result) {
       await refreshContents({
         category: contentsCategoryFilter || undefined,
+        status: contentsStatusFilter,
         page: contentsPage,
         page_size: contentsPageSize,
       });
@@ -223,6 +237,7 @@ export default function EntityDetailPage() {
     if (result) {
       await refreshContents({
         category: contentsCategoryFilter || undefined,
+        status: contentsStatusFilter,
         page: contentsPage,
         page_size: contentsPageSize,
       });
@@ -448,6 +463,28 @@ export default function EntityDetailPage() {
       )}
 
       <p className="lm-section-title">Contenidos generados</p>
+      <Nav
+        variant="tabs"
+        activeKey={contentsStatusFilter}
+        className="mb-3"
+        onSelect={(key) => {
+          if (!key) return;
+          setContentsStatusFilter(
+            key as "pending" | "confirmed" | "discarded",
+          );
+          setContentsPage(1);
+        }}
+      >
+        <Nav.Item>
+          <Nav.Link eventKey="pending">Borradores</Nav.Link>
+        </Nav.Item>
+        <Nav.Item>
+          <Nav.Link eventKey="confirmed">Confirmados</Nav.Link>
+        </Nav.Item>
+        <Nav.Item>
+          <Nav.Link eventKey="discarded">Descartados</Nav.Link>
+        </Nav.Item>
+      </Nav>
       <Card className="mb-3">
         <Card.Body>
           <div className="d-flex gap-3 flex-wrap align-items-end">
