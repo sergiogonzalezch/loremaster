@@ -53,5 +53,3 @@ class DocumentResponse(BaseModel):
     chunk_count: int
     status: DocumentStatus
     created_at: datetime
-
-

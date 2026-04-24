@@ -57,8 +57,10 @@ def edit_content(
     new_text: str,
 ) -> EntityContent | None:
     content = _get_active_content(session, content_id, entity_id, collection_id)
-    if not content or content.status == ContentStatus.discarded:
+    if not content:
         return None
+    if content.status == ContentStatus.discarded:
+        raise ValueError("discarded")
     now = datetime.now(timezone.utc)
     content.content = new_text
     content.updated_at = now
@@ -73,9 +75,7 @@ def confirm_content(
     content_id: str,
     entity: Entity,
 ) -> EntityContent | None:
-    content = _get_pending_content(
-        session, content_id, entity.id, entity.collection_id
-    )
+    content = _get_pending_content(session, content_id, entity.id, entity.collection_id)
     if not content:
         return None
 

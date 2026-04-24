@@ -72,7 +72,9 @@ async def test_delete_cascades_documents(client, db_session, sample_collection):
     db_session.commit()
     db_session.refresh(doc)
 
-    assert (await client.delete(f"/api/v1/collections/{sample_collection.id}")).status_code == 204
+    assert (
+        await client.delete(f"/api/v1/collections/{sample_collection.id}")
+    ).status_code == 204
 
     db_doc = db_session.exec(select(Document).where(Document.id == doc.id)).first()
     assert db_doc.is_deleted is True
@@ -91,7 +93,9 @@ async def test_delete_cascades_entities(client, db_session, sample_collection):
     db_session.commit()
     db_session.refresh(entity)
 
-    assert (await client.delete(f"/api/v1/collections/{sample_collection.id}")).status_code == 204
+    assert (
+        await client.delete(f"/api/v1/collections/{sample_collection.id}")
+    ).status_code == 204
 
     db_entity = db_session.exec(select(Entity).where(Entity.id == entity.id)).first()
     assert db_entity.is_deleted is True
@@ -138,7 +142,9 @@ async def test_delete_cascades_all_contents(
     db_session.refresh(pending)
     db_session.refresh(confirmed)
 
-    assert (await client.delete(f"/api/v1/collections/{sample_collection.id}")).status_code == 204
+    assert (
+        await client.delete(f"/api/v1/collections/{sample_collection.id}")
+    ).status_code == 204
 
     for content_id in (pending.id, confirmed.id):
         row = db_session.exec(
@@ -150,9 +156,15 @@ async def test_delete_cascades_all_contents(
 @pytest.mark.anyio
 async def test_filter_collections_by_name(client):
     """COL-09: Filtrar colecciones por nombre retorna solo las que coinciden."""
-    await client.post("/api/v1/collections/", json={"name": "Middle Earth", "description": ""})
-    await client.post("/api/v1/collections/", json={"name": "Westeros", "description": ""})
-    await client.post("/api/v1/collections/", json={"name": "Middle Ages Lore", "description": ""})
+    await client.post(
+        "/api/v1/collections/", json={"name": "Middle Earth", "description": ""}
+    )
+    await client.post(
+        "/api/v1/collections/", json={"name": "Westeros", "description": ""}
+    )
+    await client.post(
+        "/api/v1/collections/", json={"name": "Middle Ages Lore", "description": ""}
+    )
 
     response = await client.get("/api/v1/collections/?name=middle")
     assert response.status_code == 200
@@ -167,9 +179,13 @@ async def test_filter_collections_by_name(client):
 @pytest.mark.anyio
 async def test_filter_collections_by_created_after(client):
     """COL-10: Filtrar colecciones con created_after en el futuro retorna lista vacía."""
-    await client.post("/api/v1/collections/", json={"name": "World X", "description": ""})
+    await client.post(
+        "/api/v1/collections/", json={"name": "World X", "description": ""}
+    )
 
-    response = await client.get("/api/v1/collections/?created_after=2099-01-01T00:00:00")
+    response = await client.get(
+        "/api/v1/collections/?created_after=2099-01-01T00:00:00"
+    )
     assert response.status_code == 200
     body = response.json()
     assert body["meta"]["total"] == 0
@@ -179,9 +195,13 @@ async def test_filter_collections_by_created_after(client):
 @pytest.mark.anyio
 async def test_filter_collections_by_created_before(client):
     """COL-11: Filtrar colecciones con created_before en el pasado retorna lista vacía."""
-    await client.post("/api/v1/collections/", json={"name": "World Y", "description": ""})
+    await client.post(
+        "/api/v1/collections/", json={"name": "World Y", "description": ""}
+    )
 
-    response = await client.get("/api/v1/collections/?created_before=2000-01-01T00:00:00")
+    response = await client.get(
+        "/api/v1/collections/?created_before=2000-01-01T00:00:00"
+    )
     assert response.status_code == 200
     assert response.json()["meta"]["total"] == 0
 
@@ -190,8 +210,12 @@ async def test_filter_collections_by_created_before(client):
 async def test_filter_and_pagination_combined(client):
     """COL-12: Filtro por nombre y paginación combinados funcionan correctamente."""
     for i in range(5):
-        await client.post("/api/v1/collections/", json={"name": f"Lore World {i}", "description": ""})
-    await client.post("/api/v1/collections/", json={"name": "Unrelated", "description": ""})
+        await client.post(
+            "/api/v1/collections/", json={"name": f"Lore World {i}", "description": ""}
+        )
+    await client.post(
+        "/api/v1/collections/", json={"name": "Unrelated", "description": ""}
+    )
 
     response = await client.get("/api/v1/collections/?name=lore&page=1&page_size=3")
     assert response.status_code == 200

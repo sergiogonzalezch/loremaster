@@ -163,7 +163,9 @@ async def test_filter_documents_by_status(client, mock_rag_engine, sample_collec
 
 
 @pytest.mark.anyio
-async def test_filter_documents_by_file_type(client, mock_rag_engine, sample_collection):
+async def test_filter_documents_by_file_type(
+    client, mock_rag_engine, sample_collection
+):
     """DOC-11: Filtrar documentos por file_type retorna solo los de ese tipo."""
     await client.post(
         f"/api/v1/collections/{sample_collection.id}/documents",
@@ -178,7 +180,9 @@ async def test_filter_documents_by_file_type(client, mock_rag_engine, sample_col
 
 
 @pytest.mark.anyio
-async def test_filter_documents_created_after_future(client, mock_rag_engine, sample_collection):
+async def test_filter_documents_created_after_future(
+    client, mock_rag_engine, sample_collection
+):
     """DOC-12: created_after en el futuro retorna lista vacía."""
     await client.post(
         f"/api/v1/collections/{sample_collection.id}/documents",

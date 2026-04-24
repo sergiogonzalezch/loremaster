@@ -71,5 +71,3 @@ class EntityTextDraftResponse(BaseModel):
     created_at: datetime
     confirmed_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-
-

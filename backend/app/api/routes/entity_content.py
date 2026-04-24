@@ -13,6 +13,7 @@ from app.models.entity_content import (
 from app.models.enums import ContentCategory
 from app.models.shared import PaginatedResponse
 from app.services import content_management_service, generation_service
+from app.services.generation_service import PendingLimitExceededError
 
 router = APIRouter(prefix="/collections", tags=["entity-content"])
 
@@ -30,6 +31,8 @@ async def generate_content(
 ):
     try:
         return generation_service.generate(session, entity, category, request.query)
+    except PendingLimitExceededError as e:
+        raise HTTPException(status_code=409, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except RuntimeError as e:
@@ -67,11 +70,16 @@ async def edit_content(
     _: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
-    result = content_management_service.edit_content(
-        session, content_id, entity_id, collection_id, request.content
-    )
+    try:
+        result = content_management_service.edit_content(
+            session, content_id, entity_id, collection_id, request.content
+        )
+    except ValueError:
+        raise HTTPException(
+            status_code=409, detail="No se puede editar un contenido descartado."
+        )
     if not result:
-        raise HTTPException(status_code=404, detail="Content not found")
+        raise HTTPException(status_code=404, detail="Contenido no encontrado.")
     return result
 
 
@@ -86,7 +94,7 @@ async def confirm_content(
 ):
     result = content_management_service.confirm_content(session, content_id, entity)
     if not result:
-        raise HTTPException(status_code=404, detail="Content not found")
+        raise HTTPException(status_code=404, detail="Contenido no encontrado.")
     session.refresh(entity)
     return entity
 
@@ -106,7 +114,7 @@ async def discard_content(
         session, content_id, entity_id, collection_id
     )
     if not result:
-        raise HTTPException(status_code=404, detail="Content not found")
+        raise HTTPException(status_code=404, detail="Contenido no encontrado.")
     return result
 
 
@@ -125,5 +133,5 @@ async def delete_content(
         session, content_id, entity_id, collection_id
     )
     if not deleted:
-        raise HTTPException(status_code=404, detail="Content not found")
+        raise HTTPException(status_code=404, detail="Contenido no encontrado.")
     return Response(status_code=204)

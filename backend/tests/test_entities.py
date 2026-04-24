@@ -132,7 +132,11 @@ async def test_all_entity_types(client, sample_collection):
     for entity_type in ("character", "creature", "faction", "location", "item"):
         response = await client.post(
             f"/api/v1/collections/{sample_collection.id}/entities",
-            json={"type": entity_type, "name": f"{entity_type}-name", "description": "ok"},
+            json={
+                "type": entity_type,
+                "name": f"{entity_type}-name",
+                "description": "ok",
+            },
         )
         assert response.status_code == 201
 

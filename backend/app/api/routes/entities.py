@@ -37,7 +37,9 @@ async def create_entity(
     return create_entity_service(session, request, collection_id)
 
 
-@router.get("/{collection_id}/entities", response_model=PaginatedResponse[EntityResponse])
+@router.get(
+    "/{collection_id}/entities", response_model=PaginatedResponse[EntityResponse]
+)
 async def list_entities(
     collection_id: str,
     page: int = Query(default=1, ge=1),
@@ -50,9 +52,14 @@ async def list_entities(
     session: Session = Depends(get_session),
 ):
     entities, total = list_entities_service(
-        session, collection_id, page, page_size,
-        name=name, entity_type=type,
-        created_after=created_after, created_before=created_before,
+        session,
+        collection_id,
+        page,
+        page_size,
+        name=name,
+        entity_type=type,
+        created_after=created_after,
+        created_before=created_before,
     )
     return PaginatedResponse.build(entities, total, page, page_size)
 

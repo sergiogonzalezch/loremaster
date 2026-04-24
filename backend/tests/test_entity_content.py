@@ -5,7 +5,6 @@ from app.models.entities import Entity, EntityType
 from app.models.entity_content import EntityContent
 from app.models.enums import ContentStatus
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
@@ -88,7 +87,10 @@ async def test_cnt_04_pending_limit_is_per_category(
     """CNT-04: 5 pending en backstory no bloquea generar scene (límite por categoría)."""
     for i in range(5):
         await _create_content(
-            client, sample_collection.id, sample_entity.id, query=f"backstory {i} extensa"
+            client,
+            sample_collection.id,
+            sample_entity.id,
+            query=f"backstory {i} extensa",
         )
 
     response = await _create_content(
@@ -218,7 +220,10 @@ async def test_cnt_10_confirm_discards_siblings_same_category(
     ids = []
     for i in range(3):
         resp = await _create_content(
-            client, sample_collection.id, sample_entity.id, query=f"backstory {i} extensa"
+            client,
+            sample_collection.id,
+            sample_entity.id,
+            query=f"backstory {i} extensa",
         )
         ids.append(resp.json()["id"])
 
@@ -372,6 +377,6 @@ async def test_cnt_18_all_entity_types_accept_extended_description(
         response = await _create_content(
             client, sample_collection.id, entity.id, category="extended_description"
         )
-        assert response.status_code == 201, (
-            f"extended_description failed for {entity_type.value}: {response.json()}"
-        )
+        assert (
+            response.status_code == 201
+        ), f"extended_description failed for {entity_type.value}: {response.json()}"
