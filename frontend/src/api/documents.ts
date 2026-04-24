@@ -1,5 +1,17 @@
 import { apiFetch } from "./apiClient";
+import { buildQuery } from "./query";
 import type { Document, DocumentListResponse } from "../types";
+import type { DocumentStatus } from "../utils/enums";
+
+export interface DocumentsQueryParams {
+  page?: number;
+  page_size?: number;
+  filename?: string;
+  file_type?: string;
+  status?: DocumentStatus;
+  created_after?: string;
+  created_before?: string;
+}
 
 export function uploadDocument(
   collectionId: string,
@@ -15,10 +27,11 @@ export function uploadDocument(
 
 export function getDocuments(
   collectionId: string,
+  params: DocumentsQueryParams = {},
   signal?: AbortSignal,
 ): Promise<DocumentListResponse> {
   return apiFetch<DocumentListResponse>(
-    `/collections/${collectionId}/documents`,
+    `/collections/${collectionId}/documents${buildQuery({ ...params })}`,
     { signal },
   );
 }

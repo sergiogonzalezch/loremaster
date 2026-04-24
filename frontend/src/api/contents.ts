@@ -7,6 +7,13 @@ import type {
 } from "../types";
 import type { ContentCategory } from "../utils/enums";
 import type { Entity } from "../types";
+import { buildQuery } from "./query";
+
+export interface ContentsQueryParams {
+  category?: ContentCategory;
+  page?: number;
+  page_size?: number;
+}
 
 const base = (collectionId: string, entityId: string) =>
   `/collections/${collectionId}/entities/${entityId}`;
@@ -31,10 +38,15 @@ export function generateContent(
 export function getContents(
   collectionId: string,
   entityId: string,
+  params: ContentsQueryParams = {},
   signal?: AbortSignal,
 ): Promise<PaginatedResponse<EntityContent>> {
   return apiFetch<PaginatedResponse<EntityContent>>(
-    `${base(collectionId, entityId)}/contents?page=1&page_size=100`,
+    `${base(collectionId, entityId)}/contents${buildQuery({
+      page: 1,
+      page_size: 100,
+      ...params,
+    })}`,
     { signal },
   );
 }
@@ -85,10 +97,7 @@ export function deleteContent(
   entityId: string,
   contentId: string,
 ): Promise<void> {
-  return apiFetch<void>(
-    `${base(collectionId, entityId)}/contents/${contentId}`,
-    {
-      method: "DELETE",
-    },
-  );
+  return apiFetch<void>(`${base(collectionId, entityId)}/contents/${contentId}`, {
+    method: "DELETE",
+  });
 }

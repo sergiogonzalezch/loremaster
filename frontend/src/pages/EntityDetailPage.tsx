@@ -59,9 +59,16 @@ export default function EntityDetailPage() {
   >("");
   const [query, setQuery] = useState("");
 
+
+  useEffect(() => {
+    const controller = new AbortController();
+    refreshContents({ signal: controller.signal });
+    return () => controller.abort();
+  }, [refreshContents]);
+
   const availableCategories = useMemo<ContentCategory[]>(
     () => (entity ? (ENTITY_CATEGORY_MAP[entity.type] ?? []) : []),
-    [entity?.type],
+    [entity],
   );
 
   const pendingInCategory = contents.filter(

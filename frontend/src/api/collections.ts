@@ -1,12 +1,27 @@
 import { apiFetch } from "./apiClient";
+import { buildQuery } from "./query";
 import type {
   Collection,
   CreateCollectionRequest,
   CollectionListResponse,
 } from "../types";
 
-export function getCollections(): Promise<CollectionListResponse> {
-  return apiFetch<CollectionListResponse>("/collections/");
+export interface CollectionsQueryParams {
+  page?: number;
+  page_size?: number;
+  name?: string;
+  created_after?: string;
+  created_before?: string;
+}
+
+export function getCollections(
+  params: CollectionsQueryParams = {},
+  signal?: AbortSignal,
+): Promise<CollectionListResponse> {
+  return apiFetch<CollectionListResponse>(
+    `/collections/${buildQuery({ ...params })}`,
+    { signal },
+  );
 }
 
 export function getCollection(
