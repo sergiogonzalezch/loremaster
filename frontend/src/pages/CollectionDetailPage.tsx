@@ -38,7 +38,7 @@ import type {
 } from "../types";
 import type { EntityType } from "../utils/enums";
 import { formatDate } from "../utils/formatters";
-import { parseApiError } from "../utils/errors";
+import { getErrorMessage, parseApiError } from "../utils/errors";
 import { ENTITY_TYPE_BADGE, ENTITY_TYPE_LABELS } from "../utils/constants";
 
 // ─── Documents tab ──────────────────────────────────────────────────────────
@@ -64,7 +64,7 @@ function DocumentsTab({ collectionId }: { collectionId: string }) {
       setLoading(true);
       setError(null);
       try {
-        const res = await getDocuments(collectionId, signal);
+        const res = await getDocuments(collectionId, { page: 1, page_size: 100 }, signal);
         setDocuments(res.data);
       } catch (e) {
         if (e instanceof ApiAbortError) return;
@@ -256,7 +256,7 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await getEntities(collectionId);
+      const res = await getEntities(collectionId, { page: 1, page_size: 100 });
       setEntities(res.data);
     } catch (e) {
       setError(parseApiError(e, "Error al cargar entidades"));
@@ -485,7 +485,7 @@ function GenerateTab({ collectionId }: { collectionId: string }) {
   }, [error]);
 
   useEffect(() => {
-    getDocuments(collectionId)
+    getDocuments(collectionId, { page: 1, page_size: 100 })
       .then((res) =>
         setHasCompletedDocs(res.data.some((d) => d.status === "completed")),
       )
