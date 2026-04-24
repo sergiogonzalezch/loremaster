@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
+  Accordion,
   Alert,
   Badge,
   Breadcrumb,
   Button,
-  Card,
   Form,
   Spinner,
 } from "react-bootstrap";
@@ -22,6 +22,7 @@ export default function GeneratePage() {
 
   const [collectionName, setCollectionName] = useState<string>("");
   const [query, setQuery] = useState("");
+  const [lastQuery, setLastQuery] = useState("");
   const [errorDismissed, setErrorDismissed] = useState(false);
   const { hasCompletedDocs, refresh } = useCollectionDocumentsStatus(collectionId);
   const {
@@ -50,9 +51,19 @@ export default function GeneratePage() {
   async function handleGenerate(e: FormEvent) {
     e.preventDefault();
     if (!collectionId) return;
+    const trimmedQuery = query.trim();
+    if (trimmedQuery.length < 5) return;
     const canGenerate = await refresh();
     if (!canGenerate) return;
-    await run(collectionId, { query });
+    setLastQuery(trimmedQuery);
+    await run(collectionId, { query: trimmedQuery });
+  }
+
+  async function handleRegenerate() {
+    if (!collectionId || lastQuery.trim().length < 5) return;
+    const canGenerate = await refresh();
+    if (!canGenerate) return;
+    await run(collectionId, { query: lastQuery.trim() });
   }
 
   return (
@@ -126,12 +137,24 @@ export default function GeneratePage() {
           >
             {isLoading ? (
               <>
-                <Spinner animation="border" size="sm" className="me-2" />
+                <Spinner
+                  animation="border"
+                  size="sm"
+                  className="me-2 lm-spinner-inline"
+                />
                 Generando...
               </>
             ) : (
               "Generar"
             )}
+          </Button>
+          <Button
+            variant="outline-secondary"
+            type="button"
+            onClick={handleRegenerate}
+            disabled={isLoading || lastQuery.trim().length < 5 || hasCompletedDocs === false}
+          >
+            ↻ Regenerar
           </Button>
           {isLoading && (
             <Button variant="outline-secondary" type="button" onClick={cancel}>
@@ -141,16 +164,29 @@ export default function GeneratePage() {
         </div>
       </Form>
 
-      {result && (
-        <Card>
-          <Card.Header className="d-flex justify-content-between align-items-center">
-            <em className="text-muted">{result.query}</em>
-            <Badge bg="secondary">{result.sources_count} fuentes</Badge>
-          </Card.Header>
-          <Card.Body>
-            <MarkdownContent>{result.answer}</MarkdownContent>
-          </Card.Body>
-        </Card>
+      {isLoading && (
+        <div className="lm-llm-loading mb-4">
+          <div className="lm-llm-loading-bar" />
+          <small className="text-muted">
+            Analizando documentos y generando texto con el LLM...
+          </small>
+        </div>
+      )}
+
+      {result && !isLoading && (
+        <Accordion defaultActiveKey="result">
+          <Accordion.Item eventKey="result" className="lm-content-accordion-item">
+            <Accordion.Header>
+              <div className="d-flex justify-content-between align-items-center w-100 me-2">
+                <em className="text-muted">{result.query}</em>
+                <Badge bg="secondary">{result.sources_count} fuentes</Badge>
+              </div>
+            </Accordion.Header>
+            <Accordion.Body>
+              <MarkdownContent>{result.answer}</MarkdownContent>
+            </Accordion.Body>
+          </Accordion.Item>
+        </Accordion>
       )}
     </div>
   );

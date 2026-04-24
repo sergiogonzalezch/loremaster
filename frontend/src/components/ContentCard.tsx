@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import {
+  Accordion,
   Alert,
   Badge,
   Button,
@@ -44,6 +45,7 @@ export default function ContentCard({
 
   const [showDiscard, setShowDiscard] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   async function handleConfirm() {
     setBusy(true);
@@ -110,40 +112,51 @@ export default function ContentCard({
   return (
     <>
       <Card className="mb-3">
-        <Card.Header className="d-flex justify-content-between align-items-center">
-          <div className="d-flex align-items-center gap-2">
-            <Badge bg="dark">{CATEGORY_LABELS[content.category]}</Badge>
-            <small className="text-muted">
-              {formatDate(content.created_at)}
-            </small>
-          </div>
-          <div>
-            {content.status === "pending" && (
-              <Badge bg="warning" text="dark">
-                Borrador
-              </Badge>
-            )}
-            {content.status === "confirmed" && (
-              <Badge bg="success">Confirmado</Badge>
-            )}
-            {content.status === "discarded" && (
-              <Badge bg="secondary">Descartado</Badge>
-            )}
-          </div>
+        <Card.Header className="p-0">
+          <Accordion activeKey={isExpanded ? "content" : undefined}>
+            <Accordion.Item eventKey="content" className="lm-content-accordion-item">
+              <Accordion.Header onClick={() => setIsExpanded((open) => !open)}>
+                <div className="d-flex justify-content-between align-items-center w-100 me-2">
+                  <div className="d-flex align-items-center gap-2">
+                    <Badge bg="dark">{CATEGORY_LABELS[content.category]}</Badge>
+                    <small className="text-muted">
+                      {formatDate(content.created_at)}
+                    </small>
+                  </div>
+                  <div className="d-flex align-items-center gap-2">
+                    {content.status === "pending" && (
+                      <Badge bg="warning" text="dark">
+                        Borrador
+                      </Badge>
+                    )}
+                    {content.status === "confirmed" && (
+                      <Badge bg="success">Confirmado</Badge>
+                    )}
+                    {content.status === "discarded" && (
+                      <Badge bg="secondary">Descartado</Badge>
+                    )}
+                    <small className="text-muted">
+                      {isExpanded ? "Ocultar" : "Ver contenido"}
+                    </small>
+                  </div>
+                </div>
+              </Accordion.Header>
+              <Accordion.Body>
+                {error && (
+                  <Alert
+                    variant="danger"
+                    onClose={() => setError(null)}
+                    dismissible
+                    className="py-2"
+                  >
+                    {error}
+                  </Alert>
+                )}
+                <MarkdownContent>{content.content}</MarkdownContent>
+              </Accordion.Body>
+            </Accordion.Item>
+          </Accordion>
         </Card.Header>
-        <Card.Body>
-          {error && (
-            <Alert
-              variant="danger"
-              onClose={() => setError(null)}
-              dismissible
-              className="py-2"
-            >
-              {error}
-            </Alert>
-          )}
-          <MarkdownContent>{content.content}</MarkdownContent>
-        </Card.Body>
         <Card.Footer>
           {isPending ? (
             <div className="d-flex gap-2">
