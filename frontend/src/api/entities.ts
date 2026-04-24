@@ -1,18 +1,31 @@
 import { apiFetch } from "./apiClient";
+import { buildQuery } from "./query";
 import type {
   Entity,
   EntityListResponse,
   CreateEntityRequest,
   UpdateEntityRequest,
 } from "../types";
+import type { EntityType } from "../utils/enums";
+
+export interface EntitiesQueryParams {
+  page?: number;
+  page_size?: number;
+  name?: string;
+  type?: EntityType;
+  created_after?: string;
+  created_before?: string;
+}
 
 export function getEntities(
   collectionId: string,
+  params: EntitiesQueryParams = {},
   signal?: AbortSignal,
 ): Promise<EntityListResponse> {
-  return apiFetch<EntityListResponse>(`/collections/${collectionId}/entities`, {
-    signal,
-  });
+  return apiFetch<EntityListResponse>(
+    `/collections/${collectionId}/entities${buildQuery({ ...params })}`,
+    { signal },
+  );
 }
 
 export function getEntity(
