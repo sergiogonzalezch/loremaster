@@ -11,7 +11,12 @@ import {
   Form,
   Pagination,
 } from "react-bootstrap";
-import { getCollections, createCollection, deleteCollection } from "../api";
+import {
+  getCollections,
+  createCollection,
+  updateCollection,
+  deleteCollection,
+} from "../api";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ConfirmModal from "../components/ConfirmModal";
 import type { Collection } from "../types";
@@ -38,6 +43,11 @@ export default function CollectionsPage() {
   const [createName, setCreateName] = useState("");
   const [createDescription, setCreateDescription] = useState("");
   const [creating, setCreating] = useState(false);
+
+  const [editTarget, setEditTarget] = useState<Collection | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editing, setEditing] = useState(false);
 
   const [name, setName] = useState(searchParams.get("name") ?? "");
   const [createdAfter, setCreatedAfter] = useState(
@@ -114,6 +124,30 @@ export default function CollectionsPage() {
       setDeleteTarget(null);
     } finally {
       setDeleting(false);
+    }
+  }
+
+  function handleOpenEdit(col: Collection) {
+    setEditTarget(col);
+    setEditName(col.name);
+    setEditDescription(col.description);
+  }
+
+  async function handleSaveEdit(e: FormEvent) {
+    e.preventDefault();
+    if (!editTarget) return;
+    setEditing(true);
+    try {
+      await updateCollection(editTarget.id, {
+        name: editName.trim(),
+        description: editDescription.trim(),
+      });
+      setEditTarget(null);
+      await fetchCollections();
+    } catch (e) {
+      setError(parseApiError(e, "Error al actualizar la colección."));
+    } finally {
+      setEditing(false);
     }
   }
 
@@ -291,16 +325,28 @@ export default function CollectionsPage() {
                     <small className="text-muted">
                       {formatDate(col.created_at)}
                     </small>
-                    <Button
-                      variant="outline-danger"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteTarget(col);
-                      }}
-                    >
-                      Eliminar
-                    </Button>
+                    <div className="d-flex gap-2">
+                      <Button
+                        variant="outline-secondary"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenEdit(col);
+                        }}
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteTarget(col);
+                        }}
+                      >
+                        Eliminar
+                      </Button>
+                    </div>
                   </Card.Footer>
                 </Card>
               </Col>
@@ -344,6 +390,51 @@ export default function CollectionsPage() {
         onCancel={() => setDeleteTarget(null)}
         variant={deleting ? "secondary" : "danger"}
       />
+
+      <Modal show={!!editTarget} onHide={() => setEditTarget(null)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Editar colección</Modal.Title>
+        </Modal.Header>
+        <Form onSubmit={handleSaveEdit}>
+          <Modal.Body>
+            <Form.Group className="mb-3">
+              <Form.Label>Nombre *</Form.Label>
+              <Form.Control
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                required
+                autoFocus
+              />
+            </Form.Group>
+            <Form.Group>
+              <Form.Label>Descripción</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+              />
+            </Form.Group>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              variant="secondary"
+              onClick={() => setEditTarget(null)}
+              disabled={editing}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              type="submit"
+              disabled={editing || !editName.trim()}
+            >
+              {editing ? "Guardando..." : "Guardar"}
+            </Button>
+          </Modal.Footer>
+        </Form>
+      </Modal>
 
       <Modal show={showCreate} onHide={() => setShowCreate(false)} centered>
         <Modal.Header closeButton>

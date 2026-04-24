@@ -11,6 +11,11 @@ export interface CreateCollectionRequest {
   description: string;
 }
 
+export interface UpdateCollectionRequest {
+  name?: string;
+  description?: string;
+}
+
 import type { PaginatedMeta } from "./content";
 
 export interface CollectionListResponse {

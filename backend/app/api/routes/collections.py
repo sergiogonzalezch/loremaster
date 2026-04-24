@@ -13,12 +13,14 @@ from app.database import get_session
 from app.models.collections import (
     Collection,
     CreateCollectionRequest,
+    UpdateCollectionRequest,
     CollectionResponse,
 )
 from app.models.shared import PaginatedResponse
 from app.services.collection_service import (
     create_collection_service,
     list_collections_service,
+    update_collection_service,
     delete_collection_service,
 )
 
@@ -58,6 +60,15 @@ async def get_collection(
     collection: Collection = Depends(get_collection_or_404),
 ):
     return collection
+
+
+@router.patch("/{collection_id}", response_model=CollectionResponse)
+def update_collection(
+    request: UpdateCollectionRequest,
+    collection: Collection = Depends(get_collection_or_404),
+    session: Session = Depends(get_session),
+):
+    return update_collection_service(session, collection, request)
 
 
 @router.delete("/{collection_id}", status_code=204)
