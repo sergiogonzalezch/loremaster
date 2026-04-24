@@ -35,9 +35,13 @@ def generate_content(
     except PendingLimitExceededError as e:
         raise HTTPException(status_code=409, detail=str(e))
     except ValueError as e:
+        if str(e) == "Contenido no permitido.":
+            raise HTTPException(status_code=422, detail=str(e))
         raise HTTPException(status_code=400, detail=str(e))
     except RuntimeError as e:
-        raise HTTPException(status_code=503, detail=str(e))
+        raise HTTPException(
+            status_code=503, detail="No fue posible generar el contenido solicitado."
+        )
 
 
 @router.get(

@@ -37,7 +37,7 @@ class Entity(SQLModel, table=True):
         )
     )
     type: EntityType = Field(index=True, max_length=50)
-    name: str = Field(max_length=255)
+    name: str = Field(max_length=200)
     description: str = Field(default="", max_length=2000)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: Optional[datetime] = Field(default=None)
@@ -50,7 +50,7 @@ class Entity(SQLModel, table=True):
 
 class EntityRequest(BaseModel):
     type: EntityType
-    name: str = Field(..., min_length=1, max_length=255)
+    name: str = Field(..., min_length=1, max_length=200)
     description: str = Field(default="", max_length=2000)
 
 
@@ -59,7 +59,7 @@ CreateEntityRequest = EntityRequest
 
 class UpdateEntityRequest(BaseModel):
     type: EntityType | None = None
-    name: str | None = Field(default=None, min_length=1, max_length=255)
+    name: str | None = Field(default=None, min_length=1, max_length=200)
     description: str | None = Field(default=None, max_length=2000)
 
 

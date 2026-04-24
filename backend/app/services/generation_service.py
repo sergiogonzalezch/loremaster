@@ -4,6 +4,7 @@ from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.domain.category_rules import validate_category_for_entity
+from app.domain.content_guard import check_generated_output, check_user_input
 from app.engine.rag_pipeline import invoke_generation_pipeline
 from app.models.entities import Entity
 from app.models.entity_content import EntityContent
@@ -25,6 +26,8 @@ def generate(
     category: ContentCategory,
     query: str,
 ) -> EntityContent:
+    check_user_input(query)
+
     if not validate_category_for_entity(entity.type, category):
         raise ValueError(
             f"Category '{category}' is not valid for entity type '{entity.type}'."
@@ -62,6 +65,7 @@ def generate(
         query=query,
         extra_context=extra_context,
     )
+    check_generated_output(answer)
 
     generated_text = GeneratedText(
         entity_id=entity.id,
