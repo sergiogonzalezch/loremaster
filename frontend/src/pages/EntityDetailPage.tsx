@@ -9,6 +9,7 @@ import {
   Card,
   Form,
   Modal,
+  Pagination,
   Spinner,
 } from "react-bootstrap";
 import {
@@ -48,6 +49,7 @@ export default function EntityDetailPage() {
 
   const {
     contents,
+    meta: contentsMeta,
     loading: loadingContents,
     error: contentsError,
     refresh: refreshContents,
@@ -57,13 +59,23 @@ export default function EntityDetailPage() {
   const [selectedCategory, setSelectedCategory] = useState<
     ContentCategory | ""
   >("");
+  const [contentsCategoryFilter, setContentsCategoryFilter] = useState<
+    ContentCategory | ""
+  >("");
+  const [contentsPage, setContentsPage] = useState(1);
+  const [contentsPageSize, setContentsPageSize] = useState(10);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
-    refreshContents({ signal: controller.signal });
+    refreshContents({
+      signal: controller.signal,
+      category: contentsCategoryFilter || undefined,
+      page: contentsPage,
+      page_size: contentsPageSize,
+    });
     return () => controller.abort();
-  }, [refreshContents]);
+  }, [contentsCategoryFilter, contentsPage, contentsPageSize, refreshContents]);
 
   const availableCategories = useMemo<ContentCategory[]>(
     () => (entity ? (ENTITY_CATEGORY_MAP[entity.type] ?? []) : []),
@@ -128,8 +140,21 @@ export default function EntityDetailPage() {
   }, [collectionId, entityId]);
 
   const handleContentAction = useCallback(async () => {
-    await Promise.all([refreshContents(), refreshEntityQuiet()]);
-  }, [refreshContents, refreshEntityQuiet]);
+    await Promise.all([
+      refreshContents({
+        category: contentsCategoryFilter || undefined,
+        page: contentsPage,
+        page_size: contentsPageSize,
+      }),
+      refreshEntityQuiet(),
+    ]);
+  }, [
+    contentsCategoryFilter,
+    contentsPage,
+    contentsPageSize,
+    refreshContents,
+    refreshEntityQuiet,
+  ]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -163,7 +188,11 @@ export default function EntityDetailPage() {
     );
     if (result) {
       setQuery("");
-      await refreshContents();
+      await refreshContents({
+        category: contentsCategoryFilter || undefined,
+        page: contentsPage,
+        page_size: contentsPageSize,
+      });
     }
   }
 
@@ -195,6 +224,28 @@ export default function EntityDetailPage() {
   if (loadingEntity) return <LoadingSpinner />;
   if (entityError) return <Alert variant="danger">{entityError}</Alert>;
   if (!entity || !collectionId || !entityId) return null;
+
+  const contentsPaginationItems = (() => {
+    const totalPages = contentsMeta.total_pages;
+    const page = contentsPage;
+    const items: Array<number | "ellipsis-left" | "ellipsis-right"> = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i += 1) items.push(i);
+      return items;
+    }
+    items.push(1);
+    if (page > 3) items.push("ellipsis-left");
+    for (
+      let i = Math.max(2, page - 1);
+      i <= Math.min(totalPages - 1, page + 1);
+      i += 1
+    ) {
+      items.push(i);
+    }
+    if (page < totalPages - 2) items.push("ellipsis-right");
+    items.push(totalPages);
+    return items;
+  })();
 
   return (
     <div className="lm-page">
@@ -334,6 +385,45 @@ export default function EntityDetailPage() {
       </Form>
 
       <p className="lm-section-title">Contenidos generados</p>
+      <Card className="mb-3">
+        <Card.Body>
+          <div className="d-flex gap-3 flex-wrap align-items-end">
+            <Form.Group style={{ minWidth: 240 }}>
+              <Form.Label>Filtrar por categoría</Form.Label>
+              <Form.Select
+                value={contentsCategoryFilter}
+                onChange={(e) => {
+                  setContentsCategoryFilter(e.target.value as ContentCategory | "");
+                  setContentsPage(1);
+                }}
+              >
+                <option value="">Todas</option>
+                {availableCategories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {CATEGORY_LABELS[cat]}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+            <Form.Group style={{ minWidth: 130 }}>
+              <Form.Label>Page size</Form.Label>
+              <Form.Select
+                value={String(contentsPageSize)}
+                onChange={(e) => {
+                  setContentsPageSize(Number(e.target.value));
+                  setContentsPage(1);
+                }}
+              >
+                {[5, 10, 20, 50].map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+          </div>
+        </Card.Body>
+      </Card>
       {contentsError && (
         <Alert
           variant="danger"
@@ -352,15 +442,54 @@ export default function EntityDetailPage() {
           <p>Genera el primero usando el formulario de arriba.</p>
         </div>
       ) : (
-        contents.map((content) => (
-          <ContentCard
-            key={content.id}
-            content={content}
-            collectionId={collectionId}
-            entityId={entityId}
-            onAction={handleContentAction}
-          />
-        ))
+        <>
+          {contents.map((content) => (
+            <ContentCard
+              key={content.id}
+              content={content}
+              collectionId={collectionId}
+              entityId={entityId}
+              onAction={handleContentAction}
+            />
+          ))}
+          {contentsMeta.total_pages > 1 && (
+            <div className="d-flex justify-content-center mt-3">
+              <Pagination>
+                <Pagination.First
+                  onClick={() => setContentsPage(1)}
+                  disabled={contentsPage <= 1}
+                />
+                <Pagination.Prev
+                  onClick={() => setContentsPage((p) => Math.max(1, p - 1))}
+                  disabled={contentsPage <= 1}
+                />
+                {contentsPaginationItems.map((item) =>
+                  typeof item === "number" ? (
+                    <Pagination.Item
+                      key={item}
+                      active={item === contentsPage}
+                      onClick={() => setContentsPage(item)}
+                    >
+                      {item}
+                    </Pagination.Item>
+                  ) : (
+                    <Pagination.Ellipsis key={item} disabled />
+                  ),
+                )}
+                <Pagination.Next
+                  onClick={() =>
+                    setContentsPage((p) => Math.min(contentsMeta.total_pages, p + 1))
+                  }
+                  disabled={contentsPage >= contentsMeta.total_pages}
+                />
+                <Pagination.Last
+                  onClick={() => setContentsPage(contentsMeta.total_pages)}
+                  disabled={contentsPage >= contentsMeta.total_pages}
+                />
+              </Pagination>
+            </div>
+          )}
+        </>
       )}
 
       <Modal show={showEdit} onHide={() => setShowEdit(false)} centered>
