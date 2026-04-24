@@ -498,7 +498,10 @@ a:hover {
 }
 
 .lm-table tbody td {
-  color: #d4d0e8;
+  color: var(--lm-text) !important;
+  font-family: var(--lm-font-body);
+  font-weight: 400;
+  letter-spacing: normal;
 }
 
 /* ─── Alerts ─────────────────────────────────────────────────────────────────*/
