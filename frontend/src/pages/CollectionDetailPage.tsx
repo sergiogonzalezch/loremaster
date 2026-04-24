@@ -60,7 +60,9 @@ function DocumentsTab({ collectionId }: { collectionId: string }) {
   const [deleteTarget, setDeleteTarget] = useState<Document | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [filename, setFilename] = useState("");
-  const [status, setStatus] = useState<"" | "processing" | "completed" | "failed">("");
+  const [status, setStatus] = useState<
+    "" | "processing" | "completed" | "failed"
+  >("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
@@ -187,7 +189,11 @@ function DocumentsTab({ collectionId }: { collectionId: string }) {
                 value={status}
                 onChange={(e) => {
                   setStatus(
-                    e.target.value as "" | "processing" | "completed" | "failed",
+                    e.target.value as
+                      | ""
+                      | "processing"
+                      | "completed"
+                      | "failed",
                   );
                   setPage(1);
                 }}
