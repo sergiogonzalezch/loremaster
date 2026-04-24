@@ -11,9 +11,18 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<CollectionsPage />} />
-          <Route path="/collections/:collectionId" element={<CollectionDetailPage />} />
-          <Route path="/collections/:collectionId/entities/:entityId" element={<EntityDetailPage />} />
-          <Route path="/collections/:collectionId/generate" element={<GeneratePage />} />
+          <Route
+            path="/collections/:collectionId"
+            element={<CollectionDetailPage />}
+          />
+          <Route
+            path="/collections/:collectionId/entities/:entityId"
+            element={<EntityDetailPage />}
+          />
+          <Route
+            path="/collections/:collectionId/generate"
+            element={<GeneratePage />}
+          />
         </Route>
       </Routes>
     </BrowserRouter>

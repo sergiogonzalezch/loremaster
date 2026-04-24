@@ -1,7 +1,20 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Alert, Badge, Button, Card, Form, Modal, Spinner } from "react-bootstrap";
-import { confirmContent, discardContent, deleteContent, updateContent } from "../api/contents";
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Form,
+  Modal,
+  Spinner,
+} from "react-bootstrap";
+import {
+  confirmContent,
+  discardContent,
+  deleteContent,
+  updateContent,
+} from "../api/contents";
 import ConfirmModal from "./ConfirmModal";
 import MarkdownContent from "./MarkdownContent";
 import type { EntityContent } from "../types";
@@ -16,7 +29,12 @@ interface ContentCardProps {
   onAction: () => void;
 }
 
-export default function ContentCard({ content, collectionId, entityId, onAction }: ContentCardProps) {
+export default function ContentCard({
+  content,
+  collectionId,
+  entityId,
+  onAction,
+}: ContentCardProps) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -44,7 +62,9 @@ export default function ContentCard({ content, collectionId, entityId, onAction 
     e.preventDefault();
     setSaving(true);
     try {
-      await updateContent(collectionId, entityId, content.id, { content: editText });
+      await updateContent(collectionId, entityId, content.id, {
+        content: editText,
+      });
       setShowEdit(false);
       onAction();
     } catch (e) {
@@ -92,20 +112,33 @@ export default function ContentCard({ content, collectionId, entityId, onAction 
       <Card className="mb-3">
         <Card.Header className="d-flex justify-content-between align-items-center">
           <div className="d-flex align-items-center gap-2">
-            <Badge bg="dark">
-              {CATEGORY_LABELS[content.category]}
-            </Badge>
-            <small className="text-muted">{formatDate(content.created_at)}</small>
+            <Badge bg="dark">{CATEGORY_LABELS[content.category]}</Badge>
+            <small className="text-muted">
+              {formatDate(content.created_at)}
+            </small>
           </div>
           <div>
-            {content.status === "pending" && <Badge bg="warning" text="dark">Borrador</Badge>}
-            {content.status === "confirmed" && <Badge bg="success">Confirmado</Badge>}
-            {content.status === "discarded" && <Badge bg="secondary">Descartado</Badge>}
+            {content.status === "pending" && (
+              <Badge bg="warning" text="dark">
+                Borrador
+              </Badge>
+            )}
+            {content.status === "confirmed" && (
+              <Badge bg="success">Confirmado</Badge>
+            )}
+            {content.status === "discarded" && (
+              <Badge bg="secondary">Descartado</Badge>
+            )}
           </div>
         </Card.Header>
         <Card.Body>
           {error && (
-            <Alert variant="danger" onClose={() => setError(null)} dismissible className="py-2">
+            <Alert
+              variant="danger"
+              onClose={() => setError(null)}
+              dismissible
+              className="py-2"
+            >
               {error}
             </Alert>
           )}
@@ -114,13 +147,21 @@ export default function ContentCard({ content, collectionId, entityId, onAction 
         <Card.Footer>
           {isPending ? (
             <div className="d-flex gap-2">
-              <Button variant="success" size="sm" onClick={handleConfirm} disabled={busy}>
+              <Button
+                variant="success"
+                size="sm"
+                onClick={handleConfirm}
+                disabled={busy}
+              >
                 {busy ? <Spinner animation="border" size="sm" /> : "Confirmar"}
               </Button>
               <Button
                 variant="outline-secondary"
                 size="sm"
-                onClick={() => { setEditText(content.content); setShowEdit(true); }}
+                onClick={() => {
+                  setEditText(content.content);
+                  setShowEdit(true);
+                }}
                 disabled={busy}
               >
                 Editar
@@ -156,13 +197,18 @@ export default function ContentCard({ content, collectionId, entityId, onAction 
           ) : isConfirmed ? (
             <div className="d-flex align-items-center justify-content-between">
               {content.confirmed_at && (
-                <small className="text-muted">Confirmado el {formatDate(content.confirmed_at, true)}</small>
+                <small className="text-muted">
+                  Confirmado el {formatDate(content.confirmed_at, true)}
+                </small>
               )}
               <div className="d-flex gap-2">
                 <Button
                   variant="outline-secondary"
                   size="sm"
-                  onClick={() => { setEditText(content.content); setShowEdit(true); }}
+                  onClick={() => {
+                    setEditText(content.content);
+                    setShowEdit(true);
+                  }}
                   disabled={busy}
                 >
                   Editar
@@ -181,7 +227,12 @@ export default function ContentCard({ content, collectionId, entityId, onAction 
         </Card.Footer>
       </Card>
 
-      <Modal show={showEdit} onHide={() => setShowEdit(false)} centered size="lg">
+      <Modal
+        show={showEdit}
+        onHide={() => setShowEdit(false)}
+        centered
+        size="lg"
+      >
         <Modal.Header closeButton>
           <Modal.Title>Editar contenido</Modal.Title>
         </Modal.Header>
@@ -196,10 +247,18 @@ export default function ContentCard({ content, collectionId, entityId, onAction 
             />
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowEdit(false)} disabled={saving}>
+            <Button
+              variant="secondary"
+              onClick={() => setShowEdit(false)}
+              disabled={saving}
+            >
               Cancelar
             </Button>
-            <Button variant="warning" type="submit" disabled={saving || !editText.trim()}>
+            <Button
+              variant="warning"
+              type="submit"
+              disabled={saving || !editText.trim()}
+            >
               {saving ? "Guardando..." : "Guardar"}
             </Button>
           </Modal.Footer>

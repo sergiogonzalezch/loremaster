@@ -7,7 +7,10 @@ interface MarkdownContentProps {
   className?: string;
 }
 
-export default function MarkdownContent({ children, className }: MarkdownContentProps) {
+export default function MarkdownContent({
+  children,
+  className,
+}: MarkdownContentProps) {
   return (
     <div className={`lm-markdown ${className ?? ""}`}>
       <ReactMarkdown

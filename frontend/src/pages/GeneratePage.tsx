@@ -1,7 +1,15 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Alert, Badge, Breadcrumb, Button, Card, Form, Spinner } from "react-bootstrap";
+import {
+  Alert,
+  Badge,
+  Breadcrumb,
+  Button,
+  Card,
+  Form,
+  Spinner,
+} from "react-bootstrap";
 import { getCollection, generateText } from "../api";
 import { parseApiError } from "../utils/errors";
 import MarkdownContent from "../components/MarkdownContent";
@@ -14,9 +22,19 @@ export default function GeneratePage() {
   const [collectionName, setCollectionName] = useState<string>("");
   const [query, setQuery] = useState("");
   const [errorDismissed, setErrorDismissed] = useState(false);
-  const { data: result, error, isLoading, isCancelled, run, cancel, reset } = useGenerate(generateText);
+  const {
+    data: result,
+    error,
+    isLoading,
+    isCancelled,
+    run,
+    cancel,
+    reset,
+  } = useGenerate(generateText);
 
-  useEffect(() => { if (error) setErrorDismissed(false); }, [error]);
+  useEffect(() => {
+    if (error) setErrorDismissed(false);
+  }, [error]);
 
   useEffect(() => {
     if (!collectionId) return;
@@ -39,7 +57,10 @@ export default function GeneratePage() {
         <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/" }}>
           Colecciones
         </Breadcrumb.Item>
-        <Breadcrumb.Item linkAs={Link} linkProps={{ to: `/collections/${collectionId}` }}>
+        <Breadcrumb.Item
+          linkAs={Link}
+          linkProps={{ to: `/collections/${collectionId}` }}
+        >
           {collectionName || collectionId}
         </Breadcrumb.Item>
         <Breadcrumb.Item active>Generar texto</Breadcrumb.Item>
@@ -56,7 +77,11 @@ export default function GeneratePage() {
       </div>
 
       {parsedError && !errorDismissed && (
-        <Alert variant={parsedError.variant} dismissible onClose={() => setErrorDismissed(true)}>
+        <Alert
+          variant={parsedError.variant}
+          dismissible
+          onClose={() => setErrorDismissed(true)}
+        >
           {parsedError.text}
         </Alert>
       )}

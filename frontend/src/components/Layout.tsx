@@ -15,7 +15,11 @@ export default function Layout() {
           </Navbar.Brand>
         </Container>
       </Navbar>
-      <Container fluid="lg" className="py-4" style={{ position: "relative", zIndex: 1 }}>
+      <Container
+        fluid="lg"
+        className="py-4"
+        style={{ position: "relative", zIndex: 1 }}
+      >
         <Outlet />
       </Container>
     </>

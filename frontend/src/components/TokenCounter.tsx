@@ -5,7 +5,10 @@ interface TokenCounterProps {
   warnAt?: number;
 }
 
-export default function TokenCounter({ text, warnAt = QUERY_TOKEN_WARN_AT }: TokenCounterProps) {
+export default function TokenCounter({
+  text,
+  warnAt = QUERY_TOKEN_WARN_AT,
+}: TokenCounterProps) {
   const tokens = estimateTokens(text);
   const warn = tokens >= warnAt;
   return (

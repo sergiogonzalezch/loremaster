@@ -6,15 +6,29 @@ import type {
   UpdateEntityRequest,
 } from "../types";
 
-export function getEntities(collectionId: string): Promise<EntityListResponse> {
-  return apiFetch<EntityListResponse>(`/collections/${collectionId}/entities`);
+export function getEntities(
+  collectionId: string,
+  signal?: AbortSignal,
+): Promise<EntityListResponse> {
+  return apiFetch<EntityListResponse>(`/collections/${collectionId}/entities`, {
+    signal,
+  });
 }
 
-export function getEntity(collectionId: string, entityId: string): Promise<Entity> {
-  return apiFetch<Entity>(`/collections/${collectionId}/entities/${entityId}`);
+export function getEntity(
+  collectionId: string,
+  entityId: string,
+  signal?: AbortSignal,
+): Promise<Entity> {
+  return apiFetch<Entity>(`/collections/${collectionId}/entities/${entityId}`, {
+    signal,
+  });
 }
 
-export function createEntity(collectionId: string, data: CreateEntityRequest): Promise<Entity> {
+export function createEntity(
+  collectionId: string,
+  data: CreateEntityRequest,
+): Promise<Entity> {
   return apiFetch<Entity>(`/collections/${collectionId}/entities`, {
     method: "POST",
     body: JSON.stringify(data),
@@ -24,7 +38,7 @@ export function createEntity(collectionId: string, data: CreateEntityRequest): P
 export function updateEntity(
   collectionId: string,
   entityId: string,
-  data: UpdateEntityRequest
+  data: UpdateEntityRequest,
 ): Promise<Entity> {
   return apiFetch<Entity>(`/collections/${collectionId}/entities/${entityId}`, {
     method: "PATCH",
@@ -32,6 +46,11 @@ export function updateEntity(
   });
 }
 
-export function deleteEntity(collectionId: string, entityId: string): Promise<void> {
-  return apiFetch<void>(`/collections/${collectionId}/entities/${entityId}`, { method: "DELETE" });
+export function deleteEntity(
+  collectionId: string,
+  entityId: string,
+): Promise<void> {
+  return apiFetch<void>(`/collections/${collectionId}/entities/${entityId}`, {
+    method: "DELETE",
+  });
 }
