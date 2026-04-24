@@ -65,6 +65,7 @@ export default function EntityDetailPage() {
   const [contentsPage, setContentsPage] = useState(1);
   const [contentsPageSize, setContentsPageSize] = useState(10);
   const [query, setQuery] = useState("");
+  const [lastSubmittedQuery, setLastSubmittedQuery] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -179,15 +180,47 @@ export default function EntityDetailPage() {
 
   async function handleGenerate(e: FormEvent) {
     e.preventDefault();
-    if (!collectionId || !entityId || selectedCategory === "") return;
+    if (
+      !collectionId ||
+      !entityId ||
+      selectedCategory === "" ||
+      query.trim().length < 5
+    ) {
+      return;
+    }
+    const trimmedQuery = query.trim();
+    setLastSubmittedQuery(trimmedQuery);
     const result = await runGenerateContent(
       collectionId,
       entityId,
       selectedCategory,
-      { query },
+      { query: trimmedQuery },
     );
     if (result) {
-      setQuery("");
+      await refreshContents({
+        category: contentsCategoryFilter || undefined,
+        page: contentsPage,
+        page_size: contentsPageSize,
+      });
+    }
+  }
+
+  async function handleRegenerate() {
+    if (
+      !collectionId ||
+      !entityId ||
+      selectedCategory === "" ||
+      lastSubmittedQuery.trim().length < 5
+    ) {
+      return;
+    }
+    const result = await runGenerateContent(
+      collectionId,
+      entityId,
+      selectedCategory,
+      { query: lastSubmittedQuery.trim() },
+    );
+    if (result) {
       await refreshContents({
         category: contentsCategoryFilter || undefined,
         page: contentsPage,
@@ -324,7 +357,7 @@ export default function EntityDetailPage() {
             ))}
           </Form.Select>
         </Form.Group>
-        <div className="d-flex gap-2 align-items-start">
+        <div className="d-flex gap-2 align-items-start flex-wrap">
           <Form.Control
             as="textarea"
             rows={2}
@@ -353,12 +386,34 @@ export default function EntityDetailPage() {
           >
             {generating ? (
               <>
-                <Spinner animation="border" size="sm" className="me-1" />
+                <Spinner
+                  animation="border"
+                  size="sm"
+                  className="me-1 lm-spinner-inline"
+                />
                 Generando...
               </>
             ) : (
               "Generar"
             )}
+          </Button>
+          <Button
+            variant="outline-secondary"
+            type="button"
+            onClick={handleRegenerate}
+            disabled={
+              generating ||
+              pendingLimitReached ||
+              lastSubmittedQuery.trim().length < 5 ||
+              selectedCategory === ""
+            }
+            title={
+              lastSubmittedQuery
+                ? `Reutilizar último prompt: "${lastSubmittedQuery}"`
+                : "Genera contenido una vez para habilitar regenerar"
+            }
+          >
+            ↻ Regenerar
           </Button>
           {generating && (
             <Button
@@ -383,6 +438,14 @@ export default function EntityDetailPage() {
             )}
         </div>
       </Form>
+      {generating && (
+        <div className="lm-llm-loading mb-4">
+          <div className="lm-llm-loading-bar" />
+          <small className="text-muted">
+            Procesando prompt con el modelo y preparando un nuevo borrador...
+          </small>
+        </div>
+      )}
 
       <p className="lm-section-title">Contenidos generados</p>
       <Card className="mb-3">
