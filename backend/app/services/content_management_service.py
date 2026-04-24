@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Literal, Optional
 
 from sqlalchemy import func
 from sqlmodel import Session, select
@@ -20,6 +20,7 @@ def list_contents(
     category: Optional[ContentCategory] = None,
     page: int = 1,
     page_size: int = 20,
+    order: Literal["asc", "desc"] = "desc",
 ) -> tuple[list[EntityContent], int]:
     conditions = [
         EntityContent.entity_id == entity_id,
@@ -36,12 +37,13 @@ def list_contents(
         )
     ).one()
 
+    sort_col = EntityContent.created_at.asc() if order == "asc" else EntityContent.created_at.desc()
     skip = (page - 1) * page_size
     items = list(
         session.exec(
             select(EntityContent)
             .where(*conditions)
-            .order_by(EntityContent.created_at.desc())
+            .order_by(sort_col)
             .offset(skip)
             .limit(page_size)
         ).all()

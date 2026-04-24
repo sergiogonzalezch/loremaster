@@ -13,6 +13,7 @@ export interface CollectionsQueryParams {
   name?: string;
   created_after?: string;
   created_before?: string;
+  order?: "asc" | "desc";
 }
 
 export function getCollections(

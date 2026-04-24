@@ -56,6 +56,9 @@ export default function CollectionsPage() {
   const [createdBefore, setCreatedBefore] = useState(
     searchParams.get("created_before")?.slice(0, 10) ?? "",
   );
+  const [order, setOrder] = useState<"asc" | "desc">(
+    (searchParams.get("order") as "asc" | "desc") ?? "desc",
+  );
 
   const page = Number(searchParams.get("page") ?? 1);
   const pageSize = Number(searchParams.get("page_size") ?? 12);
@@ -72,6 +75,7 @@ export default function CollectionsPage() {
         name: debouncedName || undefined,
         created_after: createdAfter || undefined,
         created_before: createdBefore || undefined,
+        order,
       });
       setCollections(res.data);
       setTotalPages(res.meta.total_pages);
@@ -80,7 +84,7 @@ export default function CollectionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, debouncedName, createdAfter, createdBefore]);
+  }, [page, pageSize, debouncedName, createdAfter, createdBefore, order]);
 
   const setParam = useCallback(
     (updates: Record<string, string | null>) => {
@@ -242,6 +246,20 @@ export default function CollectionsPage() {
               />
             </Col>
             <Col md={2}>
+              <Form.Label>Orden</Form.Label>
+              <Form.Select
+                value={order}
+                onChange={(e) => {
+                  const val = e.target.value as "asc" | "desc";
+                  setOrder(val);
+                  setParam({ page: "1", order: val });
+                }}
+              >
+                <option value="desc">Más recientes</option>
+                <option value="asc">Más antiguos</option>
+              </Form.Select>
+            </Col>
+            <Col md={2}>
               <Form.Label>Page size</Form.Label>
               <Form.Select
                 value={String(pageSize)}
@@ -265,12 +283,14 @@ export default function CollectionsPage() {
                 setName("");
                 setCreatedAfter("");
                 setCreatedBefore("");
+                setOrder("desc");
                 setParam({
                   page: "1",
                   page_size: String(pageSize),
                   name: null,
                   created_after: null,
                   created_before: null,
+                  order: null,
                 });
               }}
             >

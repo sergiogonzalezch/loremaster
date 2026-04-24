@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import HTTPException, UploadFile  # HTTPException: input validation only
 from sqlalchemy import func
@@ -78,6 +78,7 @@ def list_documents_service(
     status: Optional[DocumentStatus] = None,
     created_after: Optional[datetime] = None,
     created_before: Optional[datetime] = None,
+    order: Literal["asc", "desc"] = "desc",
 ) -> tuple[list[Document], int]:
     conditions = [
         Document.collection_id == collection_id,
@@ -98,9 +99,10 @@ def list_documents_service(
     total = session.exec(
         select(func.count()).select_from(select(Document).where(*conditions).subquery())
     ).one()
+    sort_col = Document.created_at.asc() if order == "asc" else Document.created_at.desc()
     skip = (page - 1) * page_size
     items = session.exec(
-        select(Document).where(*conditions).offset(skip).limit(page_size)
+        select(Document).where(*conditions).order_by(sort_col).offset(skip).limit(page_size)
     ).all()
     return list(items), total
 

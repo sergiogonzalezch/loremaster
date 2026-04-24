@@ -11,6 +11,7 @@ export interface DocumentsQueryParams {
   status?: DocumentStatus;
   created_after?: string;
   created_before?: string;
+  order?: "asc" | "desc";
 }
 
 export function uploadDocument(

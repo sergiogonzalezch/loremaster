@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import HTTPException
 from sqlalchemy import func
@@ -48,6 +48,7 @@ def list_collections_service(
     name: Optional[str] = None,
     created_after: Optional[datetime] = None,
     created_before: Optional[datetime] = None,
+    order: Literal["asc", "desc"] = "desc",
 ) -> tuple[list[Collection], int]:
     conditions = [Collection.is_deleted == False]
     if name:
@@ -62,9 +63,10 @@ def list_collections_service(
             select(Collection).where(*conditions).subquery()
         )
     ).one()
+    sort_col = Collection.created_at.asc() if order == "asc" else Collection.created_at.desc()
     skip = (page - 1) * page_size
     items = session.exec(
-        select(Collection).where(*conditions).offset(skip).limit(page_size)
+        select(Collection).where(*conditions).order_by(sort_col).offset(skip).limit(page_size)
     ).all()
     return list(items), total
 
