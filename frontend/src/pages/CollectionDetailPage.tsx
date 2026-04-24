@@ -18,6 +18,7 @@ import {
 import {
   getCollection,
   getDocuments,
+  getDocument,
   uploadDocument,
   deleteDocument,
   getEntities,
@@ -31,6 +32,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import MarkdownContent from "../components/MarkdownContent";
 import TokenCounter from "../components/TokenCounter";
 import { useGenerate } from "../hooks/useGenerate";
+import { useCollectionDocumentsStatus } from "../hooks/useCollectionDocumentsStatus";
 import type {
   Collection,
   Document,
@@ -44,7 +46,13 @@ import { ENTITY_TYPE_BADGE, ENTITY_TYPE_LABELS } from "../utils/constants";
 
 // ─── Documents tab ──────────────────────────────────────────────────────────
 
-function DocumentsTab({ collectionId }: { collectionId: string }) {
+function DocumentsTab({
+  collectionId,
+  onDocumentsMutated,
+}: {
+  collectionId: string;
+  onDocumentsMutated: () => void;
+}) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,6 +74,8 @@ function DocumentsTab({ collectionId }: { collectionId: string }) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [loadingDocumentDetail, setLoadingDocumentDetail] = useState(false);
 
   const fetchDocuments = useCallback(
     async (signal?: AbortSignal) => {
@@ -123,6 +133,7 @@ function DocumentsTab({ collectionId }: { collectionId: string }) {
         text: `"${file.name}" subido correctamente.`,
       });
       await fetchDocuments();
+      onDocumentsMutated();
     } catch (err) {
       const { variant, text } = parseApiError(err, "Error al subir");
       setUploadMsg({ type: variant, text });
@@ -139,11 +150,24 @@ function DocumentsTab({ collectionId }: { collectionId: string }) {
       await deleteDocument(collectionId, deleteTarget.id);
       setDeleteTarget(null);
       await fetchDocuments();
+      onDocumentsMutated();
     } catch (e) {
       setError(parseApiError(e, "Error al eliminar documento"));
       setDeleteTarget(null);
     } finally {
       setDeleting(false);
+    }
+  }
+
+  async function handleOpenDocumentDetail(docId: string) {
+    setLoadingDocumentDetail(true);
+    try {
+      const doc = await getDocument(collectionId, docId);
+      setSelectedDocument(doc);
+    } catch (e) {
+      setError(parseApiError(e, "Error al cargar el detalle del documento"));
+    } finally {
+      setLoadingDocumentDetail(false);
     }
   }
 
@@ -299,6 +323,15 @@ function DocumentsTab({ collectionId }: { collectionId: string }) {
                 <td>{formatDate(doc.created_at)}</td>
                 <td>
                   <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    className="me-2"
+                    onClick={() => handleOpenDocumentDetail(doc.id)}
+                    disabled={loadingDocumentDetail}
+                  >
+                    Detalle
+                  </Button>
+                  <Button
                     variant="outline-danger"
                     size="sm"
                     onClick={() => setDeleteTarget(doc)}
@@ -320,6 +353,41 @@ function DocumentsTab({ collectionId }: { collectionId: string }) {
         onCancel={() => setDeleteTarget(null)}
         variant={deleting ? "secondary" : "danger"}
       />
+      <Modal
+        show={selectedDocument !== null}
+        onHide={() => setSelectedDocument(null)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Detalle del documento</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedDocument && (
+            <div className="d-grid gap-2">
+              <div>
+                <small className="text-muted">Nombre</small>
+                <div>{selectedDocument.filename}</div>
+              </div>
+              <div>
+                <small className="text-muted">Tipo</small>
+                <div>{selectedDocument.file_type.toUpperCase()}</div>
+              </div>
+              <div>
+                <small className="text-muted">Chunks</small>
+                <div>{selectedDocument.chunk_count}</div>
+              </div>
+              <div>
+                <small className="text-muted">Estado</small>
+                <div>{selectedDocument.status}</div>
+              </div>
+              <div>
+                <small className="text-muted">Creado</small>
+                <div>{formatDate(selectedDocument.created_at, true)}</div>
+              </div>
+            </div>
+          )}
+        </Modal.Body>
+      </Modal>
       {totalPages > 1 && (
         <div className="d-flex justify-content-center mt-3">
           <Pagination>
@@ -702,12 +770,16 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
 
 // ─── Generate tab ────────────────────────────────────────────────────────────
 
-function GenerateTab({ collectionId }: { collectionId: string }) {
+function GenerateTab({
+  collectionId,
+  refreshKey,
+}: {
+  collectionId: string;
+  refreshKey: number;
+}) {
   const [query, setQuery] = useState("");
   const [errorDismissed, setErrorDismissed] = useState(false);
-  const [hasCompletedDocs, setHasCompletedDocs] = useState<boolean | null>(
-    null,
-  );
+  const { hasCompletedDocs, refresh } = useCollectionDocumentsStatus(collectionId);
   const {
     data: result,
     error,
@@ -724,12 +796,10 @@ function GenerateTab({ collectionId }: { collectionId: string }) {
   }, [error]);
 
   useEffect(() => {
-    getDocuments(collectionId, { page: 1, page_size: 100 })
-      .then((res) =>
-        setHasCompletedDocs(res.data.some((d) => d.status === "completed")),
-      )
-      .catch(() => setHasCompletedDocs(false));
-  }, [collectionId]);
+    const controller = new AbortController();
+    refresh(controller.signal);
+    return () => controller.abort();
+  }, [refreshKey, refresh]);
 
   async function handleGenerate(e: FormEvent) {
     e.preventDefault();
@@ -866,6 +936,7 @@ export default function CollectionDetailPage() {
   const [collection, setCollection] = useState<Collection | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [documentsRefreshKey, setDocumentsRefreshKey] = useState(0);
 
   const fetchCollection = useCallback(async () => {
     if (!collectionId) return;
@@ -902,13 +973,21 @@ export default function CollectionDetailPage() {
 
       <Tabs defaultActiveKey="documents" className="mb-4">
         <Tab eventKey="documents" title="Documentos">
-          <DocumentsTab collectionId={collectionId} />
+          <DocumentsTab
+            collectionId={collectionId}
+            onDocumentsMutated={() =>
+              setDocumentsRefreshKey((current) => current + 1)
+            }
+          />
         </Tab>
         <Tab eventKey="entities" title="Entidades">
           <EntitiesTab collectionId={collectionId} />
         </Tab>
         <Tab eventKey="generate" title="Generar texto">
-          <GenerateTab collectionId={collectionId} />
+          <GenerateTab
+            collectionId={collectionId}
+            refreshKey={documentsRefreshKey}
+          />
         </Tab>
       </Tabs>
     </div>
