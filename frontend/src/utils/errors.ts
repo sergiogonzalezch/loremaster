@@ -12,10 +12,7 @@ export function parseApiError(
   fallback = "Error de conexión con el servidor.",
 ): { variant: "warning" | "danger"; text: string } {
   if (error instanceof ApiError) {
-    if (error.status === 409) {
-      return { variant: "warning", text: error.message };
-    }
-    if (error.status === 400 || error.status === 422) {
+    if ([400, 404, 409, 422].includes(error.status)) {
       return { variant: "warning", text: error.message };
     }
     if (error.status === 503) {
