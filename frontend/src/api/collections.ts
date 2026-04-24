@@ -3,6 +3,7 @@ import { buildQuery } from "./query";
 import type {
   Collection,
   CreateCollectionRequest,
+  UpdateCollectionRequest,
   CollectionListResponse,
 } from "../types";
 
@@ -36,6 +37,16 @@ export function createCollection(
 ): Promise<Collection> {
   return apiFetch<Collection>("/collections/", {
     method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateCollection(
+  id: string,
+  data: UpdateCollectionRequest,
+): Promise<Collection> {
+  return apiFetch<Collection>(`/collections/${id}`, {
+    method: "PATCH",
     body: JSON.stringify(data),
   });
 }

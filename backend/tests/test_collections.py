@@ -223,3 +223,52 @@ async def test_filter_and_pagination_combined(client):
     assert body["meta"]["total"] == 5
     assert body["meta"]["page_size"] == 3
     assert len(body["data"]) == 3
+
+
+@pytest.mark.anyio
+async def test_update_collection_name(client, sample_collection):
+    """COL-13: PATCH nombre → 200 con datos actualizados."""
+    response = await client.patch(
+        f"/api/v1/collections/{sample_collection.id}",
+        json={"name": "Updated World"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["name"] == "Updated World"
+    assert data["description"] == sample_collection.description
+    assert data["updated_at"] is not None
+
+
+@pytest.mark.anyio
+async def test_update_collection_duplicate_name_409(client, sample_collection):
+    """COL-14: PATCH con nombre de otra colección activa retorna 409."""
+    await client.post("/api/v1/collections/", json={"name": "Other World", "description": ""})
+
+    response = await client.patch(
+        f"/api/v1/collections/{sample_collection.id}",
+        json={"name": "Other World"},
+    )
+    assert response.status_code == 409
+
+
+@pytest.mark.anyio
+async def test_update_collection_only_description(client, sample_collection):
+    """COL-15: PATCH solo descripción → nombre permanece igual."""
+    response = await client.patch(
+        f"/api/v1/collections/{sample_collection.id}",
+        json={"description": "Nueva descripción"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["name"] == sample_collection.name
+    assert data["description"] == "Nueva descripción"
+
+
+@pytest.mark.anyio
+async def test_update_collection_not_found(client):
+    """COL-16: PATCH colección inexistente retorna 404."""
+    response = await client.patch(
+        "/api/v1/collections/00000000-0000-0000-0000-000000000000",
+        json={"name": "Ghost"},
+    )
+    assert response.status_code == 404

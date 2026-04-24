@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import HTTPException
@@ -7,7 +7,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
-from app.models.collections import Collection
+from app.models.collections import Collection, UpdateCollectionRequest
 from app.services.deletion_service import cascade_delete_collection
 
 logger = logging.getLogger(__name__)
@@ -67,6 +67,41 @@ def list_collections_service(
         select(Collection).where(*conditions).offset(skip).limit(page_size)
     ).all()
     return list(items), total
+
+
+def update_collection_service(
+    session: Session, collection: Collection, request: UpdateCollectionRequest
+) -> Collection:
+    new_name = request.name if request.name is not None else collection.name
+    if new_name != collection.name:
+        existing = session.exec(
+            select(Collection).where(
+                Collection.name == new_name,
+                Collection.is_deleted == False,
+            )
+        ).first()
+        if existing:
+            raise HTTPException(
+                status_code=409, detail="Ya existe una colección con ese nombre."
+            )
+
+    if request.name is not None:
+        collection.name = request.name
+    if request.description is not None:
+        collection.description = request.description
+
+    collection.updated_at = datetime.now(timezone.utc)
+    session.add(collection)
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(
+            status_code=409, detail="Ya existe una colección con ese nombre."
+        )
+    session.refresh(collection)
+    logger.info("Collection '%s' updated (id %s)", collection.name, collection.id)
+    return collection
 
 
 def delete_collection_service(session: Session, collection: Collection) -> bool:
