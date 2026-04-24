@@ -38,13 +38,13 @@ export function useGenerate<TArgs extends unknown[], TResult>(
   const controllerRef = useRef<AbortController | null>(null);
   const isMountedRef = useRef(true);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
       isMountedRef.current = false;
       controllerRef.current?.abort();
-    },
-    []
-  );
+    };
+  }, []);
 
   const cancel = useCallback(() => {
     controllerRef.current?.abort();

@@ -6,7 +6,7 @@ export function generateText(
   data: GenerateTextRequest,
   signal?: AbortSignal
 ): Promise<GenerateTextResponse> {
-  return apiFetch<GenerateTextResponse>(`/collections/${collectionId}/generate/text`, {
+  return apiFetch<GenerateTextResponse>(`/collections/${collectionId}/query`, {
     method: "POST",
     body: JSON.stringify(data),
     signal,

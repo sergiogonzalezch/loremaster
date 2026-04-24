@@ -27,7 +27,8 @@ cp .env.example .env
 
 | Variable | Por defecto | Propósito |
 |---|---|---|
-| `DATABASE_URL` | `sqlite:///./loremaster.db` | SQLite (dev) / PostgreSQL (prod): `postgresql://loremaster:loremaster@localhost:5432/loremaster` |
+| `COMPOSE_PROFILES` | *(vacío)* | Perfiles Docker activos. Vacío = solo qdrant+redis. `postgres` = también levanta PostgreSQL |
+| `DATABASE_URL` | `sqlite:///./loremaster.db` | SQLite en dev; `postgresql://loremaster:loremaster@localhost:5433/loremaster` en prod |
 | `QDRANT_URL` | `http://localhost:6333` | Base de datos vectorial |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Endpoint de Ollama |
 | `OLLAMA_MODEL` | `llama3.2:latest` | Modelo LLM |
@@ -45,24 +46,61 @@ cp .env.example .env
 
 > Las variables de S3/LocalStack y ComfyUI aparecen en `.env.example` pero los servicios no están integrados aún.
 
-## Servicios de soporte
+## Base de datos: dev vs producción
+
+La app soporta **SQLite** (dev local, sin servidor) y **PostgreSQL** (producción). El driver se detecta automáticamente a partir del prefijo de `DATABASE_URL`; no hay cambio de código.
+
+El perfil Docker `postgres` controla si el contenedor de PostgreSQL arranca o no. Ambos valores van en el mismo `.env`:
+
+### Dev / local (SQLite)
+
+```dotenv
+COMPOSE_PROFILES=
+DATABASE_URL=sqlite:///./loremaster.db
+```
 
 ```bash
-# Infra base
-docker-compose up -d
-
-# Infra base + visor SQLite (dev)
-docker-compose --profile tools up -d
+docker-compose up -d    # levanta qdrant + redis (postgres no arranca)
+make run                # la app crea loremaster.db automáticamente
 ```
+
+### Producción (PostgreSQL)
+
+```dotenv
+COMPOSE_PROFILES=postgres
+DATABASE_URL=postgresql://loremaster:loremaster@localhost:5433/loremaster
+```
+
+```bash
+docker-compose up -d    # levanta qdrant + redis + postgres
+make run
+```
+
+> El puerto expuesto de PostgreSQL es **5433** (no 5432) para evitar colisión con instalaciones locales.
+
+---
+
+## Servicios de soporte
 
 | Servicio | Puerto (host) | Propósito | Profile |
 |---|---|---|---|
-| Qdrant | 6333 | Base de datos vectorial | — |
-| PostgreSQL | 5433 | Metadatos relacionales | — |
-| Redis | 6379 | Caché semántico (staged) | — |
+| Qdrant | 6333 | Base de datos vectorial | *(siempre)* |
+| Redis | 6379 | Caché semántico (staged) | *(siempre)* |
+| PostgreSQL | 5433 | Metadatos relacionales (prod) | `postgres` |
 | sqlite-web | 8080 | Visor web SQLite (`loremaster.db`) | `tools` |
 
-El servicio `sqlite-web` solo arranca con `--profile tools` y abre `http://localhost:8080` directamente sobre el fichero `loremaster.db` local. No requiere credenciales.
+```bash
+# Solo infra base (dev — qdrant + redis)
+docker-compose up -d
+
+# Infra base + postgres (prod-local)
+docker-compose --profile postgres up -d
+
+# Infra base + visor SQLite (dev con UI)
+docker-compose --profile tools up -d
+```
+
+`sqlite-web` abre `http://localhost:8080` directamente sobre `loremaster.db`. No requiere credenciales.
 
 ## Ejecutar
 

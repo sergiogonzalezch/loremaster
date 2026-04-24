@@ -31,7 +31,7 @@ async def generate_content(
     try:
         return generation_service.generate(session, entity, category, request.query)
     except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e))
 

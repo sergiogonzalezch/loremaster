@@ -37,6 +37,18 @@ export default function CollectionsPage() {
     }
   }, []);
 
+  // Sync collections to starfield canvas whenever the list changes
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("lm:collections", {
+        detail: {
+          collections,
+          nav: (id: string) => navigate(`/collections/${id}`),
+        },
+      })
+    );
+  }, [collections, navigate]);
+
   useEffect(() => {
     fetchCollections();
   }, [fetchCollections]);
@@ -118,7 +130,20 @@ export default function CollectionsPage() {
                   </Card.Text>
                 </Card.Body>
                 <Card.Footer className="d-flex justify-content-between align-items-center">
-                  <small className="text-muted">{formatDate(col.created_at)}</small>
+                  {col.document_count !== undefined ? (
+                    <div className="d-flex gap-3">
+                      <span className="lm-stat">
+                        <span className="lm-stat-value">{col.document_count}</span>{" "}
+                        documentos
+                      </span>
+                      <span className="lm-stat">
+                        <span className="lm-stat-value">{col.entity_count ?? 0}</span>{" "}
+                        entidades
+                      </span>
+                    </div>
+                  ) : (
+                    <small className="text-muted">{formatDate(col.created_at)}</small>
+                  )}
                   <Button
                     variant="outline-danger"
                     size="sm"

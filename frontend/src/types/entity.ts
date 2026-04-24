@@ -22,7 +22,9 @@ export interface UpdateEntityRequest {
   description?: string;
 }
 
+import type { PaginatedMeta } from "./content";
+
 export interface EntityListResponse {
   data: Entity[];
-  count: number;
+  meta: PaginatedMeta;
 }
