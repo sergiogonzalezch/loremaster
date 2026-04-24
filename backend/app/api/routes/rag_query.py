@@ -17,6 +17,6 @@ async def rag_query(
     try:
         return execute_rag_query(request.query, collection_id=collection_id)
     except ValueError as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e))

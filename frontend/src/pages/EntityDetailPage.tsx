@@ -110,6 +110,14 @@ export default function EntityDetailPage() {
     fetchEntityData();
   }, [fetchEntityData]);
 
+  useEffect(() => {
+    resetGenerate();
+  }, [entityId, resetGenerate]);
+
+  useEffect(() => {
+    setSelectedCategory("");
+  }, [entity?.type]);
+
   // Inicializar la categoría seleccionada cuando se cargan las categorías disponibles
   useEffect(() => {
     if (availableCategories.length > 0 && selectedCategory === "") {

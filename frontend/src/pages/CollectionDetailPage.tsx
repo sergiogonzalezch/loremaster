@@ -53,6 +53,13 @@ function DocumentsTab({ collectionId }: { collectionId: string }) {
 
   useEffect(() => { fetchDocuments(); }, [fetchDocuments]);
 
+  const hasProcessing = documents.some((d) => d.status === "processing");
+  useEffect(() => {
+    if (!hasProcessing) return;
+    const interval = setInterval(fetchDocuments, 3000);
+    return () => clearInterval(interval);
+  }, [hasProcessing, fetchDocuments]);
+
   async function handleUpload(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -289,7 +296,7 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
                   </span>
                 </td>
                 <td>
-                  <Badge bg={ENTITY_TYPE_BADGE[entity.type]}>{entity.type}</Badge>
+                  <Badge bg={ENTITY_TYPE_BADGE[entity.type]}>{ENTITY_TYPE_LABELS[entity.type]}</Badge>
                 </td>
                 <td
                   style={{
@@ -382,8 +389,18 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
 
 function GenerateTab({ collectionId }: { collectionId: string }) {
   const [query, setQuery] = useState("");
-  const { data: result, error, isLoading, isCancelled, run, cancel } = useGenerate(generateText);
+  const [errorDismissed, setErrorDismissed] = useState(false);
+  const [hasCompletedDocs, setHasCompletedDocs] = useState<boolean | null>(null);
+  const { data: result, error, isLoading, isCancelled, run, cancel, reset } = useGenerate(generateText);
   const parsedError = error ? parseApiError(error) : null;
+
+  useEffect(() => { if (error) setErrorDismissed(false); }, [error]);
+
+  useEffect(() => {
+    getDocuments(collectionId)
+      .then((res) => setHasCompletedDocs(res.data.some((d) => d.status === "completed")))
+      .catch(() => setHasCompletedDocs(false));
+  }, [collectionId]);
 
   async function handleGenerate(e: FormEvent) {
     e.preventDefault();
@@ -392,69 +409,106 @@ function GenerateTab({ collectionId }: { collectionId: string }) {
 
   return (
     <>
-      {parsedError && (
-        <Alert variant={parsedError.variant} dismissible>
+      {hasCompletedDocs === false && (
+        <Alert variant="warning">
+          Esta colección no tiene documentos procesados. Sube un PDF o TXT y espera a que el estado sea <strong>Completado</strong> antes de consultar.
+        </Alert>
+      )}
+      {parsedError && !errorDismissed && (
+        <Alert variant={parsedError.variant} dismissible onClose={() => setErrorDismissed(true)}>
           {parsedError.text}
         </Alert>
       )}
       {isCancelled && (
-        <Alert variant="secondary" dismissible>
+        <Alert variant="secondary" dismissible onClose={reset}>
           Generación cancelada.
         </Alert>
       )}
 
-      <Form onSubmit={handleGenerate} className="mb-4">
-        <Form.Group className="mb-3">
-          <Form.Label className="fw-semibold">Consulta</Form.Label>
-          <Form.Control
-            as="textarea"
-            rows={3}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Escribe tu consulta al mundo narrativo..."
-            minLength={5}
-            required
-            disabled={isLoading}
-          />
-          <TokenCounter text={query} />
-        </Form.Group>
-        <div className="d-flex gap-2">
-          <Button
-            variant="warning"
-            type="submit"
-            disabled={isLoading || query.trim().length < 5}
-          >
-            {isLoading ? (
-              <>
-                <Spinner animation="border" size="sm" className="me-2" />
-                Generando...
-              </>
-            ) : (
-              "Generar"
-            )}
-          </Button>
-          {isLoading && (
-            <Button variant="outline-secondary" type="button" onClick={cancel}>
-              Cancelar
-            </Button>
-          )}
+      <div className="d-flex gap-4 align-items-start">
+        {/* Query panel */}
+        <div style={{ flex: "0 0 380px" }}>
+          <p className="lm-section-title">Consulta</p>
+          <Form onSubmit={handleGenerate}>
+            <Form.Group className="mb-3">
+              <Form.Control
+                as="textarea"
+                rows={5}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Escribe tu consulta al mundo narrativo..."
+                minLength={5}
+                required
+                disabled={isLoading || !hasCompletedDocs}
+              />
+              <TokenCounter text={query} />
+            </Form.Group>
+            <div className="d-flex gap-2">
+              <Button
+                variant="warning"
+                type="submit"
+                disabled={isLoading || query.trim().length < 5 || !hasCompletedDocs}
+              >
+                {isLoading ? (
+                  <>
+                    <Spinner animation="border" size="sm" className="me-2" />
+                    Generando...
+                  </>
+                ) : (
+                  "✦ Generar"
+                )}
+              </Button>
+              {isLoading && (
+                <Button variant="outline-secondary" type="button" onClick={cancel}>
+                  Cancelar
+                </Button>
+              )}
+            </div>
+          </Form>
         </div>
-      </Form>
 
-      {result && (
-        <Card>
-          <Card.Header className="d-flex justify-content-between align-items-center">
-            <span className="fw-semibold">Resultado</span>
-            <Badge bg="secondary">{result.sources_count} fuentes</Badge>
-          </Card.Header>
-          <Card.Body>
-            <p className="text-muted mb-2">
-              <small>Consulta: {result.query}</small>
-            </p>
-            <MarkdownContent>{result.answer}</MarkdownContent>
-          </Card.Body>
-        </Card>
-      )}
+        {/* Result panel */}
+        {result ? (
+          <div style={{ flex: 1 }}>
+            <Card>
+              <Card.Header className="d-flex justify-content-between align-items-center">
+                <em className="text-muted" style={{ fontSize: "0.88rem" }}>{result.query}</em>
+                <Badge
+                  style={{
+                    background: "var(--lm-accent-glow)",
+                    color: "var(--lm-accent)",
+                    border: "1px solid var(--lm-border-accent)",
+                    fontSize: "0.65rem",
+                  }}
+                >
+                  {result.sources_count} fuentes
+                </Badge>
+              </Card.Header>
+              <Card.Body>
+                <MarkdownContent>{result.answer}</MarkdownContent>
+              </Card.Body>
+            </Card>
+          </div>
+        ) : (
+          !isLoading && (
+            <div
+              style={{
+                flex: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "4rem 2rem",
+                border: "1px dashed var(--lm-border)",
+                borderRadius: "var(--lm-radius-lg)",
+              }}
+            >
+              <p className="text-muted mb-0" style={{ fontStyle: "italic", fontSize: "0.95rem" }}>
+                El resultado aparecerá aquí…
+              </p>
+            </div>
+          )
+        )}
+      </div>
     </>
   );
 }

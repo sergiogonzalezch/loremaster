@@ -12,6 +12,8 @@ services:
   postgres:
     image: postgres:15-alpine
     container_name: postgres
+    profiles:
+      - postgres
     environment:
       POSTGRES_USER: loremaster
       POSTGRES_PASSWORD: loremaster
@@ -40,19 +42,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  sqlite-web:
-    image: coleifer/sqlite-web:latest
-    container_name: sqlite-web
-    profiles:
-      - tools
-    ports:
-      - "8080:8080"
-    volumes:
-      - ./loremaster.db:/data/loremaster.db
-    command: ["-H", "0.0.0.0", "-p", "8080", "/data/loremaster.db"]
-    networks:
-      - loremaster
 
 volumes:
   qdrant_data:

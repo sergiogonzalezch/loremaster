@@ -4,6 +4,8 @@ export interface Collection {
   description: string;
   created_at: string;
   updated_at: string | null;
+  document_count?: number;
+  entity_count?: number;
 }
 
 export interface CreateCollectionRequest {
@@ -11,7 +13,9 @@ export interface CreateCollectionRequest {
   description: string;
 }
 
+import type { PaginatedMeta } from "./content";
+
 export interface CollectionListResponse {
   data: Collection[];
-  count: number;
+  meta: PaginatedMeta;
 }

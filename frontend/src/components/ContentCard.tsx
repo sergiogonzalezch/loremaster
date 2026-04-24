@@ -142,6 +142,17 @@ export default function ContentCard({ content, collectionId, entityId, onAction 
                 Eliminar
               </Button>
             </div>
+          ) : content.status === "discarded" ? (
+            <div className="d-flex justify-content-end">
+              <Button
+                variant="outline-danger"
+                size="sm"
+                onClick={() => setShowDelete(true)}
+                disabled={busy}
+              >
+                Eliminar
+              </Button>
+            </div>
           ) : isConfirmed ? (
             <div className="d-flex align-items-center justify-content-between">
               {content.confirmed_at && (

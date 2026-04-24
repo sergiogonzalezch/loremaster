@@ -13,7 +13,10 @@ export default function GeneratePage() {
 
   const [collectionName, setCollectionName] = useState<string>("");
   const [query, setQuery] = useState("");
-  const { data: result, error, isLoading, isCancelled, run, cancel } = useGenerate(generateText);
+  const [errorDismissed, setErrorDismissed] = useState(false);
+  const { data: result, error, isLoading, isCancelled, run, cancel, reset } = useGenerate(generateText);
+
+  useEffect(() => { if (error) setErrorDismissed(false); }, [error]);
 
   useEffect(() => {
     if (!collectionId) return;
@@ -52,13 +55,13 @@ export default function GeneratePage() {
         </Link>
       </div>
 
-      {parsedError && (
-        <Alert variant={parsedError.variant} dismissible>
+      {parsedError && !errorDismissed && (
+        <Alert variant={parsedError.variant} dismissible onClose={() => setErrorDismissed(true)}>
           {parsedError.text}
         </Alert>
       )}
       {isCancelled && (
-        <Alert variant="secondary" dismissible>
+        <Alert variant="secondary" dismissible onClose={reset}>
           Generación cancelada.
         </Alert>
       )}
