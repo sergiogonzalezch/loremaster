@@ -393,7 +393,9 @@ export default function EntityDetailPage() {
               <Form.Select
                 value={contentsCategoryFilter}
                 onChange={(e) => {
-                  setContentsCategoryFilter(e.target.value as ContentCategory | "");
+                  setContentsCategoryFilter(
+                    e.target.value as ContentCategory | "",
+                  );
                   setContentsPage(1);
                 }}
               >
@@ -478,7 +480,9 @@ export default function EntityDetailPage() {
                 )}
                 <Pagination.Next
                   onClick={() =>
-                    setContentsPage((p) => Math.min(contentsMeta.total_pages, p + 1))
+                    setContentsPage((p) =>
+                      Math.min(contentsMeta.total_pages, p + 1),
+                    )
                   }
                   disabled={contentsPage >= contentsMeta.total_pages}
                 />
