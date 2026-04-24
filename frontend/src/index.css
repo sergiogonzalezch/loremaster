@@ -443,6 +443,7 @@ a:hover {
   border-color: var(--lm-border) !important;
   font-family: var(--lm-font-body);
   font-size: 0.95rem;
+  background: transparent !important;
 }
 
 .table thead th {
@@ -475,6 +476,7 @@ a:hover {
   padding: 0.75rem 1rem;
   border-color: var(--lm-border) !important;
   vertical-align: middle;
+  background: transparent !important;
 }
 
 .lm-table {
@@ -762,7 +764,8 @@ a:hover {
 }
 
 .lm-content-accordion-item .accordion-body {
-  background: rgba(255, 255, 255, 0.01);
+  background: rgba(255, 255, 255, 0.02) !important;
+  color: var(--lm-text) !important;
 }
 
 .lm-llm-loading {
@@ -954,6 +957,8 @@ a:hover {
 .lm-markdown table {
   border-collapse: collapse;
   margin: 0.5em 0 0.9em;
+  width: 100%;
+  background: transparent;
 }
 .lm-markdown th,
 .lm-markdown td {
@@ -962,4 +967,7 @@ a:hover {
 }
 .lm-markdown th {
   background: var(--lm-raised);
+}
+.lm-markdown td {
+  background: transparent;
 }
