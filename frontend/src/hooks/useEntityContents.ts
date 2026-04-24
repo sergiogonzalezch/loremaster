@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { getContents } from "../api/contents";
 import { ApiAbortError } from "../api/apiClient";
-import type { EntityContent } from "../types";
+import type { EntityContent, PaginatedMeta } from "../types";
 import { getErrorMessage } from "../utils/errors";
 import type { ContentCategory } from "../utils/enums";
 
@@ -12,9 +12,20 @@ export function useEntityContents(
   const [contents, setContents] = useState<EntityContent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [meta, setMeta] = useState<PaginatedMeta>({
+    total: 0,
+    page: 1,
+    page_size: 10,
+    total_pages: 0,
+  });
 
   const refresh = useCallback(
-    async (options?: { signal?: AbortSignal; category?: ContentCategory }) => {
+    async (options?: {
+      signal?: AbortSignal;
+      category?: ContentCategory;
+      page?: number;
+      page_size?: number;
+    }) => {
       if (!collectionId || !entityId) return;
       setLoading(true);
       setError(null);
@@ -23,13 +34,14 @@ export function useEntityContents(
           collectionId,
           entityId,
           {
-            page: 1,
-            page_size: 100,
+            page: options?.page ?? 1,
+            page_size: options?.page_size ?? 10,
             category: options?.category,
           },
           options?.signal,
         );
         setContents(res.data);
+        setMeta(res.meta);
       } catch (e) {
         if (e instanceof ApiAbortError) return;
         setError(getErrorMessage(e, "Error al cargar contenidos"));
@@ -40,5 +52,5 @@ export function useEntityContents(
     [collectionId, entityId],
   );
 
-  return { contents, loading, error, refresh, setError };
+  return { contents, meta, loading, error, refresh, setError };
 }

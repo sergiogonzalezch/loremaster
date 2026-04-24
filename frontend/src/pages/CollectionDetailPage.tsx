@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import {
@@ -13,6 +13,7 @@ import {
   Tab,
   Table,
   Tabs,
+  Pagination,
 } from "react-bootstrap";
 import {
   getCollection,
@@ -58,6 +59,11 @@ function DocumentsTab({ collectionId }: { collectionId: string }) {
   } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Document | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [filename, setFilename] = useState("");
+  const [status, setStatus] = useState<"" | "processing" | "completed" | "failed">("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(0);
 
   const fetchDocuments = useCallback(
     async (signal?: AbortSignal) => {
@@ -66,10 +72,16 @@ function DocumentsTab({ collectionId }: { collectionId: string }) {
       try {
         const res = await getDocuments(
           collectionId,
-          { page: 1, page_size: 100 },
+          {
+            page,
+            page_size: pageSize,
+            filename: filename || undefined,
+            status: status || undefined,
+          },
           signal,
         );
         setDocuments(res.data);
+        setTotalPages(res.meta.total_pages);
       } catch (e) {
         if (e instanceof ApiAbortError) return;
         setError(parseApiError(e, "Error al cargar documentos"));
@@ -77,7 +89,7 @@ function DocumentsTab({ collectionId }: { collectionId: string }) {
         setLoading(false);
       }
     },
-    [collectionId],
+    [collectionId, filename, page, pageSize, status],
   );
 
   useEffect(() => {
@@ -133,8 +145,79 @@ function DocumentsTab({ collectionId }: { collectionId: string }) {
     }
   }
 
+  const paginationItems = useMemo(() => {
+    const items: Array<number | "ellipsis-left" | "ellipsis-right"> = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i += 1) items.push(i);
+      return items;
+    }
+    items.push(1);
+    if (page > 3) items.push("ellipsis-left");
+    for (
+      let i = Math.max(2, page - 1);
+      i <= Math.min(totalPages - 1, page + 1);
+      i += 1
+    ) {
+      items.push(i);
+    }
+    if (page < totalPages - 2) items.push("ellipsis-right");
+    items.push(totalPages);
+    return items;
+  }, [page, totalPages]);
+
   return (
     <>
+      <Card className="mb-3">
+        <Card.Body>
+          <div className="d-flex gap-3 flex-wrap align-items-end">
+            <Form.Group style={{ minWidth: 220 }}>
+              <Form.Label>Buscar archivo</Form.Label>
+              <Form.Control
+                value={filename}
+                onChange={(e) => {
+                  setFilename(e.target.value);
+                  setPage(1);
+                }}
+                placeholder="Ej. worldbuilding.pdf"
+              />
+            </Form.Group>
+            <Form.Group style={{ minWidth: 180 }}>
+              <Form.Label>Estado</Form.Label>
+              <Form.Select
+                value={status}
+                onChange={(e) => {
+                  setStatus(
+                    e.target.value as "" | "processing" | "completed" | "failed",
+                  );
+                  setPage(1);
+                }}
+              >
+                <option value="">Todos</option>
+                <option value="processing">Procesando</option>
+                <option value="completed">Completado</option>
+                <option value="failed">Error</option>
+              </Form.Select>
+            </Form.Group>
+            <Form.Group style={{ minWidth: 130 }}>
+              <Form.Label>Page size</Form.Label>
+              <Form.Select
+                value={String(pageSize)}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setPage(1);
+                }}
+              >
+                {[5, 10, 20, 50].map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+          </div>
+        </Card.Body>
+      </Card>
+
       <div className="mb-3">
         <Form.Label className="fw-semibold">
           Subir documento (PDF o TXT)
@@ -231,6 +314,38 @@ function DocumentsTab({ collectionId }: { collectionId: string }) {
         onCancel={() => setDeleteTarget(null)}
         variant={deleting ? "secondary" : "danger"}
       />
+      {totalPages > 1 && (
+        <div className="d-flex justify-content-center mt-3">
+          <Pagination>
+            <Pagination.First onClick={() => setPage(1)} disabled={page <= 1} />
+            <Pagination.Prev
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+            />
+            {paginationItems.map((item) =>
+              typeof item === "number" ? (
+                <Pagination.Item
+                  key={item}
+                  active={item === page}
+                  onClick={() => setPage(item)}
+                >
+                  {item}
+                </Pagination.Item>
+              ) : (
+                <Pagination.Ellipsis key={item} disabled />
+              ),
+            )}
+            <Pagination.Next
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+            />
+            <Pagination.Last
+              onClick={() => setPage(totalPages)}
+              disabled={page >= totalPages}
+            />
+          </Pagination>
+        </div>
+      )}
     </>
   );
 }
@@ -247,6 +362,11 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
   } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Entity | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [nameFilter, setNameFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState<"" | EntityType>("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(0);
 
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState<CreateEntityRequest>({
@@ -260,14 +380,20 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await getEntities(collectionId, { page: 1, page_size: 100 });
+      const res = await getEntities(collectionId, {
+        page,
+        page_size: pageSize,
+        name: nameFilter || undefined,
+        type: typeFilter || undefined,
+      });
       setEntities(res.data);
+      setTotalPages(res.meta.total_pages);
     } catch (e) {
       setError(parseApiError(e, "Error al cargar entidades"));
     } finally {
       setLoading(false);
     }
-  }, [collectionId]);
+  }, [collectionId, nameFilter, page, pageSize, typeFilter]);
 
   useEffect(() => {
     fetchEntities();
@@ -303,8 +429,79 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
     }
   }
 
+  const paginationItems = useMemo(() => {
+    const items: Array<number | "ellipsis-left" | "ellipsis-right"> = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i += 1) items.push(i);
+      return items;
+    }
+    items.push(1);
+    if (page > 3) items.push("ellipsis-left");
+    for (
+      let i = Math.max(2, page - 1);
+      i <= Math.min(totalPages - 1, page + 1);
+      i += 1
+    ) {
+      items.push(i);
+    }
+    if (page < totalPages - 2) items.push("ellipsis-right");
+    items.push(totalPages);
+    return items;
+  }, [page, totalPages]);
+
   return (
     <>
+      <Card className="mb-3">
+        <Card.Body>
+          <div className="d-flex gap-3 flex-wrap align-items-end">
+            <Form.Group style={{ minWidth: 220 }}>
+              <Form.Label>Buscar entidad</Form.Label>
+              <Form.Control
+                value={nameFilter}
+                onChange={(e) => {
+                  setNameFilter(e.target.value);
+                  setPage(1);
+                }}
+                placeholder="Ej. Aria"
+              />
+            </Form.Group>
+            <Form.Group style={{ minWidth: 180 }}>
+              <Form.Label>Tipo</Form.Label>
+              <Form.Select
+                value={typeFilter}
+                onChange={(e) => {
+                  setTypeFilter(e.target.value as "" | EntityType);
+                  setPage(1);
+                }}
+              >
+                <option value="">Todos</option>
+                {(Object.keys(ENTITY_TYPE_LABELS) as EntityType[]).map((t) => (
+                  <option key={t} value={t}>
+                    {ENTITY_TYPE_LABELS[t]}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+            <Form.Group style={{ minWidth: 130 }}>
+              <Form.Label>Page size</Form.Label>
+              <Form.Select
+                value={String(pageSize)}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setPage(1);
+                }}
+              >
+                {[5, 10, 20, 50].map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+          </div>
+        </Card.Body>
+      </Card>
+
       <div className="d-flex justify-content-end mb-3">
         <Button variant="warning" onClick={() => setShowCreate(true)}>
           + Nueva entidad
@@ -461,6 +658,38 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
           </Modal.Footer>
         </Form>
       </Modal>
+      {totalPages > 1 && (
+        <div className="d-flex justify-content-center mt-3">
+          <Pagination>
+            <Pagination.First onClick={() => setPage(1)} disabled={page <= 1} />
+            <Pagination.Prev
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+            />
+            {paginationItems.map((item) =>
+              typeof item === "number" ? (
+                <Pagination.Item
+                  key={item}
+                  active={item === page}
+                  onClick={() => setPage(item)}
+                >
+                  {item}
+                </Pagination.Item>
+              ) : (
+                <Pagination.Ellipsis key={item} disabled />
+              ),
+            )}
+            <Pagination.Next
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+            />
+            <Pagination.Last
+              onClick={() => setPage(totalPages)}
+              disabled={page >= totalPages}
+            />
+          </Pagination>
+        </div>
+      )}
     </>
   );
 }
