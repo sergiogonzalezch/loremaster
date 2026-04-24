@@ -15,6 +15,7 @@ import { parseApiError } from "../utils/errors";
 import MarkdownContent from "../components/MarkdownContent";
 import TokenCounter from "../components/TokenCounter";
 import { useGenerate } from "../hooks/useGenerate";
+import { useCollectionDocumentsStatus } from "../hooks/useCollectionDocumentsStatus";
 
 export default function GeneratePage() {
   const { collectionId } = useParams<{ collectionId: string }>();
@@ -22,6 +23,7 @@ export default function GeneratePage() {
   const [collectionName, setCollectionName] = useState<string>("");
   const [query, setQuery] = useState("");
   const [errorDismissed, setErrorDismissed] = useState(false);
+  const { hasCompletedDocs, refresh } = useCollectionDocumentsStatus(collectionId);
   const {
     data: result,
     error,
@@ -48,6 +50,8 @@ export default function GeneratePage() {
   async function handleGenerate(e: FormEvent) {
     e.preventDefault();
     if (!collectionId) return;
+    const canGenerate = await refresh();
+    if (!canGenerate) return;
     await run(collectionId, { query });
   }
 
@@ -90,6 +94,12 @@ export default function GeneratePage() {
           Generación cancelada.
         </Alert>
       )}
+      {hasCompletedDocs === false && (
+        <Alert variant="warning">
+          Esta colección aún no tiene documentos procesados. Sube un PDF o TXT
+          y espera a que finalice el procesamiento.
+        </Alert>
+      )}
 
       <Form onSubmit={handleGenerate} className="mb-4">
         <Form.Group className="mb-3">
@@ -102,7 +112,7 @@ export default function GeneratePage() {
             placeholder="Escribe tu consulta al mundo narrativo..."
             minLength={5}
             required
-            disabled={isLoading}
+            disabled={isLoading || hasCompletedDocs === false}
           />
           <TokenCounter text={query} />
         </Form.Group>
@@ -110,7 +120,9 @@ export default function GeneratePage() {
           <Button
             variant="warning"
             type="submit"
-            disabled={isLoading || query.trim().length < 5}
+            disabled={
+              isLoading || query.trim().length < 5 || hasCompletedDocs === false
+            }
           >
             {isLoading ? (
               <>

@@ -36,6 +36,16 @@ export function getDocuments(
   );
 }
 
+export function getDocument(
+  collectionId: string,
+  docId: string,
+  signal?: AbortSignal,
+): Promise<Document> {
+  return apiFetch<Document>(`/collections/${collectionId}/documents/${docId}`, {
+    signal,
+  });
+}
+
 export function deleteDocument(
   collectionId: string,
   docId: string,
