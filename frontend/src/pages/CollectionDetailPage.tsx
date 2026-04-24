@@ -64,7 +64,11 @@ function DocumentsTab({ collectionId }: { collectionId: string }) {
       setLoading(true);
       setError(null);
       try {
-        const res = await getDocuments(collectionId, { page: 1, page_size: 100 }, signal);
+        const res = await getDocuments(
+          collectionId,
+          { page: 1, page_size: 100 },
+          signal,
+        );
         setDocuments(res.data);
       } catch (e) {
         if (e instanceof ApiAbortError) return;

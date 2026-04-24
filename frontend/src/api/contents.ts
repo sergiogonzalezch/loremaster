@@ -97,7 +97,10 @@ export function deleteContent(
   entityId: string,
   contentId: string,
 ): Promise<void> {
-  return apiFetch<void>(`${base(collectionId, entityId)}/contents/${contentId}`, {
-    method: "DELETE",
-  });
+  return apiFetch<void>(
+    `${base(collectionId, entityId)}/contents/${contentId}`,
+    {
+      method: "DELETE",
+    },
+  );
 }

@@ -144,7 +144,11 @@ export default function CollectionsPage() {
     }
     items.push(1);
     if (page > 3) items.push("ellipsis-left");
-    for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i += 1) {
+    for (
+      let i = Math.max(2, page - 1);
+      i <= Math.min(totalPages - 1, page + 1);
+      i += 1
+    ) {
       items.push(i);
     }
     if (page < totalPages - 2) items.push("ellipsis-right");
@@ -182,7 +186,10 @@ export default function CollectionsPage() {
                 value={createdAfter}
                 onChange={(e) => {
                   setCreatedAfter(e.target.value);
-                  setParam({ page: "1", created_after: e.target.value || null });
+                  setParam({
+                    page: "1",
+                    created_after: e.target.value || null,
+                  });
                 }}
               />
             </Col>
@@ -193,7 +200,10 @@ export default function CollectionsPage() {
                 value={createdBefore}
                 onChange={(e) => {
                   setCreatedBefore(e.target.value);
-                  setParam({ page: "1", created_before: e.target.value || null });
+                  setParam({
+                    page: "1",
+                    created_before: e.target.value || null,
+                  });
                 }}
               />
             </Col>
@@ -201,7 +211,9 @@ export default function CollectionsPage() {
               <Form.Label>Page size</Form.Label>
               <Form.Select
                 value={String(pageSize)}
-                onChange={(e) => setParam({ page: "1", page_size: e.target.value })}
+                onChange={(e) =>
+                  setParam({ page: "1", page_size: e.target.value })
+                }
               >
                 {[6, 12, 24, 50].map((size) => (
                   <option key={size} value={size}>

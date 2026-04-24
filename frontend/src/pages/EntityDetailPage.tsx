@@ -59,7 +59,6 @@ export default function EntityDetailPage() {
   >("");
   const [query, setQuery] = useState("");
 
-
   useEffect(() => {
     const controller = new AbortController();
     refreshContents({ signal: controller.signal });
