@@ -1,5 +1,6 @@
 import logging
 import uuid
+from functools import lru_cache
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from qdrant_client import QdrantClient
@@ -18,12 +19,31 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 _qdrant_client = QdrantClient(url=settings.qdrant_url)
-_embedding_model = SentenceTransformer(settings.embedding_model)
 _splitter = RecursiveCharacterTextSplitter(
     chunk_size=settings.chunk_size,
     chunk_overlap=settings.chunk_overlap,
     separators=["\n\n", "\n", ". ", " ", ""],
 )
+
+
+@lru_cache(maxsize=1)
+def _get_embedding_model() -> SentenceTransformer:
+    logger.info("Loading embedding model '%s'", settings.embedding_model)
+    return SentenceTransformer(settings.embedding_model)
+
+
+def _encode_texts(texts: list[str]) -> list[list[float]]:
+    try:
+        vectors = _get_embedding_model().encode(
+            texts,
+            batch_size=32,
+            show_progress_bar=False,
+        )
+    except Exception as exc:
+        logger.exception("Could not initialize or use embedding model")
+        raise RuntimeError("Embedding model unavailable") from exc
+
+    return [vector.tolist() for vector in vectors]
 
 
 def _collection_exists(name: str) -> bool:
@@ -47,11 +67,11 @@ def ingest_chunks(*, doc_id: str, collection_id: str, text: str) -> int:
     if not chunks:
         return 0
     _ensure_qdrant_collection(collection_id)
-    vectors = _embedding_model.encode(chunks, batch_size=32, show_progress_bar=False)
+    vectors = _encode_texts(chunks)
     points = [
         PointStruct(
             id=str(uuid.uuid4()),
-            vector=vectors[i].tolist(),
+            vector=vectors[i],
             payload={
                 "doc_id": doc_id,
                 "collection_id": collection_id,
@@ -105,7 +125,8 @@ def search_context(
         return []
     if top_k is None:
         top_k = settings.top_k
-    query_vector = _embedding_model.encode([query])[0].tolist()
+
+    query_vector = _encode_texts([query])[0]
     results = _qdrant_client.query_points(
         collection_name=name, query=query_vector, limit=top_k, with_payload=True
     )
