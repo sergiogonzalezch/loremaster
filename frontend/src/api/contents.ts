@@ -1,4 +1,5 @@
 import { apiFetch } from "./apiClient";
+import { trimStringValues } from "../utils/strings";
 import type {
   EntityContent,
   GenerateContentRequest,
@@ -31,7 +32,7 @@ export function generateContent(
     `${base(collectionId, entityId)}/generate/${category}`,
     {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify(trimStringValues(data)),
       signal,
     },
   );
@@ -63,7 +64,7 @@ export function updateContent(
     `${base(collectionId, entityId)}/contents/${contentId}`,
     {
       method: "PATCH",
-      body: JSON.stringify(data),
+      body: JSON.stringify(trimStringValues(data)),
     },
   );
 }

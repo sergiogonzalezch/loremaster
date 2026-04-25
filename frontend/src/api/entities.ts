@@ -1,5 +1,6 @@
 import { apiFetch } from "./apiClient";
 import { buildQuery } from "./query";
+import { trimStringValues } from "../utils/strings";
 import type {
   Entity,
   EntityListResponse,
@@ -45,7 +46,7 @@ export function createEntity(
 ): Promise<Entity> {
   return apiFetch<Entity>(`/collections/${collectionId}/entities`, {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify(trimStringValues(data)),
   });
 }
 
@@ -56,7 +57,7 @@ export function updateEntity(
 ): Promise<Entity> {
   return apiFetch<Entity>(`/collections/${collectionId}/entities/${entityId}`, {
     method: "PATCH",
-    body: JSON.stringify(data),
+    body: JSON.stringify(trimStringValues(data)),
   });
 }
 

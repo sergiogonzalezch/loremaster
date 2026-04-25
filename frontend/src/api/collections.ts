@@ -1,5 +1,6 @@
 import { apiFetch } from "./apiClient";
 import { buildQuery } from "./query";
+import { trimStringValues } from "../utils/strings";
 import type {
   Collection,
   CreateCollectionRequest,
@@ -38,7 +39,7 @@ export function createCollection(
 ): Promise<Collection> {
   return apiFetch<Collection>("/collections/", {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify(trimStringValues(data)),
   });
 }
 
@@ -48,7 +49,7 @@ export function updateCollection(
 ): Promise<Collection> {
   return apiFetch<Collection>(`/collections/${id}`, {
     method: "PATCH",
-    body: JSON.stringify(data),
+    body: JSON.stringify(trimStringValues(data)),
   });
 }
 
