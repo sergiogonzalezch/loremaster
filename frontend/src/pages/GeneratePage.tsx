@@ -120,7 +120,7 @@ export default function GeneratePage() {
             as="textarea"
             rows={4}
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => setQuery(e.target.value.trim())}
             placeholder="Escribe tu consulta al mundo narrativo..."
             minLength={5}
             required
