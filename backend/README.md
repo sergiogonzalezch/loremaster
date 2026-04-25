@@ -38,7 +38,7 @@ cp .env.example .env
 | `EMBEDDING_MODEL` | `paraphrase-multilingual-MiniLM-L12-v2` | Modelo de embeddings |
 | `EMBEDDING_DIMS` | `384` | Dimensiones del vector de embedding |
 | `CHUNK_SIZE` | `512` | Tamaño de chunk en caracteres |
-| `CHUNK_OVERLAP` | `50` | Solapamiento entre chunks |
+| `CHUNK_OVERLAP` | `50` | Solapamiento entre chunks en caracteres |
 | `TOP_K` | `4` | Chunks de contexto recuperados por RAG |
 | `ALLOWED_ORIGINS` | `["http://localhost:3000","http://localhost:5173"]` | Orígenes permitidos por CORS |
 | `REDIS_URL` | `redis://redis:6379/0` | Caché semántico (staged) |
@@ -182,6 +182,18 @@ Estados posibles: `pending` → `confirmed` | `discarded`. Máximo 5 contenidos 
 | `POST` | `/collections/{id}/query` | Consulta RAG libre contra el lore cargado | 200 |
 
 Respuesta: `{ answer, query, sources_count }`.
+
+## Moderación de contenido
+
+`app/domain/content_guard.py` aplica filtros de seguridad basados en expresiones regulares en tres puntos del pipeline:
+
+| Función | Dónde se llama | Qué bloquea |
+|---|---|---|
+| `check_user_input(text)` | Antes de cualquier llamada al LLM (`generation_service`, `rag_query_service`) | Contenido sexual explícito, discurso de odio, instrucciones de armas/drogas, acoso |
+| `check_document_content(text)` | Tras extraer el texto del documento (`documents_service`) | Mismo conjunto de patrones |
+| `check_generated_output(text)` | Tras recibir la respuesta del LLM | Mismo conjunto de patrones |
+
+Las violaciones de entrada elevan `ValueError` (→ HTTP 422); las de salida elevan `RuntimeError` (→ HTTP 500).
 
 ## Migraciones
 
