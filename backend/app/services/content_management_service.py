@@ -74,6 +74,7 @@ def edit_content(
     collection_id: str,
     new_text: str,
 ) -> EntityContent | None:
+    new_text = new_text.strip()
     content = _get_active_content(session, content_id, entity_id, collection_id)
     if not content:
         return None

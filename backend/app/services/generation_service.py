@@ -26,6 +26,7 @@ def generate(
     category: ContentCategory,
     query: str,
 ) -> EntityContent:
+    query = query.strip()
     check_user_input(query)
 
     if not validate_category_for_entity(entity.type, category):
