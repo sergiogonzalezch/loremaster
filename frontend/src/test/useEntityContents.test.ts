@@ -20,7 +20,6 @@ const SAMPLE_CONTENT: EntityContent = {
   id: "cnt-1",
   entity_id: "ent-1",
   collection_id: "col-1",
-  generated_text_id: "gt-1",
   category: "backstory",
   content: "Texto de prueba",
   status: "pending",

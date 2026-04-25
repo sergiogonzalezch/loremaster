@@ -9,7 +9,6 @@ from app.engine.rag_pipeline import invoke_generation_pipeline
 from app.models.entities import Entity
 from app.models.entity_content import EntityContent
 from app.models.enums import ContentCategory, ContentStatus
-from app.models.generated_text import GeneratedText
 
 logger = logging.getLogger(__name__)
 
@@ -68,21 +67,12 @@ def generate(
     )
     check_generated_output(answer)
 
-    generated_text = GeneratedText(
+    content = EntityContent(
         entity_id=entity.id,
         collection_id=entity.collection_id,
         category=category,
         query=query,
-        raw_content=answer,
         sources_count=sources_count,
-    )
-    session.add(generated_text)
-
-    content = EntityContent(
-        entity_id=entity.id,
-        collection_id=entity.collection_id,
-        generated_text_id=generated_text.id,
-        category=category,
         content=answer,
         status=ContentStatus.pending,
     )
