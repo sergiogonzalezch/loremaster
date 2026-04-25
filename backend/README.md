@@ -164,14 +164,14 @@ El nombre de entidad es único por colección con constraint a nivel de DB (`uq_
 
 Categorías válidas: `backstory`, `extended_description`, `scene`, `chapter`.
 
-Estados posibles: `pending` → `confirmed` | `discarded`. Máximo 5 contenidos `pending` por categoría por entidad. Confirmar uno descarta automáticamente los demás `pending` y el `confirmed` anterior **de esa misma categoría**, y actualiza el campo `description` de la entidad. Los contenidos en estado `discarded` no se pueden editar.
+Estados posibles: `pending` → `confirmed` | `discarded`. Máximo 5 contenidos `pending` por categoría por entidad. Confirmar uno descarta automáticamente los demás `pending` y el `confirmed` anterior **de esa misma categoría**. Los contenidos en estado `discarded` no se pueden editar.
 
 | Método | Ruta | Descripción | Status |
 |---|---|---|---|
 | `POST` | `/collections/{id}/entities/{entity_id}/generate/{category}` | Generar contenido RAG para una categoría (prompt específico por categoría) | 201 |
 | `GET` | `/collections/{id}/entities/{entity_id}/contents` | Listar contenidos (paginado; `?category=`, `?page=`, `?page_size=`) | 200 |
 | `PATCH` | `/collections/{id}/entities/{entity_id}/contents/{content_id}` | Editar contenido (`pending` o `confirmed`) | 200 |
-| `POST` | `/collections/{id}/entities/{entity_id}/contents/{content_id}/confirm` | Confirmar contenido (actualiza entidad, descarta hermanos de la categoría) | 200 |
+| `POST` | `/collections/{id}/entities/{entity_id}/contents/{content_id}/confirm` | Confirmar contenido | 200 |
 | `PATCH` | `/collections/{id}/entities/{entity_id}/contents/{content_id}/discard` | Cambiar estado a descartado | 200 |
 | `DELETE` | `/collections/{id}/entities/{entity_id}/contents/{content_id}` | Soft-delete del contenido | 204 |
 

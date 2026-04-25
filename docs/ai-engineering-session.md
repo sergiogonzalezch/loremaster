@@ -65,9 +65,7 @@ cubre las brechas de experiencia y robustez para features LLM.
 
 ### ✅ 1.5 Revalidación post-mutación
 - Auditadas todas las mutaciones (collections, documents, entities, drafts)
-- Bug detectado y corregido: al **confirmar un draft** el backend muta también la `Entity` (añade al description), pero el frontend solo refetcheaba drafts. La Entity mostrada quedaba desactualizada.
-- Fix: nueva función `refreshEntityQuiet` + `handleDraftAction` en `EntityDetailPage` que refetchea **entity + drafts** sin tocar el loading global (para no parpadear la página)
-- El `onAction` de `DraftCard` ahora apunta a `handleDraftAction`
+- Fix: función `refreshEntityQuiet` + `handleContentAction` en `EntityDetailPage` refetchea **entity + contents** después de cada acción, sin tocar el loading global (para no parpadear la página).
 
 ## Cómo probar
 

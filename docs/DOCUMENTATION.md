@@ -75,7 +75,7 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 | **HU-03** | Generación de texto (RAG) | Como creador de mundos, quiero hacer consultas sobre una colección para obtener texto coherente basado en el lore cargado.                             |
 | **HU-04** | Generación de imágenes    | Como creador de mundos, quiero generar imágenes consistentes con mi lore utilizando contexto de la colección.                                          |
 | **HU-05** | Gestión de entidades      | Como creador de mundos, quiero gestionar personajes, escenarios y objetos dentro de una colección para estructurar mi mundo.                           |
-| **HU-06** | Contenidos RAG por categoría | Como creador de mundos, quiero generar contenidos RAG por categoría para una entidad y confirmar el mejor para actualizar su descripción automáticamente.   |
+| **HU-06** | Contenidos RAG por categoría | Como creador de mundos, quiero generar contenidos RAG por categoría para una entidad y confirmar el mejor, descartando automáticamente los demás pendientes de esa categoría.   |
 
 ### Diagramas
 
