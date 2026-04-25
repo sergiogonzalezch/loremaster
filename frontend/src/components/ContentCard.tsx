@@ -21,7 +21,7 @@ import MarkdownContent from "./MarkdownContent";
 import type { EntityContent } from "../types";
 import { CATEGORY_LABELS } from "../utils/constants";
 import { formatDate } from "../utils/formatters";
-import { getErrorMessage } from "../utils/errors";
+import { parseApiError } from "../utils/errors";
 
 interface ContentCardProps {
   content: EntityContent;
@@ -36,7 +36,10 @@ export default function ContentCard({
   entityId,
   onAction,
 }: ContentCardProps) {
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{
+    variant: "warning" | "danger";
+    text: string;
+  } | null>(null);
   const [busy, setBusy] = useState(false);
 
   const [showEdit, setShowEdit] = useState(false);
@@ -54,7 +57,7 @@ export default function ContentCard({
       await confirmContent(collectionId, entityId, content.id);
       onAction();
     } catch (e) {
-      setError(getErrorMessage(e, "Error al confirmar"));
+      setError(parseApiError(e, "Error al confirmar"));
     } finally {
       setBusy(false);
     }
@@ -70,7 +73,7 @@ export default function ContentCard({
       setShowEdit(false);
       onAction();
     } catch (e) {
-      setError(getErrorMessage(e, "Error al guardar"));
+      setError(parseApiError(e, "Error al guardar"));
     } finally {
       setSaving(false);
     }
@@ -84,7 +87,7 @@ export default function ContentCard({
       setShowDiscard(false);
       onAction();
     } catch (e) {
-      setError(getErrorMessage(e, "Error al descartar"));
+      setError(parseApiError(e, "Error al descartar"));
       setShowDiscard(false);
     } finally {
       setBusy(false);
@@ -99,7 +102,7 @@ export default function ContentCard({
       setShowDelete(false);
       onAction();
     } catch (e) {
-      setError(getErrorMessage(e, "Error al eliminar"));
+      setError(parseApiError(e, "Error al eliminar"));
       setShowDelete(false);
     } finally {
       setBusy(false);
@@ -114,7 +117,10 @@ export default function ContentCard({
       <Card className="mb-3">
         <Card.Header className="p-0">
           <Accordion activeKey={isExpanded ? "content" : undefined}>
-            <Accordion.Item eventKey="content" className="lm-content-accordion-item">
+            <Accordion.Item
+              eventKey="content"
+              className="lm-content-accordion-item"
+            >
               <Accordion.Header onClick={() => setIsExpanded((open) => !open)}>
                 <div className="d-flex justify-content-between align-items-center w-100 me-2">
                   <div className="d-flex align-items-center gap-2">
@@ -144,12 +150,12 @@ export default function ContentCard({
               <Accordion.Body>
                 {error && (
                   <Alert
-                    variant="danger"
+                    variant={error.variant}
                     onClose={() => setError(null)}
                     dismissible
                     className="py-2"
                   >
-                    {error}
+                    {error.text}
                   </Alert>
                 )}
                 <MarkdownContent>{content.content}</MarkdownContent>

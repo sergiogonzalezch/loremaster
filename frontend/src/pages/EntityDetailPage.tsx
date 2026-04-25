@@ -28,7 +28,7 @@ import { useGenerate } from "../hooks/useGenerate";
 import { useEntityContents } from "../hooks/useEntityContents";
 import type { Collection, Entity, UpdateEntityRequest } from "../types";
 import type { ContentCategory, EntityType } from "../utils/enums";
-import { getErrorMessage } from "../utils/errors";
+import { getErrorMessage, parseApiError } from "../utils/errors";
 import {
   CATEGORY_LABELS,
   ENTITY_CATEGORY_MAP,
@@ -336,11 +336,18 @@ export default function EntityDetailPage() {
       </Card>
 
       <p className="lm-section-title">Generar contenido</p>
-      {generateError != null && (
-        <Alert variant="danger" onClose={resetGenerate} dismissible>
-          {getErrorMessage(generateError, "Error al generar contenido")}
-        </Alert>
-      )}
+      {generateError != null &&
+        (() => {
+          const { variant, text } = parseApiError(
+            generateError,
+            "Error al generar contenido",
+          );
+          return (
+            <Alert variant={variant} onClose={resetGenerate} dismissible>
+              {text}
+            </Alert>
+          );
+        })()}
       {generateCancelled && (
         <Alert variant="secondary" dismissible>
           Generación cancelada.
@@ -469,9 +476,7 @@ export default function EntityDetailPage() {
         className="mb-3"
         onSelect={(key) => {
           if (!key) return;
-          setContentsStatusFilter(
-            key as "pending" | "confirmed" | "discarded",
-          );
+          setContentsStatusFilter(key as "pending" | "confirmed" | "discarded");
           setContentsPage(1);
         }}
       >

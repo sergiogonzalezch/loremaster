@@ -63,10 +63,16 @@ def list_collections_service(
             select(Collection).where(*conditions).subquery()
         )
     ).one()
-    sort_col = Collection.created_at.asc() if order == "asc" else Collection.created_at.desc()
+    sort_col = (
+        Collection.created_at.asc() if order == "asc" else Collection.created_at.desc()
+    )
     skip = (page - 1) * page_size
     items = session.exec(
-        select(Collection).where(*conditions).order_by(sort_col).offset(skip).limit(page_size)
+        select(Collection)
+        .where(*conditions)
+        .order_by(sort_col)
+        .offset(skip)
+        .limit(page_size)
     ).all()
     return list(items), total
 

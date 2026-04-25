@@ -76,7 +76,9 @@ function DocumentsTab({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(
+    null,
+  );
   const [loadingDocumentDetail, setLoadingDocumentDetail] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState("");
 
@@ -292,7 +294,13 @@ function DocumentsTab({
           <small className="text-muted">
             {selectedFileName || "Ningún archivo seleccionado"}
           </small>
-          {uploading && <Spinner animation="border" size="sm" className="lm-spinner-inline" />}
+          {uploading && (
+            <Spinner
+              animation="border"
+              size="sm"
+              className="lm-spinner-inline"
+            />
+          )}
         </div>
         {uploadMsg && (
           <Alert
@@ -826,7 +834,8 @@ function GenerateTab({
   const [query, setQuery] = useState("");
   const [lastQuery, setLastQuery] = useState("");
   const [errorDismissed, setErrorDismissed] = useState(false);
-  const { hasCompletedDocs, refresh } = useCollectionDocumentsStatus(collectionId);
+  const { hasCompletedDocs, refresh } =
+    useCollectionDocumentsStatus(collectionId);
   const {
     data: result,
     error,
@@ -928,7 +937,9 @@ function GenerateTab({
                 variant="outline-secondary"
                 type="button"
                 onClick={handleRegenerate}
-                disabled={isLoading || lastQuery.trim().length < 5 || !hasCompletedDocs}
+                disabled={
+                  isLoading || lastQuery.trim().length < 5 || !hasCompletedDocs
+                }
               >
                 ↻ Regenerar
               </Button>
@@ -959,7 +970,10 @@ function GenerateTab({
         {result && !isLoading ? (
           <div style={{ flex: 1 }}>
             <Accordion defaultActiveKey="result">
-              <Accordion.Item eventKey="result" className="lm-content-accordion-item">
+              <Accordion.Item
+                eventKey="result"
+                className="lm-content-accordion-item"
+              >
                 <Accordion.Header>
                   <div className="d-flex justify-content-between align-items-center w-100 me-2">
                     <em className="text-muted" style={{ fontSize: "0.88rem" }}>

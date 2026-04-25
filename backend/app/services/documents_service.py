@@ -104,10 +104,16 @@ def list_documents_service(
     total = session.exec(
         select(func.count()).select_from(select(Document).where(*conditions).subquery())
     ).one()
-    sort_col = Document.created_at.asc() if order == "asc" else Document.created_at.desc()
+    sort_col = (
+        Document.created_at.asc() if order == "asc" else Document.created_at.desc()
+    )
     skip = (page - 1) * page_size
     items = session.exec(
-        select(Document).where(*conditions).order_by(sort_col).offset(skip).limit(page_size)
+        select(Document)
+        .where(*conditions)
+        .order_by(sort_col)
+        .offset(skip)
+        .limit(page_size)
     ).all()
     return list(items), total
 

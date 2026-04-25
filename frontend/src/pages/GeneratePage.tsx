@@ -24,7 +24,8 @@ export default function GeneratePage() {
   const [query, setQuery] = useState("");
   const [lastQuery, setLastQuery] = useState("");
   const [errorDismissed, setErrorDismissed] = useState(false);
-  const { hasCompletedDocs, refresh } = useCollectionDocumentsStatus(collectionId);
+  const { hasCompletedDocs, refresh } =
+    useCollectionDocumentsStatus(collectionId);
   const {
     data: result,
     error,
@@ -107,8 +108,8 @@ export default function GeneratePage() {
       )}
       {hasCompletedDocs === false && (
         <Alert variant="warning">
-          Esta colección aún no tiene documentos procesados. Sube un PDF o TXT
-          y espera a que finalice el procesamiento.
+          Esta colección aún no tiene documentos procesados. Sube un PDF o TXT y
+          espera a que finalice el procesamiento.
         </Alert>
       )}
 
@@ -152,7 +153,11 @@ export default function GeneratePage() {
             variant="outline-secondary"
             type="button"
             onClick={handleRegenerate}
-            disabled={isLoading || lastQuery.trim().length < 5 || hasCompletedDocs === false}
+            disabled={
+              isLoading ||
+              lastQuery.trim().length < 5 ||
+              hasCompletedDocs === false
+            }
           >
             ↻ Regenerar
           </Button>
@@ -175,7 +180,10 @@ export default function GeneratePage() {
 
       {result && !isLoading && (
         <Accordion defaultActiveKey="result">
-          <Accordion.Item eventKey="result" className="lm-content-accordion-item">
+          <Accordion.Item
+            eventKey="result"
+            className="lm-content-accordion-item"
+          >
             <Accordion.Header>
               <div className="d-flex justify-content-between align-items-center w-100 me-2">
                 <em className="text-muted">{result.query}</em>
