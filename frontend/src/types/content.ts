@@ -4,7 +4,6 @@ export interface EntityContent {
   id: string;
   entity_id: string;
   collection_id: string;
-  generated_text_id: string;
   category: ContentCategory;
   content: string;
   status: ContentStatus;
