@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 def create_collection_service(
     session: Session, name: str, description: str = ""
 ) -> Collection:
+    name = name.strip()
+    description = description.strip()
     existing = session.exec(
         select(Collection).where(
             Collection.name == name,
@@ -80,7 +82,7 @@ def list_collections_service(
 def update_collection_service(
     session: Session, collection: Collection, request: UpdateCollectionRequest
 ) -> Collection:
-    new_name = request.name if request.name is not None else collection.name
+    new_name = request.name.strip() if request.name is not None else collection.name
     if new_name != collection.name:
         existing = session.exec(
             select(Collection).where(
@@ -94,9 +96,9 @@ def update_collection_service(
             )
 
     if request.name is not None:
-        collection.name = request.name
+        collection.name = request.name.strip()
     if request.description is not None:
-        collection.description = request.description
+        collection.description = request.description.strip()
 
     collection.updated_at = datetime.now(timezone.utc)
     session.add(collection)

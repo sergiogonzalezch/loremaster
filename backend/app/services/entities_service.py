@@ -33,16 +33,18 @@ def _find_active_by_name(
 def create_entity_service(
     session: Session, request: CreateEntityRequest, collection_id: str
 ) -> Entity:
-    if _find_active_by_name(session, collection_id, request.name):
+    name = request.name.strip()
+    description = request.description.strip()
+    if _find_active_by_name(session, collection_id, name):
         raise HTTPException(
             status_code=409,
-            detail=f"Ya existe una entidad llamada '{request.name}' en esta colección.",
+            detail=f"Ya existe una entidad llamada '{name}' en esta colección.",
         )
     entity = Entity(
         collection_id=collection_id,
         type=request.type,
-        name=request.name,
-        description=request.description,
+        name=name,
+        description=description,
     )
     session.add(entity)
     try:
@@ -51,10 +53,10 @@ def create_entity_service(
         session.rollback()
         raise HTTPException(
             status_code=409,
-            detail=f"Ya existe una entidad llamada '{request.name}' en esta colección.",
+            detail=f"Ya existe una entidad llamada '{name}' en esta colección.",
         )
     session.refresh(entity)
-    logger.info("Entity '%s' created in collection %s", request.name, collection_id)
+    logger.info("Entity '%s' created in collection %s", name, collection_id)
     return entity
 
 
@@ -100,7 +102,7 @@ def list_entities_service(
 def update_entity_service(
     session: Session, entity: Entity, request: UpdateEntityRequest
 ) -> Entity:
-    new_name = request.name if request.name is not None else entity.name
+    new_name = request.name.strip() if request.name is not None else entity.name
     if new_name != entity.name and _find_active_by_name(
         session, entity.collection_id, new_name
     ):
@@ -111,9 +113,9 @@ def update_entity_service(
     if request.type is not None:
         entity.type = request.type
     if request.name is not None:
-        entity.name = request.name
+        entity.name = request.name.strip()
     if request.description is not None:
-        entity.description = request.description
+        entity.description = request.description.strip()
     entity.updated_at = datetime.now(timezone.utc)
     session.add(entity)
     try:

@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def execute_rag_query(query: str, collection_id: str) -> RagQueryResponse:
+    query = query.strip()
     check_user_input(query)
 
     logger.info(
