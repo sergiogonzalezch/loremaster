@@ -261,7 +261,7 @@ export default function ContentCard({
               as="textarea"
               rows={10}
               value={editText}
-              onChange={(e) => setEditText(e.target.value)}
+              onChange={(e) => setEditText(e.target.value.trim())}
               required
             />
           </Modal.Body>

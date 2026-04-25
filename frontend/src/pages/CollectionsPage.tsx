@@ -212,7 +212,7 @@ export default function CollectionsPage() {
                 value={name}
                 onChange={(e) => {
                   const trimmedValue = e.target.value.trim();
-                  setName(e.target.value);
+                  setName(trimmedValue);
                   setParam({ page: "1", name: trimmedValue || null });
                 }}
                 placeholder="Ej. Reinos del Norte"
@@ -423,7 +423,7 @@ export default function CollectionsPage() {
               <Form.Control
                 type="text"
                 value={editName}
-                onChange={(e) => setEditName(e.target.value)}
+                onChange={(e) => setEditName(e.target.value.trim())}
                 required
                 autoFocus
               />
@@ -434,7 +434,7 @@ export default function CollectionsPage() {
                 as="textarea"
                 rows={3}
                 value={editDescription}
-                onChange={(e) => setEditDescription(e.target.value)}
+                onChange={(e) => setEditDescription(e.target.value.trim())}
               />
             </Form.Group>
           </Modal.Body>
@@ -468,7 +468,7 @@ export default function CollectionsPage() {
               <Form.Control
                 type="text"
                 value={createName}
-                onChange={(e) => setCreateName(e.target.value)}
+                onChange={(e) => setCreateName(e.target.value.trim())}
                 placeholder="Nombre de la colección"
                 required
                 autoFocus
@@ -480,7 +480,7 @@ export default function CollectionsPage() {
                 as="textarea"
                 rows={3}
                 value={createDescription}
-                onChange={(e) => setCreateDescription(e.target.value)}
+                onChange={(e) => setCreateDescription(e.target.value.trim())}
                 placeholder="Descripción opcional"
               />
             </Form.Group>

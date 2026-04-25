@@ -388,7 +388,7 @@ export default function EntityDetailPage() {
             as="textarea"
             rows={2}
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => setQuery(e.target.value.trim())}
             placeholder="Describe qué quieres generar sobre esta entidad..."
             minLength={5}
             required
@@ -635,7 +635,7 @@ export default function EntityDetailPage() {
                 type="text"
                 value={editForm.name}
                 onChange={(e) =>
-                  setEditForm((f) => ({ ...f, name: e.target.value }))
+                  setEditForm((f) => ({ ...f, name: e.target.value.trim() }))
                 }
                 required
               />
@@ -649,7 +649,7 @@ export default function EntityDetailPage() {
                 onChange={(e) =>
                   setEditForm((f) => ({
                     ...f,
-                    description: e.target.value,
+                    description: e.target.value.trim(),
                   }))
                 }
               />
