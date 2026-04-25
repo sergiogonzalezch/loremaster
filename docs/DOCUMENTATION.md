@@ -256,7 +256,6 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 - **Descartar** un contenido (PATCH): cambia `status → discarded` sin eliminar el registro
 - Los contenidos `discarded` no pueden editarse via API
 - Soft-delete independiente del estado (DELETE endpoint → `is_deleted=True`, `HTTP 204`)
-- Cada generación registra un `GeneratedText` inmutable (log de la llamada RAG) y un `EntityContent` (contenido editable)
 - El listado de contenidos (`GET /contents`) está paginado (`PaginatedResponse` con `data`, `meta.total`, `meta.page`, `meta.page_size`, `meta.total_pages`)
 
 ### Secuencia — Generar contenido
@@ -270,7 +269,7 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 | 5        | Qdrant → FastAPI   | chunks relevantes                                                                              |
 | 6        | FastAPI            | `render_prompt(category, entity_name, entity_type, context, query)` → prompt string completo   |
 | 7        | FastAPI → Ollama   | `generation_chain.invoke(rendered_prompt)` (semáforo: max 1 llamada concurrente)               |
-| 8        | FastAPI → DB       | Guarda GeneratedText (log inmutable) + EntityContent (status=pending)                          |
+| 8        | FastAPI → DB       | Guarda EntityContent (status=pending) con query y sources_count                                |
 | 9        | FastAPI → Cliente  | HTTP 201 { content_id, content, category, status, sources_count }                              |
 
 ### Secuencia — Confirmar contenido
@@ -335,7 +334,6 @@ loremaster/
 │   │   │   ├── entities.py                # Entity, EntityType (character|creature|location|faction|item)
 │   │   │   ├── enums.py                   # ContentCategory, ContentStatus (enums compartidos)
 │   │   │   ├── entity_content.py          # EntityContent + schemas de request/response
-│   │   │   ├── generated_text.py          # GeneratedText — log inmutable de cada llamada RAG
 │   │   │   ├── rag_query.py               # RagQueryRequest, RagQueryResponse
 │   │   │   └── shared.py                  # PaginatedResponse[T] + PaginationMeta genéricos (reutilizados entre endpoints)
 │   │   ├── core/
@@ -357,7 +355,7 @@ loremaster/
 │   │       ├── deletion_service.py            # cascade_delete_entity / cascade_delete_collection
 │   │       ├── documents_service.py           # ingest (async, con check_document_content), list, get, delete
 │   │       ├── entities_service.py            # CRUD + nombre único por colección
-│   │       ├── generation_service.py          # generate(): check_user_input → valida categoría → límite pending → RAG → check_generated_output → GeneratedText + EntityContent
+│   │       ├── generation_service.py          # generate(): check_user_input → valida categoría → límite pending → RAG → check_generated_output → EntityContent
 │   │       ├── content_management_service.py  # list, edit, confirm (discard category-scoped), discard, soft_delete, cascade
 │   │       └── rag_query_service.py           # execute_rag_query(): check_user_input → RAG → check_generated_output (sin session)
 │   ├── alembic/                           # Migraciones (render_as_batch=True para SQLite)
@@ -532,8 +530,7 @@ DATABASE_URL=postgresql://user:pass@postgres:5432/loremaster
 | **collections** | id (UUID PK), name (unique), description, created_at, updated_at, is_deleted, deleted_at | Unidad principal del sistema (world). |
 | **documents** | id (UUID PK), collection_id (FK), filename, file_type, chunk_count, status, created_at, is_deleted, deleted_at | Sin campo `content` — el texto vive en Qdrant. Sin `updated_at` — los documentos no se editan. `status`: processing \| completed \| failed. |
 | **entities** | id (UUID PK), collection_id (FK), type (ENUM), name, description, created_at, updated_at, is_deleted, deleted_at | `type`: character \| creature \| location \| faction \| item. Nombre único por colección: constraint DB `uq_entity_collection_name` (collection_id, name) + validación en servicio. Los nombres de entidades eliminadas quedan reservados. |
-| **generated_texts** | id (UUID PK), entity_id (FK), collection_id (FK), category, query, raw_content, sources_count, created_at | Log inmutable de cada llamada RAG. No se edita. Referenciado por `entity_content`. |
-| **entity_contents** | id (UUID PK), entity_id (FK), collection_id (FK), generated_text_id (FK), category, content, status, created_at, updated_at, is_deleted, deleted_at | `status`: pending \| confirmed \| discarded. Máx. 5 `pending` por entidad **y por categoría**. El discard al confirmar es category-scoped. |
+| **entity_contents** | id (UUID PK), entity_id (FK), collection_id (FK), query, sources_count, category, content, status, created_at, updated_at, is_deleted, deleted_at | `status`: pending \| confirmed \| discarded. Máx. 5 `pending` por entidad **y por categoría**. El discard al confirmar es category-scoped. |
 | **generated_images** | id (UUID PK), collection_id (FK), entity_id (FK?), image_url, visual_prompt, seed, model_version, generation_ms, backend, created_at | Planificado (Fase 3). backend: local \| runpod. |
 | **entity_relations** | id (UUID PK), source_id (FK entities), target_id (FK entities), relation_type, created_at | Planificado. ENUM: belongs_to, contains, allied_with, enemy_of. |
 

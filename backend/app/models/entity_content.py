@@ -31,13 +31,8 @@ class EntityContent(SQLModel, table=True):
             index=True,
         )
     )
-    generated_text_id: str = Field(
-        sa_column=Column(
-            String(36),
-            ForeignKey("generated_texts.id"),
-            nullable=False,
-        )
-    )
+    query: str = Field(max_length=2000)
+    sources_count: int = Field(default=0)
     category: ContentCategory = Field(max_length=50)
     content: str = Field(max_length=10000)
     status: ContentStatus = Field(default=ContentStatus.pending, max_length=50)
@@ -57,7 +52,8 @@ class EntityContentResponse(BaseModel):
     id: str
     entity_id: str
     collection_id: str
-    generated_text_id: str
+    query: str
+    sources_count: int
     category: ContentCategory
     content: str
     status: ContentStatus
