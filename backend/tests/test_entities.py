@@ -80,32 +80,21 @@ async def test_delete_entity_cascades_all_contents(
     client, db_session, sample_collection, sample_entity
 ):
     """ENT-06: Eliminar entidad hace soft-delete de EntityContent pending y confirmed."""
-    from app.models.generated_text import GeneratedText
-
-    gt = GeneratedText(
+    pending = EntityContent(
         entity_id=sample_entity.id,
         collection_id=sample_collection.id,
         category=ContentCategory.backstory,
         query="q cascade test",
-        raw_content="contenido generado",
         sources_count=1,
-    )
-    db_session.add(gt)
-    db_session.flush()
-
-    pending = EntityContent(
-        entity_id=sample_entity.id,
-        collection_id=sample_collection.id,
-        generated_text_id=gt.id,
-        category=ContentCategory.backstory,
         content="contenido pendiente",
         status=ContentStatus.pending,
     )
     confirmed = EntityContent(
         entity_id=sample_entity.id,
         collection_id=sample_collection.id,
-        generated_text_id=gt.id,
         category=ContentCategory.backstory,
+        query="q cascade test",
+        sources_count=1,
         content="contenido confirmado",
         status=ContentStatus.confirmed,
     )
