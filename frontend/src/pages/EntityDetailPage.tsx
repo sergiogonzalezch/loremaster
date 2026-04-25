@@ -492,7 +492,7 @@ export default function EntityDetailPage() {
       </Nav>
       <Card className="mb-3">
         <Card.Body>
-          <div className="d-flex gap-3 flex-wrap align-items-end">
+          <div className="d-flex justify-content-between flex-wrap align-items-end">
             <Form.Group style={{ minWidth: 240 }}>
               <Form.Label>Filtrar por categoría</Form.Label>
               <Form.Select
