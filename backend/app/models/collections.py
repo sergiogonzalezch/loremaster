@@ -43,3 +43,5 @@ class CollectionResponse(BaseModel):
     description: str
     created_at: datetime
     updated_at: Optional[datetime] = None
+    document_count: int = 0
+    entity_count: int = 0

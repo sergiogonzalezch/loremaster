@@ -21,6 +21,7 @@ from app.services.collection_service import (
     list_collections_service,
     update_collection_service,
     delete_collection_service,
+    _fetch_counts,
 )
 
 router = APIRouter(prefix="/collections", tags=["collections"])
@@ -59,8 +60,14 @@ def get_collections(
 @router.get("/{collection_id}", response_model=CollectionResponse)
 def get_collection(
     collection: Collection = Depends(get_collection_or_404),
+    session: Session = Depends(get_session),
 ):
-    return collection
+    doc_counts, entity_counts = _fetch_counts(session, [collection.id])
+    return {
+        **collection.model_dump(),
+        "document_count": doc_counts.get(collection.id, 0),
+        "entity_count": entity_counts.get(collection.id, 0),
+    }
 
 
 @router.patch("/{collection_id}", response_model=CollectionResponse)

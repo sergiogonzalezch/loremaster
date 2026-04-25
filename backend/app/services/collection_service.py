@@ -8,9 +8,38 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.models.collections import Collection, UpdateCollectionRequest
+from app.models.documents import Document
+from app.models.entities import Entity
 from app.services.deletion_service import cascade_delete_collection
 
 logger = logging.getLogger(__name__)
+
+
+def _fetch_counts(
+    session: Session, collection_ids: list[str]
+) -> tuple[dict[str, int], dict[str, int]]:
+    if not collection_ids:
+        return {}, {}
+    doc_rows = session.exec(
+        select(Document.collection_id, func.count(Document.id))
+        .where(
+            Document.collection_id.in_(collection_ids),
+            Document.is_deleted == False,
+        )
+        .group_by(Document.collection_id)
+    ).all()
+    entity_rows = session.exec(
+        select(Entity.collection_id, func.count(Entity.id))
+        .where(
+            Entity.collection_id.in_(collection_ids),
+            Entity.is_deleted == False,
+        )
+        .group_by(Entity.collection_id)
+    ).all()
+    return (
+        {cid: cnt for cid, cnt in doc_rows},
+        {cid: cnt for cid, cnt in entity_rows},
+    )
 
 
 def create_collection_service(
@@ -76,7 +105,17 @@ def list_collections_service(
         .offset(skip)
         .limit(page_size)
     ).all()
-    return list(items), total
+    collection_ids = [c.id for c in items]
+    doc_counts, entity_counts = _fetch_counts(session, collection_ids)
+    enriched = [
+        {
+            **c.model_dump(),
+            "document_count": doc_counts.get(c.id, 0),
+            "entity_count": entity_counts.get(c.id, 0),
+        }
+        for c in items
+    ]
+    return enriched, total
 
 
 def update_collection_service(
