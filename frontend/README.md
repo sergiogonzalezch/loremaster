@@ -106,7 +106,7 @@ src/
 | `confirmed` | Editar · Eliminar                         |
 | `discarded` | — (solo visible en el historial)          |
 
-- **Confirmar** → actualiza la descripción de la entidad y descarta el resto de contenidos pendientes **de la misma categoría**.
+- **Confirmar** → descarta el resto de contenidos pendientes **de la misma categoría**.
 - **Descartar** → `PATCH .../discard`, cambia el estado a `discarded`, el contenido sigue visible.
 - **Eliminar** → soft-delete (`DELETE`), desaparece del listado.
 

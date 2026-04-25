@@ -249,7 +249,7 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 | `POST` | `.../entities/{eid}/generate` | Generar borrador con RAG | 201 |
 | `GET` | `.../entities/{eid}/drafts` | Listar borradores activos (excluye discarded y soft-deleted) | 200 |
 | `PATCH` | `.../entities/{eid}/drafts/{did}` | Editar contenido (solo pending) | 200 |
-| `POST` | `.../entities/{eid}/drafts/{did}/confirm` | Confirmar → actualiza descripción de entidad | 200 |
+| `POST` | `.../entities/{eid}/drafts/{did}/confirm` | Confirmar → descarta hermanos pendientes de la categoría, retorna entidad | 200 |
 | `PATCH` | `.../entities/{eid}/drafts/{did}/discard` | Cambiar status a descartado (acción reversible) | 200 |
 | `DELETE` | `.../entities/{eid}/drafts/{did}` | Soft-delete real del borrador (`is_deleted=True`) | 204 |
 
