@@ -340,6 +340,16 @@ export default function CollectionsPage() {
                     >
                       {col.description || "Sin descripción"}
                     </Card.Text>
+                    <div className="mt-2 d-flex gap-3">
+                      <small className="text-muted">
+                        <strong>{col.document_count}</strong>{" "}
+                        {col.document_count === 1 ? "documento" : "documentos"}
+                      </small>
+                      <small className="text-muted">
+                        <strong>{col.entity_count}</strong>{" "}
+                        {col.entity_count === 1 ? "entidad" : "entidades"}
+                      </small>
+                    </div>
                   </Card.Body>
                   <Card.Footer className="d-flex justify-content-between align-items-center">
                     <small className="text-muted">
