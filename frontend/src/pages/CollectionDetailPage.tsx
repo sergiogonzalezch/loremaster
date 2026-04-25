@@ -209,7 +209,7 @@ function DocumentsTab({
               <Form.Control
                 value={filename}
                 onChange={(e) => {
-                  setFilename(e.target.value);
+                  setFilename(e.target.value.trim());
                   setPage(1);
                 }}
                 placeholder="Ej. worldbuilding.pdf"
@@ -518,7 +518,11 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
     e.preventDefault();
     setCreating(true);
     try {
-      await createEntity(collectionId, form);
+      await createEntity(collectionId, {
+        ...form,
+        name: form.name.trim(),
+        description: form.description.trim(),
+      });
       setShowCreate(false);
       setForm({ type: "character", name: "", description: "" });
       await fetchEntities();
@@ -574,7 +578,7 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
               <Form.Control
                 value={nameFilter}
                 onChange={(e) => {
-                  setNameFilter(e.target.value);
+                  setNameFilter(e.target.value.trim());
                   setPage(1);
                 }}
                 placeholder="Ej. Aria"
@@ -748,7 +752,7 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
                 type="text"
                 value={form.name}
                 onChange={(e) =>
-                  setForm((f) => ({ ...f, name: e.target.value }))
+                  setForm((f) => ({ ...f, name: e.target.value.trim() }))
                 }
                 placeholder="Nombre de la entidad"
                 required
@@ -762,7 +766,10 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
                 rows={3}
                 value={form.description}
                 onChange={(e) =>
-                  setForm((f) => ({ ...f, description: e.target.value }))
+                  setForm((f) => ({
+                    ...f,
+                    description: e.target.value.trim(),
+                  }))
                 }
                 placeholder="Descripción opcional"
               />
@@ -904,7 +911,7 @@ function GenerateTab({
                 as="textarea"
                 rows={5}
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => setQuery(e.target.value.trim())}
                 placeholder="Escribe tu consulta al mundo narrativo..."
                 minLength={5}
                 required
