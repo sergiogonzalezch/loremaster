@@ -8,13 +8,19 @@ A diferencia de los asistentes de IA genéricos basados en chat, Lore Master ofr
 
 ## ¿Qué hace?
 
+**Implementado actualmente:**
+
 - Ingesta y vectoriza documentos de lore (PDF/TXT) proporcionados por el usuario.
-- Recupera contexto relevante del lore antes de cada generación de texto o imagen.
-- Genera texto narrativo expandido, consistente con la lore cargada.
+- Recupera contexto relevante del lore antes de cada generación de texto.
+- Genera texto narrativo expandido, consistente con el lore cargado.
 - Genera **contenidos RAG por categoría** para cada entidad: el usuario puede editar, confirmar (descarta automáticamente los demás pendientes de la misma categoría) o descartar cada contenido.
-- Construye prompts visuales automáticamente y genera imágenes a través de ComfyUI + Flux.2 Klein 4B.
-- Gestiona entidades del mundo (personajes, escenarios, facciones, ítems) con atributos estructurados.
-- Almacena todas las imágenes y metadatos generados en S3 (local o nube).
+- Gestiona entidades del mundo (personajes, criaturas, escenarios, facciones, ítems) con atributos estructurados.
+- Aplica moderación de contenido en tres capas (input, documentos y output del LLM) mediante filtros regex (`domain/content_guard.py`).
+
+**Planificado (Fases 2-3):**
+
+- Construcción de prompts visuales y generación de imágenes a través de ComfyUI + Flux.2 Klein 4B.
+- Almacenamiento de imágenes y metadatos generados en S3 (LocalStack local / AWS S3 o R2 en producción).
 
 ## ¿Qué problema resuelve?
 
@@ -330,7 +336,8 @@ loremaster/
 │   │   │   ├── enums.py                   # ContentCategory, ContentStatus (enums compartidos)
 │   │   │   ├── entity_content.py          # EntityContent + schemas de request/response
 │   │   │   ├── generated_text.py          # GeneratedText — log inmutable de cada llamada RAG
-│   │   │   └── rag_query.py               # RagQueryRequest, RagQueryResponse
+│   │   │   ├── rag_query.py               # RagQueryRequest, RagQueryResponse
+│   │   │   └── shared.py                  # PaginatedResponse[T] + PaginationMeta genéricos (reutilizados entre endpoints)
 │   │   ├── core/
 │   │   │   ├── config.py                  # Pydantic Settings (lee .env)
 │   │   │   ├── lifespan.py                # Startup: migraciones Alembic (crítico) + health checks
@@ -338,20 +345,21 @@ loremaster/
 │   │   │   └── common.py                  # Helpers DB: soft_delete, get_active_by_id, list_active_by_collection
 │   │   ├── engine/                        # Pipeline IA — LLM + Qdrant + RAG
 │   │   │   ├── rag.py                     # Qdrant: ingest_chunks, search_context, delete, ping_qdrant
-│   │   │   ├── rag_pipeline.py            # RAG orchestrator compartido: invoke_rag_pipeline()
-│   │   │   ├── llm.py                     # OllamaLLM + LangChain RunnableSequence (singleton)
+│   │   │   ├── rag_pipeline.py            # invoke_rag_pipeline() (libre) + invoke_generation_pipeline() (por entidad/categoría)
+│   │   │   ├── llm.py                     # OllamaLLM singletons: llm (bare) + chain (PromptTemplate pipeline)
 │   │   │   └── extractor.py               # Extracción de texto PDF/TXT
 │   │   ├── domain/                        # Lógica de dominio pura — sin I/O ni DB
 │   │   │   ├── category_rules.py          # ENTITY_CATEGORY_MAP, validate_category_for_entity()
+│   │   │   ├── content_guard.py           # Moderación de contenido: check_user_input(), check_document_content(), check_generated_output()
 │   │   │   └── prompt_templates.py        # _TEMPLATES, get_template(), render_prompt()
 │   │   └── services/                      # Lógica de negocio (reciben objetos ORM, no IDs)
 │   │       ├── collection_service.py
 │   │       ├── deletion_service.py            # cascade_delete_entity / cascade_delete_collection
-│   │       ├── documents_service.py           # ingest (async), list, get, delete
+│   │       ├── documents_service.py           # ingest (async, con check_document_content), list, get, delete
 │   │       ├── entities_service.py            # CRUD + nombre único por colección
-│   │       ├── generation_service.py          # generate(): valida categoría, límite pending, RAG → GeneratedText + EntityContent
+│   │       ├── generation_service.py          # generate(): check_user_input → valida categoría → límite pending → RAG → check_generated_output → GeneratedText + EntityContent
 │   │       ├── content_management_service.py  # list, edit, confirm (discard category-scoped), discard, soft_delete, cascade
-│   │       └── rag_query_service.py           # execute_rag_query(): consulta RAG libre (sin session, solo Qdrant + Ollama)
+│   │       └── rag_query_service.py           # execute_rag_query(): check_user_input → RAG → check_generated_output (sin session)
 │   ├── alembic/                           # Migraciones (render_as_batch=True para SQLite)
 │   ├── tests/                             # pytest con SQLite in-memory; stubs de engine.rag y LLM
 │   ├── Makefile
@@ -364,13 +372,19 @@ loremaster/
 │   │   ├── App.tsx                        # BrowserRouter + rutas principales
 │   │   ├── api/                           # Capa de acceso al backend
 │   │   │   ├── apiClient.ts               # fetch wrapper: apiFetch<T>, ApiError, ApiAbortError
-│   │   │   ├── collections.ts / documents.ts / entities.ts / drafts.ts / generate.ts
-│   │   │   └── index.ts                   # Re-exporta todos los módulos de api/
+│   │   │   ├── collections.ts / documents.ts / entities.ts / contents.ts / generate.ts
+│   │   │   ├── query.ts                   # buildQuery() — utilidad interna para construir query strings de URL
+│   │   │   └── index.ts                   # Re-exporta todos los módulos de api/ (no incluye query.ts)
 │   │   ├── pages/                         # CollectionsPage, CollectionDetailPage,
 │   │   │                                  # EntityDetailPage, GeneratePage
-│   │   ├── components/                    # Layout, ConfirmModal, LoadingSpinner,
-│   │   │                                  # MarkdownContent, TokenCounter
-│   │   ├── hooks/useGenerate.ts           # Hook para peticiones LLM cancelables con AbortSignal
+│   │   ├── components/                    # Layout (monta StarfieldCanvas), ConfirmModal,
+│   │   │                                  # LoadingSpinner, MarkdownContent, TokenCounter,
+│   │   │                                  # StarfieldCanvas (fondo animado canvas; escucha evento lm:collections)
+│   │   ├── hooks/
+│   │   │   ├── useGenerate.ts                   # Peticiones LLM cancelables con AbortSignal
+│   │   │   ├── useEntityContents.ts             # Fetching/refresco de contenidos de entidad
+│   │   │   ├── useCollectionDocumentsStatus.ts  # Monitoriza estado de docs; polling cada 3s si hay processing
+│   │   │   └── useDebouncedValue.ts             # Debounce configurable (default 300 ms)
 │   │   ├── types/                         # Tipos TypeScript (espejo exacto de schemas del backend)
 │   │   └── utils/                         # enums.ts, constants.ts, errors.ts (mensajes en español),
 │   │                                      # formatters.ts, tokens.ts
@@ -613,15 +627,27 @@ Tres fases de 4 semanas. Cada semana cierra con un entregable concreto, verifica
 - Las imágenes generadas se guardan en S3: el usuario puede reutilizar una imagen sin regenerarla.
 - El seed fijo permite reproducir la misma imagen sin consumir GPU adicional.
 
-# 10. Guardrails de Imágenes
+# 10. Guardrails de Contenido
 
-El sistema implementa tres capas de control para garantizar la calidad, coherencia y seguridad de las imágenes generadas.
+El sistema implementa control de contenido en el texto y, cuando se integre la generación de imágenes, también en el pipeline visual.
 
-## Capa 1 — Construcción estructurada del prompt visual
+## Capa 1 — Moderación de texto (IMPLEMENTADO)
+
+`backend/app/domain/content_guard.py` aplica cinco grupos de patrones regex en tres puntos del pipeline:
+
+| **Función** | **Punto de aplicación** | **Error si activa** |
+| --- | --- | --- |
+| `check_user_input(text)` | Antes de llamar al LLM (`generation_service`, `rag_query_service`) | `ValueError` → HTTP 422 |
+| `check_document_content(text)` | Tras extraer texto del documento (`documents_service`) | `ValueError` → HTTP 422 |
+| `check_generated_output(text)` | Tras recibir la respuesta del LLM | `RuntimeError` → HTTP 500 |
+
+Patrones bloqueados: contenido sexual explícito, discurso de odio / supremacismo, instrucciones de armas o explosivos, síntesis de drogas, y lenguaje de acoso.
+
+## Capa 2 — Construcción estructurada del prompt visual (PLANIFICADO — Fase 2)
+
+Cuando se integre ComfyUI, `backend/app/services/prompt_builder.py` construirá el prompt visual automáticamente usando prefijos por tipo de entidad y un sufijo de calidad fijo:
 
 ```python
-# backend/app/services/prompt_builder.py
-
 STYLE_PREFIX = {
     "character": "fantasy character portrait, detailed face, cinematic lighting, epic atmosphere,",
     "scene":     "fantasy landscape, wide establishing shot, atmospheric, detailed environment,",
@@ -635,39 +661,15 @@ QUALITY_SUFFIX = (
 )
 
 def build_visual_prompt(entity_type: str, user_description: str, lore_context: str) -> str:
-    prefix   = STYLE_PREFIX.get(entity_type, '')
-    combined = f'{prefix} {user_description}'
+    prefix   = STYLE_PREFIX.get(entity_type, ‘’)
+    combined = f’{prefix} {user_description}’
     if lore_context:
-        combined += f', consistent with: {lore_context[:200]}'  # Limitar contexto RAG
-    full = f'{combined}, {QUALITY_SUFFIX}'
+        combined += f’, consistent with: {lore_context[:200]}’
+    full = f’{combined}, {QUALITY_SUFFIX}’
     return full[:500]  # Flux.2 Klein acepta hasta ~512 tokens de texto
 ```
 
-## Capa 2 — Filtrado de contenido en el prompt
-
-```python
-# backend/app/services/prompt_builder.py
-
-BLOCKED_KEYWORDS = [
-    # Lista de términos que activan rechazo antes de enviar a ComfyUI
-    # Completar según política del proyecto
-]
-
-def validate_prompt(prompt: str) -> tuple[bool, str | None]:
-    lower = prompt.lower()
-    for kw in BLOCKED_KEYWORDS:
-        if kw in lower:
-            return False, f'El prompt contiene contenido no permitido: "{kw}"'
-    if len(prompt.strip()) < 10:
-        return False, 'El prompt es demasiado corto para generar una imagen útil.'
-    return True, None
-
-# En el endpoint /generate/image:
-# valid, reason = validate_prompt(visual_prompt)
-# if not valid: raise HTTPException(422, detail=reason)
-```
-
-## Capa 3 — Negative prompt y parámetros fijos en el workflow
+## Capa 3 — Parámetros fijos del workflow de imágenes (PLANIFICADO — Fase 2)
 
 | **Parámetro**       | **Valor fijo**                                                      | **Motivo**                                                                            |
 | ------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
@@ -678,12 +680,12 @@ def validate_prompt(prompt: str) -> tuple[bool, str | None]:
 | **width × height**  | 1024 × 1024 px                                                      | Resolución óptima para el modelo; otras resoluciones pueden producir artefactos.      |
 | **negative_prompt** | blurry, ugly, deformed, watermark, text, extra limbs, worst quality | Filtro base para mejorar consistencia y evitar artefactos comunes.                    |
 
-## Registro y trazabilidad de imágenes
+## Registro y trazabilidad de imágenes (PLANIFICADO — Fase 2)
 
-Cada imagen generada se registra en la tabla generated_images con:
+Cada imagen generada se registrará en la tabla `generated_images` con:
 
-- visual_prompt exacto usado (para auditoría y reproducibilidad).
-- seed utilizado (para regenerar la misma imagen si el usuario lo solicita).
-- model_version (para detectar regresiones al actualizar el modelo).
-- generation_ms (para monitorear rendimiento en el tiempo).
-- backend: ‘local’ o ‘runpod’ (para comparar tiempos entre configuraciones).
+- `visual_prompt` exacto usado (para auditoría y reproducibilidad).
+- `seed` utilizado (para regenerar la misma imagen si el usuario lo solicita).
+- `model_version` (para detectar regresiones al actualizar el modelo).
+- `generation_ms` (para monitorear rendimiento en el tiempo).
+- `backend`: `’local’` o `’runpod’` (para comparar tiempos entre configuraciones).
