@@ -1,4 +1,5 @@
 import { apiFetch } from "./apiClient";
+import { trimStringValues } from "../utils/strings";
 import type { GenerateTextRequest, GenerateTextResponse } from "../types";
 
 export function generateText(
@@ -8,7 +9,7 @@ export function generateText(
 ): Promise<GenerateTextResponse> {
   return apiFetch<GenerateTextResponse>(`/collections/${collectionId}/query`, {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify(trimStringValues(data)),
     signal,
   });
 }
