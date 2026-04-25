@@ -49,7 +49,11 @@ def list_contents(
         )
     ).one()
 
-    sort_col = EntityContent.created_at.asc() if order == "asc" else EntityContent.created_at.desc()
+    sort_col = (
+        EntityContent.created_at.asc()
+        if order == "asc"
+        else EntityContent.created_at.desc()
+    )
     skip = (page - 1) * page_size
     items = list(
         session.exec(

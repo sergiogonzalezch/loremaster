@@ -242,7 +242,9 @@ async def test_update_collection_name(client, sample_collection):
 @pytest.mark.anyio
 async def test_update_collection_duplicate_name_409(client, sample_collection):
     """COL-14: PATCH con nombre de otra colección activa retorna 409."""
-    await client.post("/api/v1/collections/", json={"name": "Other World", "description": ""})
+    await client.post(
+        "/api/v1/collections/", json={"name": "Other World", "description": ""}
+    )
 
     response = await client.patch(
         f"/api/v1/collections/{sample_collection.id}",

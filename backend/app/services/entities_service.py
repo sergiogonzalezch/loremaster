@@ -88,7 +88,11 @@ def list_entities_service(
     sort_col = Entity.created_at.asc() if order == "asc" else Entity.created_at.desc()
     skip = (page - 1) * page_size
     items = session.exec(
-        select(Entity).where(*conditions).order_by(sort_col).offset(skip).limit(page_size)
+        select(Entity)
+        .where(*conditions)
+        .order_by(sort_col)
+        .offset(skip)
+        .limit(page_size)
     ).all()
     return list(items), total
 

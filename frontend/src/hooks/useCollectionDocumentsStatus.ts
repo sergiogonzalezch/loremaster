@@ -11,7 +11,9 @@ interface UseCollectionDocumentsStatusResult {
 export function useCollectionDocumentsStatus(
   collectionId: string | undefined,
 ): UseCollectionDocumentsStatusResult {
-  const [hasCompletedDocs, setHasCompletedDocs] = useState<boolean | null>(null);
+  const [hasCompletedDocs, setHasCompletedDocs] = useState<boolean | null>(
+    null,
+  );
   const [hasProcessingDocs, setHasProcessingDocs] = useState(false);
 
   const refresh = useCallback(

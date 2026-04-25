@@ -11,7 +11,8 @@ _SAFETY_INSTRUCTION = (
     "'No puedo procesar esta solicitud.' y no generes ningún contenido adicional.\n\n"
 )
 
-_PROMPT = PromptTemplate.from_template("""
+_PROMPT = PromptTemplate.from_template(
+    """
     """
     + _SAFETY_INSTRUCTION
     + """
@@ -20,7 +21,8 @@ _PROMPT = PromptTemplate.from_template("""
     Si el contexto no contiene información suficiente, indícalo claramente.\n\n
     CONTEXTO:\n{context},\n
     PREGUNTA:\n{query}.
-    """)
+    """
+)
 
 llm = OllamaLLM(
     model=settings.ollama_model,

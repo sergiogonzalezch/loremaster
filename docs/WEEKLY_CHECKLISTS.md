@@ -196,6 +196,37 @@ Nota de Mike:
 
 ---
 
+## Nota — Frontend implementado (fuera del plan original de backend)
+
+El plan de 12 semanas se enfocaba en backend. El frontend fue implementado en paralelo y está completo.
+
+### SPA React 19 (implementado durante Fase 1-2)
+
+- [x] `CollectionsPage` — listar / crear / eliminar colecciones
+- [x] `CollectionDetailPage` — tabs: Documentos, Entidades, Consulta RAG libre
+- [x] `EntityDetailPage` — cabecera de entidad + formulario de generación + lista de contenidos por categoría
+- [x] `GeneratePage` — consulta RAG en lenguaje libre
+- [x] Capa API completa (`src/api/`) — todos los endpoints cubiertos con tipos TypeScript
+- [x] Hook `useGenerate` — cancelación de requests LLM en curso
+- [x] Hook `useEntityContents` — gestión de lista de contenidos
+- [x] Renderizado Markdown sanitizado (`MarkdownContent` con `remark-gfm` + `rehype-sanitize`)
+- [x] `TokenCounter` — estimación de tokens con advertencia en 400
+- [x] Filtrado por status en tabs de contenidos (pending / confirmed / discarded)
+- [x] Mensajes de error en español (`src/utils/errors.ts`)
+
+---
+
+## Nota — Guardrails de contenido implementados (fuera del plan original)
+
+Sistema de validación en 3 capas implementado en `backend/app/domain/content_guard.py`:
+
+- [x] `check_user_input()` — valida input del usuario antes del pipeline RAG (raises `ValueError`)
+- [x] `check_document_content()` — valida texto extraído de documentos al ingestar (raises `ValueError`)
+- [x] `check_generated_output()` — valida salida del LLM antes de persistir (raises `RuntimeError`)
+- [x] Lista de patrones bloqueados: contenido sexual explícito, discurso de odio, fabricación de armas/explosivos, síntesis de drogas, acoso
+
+---
+
 ## Nota — Funcionalidades de Semana 8 implementadas anticipadamente
 
 Las funcionalidades de gestión de entidades y borradores RAG, planificadas originalmente para la Semana 8, fueron implementadas durante las Semanas 4-5 junto con el pipeline RAG base. A continuación el estado real de cada ítem:
@@ -227,7 +258,7 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 - [x] Eliminación en cascada: colección → documentos + entidades + drafts (soft-delete)
 - [x] Eliminación de entidad → soft-delete de todos sus drafts (cualquier status)
 - [x] Guards en `discard_pending_drafts` y `soft_delete_all_drafts`: requieren al menos un filtro
-- [x] 64 tests passing (collections, documents, entities, entity_drafts, generate)
+- [x] 65 tests passing (collections, documents, entities, entity_content, rag_query)
 
 # Fase 2 — RAG Avanzado + Imagenes Locales (Semanas 5-8)
 
@@ -385,13 +416,13 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 
 ### Gestion de Entidades (CRUD)
 
-- [ ] `POST /api/v1/collections/{id}/entities` — crear entidad (type, name, attributes)
-- [ ] `GET /api/v1/collections/{id}/entities` — listar entidades
-- [ ] `GET /api/v1/collections/{id}/entities/{entity_id}` — detalle
-- [ ] `PUT /api/v1/collections/{id}/entities/{entity_id}` — actualizar
-- [ ] `DELETE /api/v1/collections/{id}/entities/{entity_id}` — soft delete
-- [ ] Tipos soportados: `character`, `scene`, `faction`, `item`
-- [ ] `attributes` como JSONB con validacion por tipo
+- [x] `POST /api/v1/collections/{id}/entities` — crear entidad (type, name, attributes)
+- [x] `GET /api/v1/collections/{id}/entities` — listar entidades
+- [x] `GET /api/v1/collections/{id}/entities/{entity_id}` — detalle
+- [x] `PATCH /api/v1/collections/{id}/entities/{entity_id}` — actualizar (implementado como PATCH, no PUT)
+- [x] `DELETE /api/v1/collections/{id}/entities/{entity_id}` — soft delete
+- [x] Tipos soportados: `character`, `creature`, `location`, `faction`, `item` (evolucionó respecto al plan original)
+- [ ] `attributes` como JSONB con validacion por tipo (implementado como campo `description` string)
 
 ### Registro de Imagenes
 
@@ -403,7 +434,7 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 
 - [ ] Flujo completo: ingestar lore → query de imagen → imagen coherente con el lore
 - [ ] Imagen guardada en LocalStack S3 y URL retornada al cliente
-- [ ] CRUD de entidades funcional con soft delete
+- [x] CRUD de entidades funcional con soft delete
 - [ ] Metadata de generacion registrada (prompt, seed, tiempo, backend)
 
 ### Checklist de Cierre Fase 2
@@ -413,7 +444,7 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 - [ ] Imagenes se generan localmente con ComfyUI + Flux.2 Klein
 - [ ] Imagenes usan contexto RAG para coherencia con el lore
 - [ ] Storage S3 funcional (LocalStack)
-- [ ] CRUD de entidades completo
+- [x] CRUD de entidades completo
 - [ ] README actualizado con instrucciones de ComfyUI y S3
 
 ---
