@@ -68,7 +68,7 @@ export default function ContentCard({
     setSaving(true);
     try {
       await updateContent(collectionId, entityId, content.id, {
-        content: editText,
+        content: editText.trim(),
       });
       setShowEdit(false);
       onAction();

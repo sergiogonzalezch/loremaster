@@ -160,8 +160,8 @@ export default function CollectionsPage() {
     setCreating(true);
     try {
       await createCollection({
-        name: createName,
-        description: createDescription,
+        name: createName.trim(),
+        description: createDescription.trim(),
       });
       setShowCreate(false);
       setCreateName("");
@@ -211,8 +211,9 @@ export default function CollectionsPage() {
               <Form.Control
                 value={name}
                 onChange={(e) => {
+                  const trimmedValue = e.target.value.trim();
                   setName(e.target.value);
-                  setParam({ page: "1", name: e.target.value || null });
+                  setParam({ page: "1", name: trimmedValue || null });
                 }}
                 placeholder="Ej. Reinos del Norte"
               />

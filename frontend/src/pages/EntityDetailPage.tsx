@@ -259,7 +259,11 @@ export default function EntityDetailPage() {
     if (!collectionId || !entityId) return;
     setSaving(true);
     try {
-      const updated = await updateEntity(collectionId, entityId, editForm);
+      const updated = await updateEntity(collectionId, entityId, {
+        ...editForm,
+        name: editForm.name.trim(),
+        description: editForm.description.trim(),
+      });
       setEntity(updated);
       setShowEdit(false);
     } catch (err) {
@@ -643,7 +647,10 @@ export default function EntityDetailPage() {
                 rows={4}
                 value={editForm.description}
                 onChange={(e) =>
-                  setEditForm((f) => ({ ...f, description: e.target.value }))
+                  setEditForm((f) => ({
+                    ...f,
+                    description: e.target.value,
+                  }))
                 }
               />
             </Form.Group>

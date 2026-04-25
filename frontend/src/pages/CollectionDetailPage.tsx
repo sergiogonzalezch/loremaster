@@ -92,7 +92,7 @@ function DocumentsTab({
           {
             page,
             page_size: pageSize,
-            filename: filename || undefined,
+            filename: filename.trim() || undefined,
             status: status || undefined,
             order,
           },
@@ -497,7 +497,7 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
       const res = await getEntities(collectionId, {
         page,
         page_size: pageSize,
-        name: nameFilter || undefined,
+        name: nameFilter.trim() || undefined,
         type: typeFilter || undefined,
         order,
       });
@@ -518,7 +518,11 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
     e.preventDefault();
     setCreating(true);
     try {
-      await createEntity(collectionId, form);
+      await createEntity(collectionId, {
+        ...form,
+        name: form.name.trim(),
+        description: form.description.trim(),
+      });
       setShowCreate(false);
       setForm({ type: "character", name: "", description: "" });
       await fetchEntities();
@@ -762,7 +766,10 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
                 rows={3}
                 value={form.description}
                 onChange={(e) =>
-                  setForm((f) => ({ ...f, description: e.target.value }))
+                  setForm((f) => ({
+                    ...f,
+                    description: e.target.value,
+                  }))
                 }
                 placeholder="Descripción opcional"
               />
