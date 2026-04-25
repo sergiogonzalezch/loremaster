@@ -4,7 +4,7 @@ import { useGenerate } from "../hooks/useGenerate";
 import { ApiAbortError } from "../api/apiClient";
 
 function makeAsyncFn<T>(result: T, delay = 10) {
-  return vi.fn(async (..._args: unknown[]) => {
+  return vi.fn(async () => {
     await new Promise((r) => setTimeout(r, delay));
     return result;
   });
