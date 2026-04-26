@@ -24,6 +24,8 @@ function makeContent(overrides: Partial<EntityContent> = {}): EntityContent {
     id: "cnt-1",
     entity_id: "ent-1",
     collection_id: "col-1",
+    query: "Historia del personaje",
+    sources_count: 3,
     category: "backstory",
     content: "Texto del contenido generado.",
     status: "pending",

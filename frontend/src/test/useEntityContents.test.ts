@@ -20,6 +20,8 @@ const SAMPLE_CONTENT: EntityContent = {
   id: "cnt-1",
   entity_id: "ent-1",
   collection_id: "col-1",
+  query: "Historia del personaje",
+  sources_count: 2,
   category: "backstory",
   content: "Texto de prueba",
   status: "pending",

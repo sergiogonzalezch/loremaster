@@ -324,6 +324,42 @@ async def test_cnt_11_confirm_backstory_does_not_affect_scene(
 
 
 @pytest.mark.anyio
+async def test_cnt_10b_confirm_replaces_previous_confirmed_same_category(
+    client, db_session, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
+    """CNT-10b: Confirmar un segundo contenido descarta el confirmed previo (solo 1 confirmed por categoría)."""
+    # Confirmar A: queda confirmed (sin siblings, discard no afecta nada)
+    first_resp = await _create_content(
+        client, sample_collection.id, sample_entity.id, query="primera historia extensa"
+    )
+    first_id = first_resp.json()["id"]
+    await client.post(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/contents/{first_id}/confirm"
+    )
+
+    # Crear B (pending) DESPUÉS de confirmar A
+    second_resp = await _create_content(
+        client, sample_collection.id, sample_entity.id, query="segunda historia extensa"
+    )
+    second_id = second_resp.json()["id"]
+
+    # Confirmar B: debe descartar A (confirmed previo) y quedar B=confirmed
+    confirm_resp = await client.post(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}/contents/{second_id}/confirm"
+    )
+    assert confirm_resp.status_code == 200
+
+    from sqlmodel import select as sqlselect
+    rows = db_session.exec(
+        sqlselect(EntityContent).where(EntityContent.entity_id == sample_entity.id)
+    ).all()
+    status_by_id = {r.id: r.status for r in rows}
+
+    assert status_by_id[second_id] == ContentStatus.confirmed
+    assert status_by_id[first_id] == ContentStatus.discarded
+
+
+@pytest.mark.anyio
 async def test_cnt_12_blocked_generate_query_returns_422(
     client, sample_collection, sample_entity
 ):
