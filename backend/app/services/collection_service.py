@@ -42,6 +42,17 @@ def _fetch_counts(
     )
 
 
+def get_collection_with_counts_service(
+    session: Session, collection: Collection
+) -> dict:
+    doc_counts, entity_counts = _fetch_counts(session, [collection.id])
+    return {
+        **collection.model_dump(),
+        "document_count": doc_counts.get(collection.id, 0),
+        "entity_count": entity_counts.get(collection.id, 0),
+    }
+
+
 def create_collection_service(
     session: Session, name: str, description: str = ""
 ) -> Collection:
