@@ -1,4 +1,5 @@
 import logging
+import time
 
 from sqlmodel import Session, select
 
@@ -10,6 +11,36 @@ from app.engine.rag import delete_collection_vectors
 from app.services import content_management_service
 
 logger = logging.getLogger(__name__)
+
+_QDRANT_RETRY_ATTEMPTS = 3
+_QDRANT_RETRY_DELAY = 0.5
+
+
+def _delete_vectors_with_retry(collection_id: str) -> bool:
+    for attempt in range(1, _QDRANT_RETRY_ATTEMPTS + 1):
+        try:
+            delete_collection_vectors(collection_id)
+            return True
+        except Exception as e:
+            if attempt < _QDRANT_RETRY_ATTEMPTS:
+                logger.warning(
+                    "Qdrant cleanup attempt %d/%d failed for collection %s: %s",
+                    attempt,
+                    _QDRANT_RETRY_ATTEMPTS,
+                    collection_id,
+                    e,
+                )
+                time.sleep(_QDRANT_RETRY_DELAY)
+            else:
+                logger.error(
+                    "Orphan vectors remain in Qdrant for collection %s after %d attempts"
+                    " — manual cleanup needed. collection_id=%s",
+                    collection_id,
+                    _QDRANT_RETRY_ATTEMPTS,
+                    collection_id,
+                    exc_info=True,
+                )
+    return False
 
 
 def cascade_delete_entity(session: Session, entity: Entity) -> None:
@@ -69,13 +100,4 @@ def cascade_delete_collection(session: Session, collection: Collection) -> bool:
     soft_delete(session, collection)
     logger.info("Collection %s soft-deleted", collection.id)
 
-    try:
-        delete_collection_vectors(collection.id)
-        return True
-    except Exception as e:
-        logger.error(
-            "Orphan vectors remain in Qdrant for collection %s — manual cleanup needed. Cause: %s",
-            collection.id,
-            e,
-        )
-        return False
+    return _delete_vectors_with_retry(collection.id)

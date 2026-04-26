@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 
 from app.core.config import settings
 from app.core.lifespan import lifespan
-from app.api.routes import rag_query, documents, collections, entities, entity_content
+from app.api.routes import rag_query, documents, collections, entities, entity_content, metadata
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -57,3 +57,4 @@ app.include_router(documents.router, prefix="/api/v1")
 app.include_router(rag_query.router, prefix="/api/v1")
 app.include_router(entities.router, prefix="/api/v1")
 app.include_router(entity_content.router, prefix="/api/v1")
+app.include_router(metadata.router, prefix="/api/v1")

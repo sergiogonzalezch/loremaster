@@ -353,7 +353,9 @@ export default function CollectionsPage() {
                   </Card.Body>
                   <Card.Footer className="d-flex justify-content-between align-items-center">
                     <small className="text-muted">
-                      {formatDate(col.created_at)}
+                      {col.updated_at
+                        ? `Editada ${formatDate(col.updated_at)}`
+                        : formatDate(col.created_at)}
                     </small>
                     <div className="d-flex gap-2">
                       <Button

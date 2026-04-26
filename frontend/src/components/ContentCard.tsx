@@ -123,13 +123,36 @@ export default function ContentCard({
             >
               <Accordion.Header onClick={() => setIsExpanded((open) => !open)}>
                 <div className="d-flex justify-content-between align-items-center w-100 me-2">
-                  <div className="d-flex align-items-center gap-2">
-                    <Badge bg="dark">{CATEGORY_LABELS[content.category]}</Badge>
-                    <small className="text-muted">
-                      {formatDate(content.created_at)}
+                  <div className="d-flex flex-column gap-1">
+                    <div className="d-flex align-items-center gap-2">
+                      <Badge bg="dark">{CATEGORY_LABELS[content.category]}</Badge>
+                      <small className="text-muted">
+                        {formatDate(content.created_at)}
+                      </small>
+                    </div>
+                    <small
+                      className="text-muted fst-italic"
+                      style={{
+                        maxWidth: 420,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      "{content.query}"
                     </small>
                   </div>
                   <div className="d-flex align-items-center gap-2">
+                    <Badge
+                      style={{
+                        background: "var(--lm-accent-glow)",
+                        color: "var(--lm-accent)",
+                        border: "1px solid var(--lm-border-accent)",
+                        fontSize: "0.65rem",
+                      }}
+                    >
+                      {content.sources_count} fuentes
+                    </Badge>
                     {content.status === "pending" && (
                       <Badge bg="warning" text="dark">
                         Borrador
@@ -164,6 +187,11 @@ export default function ContentCard({
           </Accordion>
         </Card.Header>
         <Card.Footer>
+          {content.updated_at && (
+            <small className="text-muted d-block mb-2">
+              Editado: {formatDate(content.updated_at, true)}
+            </small>
+          )}
           {isPending ? (
             <div className="d-flex gap-2">
               <Button
