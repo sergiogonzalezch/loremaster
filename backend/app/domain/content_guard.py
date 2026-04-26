@@ -1,6 +1,6 @@
 import re
 
-from app.core.exceptions import ContentNotAllowedError
+from app.core.exceptions import ContentNotAllowedError, GeneratedContentBlockedError
 
 _BLOCKED_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"\b(porn|porno|xxx|explicit\s+sexual|sexo\s+expl[íi]cito)\b", re.I),
@@ -39,5 +39,5 @@ def check_document_content(text: str) -> None:
 
 
 def check_generated_output(text: str) -> None:
-    """Raises RuntimeError if LLM output contains blocked content."""
-    _check_text(text, RuntimeError("No fue posible generar el contenido solicitado."))
+    """Raises GeneratedContentBlockedError if LLM output contains blocked content."""
+    _check_text(text, GeneratedContentBlockedError())

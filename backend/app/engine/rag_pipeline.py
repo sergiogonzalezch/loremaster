@@ -29,7 +29,7 @@ def invoke_rag_pipeline(
 
     Raises:
         RuntimeError: If Qdrant or the LLM is unavailable.
-        ValueError: If there is no context at all (no chunks and no extra_context).
+        NoContextAvailableError: If there is no context at all (no chunks and no extra_context).
     """
     if top_k is None:
         top_k = settings.top_k
@@ -79,7 +79,7 @@ def invoke_generation_pipeline(
 
     Raises:
         RuntimeError: If Qdrant or the LLM is unavailable.
-        ValueError: If there is no context at all (no chunks and no extra_context).
+        NoContextAvailableError: If there is no context at all (no chunks and no extra_context).
     """
     if top_k is None:
         top_k = settings.top_k

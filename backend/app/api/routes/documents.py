@@ -21,6 +21,7 @@ from app.core.exceptions import (
     FileTooLargeError,
     MissingFilenameError,
     UnsupportedFileTypeError,
+    VectorStoreError,
 )
 from app.database import get_session
 from app.models.collections import Collection
@@ -82,6 +83,11 @@ def get_documents(
     _: Collection = Depends(get_collection_or_404),
     session: Session = Depends(get_session),
 ):
+    if status == DocumentStatus.processing:
+        raise HTTPException(
+            status_code=422,
+            detail="Los documentos en estado 'processing' no son visibles en el listado.",
+        )
     docs, total = list_documents_service(
         session,
         collection_id,
@@ -111,6 +117,8 @@ def delete_document(
 ):
     try:
         delete_document_service(session, doc)
-    except RuntimeError as e:
-        raise HTTPException(status_code=503, detail=str(e))
+    except VectorStoreError:
+        raise HTTPException(
+            status_code=503, detail="El almacén de vectores no está disponible."
+        )
     return Response(status_code=204)

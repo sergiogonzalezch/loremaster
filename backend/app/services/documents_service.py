@@ -7,12 +7,12 @@ from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.core.exceptions import (
-    ContentNotAllowedError,
     DatabaseError,
     DocumentExtractionError,
     FileTooLargeError,
     MissingFilenameError,
     UnsupportedFileTypeError,
+    VectorStoreError,
 )
 from app.models.documents import Document, DocumentStatus
 from app.core.common import soft_delete
@@ -141,7 +141,7 @@ def delete_document_service(session: Session, document: Document) -> bool:
         delete_document_chunks(document.collection_id, document.id)
     except Exception as e:
         logger.error("Failed to delete vector chunks for doc %s: %s", document.id, e)
-        raise RuntimeError("Vector store unavailable") from e
+        raise VectorStoreError() from e
 
     soft_delete(session, document)
     session.commit()
