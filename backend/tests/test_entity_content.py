@@ -49,17 +49,17 @@ async def test_cnt_01_generate_backstory_character_returns_201_pending(
 
 
 @pytest.mark.anyio
-async def test_cnt_02_generate_scene_for_item_returns_400(
+async def test_cnt_02_generate_scene_for_item_returns_422(
     client, mock_rag_engine, mock_llm, db_session, sample_collection
 ):
-    """CNT-02: Generar scene para item retorna 400 (categoría incompatible)."""
+    """CNT-02: Generar scene para item retorna 422 (categoría incompatible con el tipo de entidad)."""
     item = _make_entity(db_session, sample_collection.id, EntityType.item)
 
     response = await _create_content(
         client, sample_collection.id, item.id, category="scene"
     )
 
-    assert response.status_code == 400
+    assert response.status_code == 422
 
 
 @pytest.mark.anyio
@@ -349,10 +349,8 @@ async def test_cnt_10b_confirm_replaces_previous_confirmed_same_category(
     )
     assert confirm_resp.status_code == 200
 
-    from sqlmodel import select as sqlselect
-
     rows = db_session.exec(
-        sqlselect(EntityContent).where(EntityContent.entity_id == sample_entity.id)
+        select(EntityContent).where(EntityContent.entity_id == sample_entity.id)
     ).all()
     status_by_id = {r.id: r.status for r in rows}
 
@@ -438,17 +436,17 @@ async def test_cnt_15_generate_backstory_for_creature_returns_201(
 
 
 @pytest.mark.anyio
-async def test_cnt_16_generate_chapter_for_creature_returns_400(
+async def test_cnt_16_generate_chapter_for_creature_returns_422(
     client, db_session, mock_rag_engine, mock_llm, sample_collection
 ):
-    """CNT-16: Generar chapter para creature retorna 400 (creature no soporta chapter)."""
+    """CNT-16: Generar chapter para creature retorna 422 (creature no soporta chapter)."""
     creature = _make_entity(db_session, sample_collection.id, EntityType.creature)
 
     response = await _create_content(
         client, sample_collection.id, creature.id, category="chapter"
     )
 
-    assert response.status_code == 400
+    assert response.status_code == 422
 
 
 @pytest.mark.anyio

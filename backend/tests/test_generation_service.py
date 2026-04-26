@@ -1,6 +1,10 @@
 import pytest
 
-from app.core.exceptions import ContentNotAllowedError, PendingLimitExceededError
+from app.core.exceptions import (
+    ContentNotAllowedError,
+    InvalidCategoryError,
+    PendingLimitExceededError,
+)
 from app.models.entities import Entity, EntityType
 from app.models.enums import ContentCategory, ContentStatus
 from app.services.generation_service import (
@@ -98,13 +102,13 @@ def test_gen_svc_02_strips_whitespace_from_query(
     assert mock_pipeline[0]["query"] == "query con espacios"
 
 
-def test_gen_svc_03_raises_value_error_for_invalid_category(
+def test_gen_svc_03_raises_invalid_category_error(
     db_session, sample_collection, mock_pipeline
 ):
-    """GEN-SVC-03: generate() lanza ValueError si la categoría no es válida para el tipo de entidad."""
+    """GEN-SVC-03: generate() lanza InvalidCategoryError si la categoría no es válida para el tipo de entidad."""
     item = _make_entity(db_session, sample_collection.id, EntityType.item)
 
-    with pytest.raises(ValueError, match="scene"):
+    with pytest.raises(InvalidCategoryError):
         generate(db_session, item, ContentCategory.scene, "Escena de combate épico")
 
 

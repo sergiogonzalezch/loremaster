@@ -5,7 +5,11 @@ from sqlmodel import Session, select
 
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.core.exceptions import DatabaseError, PendingLimitExceededError
+from app.core.exceptions import (
+    DatabaseError,
+    InvalidCategoryError,
+    PendingLimitExceededError,
+)
 from app.domain.category_rules import validate_category_for_entity
 from app.domain.content_guard import check_generated_output, check_user_input
 from app.engine.rag_pipeline import invoke_generation_pipeline
@@ -28,9 +32,7 @@ def generate(
     check_user_input(query)
 
     if not validate_category_for_entity(entity.type, category):
-        raise ValueError(
-            f"Category '{category}' is not valid for entity type '{entity.type}'."
-        )
+        raise InvalidCategoryError(category.value, entity.type.value)
 
     pending_count = session.exec(
         select(func.count())

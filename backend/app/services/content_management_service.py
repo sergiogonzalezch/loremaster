@@ -7,7 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Session, select
 
 from app.core.common import soft_delete
-from app.core.exceptions import DatabaseError
+from app.core.exceptions import ContentDiscardedError, DatabaseError
 from app.models.entities import Entity
 from app.models.entity_content import EntityContent
 from app.models.enums import ContentCategory, ContentStatus
@@ -81,7 +81,7 @@ def edit_content(
     if not content:
         return None
     if content.status == ContentStatus.discarded:
-        raise ValueError("discarded")
+        raise ContentDiscardedError()
     now = datetime.now(timezone.utc)
     content.content = new_text
     content.updated_at = now

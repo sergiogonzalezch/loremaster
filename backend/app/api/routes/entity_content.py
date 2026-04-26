@@ -5,8 +5,12 @@ from sqlmodel import Session
 
 from app.core.deps import get_entity_or_404
 from app.core.exceptions import (
+    ContentDiscardedError,
     ContentNotAllowedError,
     DatabaseError,
+    GeneratedContentBlockedError,
+    InvalidCategoryError,
+    NoContextAvailableError,
     PendingLimitExceededError,
 )
 from app.database import get_session
@@ -40,8 +44,12 @@ def generate_content(
         raise HTTPException(status_code=409, detail=str(e))
     except ContentNotAllowedError as e:
         raise HTTPException(status_code=422, detail=str(e))
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except InvalidCategoryError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except NoContextAvailableError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except GeneratedContentBlockedError as e:
+        raise HTTPException(status_code=422, detail=str(e))
     except DatabaseError:
         raise HTTPException(status_code=500, detail="Error interno del servidor.")
     except RuntimeError:
@@ -96,10 +104,8 @@ def edit_content(
         result = content_management_service.edit_content(
             session, content_id, entity_id, collection_id, request.content
         )
-    except ValueError:
-        raise HTTPException(
-            status_code=409, detail="El contenido está descartado y no puede editarse."
-        )
+    except ContentDiscardedError as e:
+        raise HTTPException(status_code=409, detail=str(e))
     except DatabaseError:
         raise HTTPException(status_code=500, detail="Error interno del servidor.")
     if not result:

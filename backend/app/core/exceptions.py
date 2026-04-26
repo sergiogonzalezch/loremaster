@@ -17,7 +17,7 @@ class ContentNotAllowedError(Exception):
 
 class NoContextAvailableError(Exception):
     def __init__(self) -> None:
-        super().__init__("No context available")
+        super().__init__("No hay contexto disponible para responder esta consulta.")
 
 
 class PendingLimitExceededError(Exception):
@@ -42,3 +42,24 @@ class DocumentExtractionError(Exception):
 
 class DatabaseError(Exception):
     pass
+
+
+class InvalidCategoryError(Exception):
+    def __init__(self, category: str, entity_type: str) -> None:
+        super().__init__(
+            f"La categoría '{category}' no es válida para el tipo de entidad '{entity_type}'."
+        )
+
+
+class VectorStoreError(Exception):
+    pass
+
+
+class ContentDiscardedError(Exception):
+    def __init__(self) -> None:
+        super().__init__("El contenido está descartado y no puede editarse.")
+
+
+class GeneratedContentBlockedError(Exception):
+    def __init__(self) -> None:
+        super().__init__("El contenido generado no está permitido.")
