@@ -27,7 +27,12 @@ import MarkdownContent from "../components/MarkdownContent";
 import TokenCounter from "../components/TokenCounter";
 import { useGenerate } from "../hooks/useGenerate";
 import { useEntityContents } from "../hooks/useEntityContents";
-import type { Collection, Entity, EntityContent, UpdateEntityRequest } from "../types";
+import type {
+  Collection,
+  Entity,
+  EntityContent,
+  UpdateEntityRequest,
+} from "../types";
 import type { ContentCategory, EntityType } from "../utils/enums";
 import { formatDate } from "../utils/formatters";
 import { getErrorMessage, parseApiError } from "../utils/errors";

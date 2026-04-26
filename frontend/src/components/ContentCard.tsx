@@ -28,7 +28,10 @@ interface ContentCardProps {
   collectionId: string;
   entityId: string;
   onAction: () => void;
-  onOptimisticUpdate?: (id: string, patch: Partial<EntityContent> | null) => void;
+  onOptimisticUpdate?: (
+    id: string,
+    patch: Partial<EntityContent> | null,
+  ) => void;
 }
 
 export default function ContentCard({
