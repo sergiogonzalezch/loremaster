@@ -138,7 +138,9 @@ describe("GeneratePage", () => {
     });
     renderPage();
     expect(screen.getByText(/Analizando documentos/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Cancelar" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Cancelar" }),
+    ).toBeInTheDocument();
   });
 
   it("muestra el resultado de la generación cuando data no es null", () => {

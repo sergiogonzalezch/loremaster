@@ -6,7 +6,14 @@ from fastapi.responses import JSONResponse
 
 from app.core.config import settings
 from app.core.lifespan import lifespan
-from app.api.routes import rag_query, documents, collections, entities, entity_content, metadata
+from app.api.routes import (
+    rag_query,
+    documents,
+    collections,
+    entities,
+    entity_content,
+    metadata,
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

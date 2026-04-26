@@ -36,7 +36,9 @@ beforeEach(() => {
 
 describe("useEntityContents", () => {
   it("sin collectionId/entityId no llama a la API", async () => {
-    const { result } = renderHook(() => useEntityContents(undefined, undefined));
+    const { result } = renderHook(() =>
+      useEntityContents(undefined, undefined),
+    );
     await act(() => result.current.refresh());
     expect(mockGetContents).not.toHaveBeenCalled();
   });
@@ -55,9 +57,15 @@ describe("useEntityContents", () => {
 
   it("durante el fetch loading=true", async () => {
     let resolveCall!: (v: PaginatedResponse<EntityContent>) => void;
-    mockGetContents.mockReturnValue(new Promise((r) => { resolveCall = r; }));
+    mockGetContents.mockReturnValue(
+      new Promise((r) => {
+        resolveCall = r;
+      }),
+    );
     const { result } = renderHook(() => useEntityContents("col-1", "ent-1"));
-    act(() => { result.current.refresh(); });
+    act(() => {
+      result.current.refresh();
+    });
     expect(result.current.loading).toBe(true);
     act(() => resolveCall(EMPTY_PAGE));
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -81,12 +89,20 @@ describe("useEntityContents", () => {
     mockGetContents.mockResolvedValue(EMPTY_PAGE);
     const { result } = renderHook(() => useEntityContents("col-1", "ent-1"));
     await act(() =>
-      result.current.refresh({ category: "backstory", status: "pending", page: 2 }),
+      result.current.refresh({
+        category: "backstory",
+        status: "pending",
+        page: 2,
+      }),
     );
     expect(mockGetContents).toHaveBeenCalledWith(
       "col-1",
       "ent-1",
-      expect.objectContaining({ category: "backstory", status: "pending", page: 2 }),
+      expect.objectContaining({
+        category: "backstory",
+        status: "pending",
+        page: 2,
+      }),
       undefined,
     );
   });

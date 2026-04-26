@@ -42,7 +42,10 @@ describe("parseApiError", () => {
 
   it("500 → variant danger con mensaje del error", () => {
     const result = parseApiError(new ApiError(500, "Internal Server Error"));
-    expect(result).toEqual({ variant: "danger", text: "Internal Server Error" });
+    expect(result).toEqual({
+      variant: "danger",
+      text: "Internal Server Error",
+    });
   });
 
   it("error que no es ApiError → variant danger con fallback", () => {

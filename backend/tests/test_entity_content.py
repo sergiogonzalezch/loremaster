@@ -350,6 +350,7 @@ async def test_cnt_10b_confirm_replaces_previous_confirmed_same_category(
     assert confirm_resp.status_code == 200
 
     from sqlmodel import select as sqlselect
+
     rows = db_session.exec(
         sqlselect(EntityContent).where(EntityContent.entity_id == sample_entity.id)
     ).all()
