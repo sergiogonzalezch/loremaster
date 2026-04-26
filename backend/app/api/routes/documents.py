@@ -1,7 +1,16 @@
 from datetime import datetime
 from typing import Literal, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Response, UploadFile, File
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Query,
+    Response,
+    UploadFile,
+    File,
+)
 from sqlmodel import Session
 
 from app.core.deps import get_collection_or_404, get_document_or_404
