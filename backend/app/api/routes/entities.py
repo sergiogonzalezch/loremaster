@@ -1,10 +1,11 @@
 from datetime import datetime
 from typing import Literal, Optional
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlmodel import Session
 
 from app.core.deps import get_collection_or_404, get_entity_or_404
+from app.core.exceptions import DuplicateEntityNameError
 from app.database import get_session
 from app.models.collections import Collection
 from app.models.entities import (
@@ -34,7 +35,10 @@ def create_entity(
     _: Collection = Depends(get_collection_or_404),
     session: Session = Depends(get_session),
 ):
-    return create_entity_service(session, request, collection_id)
+    try:
+        return create_entity_service(session, request, collection_id)
+    except DuplicateEntityNameError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.get(
@@ -79,7 +83,10 @@ def update_entity(
     entity: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
-    return update_entity_service(session, entity, request)
+    try:
+        return update_entity_service(session, entity, request)
+    except DuplicateEntityNameError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.delete("/{collection_id}/entities/{entity_id}", status_code=204)

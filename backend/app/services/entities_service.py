@@ -2,11 +2,11 @@ import logging
 from datetime import datetime, timezone
 from typing import Literal, Optional
 
-from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
+from app.core.exceptions import DuplicateEntityNameError
 from app.models.entities import (
     Entity,
     EntityType,
@@ -36,10 +36,7 @@ def create_entity_service(
     name = request.name.strip()
     description = request.description.strip()
     if _find_active_by_name(session, collection_id, name):
-        raise HTTPException(
-            status_code=409,
-            detail=f"Ya existe una entidad llamada '{name}' en esta colección.",
-        )
+        raise DuplicateEntityNameError(name)
     entity = Entity(
         collection_id=collection_id,
         type=request.type,
@@ -51,10 +48,7 @@ def create_entity_service(
         session.commit()
     except IntegrityError:
         session.rollback()
-        raise HTTPException(
-            status_code=409,
-            detail=f"Ya existe una entidad llamada '{name}' en esta colección.",
-        )
+        raise DuplicateEntityNameError(name)
     session.refresh(entity)
     logger.info("Entity '%s' created in collection %s", name, collection_id)
     return entity
@@ -106,10 +100,7 @@ def update_entity_service(
     if new_name != entity.name and _find_active_by_name(
         session, entity.collection_id, new_name
     ):
-        raise HTTPException(
-            status_code=409,
-            detail=f"Ya existe una entidad llamada '{new_name}' en esta colección.",
-        )
+        raise DuplicateEntityNameError(new_name)
     if request.type is not None:
         entity.type = request.type
     if request.name is not None:
@@ -122,10 +113,7 @@ def update_entity_service(
         session.commit()
     except IntegrityError:
         session.rollback()
-        raise HTTPException(
-            status_code=409,
-            detail=f"Ya existe una entidad llamada '{entity.name}' en esta colección.",
-        )
+        raise DuplicateEntityNameError(new_name)
     session.refresh(entity)
     return entity
 

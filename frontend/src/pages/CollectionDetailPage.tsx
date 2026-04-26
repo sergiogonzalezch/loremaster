@@ -661,6 +661,7 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
               <th>Nombre</th>
               <th>Tipo</th>
               <th>Descripción</th>
+              <th>Creada</th>
               <th></th>
             </tr>
           </thead>
@@ -695,6 +696,14 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
                 >
                   {entity.description || (
                     <span className="text-muted">Sin descripción</span>
+                  )}
+                </td>
+                <td>
+                  <div>{formatDate(entity.created_at)}</div>
+                  {entity.updated_at && (
+                    <small className="text-muted">
+                      Editada: {formatDate(entity.updated_at)}
+                    </small>
                   )}
                 </td>
                 <td>

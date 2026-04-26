@@ -18,6 +18,7 @@ import {
   updateEntity,
   getCollection,
   generateContent,
+  getEntityCategories,
 } from "../api";
 import { ApiAbortError } from "../api/apiClient";
 import ContentCard from "../components/ContentCard";
@@ -28,6 +29,7 @@ import { useGenerate } from "../hooks/useGenerate";
 import { useEntityContents } from "../hooks/useEntityContents";
 import type { Collection, Entity, UpdateEntityRequest } from "../types";
 import type { ContentCategory, EntityType } from "../utils/enums";
+import { formatDate } from "../utils/formatters";
 import { getErrorMessage, parseApiError } from "../utils/errors";
 import {
   CATEGORY_LABELS,
@@ -43,10 +45,17 @@ export default function EntityDetailPage() {
     entityId: string;
   }>();
 
+  const [categoryMap, setCategoryMap] = useState(ENTITY_CATEGORY_MAP);
   const [collection, setCollection] = useState<Collection | null>(null);
   const [entity, setEntity] = useState<Entity | null>(null);
   const [loadingEntity, setLoadingEntity] = useState(true);
   const [entityError, setEntityError] = useState<string | null>(null);
+
+  useEffect(() => {
+    getEntityCategories()
+      .then(setCategoryMap)
+      .catch(() => {}); // fallback: keep local constants if backend unreachable
+  }, []);
 
   const {
     contents,
@@ -90,8 +99,8 @@ export default function EntityDetailPage() {
   ]);
 
   const availableCategories = useMemo<ContentCategory[]>(
-    () => (entity ? (ENTITY_CATEGORY_MAP[entity.type] ?? []) : []),
-    [entity],
+    () => (entity ? (categoryMap[entity.type] ?? []) : []),
+    [entity, categoryMap],
   );
 
   const pendingInCategory = contents.filter(
@@ -327,6 +336,16 @@ export default function EntityDetailPage() {
                   <em>Sin descripción</em>
                 </p>
               )}
+              <div className="mt-2 d-flex gap-3">
+                <small className="text-muted">
+                  Creada: {formatDate(entity.created_at)}
+                </small>
+                {entity.updated_at && (
+                  <small className="text-muted">
+                    Editada: {formatDate(entity.updated_at, true)}
+                  </small>
+                )}
+              </div>
             </div>
             <Button variant="outline-secondary" size="sm" onClick={openEdit}>
               Editar

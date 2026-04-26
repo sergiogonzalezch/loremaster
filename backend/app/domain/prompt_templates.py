@@ -9,7 +9,7 @@ _SAFETY_INSTRUCTION = (
 )
 _PREAMBLE = "Eres un escritor experto en narrativa y worldbuilding. "
 _ONLY_CONTEXT = "Usa ÚNICAMENTE la información del contexto proporcionado."
-_SECTIONS = "\n\nCONTEXTO:\n{context}\n\nSOLICITUD:\n{query}"
+_SECTIONS = "\n\n<context>\n{context}\n</context>\n\n<user_request>\n{query}\n</user_request>"
 
 _TEMPLATES: dict[ContentCategory, str] = {
     ContentCategory.backstory: (
