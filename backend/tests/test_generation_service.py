@@ -1,10 +1,10 @@
 import pytest
 
+from app.core.exceptions import ContentNotAllowedError, PendingLimitExceededError
 from app.models.entities import Entity, EntityType
 from app.models.enums import ContentCategory, ContentStatus
 from app.services.generation_service import (
     MAX_PENDING_CONTENTS,
-    PendingLimitExceededError,
     generate,
 )
 
@@ -131,11 +131,13 @@ def test_gen_svc_04_raises_pending_limit_exceeded(
         )
 
 
-def test_gen_svc_05_blocked_query_raises_value_error(db_session, sample_collection):
-    """GEN-SVC-05: generate() lanza ValueError si check_user_input bloquea la query (sin mock de pipeline)."""
+def test_gen_svc_05_blocked_query_raises_content_not_allowed(
+    db_session, sample_collection
+):
+    """GEN-SVC-05: generate() lanza ContentNotAllowedError si check_user_input bloquea la query."""
     entity = _make_entity(db_session, sample_collection.id)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ContentNotAllowedError):
         generate(
             db_session,
             entity,

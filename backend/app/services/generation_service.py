@@ -3,6 +3,9 @@ import logging
 from sqlalchemy import func
 from sqlmodel import Session, select
 
+from sqlalchemy.exc import SQLAlchemyError
+
+from app.core.exceptions import DatabaseError, PendingLimitExceededError
 from app.domain.category_rules import validate_category_for_entity
 from app.domain.content_guard import check_generated_output, check_user_input
 from app.engine.rag_pipeline import invoke_generation_pipeline
@@ -13,10 +16,6 @@ from app.models.enums import ContentCategory, ContentStatus
 logger = logging.getLogger(__name__)
 
 MAX_PENDING_CONTENTS = 5
-
-
-class PendingLimitExceededError(Exception):
-    pass
 
 
 def generate(
@@ -77,9 +76,16 @@ def generate(
         content=answer,
         status=ContentStatus.pending,
     )
-    session.add(content)
-    session.commit()
-    session.refresh(content)
+    try:
+        session.add(content)
+        session.commit()
+        session.refresh(content)
+    except SQLAlchemyError as e:
+        session.rollback()
+        logger.error(
+            "DB commit failed after generation for entity %s: %s", entity.id, e
+        )
+        raise DatabaseError() from e
 
     logger.info(
         "EntityContent %s (category=%s) created for entity %s",

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.core.deps import get_collection_or_404
+from app.core.exceptions import ContentNotAllowedError, NoContextAvailableError
 from app.models.collections import Collection
 from app.services.rag_query_service import execute_rag_query
 from app.models.rag_query import RagQueryRequest, RagQueryResponse
@@ -16,11 +17,11 @@ def rag_query(
 ):
     try:
         return execute_rag_query(request.query, collection_id=collection_id)
+    except ContentNotAllowedError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except NoContextAvailableError as e:
+        raise HTTPException(status_code=422, detail=str(e))
     except ValueError as e:
-        if str(e) == "Contenido no permitido.":
-            raise HTTPException(status_code=422, detail=str(e))
-        if str(e) == "No context available":
-            raise HTTPException(status_code=422, detail=str(e))
         raise HTTPException(status_code=400, detail=str(e))
     except RuntimeError as e:
         raise HTTPException(

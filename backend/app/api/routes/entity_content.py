@@ -4,6 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlmodel import Session
 
 from app.core.deps import get_entity_or_404
+from app.core.exceptions import (
+    ContentNotAllowedError,
+    DatabaseError,
+    PendingLimitExceededError,
+)
 from app.database import get_session
 from app.models.entities import Entity, EntityResponse
 from app.models.entity_content import (
@@ -14,7 +19,6 @@ from app.models.entity_content import (
 from app.models.enums import ContentCategory
 from app.models.shared import PaginatedResponse
 from app.services import content_management_service, generation_service
-from app.services.generation_service import PendingLimitExceededError
 
 router = APIRouter(prefix="/collections", tags=["entity-content"])
 
@@ -34,10 +38,12 @@ def generate_content(
         return generation_service.generate(session, entity, category, request.query)
     except PendingLimitExceededError as e:
         raise HTTPException(status_code=409, detail=str(e))
+    except ContentNotAllowedError as e:
+        raise HTTPException(status_code=422, detail=str(e))
     except ValueError as e:
-        if str(e) == "Contenido no permitido.":
-            raise HTTPException(status_code=422, detail=str(e))
         raise HTTPException(status_code=400, detail=str(e))
+    except DatabaseError:
+        raise HTTPException(status_code=500, detail="Error interno del servidor.")
     except RuntimeError:
         raise HTTPException(
             status_code=503, detail="No fue posible generar el contenido solicitado."
@@ -94,6 +100,8 @@ def edit_content(
         raise HTTPException(
             status_code=409, detail="El contenido está descartado y no puede editarse."
         )
+    except DatabaseError:
+        raise HTTPException(status_code=500, detail="Error interno del servidor.")
     if not result:
         raise HTTPException(status_code=404, detail="Contenido no encontrado.")
     return result
@@ -108,7 +116,10 @@ def confirm_content(
     entity: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
-    result = content_management_service.confirm_content(session, content_id, entity)
+    try:
+        result = content_management_service.confirm_content(session, content_id, entity)
+    except DatabaseError:
+        raise HTTPException(status_code=500, detail="Error interno del servidor.")
     if not result:
         raise HTTPException(status_code=404, detail="Contenido no encontrado.")
     session.refresh(entity)
@@ -126,9 +137,12 @@ def discard_content(
     _: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
-    result = content_management_service.discard_content(
-        session, content_id, entity_id, collection_id
-    )
+    try:
+        result = content_management_service.discard_content(
+            session, content_id, entity_id, collection_id
+        )
+    except DatabaseError:
+        raise HTTPException(status_code=500, detail="Error interno del servidor.")
     if not result:
         raise HTTPException(status_code=404, detail="Contenido no encontrado.")
     return result
@@ -145,9 +159,12 @@ def delete_content(
     _: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
-    deleted = content_management_service.soft_delete_content(
-        session, content_id, entity_id, collection_id
-    )
+    try:
+        deleted = content_management_service.soft_delete_content(
+            session, content_id, entity_id, collection_id
+        )
+    except DatabaseError:
+        raise HTTPException(status_code=500, detail="Error interno del servidor.")
     if not deleted:
         raise HTTPException(status_code=404, detail="Contenido no encontrado.")
     return Response(status_code=204)

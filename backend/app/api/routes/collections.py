@@ -2,12 +2,13 @@ import logging
 from datetime import datetime
 from typing import Literal, Optional
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlmodel import Session
 
 logger = logging.getLogger(__name__)
 
 from app.core.deps import get_collection_or_404
+from app.core.exceptions import DatabaseError, DuplicateCollectionNameError
 from app.database import get_session
 from app.models.collections import (
     Collection,
@@ -32,7 +33,10 @@ def create_collection(
     request: CreateCollectionRequest,
     session: Session = Depends(get_session),
 ):
-    return create_collection_service(session, request.name, request.description)
+    try:
+        return create_collection_service(session, request.name, request.description)
+    except DuplicateCollectionNameError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.get("/", response_model=PaginatedResponse[CollectionResponse])
@@ -76,7 +80,10 @@ def update_collection(
     collection: Collection = Depends(get_collection_or_404),
     session: Session = Depends(get_session),
 ):
-    return update_collection_service(session, collection, request)
+    try:
+        return update_collection_service(session, collection, request)
+    except DuplicateCollectionNameError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.delete("/{collection_id}", status_code=204)
@@ -84,7 +91,10 @@ def delete_collection(
     collection: Collection = Depends(get_collection_or_404),
     session: Session = Depends(get_session),
 ):
-    vectors_cleaned = delete_collection_service(session, collection)
+    try:
+        vectors_cleaned = delete_collection_service(session, collection)
+    except DatabaseError:
+        raise HTTPException(status_code=500, detail="Error interno del servidor.")
     if not vectors_cleaned:
         logger.warning(
             "Collection %s soft-deleted but Qdrant vectors were NOT removed — manual cleanup needed.",

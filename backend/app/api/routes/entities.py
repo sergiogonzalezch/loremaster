@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlmodel import Session
 
 from app.core.deps import get_collection_or_404, get_entity_or_404
-from app.core.exceptions import DuplicateEntityNameError
+from app.core.exceptions import DatabaseError, DuplicateEntityNameError
 from app.database import get_session
 from app.models.collections import Collection
 from app.models.entities import (
@@ -94,5 +94,8 @@ def delete_entity(
     entity: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
-    delete_entity_service(session, entity)
+    try:
+        delete_entity_service(session, entity)
+    except DatabaseError:
+        raise HTTPException(status_code=500, detail="Error interno del servidor.")
     return Response(status_code=204)

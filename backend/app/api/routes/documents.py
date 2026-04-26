@@ -14,6 +14,14 @@ from fastapi import (
 from sqlmodel import Session
 
 from app.core.deps import get_collection_or_404, get_document_or_404
+from app.core.exceptions import (
+    ContentNotAllowedError,
+    DatabaseError,
+    DocumentExtractionError,
+    FileTooLargeError,
+    MissingFilenameError,
+    UnsupportedFileTypeError,
+)
 from app.database import get_session
 from app.models.collections import Collection
 from app.models.documents import Document, DocumentResponse, DocumentStatus
@@ -38,7 +46,22 @@ async def ingest(
     _: Collection = Depends(get_collection_or_404),
     session: Session = Depends(get_session),
 ):
-    document, text = await ingest_document_service(session, file, collection_id)
+    try:
+        document, text = await ingest_document_service(session, file, collection_id)
+    except UnsupportedFileTypeError:
+        raise HTTPException(status_code=400, detail="Unsupported file type")
+    except MissingFilenameError:
+        raise HTTPException(status_code=422, detail="Filename is required")
+    except FileTooLargeError:
+        raise HTTPException(status_code=400, detail="File too large")
+    except ContentNotAllowedError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except DocumentExtractionError:
+        raise HTTPException(
+            status_code=422, detail="No se pudo extraer el texto del archivo."
+        )
+    except DatabaseError:
+        raise HTTPException(status_code=500, detail="Error interno del servidor.")
     background_tasks.add_task(process_ingest_background, session, document, text)
     return document
 
