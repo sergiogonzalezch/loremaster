@@ -6,6 +6,7 @@ export interface EntityContent {
   collection_id: string;
   query: string;
   sources_count: number;
+  token_count: number;
   category: ContentCategory;
   content: string;
   status: ContentStatus;

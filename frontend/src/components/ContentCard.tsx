@@ -28,6 +28,7 @@ interface ContentCardProps {
   collectionId: string;
   entityId: string;
   onAction: () => void;
+  onOptimisticUpdate?: (id: string, patch: Partial<EntityContent> | null) => void;
 }
 
 export default function ContentCard({
@@ -35,6 +36,7 @@ export default function ContentCard({
   collectionId,
   entityId,
   onAction,
+  onOptimisticUpdate,
 }: ContentCardProps) {
   const [error, setError] = useState<{
     variant: "warning" | "danger";
@@ -53,10 +55,12 @@ export default function ContentCard({
   async function handleConfirm() {
     setBusy(true);
     setError(null);
+    onOptimisticUpdate?.(content.id, { status: "confirmed" });
     try {
       await confirmContent(collectionId, entityId, content.id);
       onAction();
     } catch (e) {
+      onOptimisticUpdate?.(content.id, content);
       setError(parseApiError(e, "Error al confirmar"));
     } finally {
       setBusy(false);
@@ -66,6 +70,10 @@ export default function ContentCard({
   async function handleSaveEdit(e: FormEvent) {
     e.preventDefault();
     setSaving(true);
+    onOptimisticUpdate?.(content.id, {
+      content: editText,
+      updated_at: new Date().toISOString(),
+    });
     try {
       await updateContent(collectionId, entityId, content.id, {
         content: editText,
@@ -73,6 +81,7 @@ export default function ContentCard({
       setShowEdit(false);
       onAction();
     } catch (e) {
+      onOptimisticUpdate?.(content.id, content);
       setError(parseApiError(e, "Error al guardar"));
     } finally {
       setSaving(false);
@@ -82,11 +91,13 @@ export default function ContentCard({
   async function handleDiscard() {
     setBusy(true);
     setError(null);
+    onOptimisticUpdate?.(content.id, { status: "discarded" });
     try {
       await discardContent(collectionId, entityId, content.id);
       setShowDiscard(false);
       onAction();
     } catch (e) {
+      onOptimisticUpdate?.(content.id, content);
       setError(parseApiError(e, "Error al descartar"));
       setShowDiscard(false);
     } finally {
@@ -97,11 +108,13 @@ export default function ContentCard({
   async function handleDelete() {
     setBusy(true);
     setError(null);
+    onOptimisticUpdate?.(content.id, null);
     try {
       await deleteContent(collectionId, entityId, content.id);
       setShowDelete(false);
       onAction();
     } catch (e) {
+      onOptimisticUpdate?.(content.id, content);
       setError(parseApiError(e, "Error al eliminar"));
       setShowDelete(false);
     } finally {
@@ -155,6 +168,18 @@ export default function ContentCard({
                     >
                       {content.sources_count} fuentes
                     </Badge>
+                    {content.token_count > 0 && (
+                      <Badge
+                        style={{
+                          background: "var(--lm-accent-glow)",
+                          color: "var(--lm-accent)",
+                          border: "1px solid var(--lm-border-accent)",
+                          fontSize: "0.65rem",
+                        }}
+                      >
+                        ~{content.token_count} tokens
+                      </Badge>
+                    )}
                     {content.status === "pending" && (
                       <Badge bg="warning" text="dark">
                         Borrador

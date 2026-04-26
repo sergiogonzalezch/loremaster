@@ -73,6 +73,7 @@ def generate(
         category=category,
         query=query,
         sources_count=sources_count,
+        token_count=max(1, len(answer) // 4),
         content=answer,
         status=ContentStatus.pending,
     )

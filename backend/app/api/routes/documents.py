@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile, File
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Response, UploadFile, File
 from sqlmodel import Session
 
 from app.core.deps import get_collection_or_404, get_document_or_404
@@ -11,6 +11,7 @@ from app.models.documents import Document, DocumentResponse, DocumentStatus
 from app.models.shared import PaginatedResponse
 from app.services.documents_service import (
     ingest_document_service,
+    process_ingest_background,
     list_documents_service,
     delete_document_service,
 )
@@ -19,18 +20,18 @@ router = APIRouter(prefix="/collections", tags=["documents"])
 
 
 @router.post(
-    "/{collection_id}/documents", response_model=DocumentResponse, status_code=201
+    "/{collection_id}/documents", response_model=DocumentResponse, status_code=202
 )
 async def ingest(
     collection_id: str,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     _: Collection = Depends(get_collection_or_404),
     session: Session = Depends(get_session),
 ):
-    try:
-        return await ingest_document_service(session, file, collection_id)
-    except RuntimeError as e:
-        raise HTTPException(status_code=502, detail=str(e))
+    document, text = await ingest_document_service(session, file, collection_id)
+    background_tasks.add_task(process_ingest_background, session, document, text)
+    return document
 
 
 @router.get(

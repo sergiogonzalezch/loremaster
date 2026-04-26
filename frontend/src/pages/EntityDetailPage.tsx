@@ -27,7 +27,7 @@ import MarkdownContent from "../components/MarkdownContent";
 import TokenCounter from "../components/TokenCounter";
 import { useGenerate } from "../hooks/useGenerate";
 import { useEntityContents } from "../hooks/useEntityContents";
-import type { Collection, Entity, UpdateEntityRequest } from "../types";
+import type { Collection, Entity, EntityContent, UpdateEntityRequest } from "../types";
 import type { ContentCategory, EntityType } from "../utils/enums";
 import { formatDate } from "../utils/formatters";
 import { getErrorMessage, parseApiError } from "../utils/errors";
@@ -59,6 +59,7 @@ export default function EntityDetailPage() {
 
   const {
     contents,
+    setContents,
     meta: contentsMeta,
     loading: loadingContents,
     error: contentsError,
@@ -160,9 +161,32 @@ export default function EntityDetailPage() {
     }
   }, [collectionId, entityId]);
 
+  const handleOptimisticUpdate = useCallback(
+    (id: string, patch: Partial<EntityContent> | null) => {
+      setContents((prev) => {
+        if (patch === null) return prev.filter((c) => c.id !== id);
+        const target = prev.find((c) => c.id === id);
+        if (!target) return prev;
+        return prev.map((c) => {
+          if (c.id === id) return { ...c, ...patch };
+          if (
+            patch.status === "confirmed" &&
+            c.category === target.category &&
+            c.status === "pending"
+          ) {
+            return { ...c, status: "discarded" as const };
+          }
+          return c;
+        });
+      });
+    },
+    [setContents],
+  );
+
   const handleContentAction = useCallback(async () => {
     await Promise.all([
       refreshContents({
+        silent: true,
         category: contentsCategoryFilter || undefined,
         status: contentsStatusFilter,
         page: contentsPage,
@@ -576,6 +600,7 @@ export default function EntityDetailPage() {
               collectionId={collectionId}
               entityId={entityId}
               onAction={handleContentAction}
+              onOptimisticUpdate={handleOptimisticUpdate}
             />
           ))}
           {contentsMeta.total_pages > 1 && (

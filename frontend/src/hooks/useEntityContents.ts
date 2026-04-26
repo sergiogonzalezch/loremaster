@@ -22,6 +22,7 @@ export function useEntityContents(
   const refresh = useCallback(
     async (options?: {
       signal?: AbortSignal;
+      silent?: boolean;
       category?: ContentCategory;
       status?: "active" | "pending" | "confirmed" | "discarded" | "all";
       page?: number;
@@ -29,7 +30,7 @@ export function useEntityContents(
       order?: "asc" | "desc";
     }) => {
       if (!collectionId || !entityId) return;
-      setLoading(true);
+      if (!options?.silent) setLoading(true);
       setError(null);
       try {
         const res = await getContents(
@@ -50,11 +51,11 @@ export function useEntityContents(
         if (e instanceof ApiAbortError) return;
         setError(getErrorMessage(e, "Error al cargar contenidos"));
       } finally {
-        setLoading(false);
+        if (!options?.silent) setLoading(false);
       }
     },
     [collectionId, entityId],
   );
 
-  return { contents, meta, loading, error, refresh, setError };
+  return { contents, setContents, meta, loading, error, refresh, setError };
 }
