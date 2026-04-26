@@ -2,11 +2,11 @@ import logging
 from datetime import datetime, timezone
 from typing import Literal, Optional
 
-from fastapi import HTTPException
 from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlmodel import Session, select
 
+from app.core.exceptions import DatabaseError, DuplicateCollectionNameError
 from app.models.collections import Collection, UpdateCollectionRequest
 from app.models.documents import Document
 from app.models.entities import Entity
@@ -54,9 +54,7 @@ def create_collection_service(
         )
     ).first()
     if existing:
-        raise HTTPException(
-            status_code=409, detail="Ya existe una colección con ese nombre."
-        )
+        raise DuplicateCollectionNameError(name)
 
     collection = Collection(name=name, description=description)
     session.add(collection)
@@ -64,9 +62,7 @@ def create_collection_service(
         session.commit()
     except IntegrityError:
         session.rollback()
-        raise HTTPException(
-            status_code=409, detail="Ya existe una colección con ese nombre."
-        )
+        raise DuplicateCollectionNameError(name)
     session.refresh(collection)
     logger.info("Collection '%s' created with id %s", name, collection.id)
     return collection
@@ -130,9 +126,7 @@ def update_collection_service(
             )
         ).first()
         if existing:
-            raise HTTPException(
-                status_code=409, detail="Ya existe una colección con ese nombre."
-            )
+            raise DuplicateCollectionNameError(new_name)
 
     if request.name is not None:
         collection.name = request.name.strip()
@@ -145,15 +139,19 @@ def update_collection_service(
         session.commit()
     except IntegrityError:
         session.rollback()
-        raise HTTPException(
-            status_code=409, detail="Ya existe una colección con ese nombre."
-        )
+        raise DuplicateCollectionNameError(new_name)
     session.refresh(collection)
     logger.info("Collection '%s' updated (id %s)", collection.name, collection.id)
     return collection
 
 
 def delete_collection_service(session: Session, collection: Collection) -> bool:
-    vectors_cleaned = cascade_delete_collection(session, collection)
-    session.commit()
+    try:
+        vectors_cleaned = cascade_delete_collection(session, collection)
+        session.commit()
+    except SQLAlchemyError as e:
+        session.rollback()
+        logger.error("DB commit failed deleting collection %s: %s", collection.id, e)
+        raise DatabaseError() from e
+    logger.info("Collection '%s' (%s) deleted", collection.name, collection.id)
     return vectors_cleaned

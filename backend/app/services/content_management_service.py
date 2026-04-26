@@ -3,9 +3,11 @@ from datetime import datetime, timezone
 from typing import Literal, Optional
 
 from sqlalchemy import func
+from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Session, select
 
 from app.core.common import soft_delete
+from app.core.exceptions import DatabaseError
 from app.models.entities import Entity
 from app.models.entity_content import EntityContent
 from app.models.enums import ContentCategory, ContentStatus
@@ -84,8 +86,13 @@ def edit_content(
     content.content = new_text
     content.updated_at = now
     session.add(content)
-    session.commit()
-    session.refresh(content)
+    try:
+        session.commit()
+        session.refresh(content)
+    except SQLAlchemyError as e:
+        session.rollback()
+        logger.error("DB commit failed editing content %s: %s", content_id, e)
+        raise DatabaseError() from e
     return content
 
 
@@ -119,8 +126,13 @@ def confirm_content(
         content.category,
     )
 
-    session.commit()
-    session.refresh(content)
+    try:
+        session.commit()
+        session.refresh(content)
+    except SQLAlchemyError as e:
+        session.rollback()
+        logger.error("DB commit failed confirming content %s: %s", content_id, e)
+        raise DatabaseError() from e
     logger.info("EntityContent %s confirmed for entity %s", content_id, entity.id)
     return content
 
@@ -136,8 +148,13 @@ def discard_content(
         return None
     content.status = ContentStatus.discarded
     session.add(content)
-    session.commit()
-    session.refresh(content)
+    try:
+        session.commit()
+        session.refresh(content)
+    except SQLAlchemyError as e:
+        session.rollback()
+        logger.error("DB commit failed discarding content %s: %s", content_id, e)
+        raise DatabaseError() from e
     logger.info("EntityContent %s discarded", content_id)
     return content
 
@@ -152,7 +169,12 @@ def soft_delete_content(
     if not content:
         return False
     soft_delete(session, content)
-    session.commit()
+    try:
+        session.commit()
+    except SQLAlchemyError as e:
+        session.rollback()
+        logger.error("DB commit failed soft-deleting content %s: %s", content_id, e)
+        raise DatabaseError() from e
     logger.info("EntityContent %s soft-deleted", content_id)
     return True
 

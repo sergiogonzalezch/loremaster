@@ -3,10 +3,10 @@ from datetime import datetime, timezone
 from typing import Literal, Optional
 
 from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlmodel import Session, select
 
-from app.core.exceptions import DuplicateEntityNameError
+from app.core.exceptions import DatabaseError, DuplicateEntityNameError
 from app.models.entities import (
     Entity,
     EntityType,
@@ -115,10 +115,24 @@ def update_entity_service(
         session.rollback()
         raise DuplicateEntityNameError(new_name)
     session.refresh(entity)
+    logger.info(
+        "Entity '%s' updated in collection %s", entity.name, entity.collection_id
+    )
     return entity
 
 
 def delete_entity_service(session: Session, entity: Entity) -> bool:
-    cascade_delete_entity(session, entity)
-    session.commit()
+    try:
+        cascade_delete_entity(session, entity)
+        session.commit()
+    except SQLAlchemyError as e:
+        session.rollback()
+        logger.error("DB commit failed deleting entity %s: %s", entity.id, e)
+        raise DatabaseError() from e
+    logger.info(
+        "Entity '%s' (%s) deleted from collection %s",
+        entity.name,
+        entity.id,
+        entity.collection_id,
+    )
     return True

@@ -2,10 +2,18 @@ import logging
 from datetime import datetime
 from typing import Literal, Optional
 
-from fastapi import HTTPException, UploadFile  # HTTPException: input validation only
+from fastapi import UploadFile
 from sqlalchemy import func
 from sqlmodel import Session, select
 
+from app.core.exceptions import (
+    ContentNotAllowedError,
+    DatabaseError,
+    DocumentExtractionError,
+    FileTooLargeError,
+    MissingFilenameError,
+    UnsupportedFileTypeError,
+)
 from app.models.documents import Document, DocumentStatus
 from app.core.common import soft_delete
 from app.domain.content_guard import check_document_content
@@ -26,22 +34,23 @@ async def ingest_document_service(
     """Fast path: validate, read bytes, extract text, create DB record with
     status=processing. Returns (document, text) for process_ingest_background."""
     if data.content_type not in ALLOWED_MIME_TYPES:
-        raise HTTPException(status_code=400, detail="Unsupported file type")
+        raise UnsupportedFileTypeError()
     if not data.filename or not data.filename.strip():
-        raise HTTPException(status_code=422, detail="Filename is required")
+        raise MissingFilenameError()
 
     content_bytes = await data.read()
     if len(content_bytes) > MAX_BYTES:
-        raise HTTPException(status_code=400, detail="File too large")
+        raise FileTooLargeError()
 
     logger.info(
         "Ingesting document '%s' into collection %s", data.filename, collection_id
     )
-    content = extract_text(content_bytes, data.content_type)
     try:
-        check_document_content(content)
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        content = extract_text(content_bytes, data.content_type)
+    except Exception as e:
+        logger.error("Text extraction failed for '%s': %s", data.filename, e)
+        raise DocumentExtractionError() from e
+    check_document_content(content)
 
     document = Document(
         collection_id=collection_id,
@@ -51,8 +60,15 @@ async def ingest_document_service(
         status=DocumentStatus.processing,
     )
     session.add(document)
-    session.commit()
-    session.refresh(document)
+    try:
+        session.commit()
+        session.refresh(document)
+    except Exception as e:
+        session.rollback()
+        logger.error(
+            "DB commit failed during document ingest for '%s': %s", data.filename, e
+        )
+        raise DatabaseError() from e
     return document, content
 
 

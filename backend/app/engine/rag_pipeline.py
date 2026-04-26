@@ -3,6 +3,7 @@ import threading
 
 from langchain_core.output_parsers import StrOutputParser
 
+from app.core.exceptions import NoContextAvailableError
 from app.domain.prompt_templates import render_prompt
 from app.engine.llm import chain, llm
 from app.engine.rag import search_context
@@ -48,7 +49,7 @@ def invoke_rag_pipeline(
     context = "\n\n---\n\n".join(parts)
 
     if not context.strip():
-        raise ValueError("No context available")
+        raise NoContextAvailableError()
 
     try:
         with _llm_semaphore:
@@ -98,7 +99,7 @@ def invoke_generation_pipeline(
     context = "\n\n---\n\n".join(parts)
 
     if not context.strip():
-        raise ValueError("No context available")
+        raise NoContextAvailableError()
 
     rendered_prompt = render_prompt(
         category=category,

@@ -1,5 +1,7 @@
 import re
 
+from app.core.exceptions import ContentNotAllowedError
+
 _BLOCKED_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"\b(porn|porno|xxx|explicit\s+sexual|sexo\s+expl[íi]cito)\b", re.I),
     re.compile(r"\b(hate\s+speech|supremac(?:y|ista)|genocid(?:e|io)|slur)\b", re.I),
@@ -25,13 +27,15 @@ def _check_text(text: str, error: Exception) -> None:
 
 
 def check_user_input(text: str) -> None:
-    """Raises ValueError if text contains blocked content."""
-    _check_text(text, ValueError("Contenido no permitido."))
+    """Raises ContentNotAllowedError if text contains blocked content."""
+    _check_text(text, ContentNotAllowedError("Contenido no permitido."))
 
 
 def check_document_content(text: str) -> None:
-    """Raises ValueError if extracted document text contains blocked content."""
-    _check_text(text, ValueError("El documento contiene contenido no permitido."))
+    """Raises ContentNotAllowedError if extracted document text contains blocked content."""
+    _check_text(
+        text, ContentNotAllowedError("El documento contiene contenido no permitido.")
+    )
 
 
 def check_generated_output(text: str) -> None:
