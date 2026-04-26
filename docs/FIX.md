@@ -15,37 +15,25 @@ Todos los endpoints son públicos. No hay API keys, JWT ni ningún mecanismo de 
 
 ---
 
-## 2. Ingest de documentos síncrono
+## ~~2. Ingest de documentos síncrono~~ ✅ Resuelto
 
 **Capa:** Backend  
-**Impacto:** Medio — bloquea la respuesta HTTP mientras se procesa el documento completo (extracción, chunking, embedding, upsert en Qdrant).
-
-`ingest_document_service` es `async` pero no delega el trabajo pesado a un worker real. Redis está en el `docker-compose.yml` pero no está conectado a ninguna cola.
-
-**Solución sugerida:** Integrar Celery o ARQ sobre Redis para ejecutar el pipeline de ingest en background. El endpoint devolvería 202 Accepted con el `document_id`; el frontend ya tiene polling de estado de documento (`useCollectionDocumentsStatus`) que soporta esta UX.
+**Solución aplicada:** El endpoint `POST /documents` ahora devuelve `202 Accepted` inmediatamente tras crear el registro en DB con `status=processing`. La fase pesada (`ingest_chunks` → Qdrant → embeddings) se ejecuta como `BackgroundTask` de FastAPI usando la misma sesión de BD inyectada por dependencia. El frontend ya tenía polling de estado (`useCollectionDocumentsStatus`) que soporta esta UX sin cambios.
 
 ---
 
-## 3. Sin optimistic updates en la lista de contenidos
+## ~~3. Sin optimistic updates en la lista de contenidos~~ ✅ Resuelto
 
 **Capa:** Frontend  
-**Impacto:** Bajo — cada acción (confirmar, editar, descartar) hace un refresh completo de la lista de contenidos desde el backend, causando un parpadeo y latencia perceptible.
-
-`handleContentAction` en `EntityDetailPage.tsx` llama a `refreshContents(...)` tras cada operación.
-
-**Solución sugerida:** Actualizar el estado local de `contents` directamente tras la acción (optimistic update), y sincronizar con el backend en background. Si la operación falla, revertir al estado anterior con un mensaje de error.
+**Solución aplicada:** `ContentCard` aplica ahora actualizaciones optimistas antes de cada llamada a la API (confirm → `status: confirmed` + descarte de hermanos; discard → `status: discarded`; delete → eliminación inmediata; edit → actualiza `content` y `updated_at`). Si la API falla, revierte al estado anterior. El `handleContentAction` en `EntityDetailPage` usa `{ silent: true }` en `refreshContents` para la sincronización en background, eliminando el parpadeo del spinner.
 
 ---
 
-## 4. Token counter aproximado
+## ~~4. Token counter aproximado~~ ✅ Resuelto
 
-**Capa:** Frontend  
-**Impacto:** Bajo — solo afecta a la información que se muestra al usuario, no a la funcionalidad.
-
-`estimateTokens()` en `frontend/src/utils/tokens.ts` usa una heurística de caracteres dividido por 4. El modelo real (llama3.2) puede tener un ratio diferente, y el conteo real solo es conocido por el backend tras la llamada.
-
-**Solución sugerida:** Exponer el conteo de tokens real en la respuesta del endpoint de generación (`/generate/{category}`) y mostrarlo en el `ContentCard` tras generar. El campo `sources_count` ya demuestra que la respuesta puede devolver metadatos de este tipo.
+**Capa:** Backend + Frontend  
+**Solución aplicada:** `EntityContent` incluye ahora el campo `token_count` (heurística `len(answer) // 4` calculada en el backend tras generar). Se añadió migración Alembic (`a1b2c3d4e5f6`). El frontend muestra `~N tokens` como badge en el `ContentCard`, junto al badge de fuentes, cuando el valor es mayor que 0.
 
 ---
 
-*Generado el 2026-04-25. Ver historial de correcciones aplicadas en los commits del branch `main`.*
+*Generado el 2026-04-25. Actualizado el 2026-04-26. Ver historial de correcciones aplicadas en los commits del branch `main`.*

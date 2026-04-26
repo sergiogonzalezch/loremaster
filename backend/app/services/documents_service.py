@@ -22,7 +22,9 @@ async def ingest_document_service(
     session: Session,
     data: UploadFile,
     collection_id: str,
-) -> Document:
+) -> tuple[Document, str]:
+    """Fast path: validate, read bytes, extract text, create DB record with
+    status=processing. Returns (document, text) for process_ingest_background."""
     if data.content_type not in ALLOWED_MIME_TYPES:
         raise HTTPException(status_code=400, detail="Unsupported file type")
     if not data.filename or not data.filename.strip():
@@ -51,26 +53,26 @@ async def ingest_document_service(
     session.add(document)
     session.commit()
     session.refresh(document)
+    return document, content
 
+
+def process_ingest_background(session: Session, document: Document, text: str) -> None:
+    """Slow path: run ingest_chunks and update document status to completed/failed.
+    Executed as a BackgroundTask after the 202 response is sent to the client."""
     try:
         chunk_count = ingest_chunks(
             doc_id=document.id,
-            collection_id=collection_id,
-            text=content,
+            collection_id=document.collection_id,
+            text=text,
         )
+        document.status = DocumentStatus.completed
+        document.chunk_count = chunk_count
     except Exception as e:
-        logger.error("Ingestion failed for '%s': %s", data.filename, e)
+        logger.error("Background ingest failed for '%s': %s", document.filename, e)
         document.status = DocumentStatus.failed
-        session.add(document)
-        session.commit()
-        raise RuntimeError(f"Failed to ingest document into vector store: {e}") from e
-
-    document.status = DocumentStatus.completed
-    document.chunk_count = chunk_count
     session.add(document)
     session.commit()
-    session.refresh(document)
-    return document
+    logger.info("Document %s finished with status=%s", document.id, document.status)
 
 
 def list_documents_service(

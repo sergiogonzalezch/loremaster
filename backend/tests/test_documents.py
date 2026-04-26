@@ -8,26 +8,30 @@ from app.models.documents import Document, DocumentStatus
 
 
 @pytest.mark.anyio
-async def test_ingest_txt(client, mock_rag_engine, sample_collection):
-    """DOC-01: Ingesta TXT retorna 201 y chunk_count > 0."""
+async def test_ingest_txt(client, db_session, mock_rag_engine, sample_collection):
+    """DOC-01: Ingesta TXT retorna 202; background task completa con chunk_count > 0."""
     response = await client.post(
         f"/api/v1/collections/{sample_collection.id}/documents",
         files={"file": ("lore.txt", b"contenido de lore", "text/plain")},
     )
-    assert response.status_code == 201
-    assert response.json()["chunk_count"] > 0
+    assert response.status_code == 202
+    doc_id = response.json()["id"]
+    # Background task ran before httpx returned the response; verify final state via DB.
+    doc = db_session.exec(select(Document).where(Document.id == doc_id)).first()
+    assert doc.chunk_count > 0
+    assert doc.status == DocumentStatus.completed
 
 
 @pytest.mark.anyio
 async def test_ingest_pdf(
     client, mock_rag_engine, mock_text_extractor, sample_collection
 ):
-    """DOC-02: Ingesta PDF retorna 201 con extractor mock."""
+    """DOC-02: Ingesta PDF retorna 202 con extractor mock."""
     response = await client.post(
         f"/api/v1/collections/{sample_collection.id}/documents",
         files={"file": ("lore.pdf", b"%PDF-1.4 fake", "application/pdf")},
     )
-    assert response.status_code == 201
+    assert response.status_code == 202
     assert response.json()["filename"] == "lore.pdf"
 
 
@@ -40,7 +44,7 @@ async def test_list_documents(client, mock_rag_engine, sample_collection):
                 f"/api/v1/collections/{sample_collection.id}/documents",
                 files={"file": (name, b"txt", "text/plain")},
             )
-        ).status_code == 201
+        ).status_code == 202
 
     response = await client.get(f"/api/v1/collections/{sample_collection.id}/documents")
     assert response.status_code == 200
@@ -68,7 +72,7 @@ async def test_delete_document(
 async def test_ingest_qdrant_failure_marks_failed(
     client, monkeypatch, db_session, sample_collection
 ):
-    """DOC-05: Falla en ingest_chunks retorna 502 y marca el documento como failed."""
+    """DOC-05: Falla en ingest_chunks retorna 202 y marca el documento como failed."""
 
     def _raise_ingest(*args, **kwargs):
         raise Exception("Qdrant down")
@@ -81,8 +85,8 @@ async def test_ingest_qdrant_failure_marks_failed(
         f"/api/v1/collections/{sample_collection.id}/documents",
         files={"file": ("broken.txt", b"contenido", "text/plain")},
     )
-    assert response.status_code == 502
-
+    assert response.status_code == 202
+    # Background task ran and failed; verify final status via DB.
     doc = db_session.exec(
         select(Document).where(Document.filename == "broken.txt")
     ).first()

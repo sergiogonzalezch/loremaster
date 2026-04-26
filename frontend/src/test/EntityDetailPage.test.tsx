@@ -18,6 +18,7 @@ vi.mock("../api", () => ({
   getCollection: vi.fn(),
   generateContent: vi.fn(),
   updateEntity: vi.fn(),
+  getEntityCategories: vi.fn().mockRejectedValue(new Error("mocked")),
 }));
 
 vi.mock("../hooks/useEntityContents", () => ({
@@ -59,6 +60,7 @@ const SAMPLE_COLLECTION: Collection = {
 
 const DEFAULT_CONTENTS_HOOK = {
   contents: [] as EntityContent[],
+  setContents: vi.fn(),
   meta: { total: 0, page: 1, page_size: 10, total_pages: 0 },
   loading: false,
   error: null,
@@ -140,6 +142,7 @@ describe("EntityDetailPage", () => {
         collection_id: "col-1",
         query: "query de prueba",
         sources_count: 1,
+        token_count: 0,
         category: "backstory" as const,
         content: "contenido de prueba",
         status: "pending" as const,
