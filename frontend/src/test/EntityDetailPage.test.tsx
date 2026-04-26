@@ -96,7 +96,9 @@ describe("EntityDetailPage", () => {
   it("renderiza nombre, tipo y descripción de la entidad", async () => {
     renderPage();
     await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Gandalf" })).toBeInTheDocument(),
+      expect(
+        screen.getByRole("heading", { name: "Gandalf" }),
+      ).toBeInTheDocument(),
     );
     // badge de tipo (solo aparece una vez en el header de la entidad)
     expect(screen.getAllByText("Personaje")[0]).toBeInTheDocument();
@@ -125,10 +127,7 @@ describe("EntityDetailPage", () => {
     renderPage();
     await waitFor(() => screen.getByRole("heading", { name: "Gandalf" }));
 
-    await userEvent.type(
-      screen.getByRole("textbox"),
-      "Historia del mago gris",
-    );
+    await userEvent.type(screen.getByRole("textbox"), "Historia del mago gris");
     expect(screen.getByRole("button", { name: "Generar" })).toBeEnabled();
   });
 
@@ -192,7 +191,9 @@ describe("EntityDetailPage", () => {
     await waitFor(() => screen.getByRole("heading", { name: "Gandalf" }));
 
     expect(screen.getByText(/Procesando prompt/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Generando/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Generando/ }),
+    ).toBeInTheDocument();
   });
 
   it("muestra estado vacío cuando no hay contenidos", async () => {

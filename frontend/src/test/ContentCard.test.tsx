@@ -61,10 +61,16 @@ describe("ContentCard — pending", () => {
 
   it("muestra los 4 botones de acción", () => {
     renderCard(makeContent({ status: "pending" }));
-    expect(screen.getByRole("button", { name: /confirmar/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /confirmar/i }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /editar/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /descartar/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /eliminar/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /descartar/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /eliminar/i }),
+    ).toBeInTheDocument();
   });
 
   it("Confirmar llama a confirmContent y onAction", async () => {
@@ -72,7 +78,9 @@ describe("ContentCard — pending", () => {
     mockConfirm.mockResolvedValue({} as never);
     renderCard(makeContent({ status: "pending" }), onAction);
     await userEvent.click(screen.getByRole("button", { name: /confirmar/i }));
-    await waitFor(() => expect(mockConfirm).toHaveBeenCalledWith("col-1", "ent-1", "cnt-1"));
+    await waitFor(() =>
+      expect(mockConfirm).toHaveBeenCalledWith("col-1", "ent-1", "cnt-1"),
+    );
     expect(onAction).toHaveBeenCalledOnce();
   });
 
@@ -80,18 +88,26 @@ describe("ContentCard — pending", () => {
     mockDelete.mockResolvedValue(undefined);
     renderCard(makeContent({ status: "pending" }));
     await userEvent.click(screen.getByRole("button", { name: /eliminar/i }));
-    const modalConfirmBtn = await screen.findAllByRole("button", { name: /confirmar/i });
+    const modalConfirmBtn = await screen.findAllByRole("button", {
+      name: /confirmar/i,
+    });
     await userEvent.click(modalConfirmBtn[modalConfirmBtn.length - 1]);
-    await waitFor(() => expect(mockDelete).toHaveBeenCalledWith("col-1", "ent-1", "cnt-1"));
+    await waitFor(() =>
+      expect(mockDelete).toHaveBeenCalledWith("col-1", "ent-1", "cnt-1"),
+    );
   });
 
   it("Descartar abre modal de confirmación y llama discardContent al confirmar", async () => {
     mockDiscard.mockResolvedValue({} as never);
     renderCard(makeContent({ status: "pending" }));
     await userEvent.click(screen.getByRole("button", { name: /descartar/i }));
-    const modalConfirmBtn = await screen.findAllByRole("button", { name: /confirmar/i });
+    const modalConfirmBtn = await screen.findAllByRole("button", {
+      name: /confirmar/i,
+    });
     await userEvent.click(modalConfirmBtn[modalConfirmBtn.length - 1]);
-    await waitFor(() => expect(mockDiscard).toHaveBeenCalledWith("col-1", "ent-1", "cnt-1"));
+    await waitFor(() =>
+      expect(mockDiscard).toHaveBeenCalledWith("col-1", "ent-1", "cnt-1"),
+    );
   });
 
   it("error 409 de confirmContent muestra alerta warning", async () => {
@@ -115,9 +131,15 @@ describe("ContentCard — confirmed", () => {
   it("muestra Editar y Eliminar, no Confirmar ni Descartar", () => {
     renderCard(makeContent({ status: "confirmed" }));
     expect(screen.getByRole("button", { name: /editar/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /eliminar/i })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /confirmar/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /descartar/i })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /eliminar/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /confirmar/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /descartar/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("Editar abre modal y guardar llama updateContent", async () => {
@@ -146,9 +168,17 @@ describe("ContentCard — discarded", () => {
 
   it("solo muestra botón Eliminar", () => {
     renderCard(makeContent({ status: "discarded" }));
-    expect(screen.getByRole("button", { name: /eliminar/i })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /confirmar/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /editar/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /descartar/i })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /eliminar/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /confirmar/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /editar/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /descartar/i }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -19,7 +19,9 @@ describe("useDebouncedValue", () => {
       { initialProps: { value: "inicial" } },
     );
     rerender({ value: "nuevo" });
-    act(() => { vi.advanceTimersByTime(200); });
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
     expect(result.current).toBe("inicial");
   });
 
@@ -30,7 +32,9 @@ describe("useDebouncedValue", () => {
       { initialProps: { value: "inicial" } },
     );
     rerender({ value: "nuevo" });
-    act(() => { vi.advanceTimersByTime(350); });
+    act(() => {
+      vi.advanceTimersByTime(350);
+    });
     expect(result.current).toBe("nuevo");
   });
 });

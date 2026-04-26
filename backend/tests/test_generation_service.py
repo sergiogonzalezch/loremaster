@@ -69,7 +69,10 @@ def test_gen_svc_01_persists_entity_content_with_correct_fields(
     entity = _make_entity(db_session, sample_collection.id)
 
     result = generate(
-        db_session, entity, ContentCategory.backstory, "  Historia detallada del personaje  "
+        db_session,
+        entity,
+        ContentCategory.backstory,
+        "  Historia detallada del personaje  ",
     )
 
     assert result.status == ContentStatus.pending
@@ -87,7 +90,9 @@ def test_gen_svc_02_strips_whitespace_from_query(
     """GEN-SVC-02: generate() elimina espacios en los extremos de la query antes de procesar."""
     entity = _make_entity(db_session, sample_collection.id)
 
-    result = generate(db_session, entity, ContentCategory.backstory, "  query con espacios  ")
+    result = generate(
+        db_session, entity, ContentCategory.backstory, "  query con espacios  "
+    )
 
     assert result.query == "query con espacios"
     assert mock_pipeline[0]["query"] == "query con espacios"
@@ -110,10 +115,20 @@ def test_gen_svc_04_raises_pending_limit_exceeded(
     entity = _make_entity(db_session, sample_collection.id)
 
     for i in range(MAX_PENDING_CONTENTS):
-        generate(db_session, entity, ContentCategory.backstory, f"Historia número {i} del guerrero")
+        generate(
+            db_session,
+            entity,
+            ContentCategory.backstory,
+            f"Historia número {i} del guerrero",
+        )
 
     with pytest.raises(PendingLimitExceededError):
-        generate(db_session, entity, ContentCategory.backstory, "Una historia más del guerrero")
+        generate(
+            db_session,
+            entity,
+            ContentCategory.backstory,
+            "Una historia más del guerrero",
+        )
 
 
 def test_gen_svc_05_blocked_query_raises_value_error(db_session, sample_collection):
@@ -137,7 +152,12 @@ def test_gen_svc_06_passes_entity_description_to_pipeline(
         db_session, sample_collection.id, description="Arquera élfica del bosque eterno"
     )
 
-    generate(db_session, entity, ContentCategory.backstory, "Expande la historia de la arquera")
+    generate(
+        db_session,
+        entity,
+        ContentCategory.backstory,
+        "Expande la historia de la arquera",
+    )
 
     assert "Arquera élfica del bosque eterno" in mock_pipeline[0]["extra_context"]
 
@@ -149,7 +169,12 @@ def test_gen_svc_07_pending_limit_is_per_category(
     entity = _make_entity(db_session, sample_collection.id)
 
     for i in range(MAX_PENDING_CONTENTS):
-        generate(db_session, entity, ContentCategory.backstory, f"Backstory del guerrero número {i}")
+        generate(
+            db_session,
+            entity,
+            ContentCategory.backstory,
+            f"Backstory del guerrero número {i}",
+        )
 
     result = generate(
         db_session, entity, ContentCategory.scene, "Una escena de combate en el bosque"
@@ -165,6 +190,11 @@ def test_gen_svc_08_entity_without_description_sends_empty_extra_context(
     """GEN-SVC-08: Si entity.description está vacío, extra_context es cadena vacía."""
     entity = _make_entity(db_session, sample_collection.id, description="")
 
-    generate(db_session, entity, ContentCategory.backstory, "Historia del personaje sin descripción")
+    generate(
+        db_session,
+        entity,
+        ContentCategory.backstory,
+        "Historia del personaje sin descripción",
+    )
 
     assert mock_pipeline[0]["extra_context"] == ""

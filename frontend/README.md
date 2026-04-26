@@ -39,14 +39,14 @@ El proxy de Vite redirige `/api/*` → `http://localhost:8000` en desarrollo, ev
 
 ## Scripts disponibles
 
-| Script                   | Descripción                                        |
-| ------------------------ | -------------------------------------------------- |
-| `npm run dev`            | Servidor de desarrollo con HMR en `localhost:5173` |
-| `npm run build`          | Type-check + bundle de producción en `dist/`       |
-| `npm run lint`           | ESLint sobre todo el proyecto                      |
-| `npm run preview`        | Sirve el build de producción localmente            |
-| `npm test`               | Vitest en modo watch                               |
-| `npm run test:coverage`  | Cobertura de tests (proveedor v8, reporte CLI)     |
+| Script                  | Descripción                                        |
+| ----------------------- | -------------------------------------------------- |
+| `npm run dev`           | Servidor de desarrollo con HMR en `localhost:5173` |
+| `npm run build`         | Type-check + bundle de producción en `dist/`       |
+| `npm run lint`          | ESLint sobre todo el proyecto                      |
+| `npm run preview`       | Sirve el build de producción localmente            |
+| `npm test`              | Vitest en modo watch                               |
+| `npm run test:coverage` | Cobertura de tests (proveedor v8, reporte CLI)     |
 
 ## Estructura del proyecto
 
@@ -113,11 +113,11 @@ src/
 
 Los tests se encuentran en `src/test/`. Las llamadas a la API se mockean con `vi.mock()`, sin MSW. No se testean páginas completas (demasiado acoplamiento con el router en esta etapa).
 
-| Categoría | Archivos | Tests aprox. |
-|---|---|---|
-| Utilidades | errors, tokens, formatters, constants | ~22 |
-| Componentes | ConfirmModal, TokenCounter, ContentCard | ~21 |
-| Hooks | useGenerate, useEntityContents, useDebouncedValue | ~17 |
+| Categoría   | Archivos                                          | Tests aprox. |
+| ----------- | ------------------------------------------------- | ------------ |
+| Utilidades  | errors, tokens, formatters, constants             | ~22          |
+| Componentes | ConfirmModal, TokenCounter, ContentCard           | ~21          |
+| Hooks       | useGenerate, useEntityContents, useDebouncedValue | ~17          |
 
 ## Pantallas
 

@@ -23,7 +23,9 @@ describe("useGenerate", () => {
   it("run() activa isLoading y resuelve con data", async () => {
     const fn = makeAsyncFn("resultado");
     const { result } = renderHook(() => useGenerate(fn));
-    act(() => { result.current.run(); });
+    act(() => {
+      result.current.run();
+    });
     expect(result.current.isLoading).toBe(true);
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.data).toBe("resultado");
@@ -47,8 +49,12 @@ describe("useGenerate", () => {
       return "nunca";
     });
     const { result } = renderHook(() => useGenerate(fn));
-    act(() => { result.current.run(); });
-    act(() => { result.current.cancel(); });
+    act(() => {
+      result.current.run();
+    });
+    act(() => {
+      result.current.cancel();
+    });
     await waitFor(() => expect(result.current.isCancelled).toBe(true));
     expect(result.current.error).toBeNull();
     expect(result.current.isLoading).toBe(false);
@@ -59,7 +65,9 @@ describe("useGenerate", () => {
     const { result } = renderHook(() => useGenerate(fn));
     await act(() => result.current.run());
     expect(result.current.error).not.toBeNull();
-    act(() => { result.current.reset(); });
+    act(() => {
+      result.current.reset();
+    });
     expect(result.current.data).toBeNull();
     expect(result.current.error).toBeNull();
     expect(result.current.isLoading).toBe(false);
@@ -87,8 +95,12 @@ describe("useGenerate", () => {
       return "primera";
     });
     const { result } = renderHook(() => useGenerate(fn));
-    act(() => { result.current.run(); });
-    act(() => { result.current.run(); });
+    act(() => {
+      result.current.run();
+    });
+    act(() => {
+      result.current.run();
+    });
     await waitFor(() => expect(fn).toHaveBeenCalledTimes(2));
     expect(firstAborted).toBe(true);
   });

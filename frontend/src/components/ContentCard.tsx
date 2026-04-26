@@ -125,7 +125,9 @@ export default function ContentCard({
                 <div className="d-flex justify-content-between align-items-center w-100 me-2">
                   <div className="d-flex flex-column gap-1">
                     <div className="d-flex align-items-center gap-2">
-                      <Badge bg="dark">{CATEGORY_LABELS[content.category]}</Badge>
+                      <Badge bg="dark">
+                        {CATEGORY_LABELS[content.category]}
+                      </Badge>
                       <small className="text-muted">
                         {formatDate(content.created_at)}
                       </small>

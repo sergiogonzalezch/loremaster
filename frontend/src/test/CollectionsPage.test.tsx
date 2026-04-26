@@ -74,9 +74,7 @@ describe("CollectionsPage", () => {
   it("muestra alerta de error si getCollections falla", async () => {
     mockGetCollections.mockRejectedValue(new Error("Error de red"));
     renderPage();
-    await waitFor(() =>
-      expect(screen.getByRole("alert")).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
   });
 
   it("abre modal de creación al pulsar '+ Nueva colección'", async () => {
@@ -135,7 +133,9 @@ describe("CollectionsPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Eliminar" }));
 
     // La modal muestra el mensaje con el nombre de la colección
-    expect(screen.getByText(/¿Estás seguro de que quieres eliminar/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/¿Estás seguro de que quieres eliminar/),
+    ).toBeInTheDocument();
 
     const allConfirm = await screen.findAllByRole("button", {
       name: "Confirmar",
