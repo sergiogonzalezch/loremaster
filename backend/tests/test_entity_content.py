@@ -360,9 +360,10 @@ async def test_cnt_10b_confirm_replaces_previous_confirmed_same_category(
 
 
 @pytest.mark.anyio
-async def test_cnt_12_blocked_generate_query_returns_422(
+async def test_cnt_12b_blocked_generate_query_returns_422(
     client, sample_collection, sample_entity
 ):
+    """CNT-12b: Query bloqueada por content_guard retorna 422 (sin mock de pipeline)."""
     response = await _create_content(
         client,
         sample_collection.id,
