@@ -23,7 +23,7 @@ Lista de tech debt identificado y aún no corregido. Ordenado por impacto estima
 | 13 | Jerarquía de excepciones plana | Backend | 🟢 Cubierto | Observación — todos los primitivos eliminados; bases `DomainError`/`InfrastructureError` solo si se necesita middleware global |
 | 14 | `ValueError("discarded")` como señal de dominio | Backend | ✅ Resuelto | — |
 | 15 | `RuntimeError` en `check_generated_output` conflado con infra | Backend | ✅ Resuelto | — |
-| 16 | Función privada `_fetch_counts` importada en route | Backend | 🟡 Pendiente | Implementar después — renombrar a pública o crear `get_collection_with_counts_service` |
+| 16 | Función privada `_fetch_counts` importada en route | Backend | ✅ Resuelto | — |
 
 **Leyenda:** 🔴 Pendiente urgente · 🟡 Pendiente no urgente · 🟢 Cubierto (mitigado, sin acción inmediata) · ✅ Cerrado
 
@@ -204,15 +204,10 @@ La jerarquía sigue siendo plana (todas heredan de `Exception`), pero los routes
 
 ---
 
-## 16. Función privada `_fetch_counts` importada en route
+## ~~16. Función privada `_fetch_counts` importada en route~~ ✅ Resuelto
 
 **Capa:** Backend  
-**Archivo:** `backend/app/api/routes/collections.py:25`, `backend/app/services/collection_service.py`  
-**Impacto:** Muy bajo — viola la convención de que el prefijo `_` indica uso interno del módulo.
-
-`collections.py` importa `_fetch_counts` directamente del servicio para enriquecer la respuesta del endpoint `GET /{collection_id}`. La función existe porque `list_collections_service` la usa internamente, pero la misma lógica se necesita también en el GET de una colección individual.
-
-**Solución sugerida:** Renombrar `_fetch_counts` a `fetch_counts` (sin guión), o crear una función `get_collection_with_counts_service(session, collection)` que encapsule el enriquecimiento y sea la única API pública del servicio para este caso.
+**Solución aplicada:** Añadida `get_collection_with_counts_service(session, collection)` a `collection_service.py`. Encapsula la llamada a `_fetch_counts` y devuelve el dict enriquecido con `document_count` y `entity_count`. El route `GET /{collection_id}` ahora importa y llama esta función pública; `_fetch_counts` permanece privada al módulo.
 
 ---
 

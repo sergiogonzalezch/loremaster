@@ -19,10 +19,10 @@ from app.models.collections import (
 from app.models.shared import PaginatedResponse
 from app.services.collection_service import (
     create_collection_service,
+    get_collection_with_counts_service,
     list_collections_service,
     update_collection_service,
     delete_collection_service,
-    _fetch_counts,
 )
 
 router = APIRouter(prefix="/collections", tags=["collections"])
@@ -66,12 +66,7 @@ def get_collection(
     collection: Collection = Depends(get_collection_or_404),
     session: Session = Depends(get_session),
 ):
-    doc_counts, entity_counts = _fetch_counts(session, [collection.id])
-    return {
-        **collection.model_dump(),
-        "document_count": doc_counts.get(collection.id, 0),
-        "entity_count": entity_counts.get(collection.id, 0),
-    }
+    return get_collection_with_counts_service(session, collection)
 
 
 @router.patch("/{collection_id}", response_model=CollectionResponse)
