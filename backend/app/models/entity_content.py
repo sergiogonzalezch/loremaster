@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 from sqlalchemy import Column, ForeignKey, String
 from sqlmodel import SQLModel, Field
 import uuid
@@ -31,9 +31,14 @@ class EntityContent(SQLModel, table=True):
             index=True,
         )
     )
-    query: str = Field(max_length=2000)
-    sources_count: int = Field(default=0)
-    token_count: int = Field(default=0)
+    generated_text_id: str = Field(
+        sa_column=Column(
+            String(36),
+            ForeignKey("generated_texts.id"),
+            nullable=False,
+            index=True,
+        )
+    )
     category: ContentCategory = Field(max_length=50)
     content: str = Field(max_length=10000)
     status: ContentStatus = Field(default=ContentStatus.pending, max_length=50)
@@ -53,15 +58,24 @@ class EntityContentResponse(BaseModel):
     id: str
     entity_id: str
     collection_id: str
-    query: str
-    sources_count: int
-    token_count: int
+    generated_text_id: str
     category: ContentCategory
     content: str
+    raw_content: Optional[str] = None
+    was_edited: bool = False
+    query: Optional[str] = None
+    sources_count: int = 0
+    token_count: int = 0
     status: ContentStatus
     created_at: datetime
     confirmed_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+
+    @model_validator(mode="after")
+    def compute_was_edited(self) -> "EntityContentResponse":
+        if self.raw_content is not None:
+            object.__setattr__(self, "was_edited", self.content != self.raw_content)
+        return self
 
 
 class GenerateContentRequest(BaseModel):

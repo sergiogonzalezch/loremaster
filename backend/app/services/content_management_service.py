@@ -9,7 +9,8 @@ from sqlmodel import Session, select
 from app.core.common import soft_delete
 from app.core.exceptions import ContentDiscardedError, DatabaseError
 from app.models.entities import Entity
-from app.models.entity_content import EntityContent
+from app.models.entity_content import EntityContent, EntityContentResponse
+from app.models.generated_texts import GeneratedText
 from app.models.enums import ContentCategory, ContentStatus
 
 logger = logging.getLogger(__name__)
@@ -24,7 +25,7 @@ def list_contents(
     page: int = 1,
     page_size: int = 20,
     order: Literal["asc", "desc"] = "desc",
-) -> tuple[list[EntityContent], int]:
+) -> tuple[list[EntityContentResponse], int]:
     conditions = [
         EntityContent.entity_id == entity_id,
         EntityContent.collection_id == collection_id,
@@ -66,7 +67,7 @@ def list_contents(
             .limit(page_size)
         ).all()
     )
-    return items, total
+    return [_to_response(session, item) for item in items], total
 
 
 def edit_content(
@@ -75,7 +76,7 @@ def edit_content(
     entity_id: str,
     collection_id: str,
     new_text: str,
-) -> EntityContent | None:
+) -> EntityContentResponse | None:
     new_text = new_text.strip()
     content = _get_active_content(session, content_id, entity_id, collection_id)
     if not content:
@@ -93,7 +94,7 @@ def edit_content(
         session.rollback()
         logger.error("DB commit failed editing content %s: %s", content_id, e)
         raise DatabaseError() from e
-    return content
+    return _to_response(session, content)
 
 
 def confirm_content(
@@ -142,7 +143,7 @@ def discard_content(
     content_id: str,
     entity_id: str,
     collection_id: str,
-) -> EntityContent | None:
+) -> EntityContentResponse | None:
     content = _get_pending_content(session, content_id, entity_id, collection_id)
     if not content:
         return None
@@ -156,7 +157,7 @@ def discard_content(
         logger.error("DB commit failed discarding content %s: %s", content_id, e)
         raise DatabaseError() from e
     logger.info("EntityContent %s discarded", content_id)
-    return content
+    return _to_response(session, content)
 
 
 def soft_delete_content(
@@ -220,6 +221,26 @@ def cascade_delete_by_collection(
 
 
 # ── Private helpers ───────────────────────────────────────────────────────────
+
+
+def _to_response(session: Session, content: EntityContent) -> EntityContentResponse:
+    gt = session.get(GeneratedText, content.generated_text_id)
+    return EntityContentResponse(
+        id=content.id,
+        entity_id=content.entity_id,
+        collection_id=content.collection_id,
+        generated_text_id=content.generated_text_id,
+        category=content.category,
+        content=content.content,
+        raw_content=gt.raw_content if gt else None,
+        query=gt.query if gt else None,
+        sources_count=gt.sources_count if gt else 0,
+        token_count=gt.token_count if gt else 0,
+        status=content.status,
+        created_at=content.created_at,
+        confirmed_at=content.confirmed_at,
+        updated_at=content.updated_at,
+    )
 
 
 def _get_active_content(
