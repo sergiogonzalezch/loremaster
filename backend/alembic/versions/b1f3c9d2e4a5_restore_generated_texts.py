@@ -5,16 +5,16 @@ Revises: ae9ee92df7ea
 Create Date: 2026-04-28 18:00:00.000000
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
 import sqlmodel
 
-
 # revision identifiers, used by Alembic.
-revision: str = 'b1f3c9d2e4a5'
-down_revision: Union[str, Sequence[str], None] = 'ae9ee92df7ea'
+revision: str = "b1f3c9d2e4a5"
+down_revision: Union[str, Sequence[str], None] = "ae9ee92df7ea"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -27,8 +27,14 @@ def upgrade() -> None:
         sa.Column("entity_id", sa.String(36), nullable=False),
         sa.Column("collection_id", sa.String(36), nullable=False),
         sa.Column("category", sa.String(50), nullable=False),
-        sa.Column("query", sqlmodel.sql.sqltypes.AutoString(length=2000), nullable=False),
-        sa.Column("raw_content", sqlmodel.sql.sqltypes.AutoString(length=10000), nullable=False),
+        sa.Column(
+            "query", sqlmodel.sql.sqltypes.AutoString(length=2000), nullable=False
+        ),
+        sa.Column(
+            "raw_content",
+            sqlmodel.sql.sqltypes.AutoString(length=10000),
+            nullable=False,
+        ),
         sa.Column("sources_count", sa.Integer(), nullable=False),
         sa.Column("token_count", sa.Integer(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
@@ -61,9 +67,11 @@ def upgrade() -> None:
     # c) Agregar columna generated_text_id (nullable primero)
     with op.batch_alter_table("entity_contents") as batch_op:
         batch_op.add_column(
-            sa.Column("generated_text_id",
-                      sqlmodel.sql.sqltypes.AutoString(length=36),
-                      nullable=True)
+            sa.Column(
+                "generated_text_id",
+                sqlmodel.sql.sqltypes.AutoString(length=36),
+                nullable=True,
+            )
         )
 
     # d) Vincular registros existentes
@@ -84,9 +92,13 @@ def upgrade() -> None:
         batch_op.alter_column("generated_text_id", nullable=False)
         batch_op.create_foreign_key(
             "fk_entity_contents_generated_text_id",
-            "generated_texts", ["generated_text_id"], ["id"]
+            "generated_texts",
+            ["generated_text_id"],
+            ["id"],
         )
-        batch_op.create_index("ix_entity_contents_generated_text_id", ["generated_text_id"])
+        batch_op.create_index(
+            "ix_entity_contents_generated_text_id", ["generated_text_id"]
+        )
 
     # f) Quitar columnas que se movieron a generated_texts
     with op.batch_alter_table("entity_contents") as batch_op:
@@ -98,11 +110,19 @@ def upgrade() -> None:
 def downgrade() -> None:
     # Restaurar columnas en entity_contents
     with op.batch_alter_table("entity_contents") as batch_op:
-        batch_op.add_column(sa.Column("query", sa.String(2000), nullable=False, server_default=""))
-        batch_op.add_column(sa.Column("sources_count", sa.Integer(), nullable=False, server_default="0"))
-        batch_op.add_column(sa.Column("token_count", sa.Integer(), nullable=False, server_default="0"))
+        batch_op.add_column(
+            sa.Column("query", sa.String(2000), nullable=False, server_default="")
+        )
+        batch_op.add_column(
+            sa.Column("sources_count", sa.Integer(), nullable=False, server_default="0")
+        )
+        batch_op.add_column(
+            sa.Column("token_count", sa.Integer(), nullable=False, server_default="0")
+        )
         batch_op.drop_index("ix_entity_contents_generated_text_id")
-        batch_op.drop_constraint("fk_entity_contents_generated_text_id", type_="foreignkey")
+        batch_op.drop_constraint(
+            "fk_entity_contents_generated_text_id", type_="foreignkey"
+        )
         batch_op.drop_column("generated_text_id")
 
     op.drop_table("generated_texts")

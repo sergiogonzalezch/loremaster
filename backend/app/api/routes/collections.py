@@ -1,12 +1,12 @@
 import logging
-from datetime import datetime
-from typing import Literal, Optional
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlmodel import Session
 
 logger = logging.getLogger(__name__)
 
+from app.core.query_params import DateRangeParams, PaginationParams
 from app.core.deps import get_collection_or_404
 from app.core.exceptions import DatabaseError, DuplicateCollectionNameError
 from app.database import get_session
@@ -41,24 +41,21 @@ def create_collection(
 
 @router.get("/", response_model=PaginatedResponse[CollectionResponse])
 def get_collections(
-    page: int = Query(default=1, ge=1),
-    page_size: int = Query(default=20, ge=1, le=100),
+    pagination: Annotated[PaginationParams, Depends()],
+    dates: Annotated[DateRangeParams, Depends()],
     name: Optional[str] = Query(default=None),
-    created_after: Optional[datetime] = Query(default=None),
-    created_before: Optional[datetime] = Query(default=None),
-    order: Literal["asc", "desc"] = Query(default="desc"),
     session: Session = Depends(get_session),
 ):
     items, total = list_collections_service(
         session,
-        page,
-        page_size,
+        pagination.page,
+        pagination.page_size,
         name=name,
-        created_after=created_after,
-        created_before=created_before,
-        order=order,
+        created_after=dates.created_after,
+        created_before=dates.created_before,
+        order=pagination.order,
     )
-    return PaginatedResponse.build(items, total, page, page_size)
+    return PaginatedResponse.build(items, total, pagination.page, pagination.page_size)
 
 
 @router.get("/{collection_id}", response_model=CollectionResponse)

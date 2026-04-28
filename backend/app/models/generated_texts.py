@@ -12,10 +12,14 @@ class GeneratedText(SQLModel, table=True):
         default_factory=lambda: str(uuid.uuid4()), primary_key=True, max_length=36
     )
     entity_id: str = Field(
-        sa_column=Column(String(36), ForeignKey("entities.id"), nullable=False, index=True)
+        sa_column=Column(
+            String(36), ForeignKey("entities.id"), nullable=False, index=True
+        )
     )
     collection_id: str = Field(
-        sa_column=Column(String(36), ForeignKey("collections.id"), nullable=False, index=True)
+        sa_column=Column(
+            String(36), ForeignKey("collections.id"), nullable=False, index=True
+        )
     )
     category: str = Field(max_length=50)
     query: str = Field(max_length=2000)

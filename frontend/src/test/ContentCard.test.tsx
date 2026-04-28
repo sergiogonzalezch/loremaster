@@ -24,11 +24,14 @@ function makeContent(overrides: Partial<EntityContent> = {}): EntityContent {
     id: "cnt-1",
     entity_id: "ent-1",
     collection_id: "col-1",
+    generated_text_id: "gt-1",
     query: "Historia del personaje",
     sources_count: 3,
     token_count: 42,
     category: "backstory",
     content: "Texto del contenido generado.",
+    raw_content: "Texto del contenido generado.",
+    was_edited: false,
     status: "pending",
     created_at: "2024-06-01T10:00:00Z",
     confirmed_at: null,
@@ -181,5 +184,38 @@ describe("ContentCard — discarded", () => {
     expect(
       screen.queryByRole("button", { name: /descartar/i }),
     ).not.toBeInTheDocument();
+  });
+});
+
+// ── Auditoría (was_edited / raw_content) ──────────────────────────────────────
+
+describe("ContentCard — auditoría", () => {
+  it("no muestra badge '✎ editado' cuando was_edited es false", () => {
+    renderCard(makeContent({ was_edited: false }));
+    expect(screen.queryByText(/editado/i)).not.toBeInTheDocument();
+  });
+
+  it("muestra badge '✎ editado' cuando was_edited es true", () => {
+    renderCard(makeContent({ was_edited: true, raw_content: "Original LLM" }));
+    expect(screen.getByText(/✎ editado/i)).toBeInTheDocument();
+  });
+
+  it("no muestra sección de output original cuando was_edited es false", () => {
+    renderCard(makeContent({ was_edited: false }));
+    expect(
+      screen.queryByText(/ver output original del llm/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("muestra sección colapsable con output original cuando was_edited es true", () => {
+    renderCard(
+      makeContent({
+        was_edited: true,
+        raw_content: "Texto original del LLM sin editar.",
+      }),
+    );
+    expect(
+      screen.getByText(/ver output original del llm/i),
+    ).toBeInTheDocument();
   });
 });

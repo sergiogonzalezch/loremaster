@@ -183,6 +183,19 @@ export default function ContentCard({
                         ~{content.token_count} tokens
                       </Badge>
                     )}
+                    {content.was_edited && (
+                      <Badge
+                        style={{
+                          background: "rgba(201,162,39,0.1)",
+                          color: "#c9a227",
+                          border: "1px solid rgba(201,162,39,0.3)",
+                          fontSize: "0.6rem",
+                        }}
+                        title="Editado por el usuario. Output original del LLM preservado para auditoría."
+                      >
+                        ✎ editado
+                      </Badge>
+                    )}
                     {content.status === "pending" && (
                       <Badge bg="warning" text="dark">
                         Borrador
@@ -212,6 +225,31 @@ export default function ContentCard({
                   </Alert>
                 )}
                 <MarkdownContent>{content.content}</MarkdownContent>
+                {content.was_edited && content.raw_content && (
+                  <details className="mt-3">
+                    <summary
+                      style={{
+                        fontSize: "0.75rem",
+                        color: "var(--lm-text-muted)",
+                        cursor: "pointer",
+                        userSelect: "none",
+                      }}
+                    >
+                      Ver output original del LLM
+                    </summary>
+                    <div
+                      className="mt-2 p-2"
+                      style={{
+                        borderLeft: "2px solid rgba(201,162,39,0.3)",
+                        fontSize: "0.88rem",
+                        color: "var(--lm-text-muted)",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      <MarkdownContent>{content.raw_content}</MarkdownContent>
+                    </div>
+                  </details>
+                )}
               </Accordion.Body>
             </Accordion.Item>
           </Accordion>

@@ -1,9 +1,9 @@
-from datetime import datetime
-from typing import Literal, Optional
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlmodel import Session
 
+from app.core.query_params import DateRangeParams, PaginationParams
 from app.core.deps import get_collection_or_404, get_entity_or_404
 from app.core.exceptions import DatabaseError, DuplicateEntityNameError
 from app.database import get_session
@@ -46,28 +46,27 @@ def create_entity(
 )
 def list_entities(
     collection_id: str,
-    page: int = Query(default=1, ge=1),
-    page_size: int = Query(default=20, ge=1, le=100),
+    pagination: Annotated[PaginationParams, Depends()],
+    dates: Annotated[DateRangeParams, Depends()],
     name: Optional[str] = Query(default=None),
     type: Optional[EntityType] = Query(default=None),
-    created_after: Optional[datetime] = Query(default=None),
-    created_before: Optional[datetime] = Query(default=None),
-    order: Literal["asc", "desc"] = Query(default="desc"),
     _: Collection = Depends(get_collection_or_404),
     session: Session = Depends(get_session),
 ):
     entities, total = list_entities_service(
         session,
         collection_id,
-        page,
-        page_size,
+        pagination.page,
+        pagination.page_size,
         name=name,
         entity_type=type,
-        created_after=created_after,
-        created_before=created_before,
-        order=order,
+        created_after=dates.created_after,
+        created_before=dates.created_before,
+        order=pagination.order,
     )
-    return PaginatedResponse.build(entities, total, page, page_size)
+    return PaginatedResponse.build(
+        entities, total, pagination.page, pagination.page_size
+    )
 
 
 @router.get("/{collection_id}/entities/{entity_id}", response_model=EntityResponse)

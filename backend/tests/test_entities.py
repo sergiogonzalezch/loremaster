@@ -4,6 +4,7 @@ from sqlmodel import select
 from app.models.collections import Collection
 from app.models.entity_content import EntityContent
 from app.models.enums import ContentCategory, ContentStatus
+from app.models.generated_texts import GeneratedText
 
 
 @pytest.mark.anyio
@@ -80,21 +81,30 @@ async def test_delete_entity_cascades_all_contents(
     client, db_session, sample_collection, sample_entity
 ):
     """ENT-06: Eliminar entidad hace soft-delete de EntityContent pending y confirmed."""
+    gt = GeneratedText(
+        entity_id=sample_entity.id,
+        collection_id=sample_collection.id,
+        category="backstory",
+        query="q cascade test",
+        raw_content="contenido pendiente",
+        sources_count=1,
+    )
+    db_session.add(gt)
+    db_session.flush()
+
     pending = EntityContent(
         entity_id=sample_entity.id,
         collection_id=sample_collection.id,
+        generated_text_id=gt.id,
         category=ContentCategory.backstory,
-        query="q cascade test",
-        sources_count=1,
         content="contenido pendiente",
         status=ContentStatus.pending,
     )
     confirmed = EntityContent(
         entity_id=sample_entity.id,
         collection_id=sample_collection.id,
+        generated_text_id=gt.id,
         category=ContentCategory.backstory,
-        query="q cascade test",
-        sources_count=1,
         content="contenido confirmado",
         status=ContentStatus.confirmed,
     )
