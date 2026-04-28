@@ -24,8 +24,8 @@ Lista de tech debt identificado y aún no corregido. Ordenado por impacto estima
 | 14 | `ValueError("discarded")` como señal de dominio | Backend | ✅ Resuelto | — |
 | 15 | `RuntimeError` en `check_generated_output` conflado con infra | Backend | ✅ Resuelto | — |
 | 16 | Función privada `_fetch_counts` importada en route | Backend | ✅ Resuelto | — |
-| 17 | Guardrails sin normalización Unicode ni tests adversariales | Backend | 🔴 Pendiente | Implementar — lower() + NFKD antes de regex + batería adversarial |
-| 18 | Páginas excluidas del coverage de tests (`vitest.config.ts`) | Frontend | 🟡 Pendiente | Añadir `src/pages/**` al `include` de coverage |
+| 17 | Guardrails sin normalización Unicode ni tests adversariales | Backend | ✅ Resuelto | — |
+| 18 | Páginas excluidas del coverage de tests (`vitest.config.ts`) | Frontend | ✅ Resuelto | — |
 | 19 | Sin auditoría de contenido moderado | Backend | 🟡 Pendiente | Tabla `moderation_log` o campo en `EntityContent` + migración |
 | 20 | Polling de 3 s en `useCollectionDocumentsStatus` | Frontend | 🟡 Pendiente | Candidato a SSE/WebSocket — no urgente con volumen actual |
 
@@ -93,6 +93,8 @@ Ya existe `_delete_vectors_with_retry` con 3 intentos y 0.5s entre intentos. Si 
 **Impacto:** Alto — documentos quedan en estado `failed` permanentemente sin forma de reintentar.
 
 Si `process_ingest_background` falla (timeout de Qdrant, error de embeddings), el documento queda en `status=failed` sin mecanismo de retry ni notificación al usuario más allá del polling de estado.
+
+**Antecedente (2026-04-28):** Refactor de `CollectionDetailPage` mejoró la visibilidad del fallo. Antes de este cambio, un documento en `failed` tampoco aparecía automáticamente en la tabla — el usuario debía hacer F5. Ahora, `DocumentsTab` rastrea en `processingDocs` cualquier documento recién subido, lo muestra con badge "Procesando" de inmediato, y al detectar que el estado cambió (a `completed` o `failed`) refresca la lista automáticamente. El bug visual queda resuelto; el retry y el campo `processing_error` siguen pendientes.
 
 **Solución sugerida:** Añadir un endpoint `POST /documents/{id}/retry` que permita reintentar la ingestión. Registrar el error detallado en el campo `processing_error` del documento.
 
@@ -186,32 +188,19 @@ La jerarquía sigue siendo plana (todas heredan de `Exception`), pero los routes
 
 ---
 
-## 17. Guardrails sin normalización Unicode ni tests adversariales
+## ~~17. Guardrails sin normalización Unicode ni tests adversariales~~ ✅ Resuelto
 
 **Capa:** Backend  
-**Archivo:** `backend/app/domain/content_guard.py`  
-**Impacto:** Alto — los cinco patrones regex usan `re.IGNORECASE` pero no normalizan el texto. Variantes triviales (p0rn, s3x0, espacios entre caracteres, homoglifos Unicode) eluden todos los guardrails sin esfuerzo.
+**Solución aplicada:** Añadida función `_normalize(text)` en `content_guard.py` que aplica NFKD + eliminación de combining marks (categoría Unicode `Mn`) + `.lower()`. Esto colapsa caracteres de ancho completo (`ｐｏｒｎ` → `porn`), elimina diacríticos evasivos (`pórn` → `porn`, `séxo` → `sexo`) y normaliza capitalización. `_check_text` opera ahora sobre el texto normalizado en vez del input crudo.
 
-Los patrones actuales en `_BLOCKED_PATTERNS` aplican `re.I` pero reciben el texto sin preprocesar. Un atacante puede sortear cualquier patrón con sustituciones básicas de caracteres o con Unicode de ancho completo.
-
-**Solución sugerida:** Antes de iterar los patrones en `_check_text`, aplicar:
-```python
-import unicodedata
-text = unicodedata.normalize("NFKD", text).lower()
-```
-Añadir una batería de tests adversariales en `tests/test_content_guard.py`: inputs con números intercalados (s3x), caracteres Unicode similares (ｐｏｒｎ), espacios entremedios, y strings vacíos.
+Creado `tests/test_content_guard.py` con 32 tests: baseline (inputs limpios y palabras clave directas), full-width Unicode, diacríticos con combining marks, mayúsculas mixtas, routing correcto de excepciones (`ContentNotAllowedError` vs `GeneratedContentBlockedError`), y edge cases (strings vacíos, palabras embebidas en oración).
 
 ---
 
-## 18. Páginas excluidas del coverage de tests (`vitest.config.ts`)
+## ~~18. Páginas excluidas del coverage de tests (`vitest.config.ts`)~~ ✅ Resuelto
 
 **Capa:** Frontend  
-**Archivo:** `frontend/vitest.config.ts`  
-**Impacto:** Medio — `coverage.include` cubre `src/utils/**`, `src/hooks/**` y `src/components/**`, pero excluye explícitamente `src/pages/**`. Los informes de cobertura muestran 0% para páginas aunque los tests de `src/test/` sí se ejecuten, generando una falsa sensación de seguridad.
-
-La lógica de UX más compleja (filtros de contenidos, paginación, polling de documentos, gating de generación) vive en las páginas y no aparece en los métricas de coverage.
-
-**Solución sugerida:** Añadir `"src/pages/**"` al array `include` en `vitest.config.ts`. Los tests ya existentes (`EntityDetailPage.test.tsx`, etc.) empezarán a contribuir al informe sin cambios adicionales. Complementar con tests de happy path donde la cobertura sea baja.
+**Solución aplicada:** `"src/pages/**"` añadido a `coverage.include` y eliminado de `coverage.exclude` en `vitest.config.ts`. Los tests existentes de páginas (`CollectionsPage.test.tsx`, `EntityDetailPage.test.tsx`, `GeneratePage.test.tsx`) ahora contribuyen al informe de cobertura sin cambios adicionales.
 
 ---
 
@@ -280,8 +269,8 @@ Aspectos que deben resolverse antes de cualquier despliegue fuera de entorno loc
 - Qdrant caído en tiempo de query: debe devolver error controlado, no 500 sin detalle.
 - LLM timeout: verificar que el semáforo se libera correctamente aunque el request falle.
 
-**`content_guard.py`**
-- Tests directos de los patrones regex: inputs válidos, inválidos, y edge cases (strings vacíos, unicode).
+**~~`content_guard.py`~~** ✅ Cubierto  
+- ~~Tests directos de los patrones regex: inputs válidos, inválidos, y edge cases (strings vacíos, unicode).~~ — `tests/test_content_guard.py` cubre 32 casos: baseline, full-width Unicode, diacríticos, mayúsculas mixtas, routing de excepciones y edge cases.
 
 ### Frontend — Tests faltantes
 
@@ -303,4 +292,4 @@ Aspectos que deben resolverse antes de cualquier despliegue fuera de entorno loc
 
 ---
 
-*Generado el 2026-04-25. Actualizado el 2026-04-28. Ver historial de correcciones aplicadas en los commits del branch `main`.*
+*Generado el 2026-04-25. Actualizado el 2026-04-28 (ítems 17, 18). Ver historial de correcciones aplicadas en los commits del branch `main`.*

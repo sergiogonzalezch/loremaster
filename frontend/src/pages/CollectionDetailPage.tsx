@@ -70,9 +70,7 @@ function DocumentsTab({
   const [deleteTarget, setDeleteTarget] = useState<Document | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [filename, setFilename] = useState("");
-  const [status, setStatus] = useState<
-    "" | "processing" | "completed" | "failed"
-  >("");
+  const [status, setStatus] = useState<"" | "completed" | "failed">("");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -82,6 +80,7 @@ function DocumentsTab({
   );
   const [loadingDocumentDetail, setLoadingDocumentDetail] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState("");
+  const [processingDocs, setProcessingDocs] = useState<Document[]>([]);
 
   const fetchDocuments = useCallback(
     async (signal?: AbortSignal) => {
@@ -128,6 +127,36 @@ function DocumentsTab({
     };
   }, [hasProcessing, fetchDocuments]);
 
+  useEffect(() => {
+    if (processingDocs.length === 0) return;
+    const controller = new AbortController();
+    const interval = setInterval(async () => {
+      const completed: string[] = [];
+      await Promise.allSettled(
+        processingDocs.map(async (d) => {
+          try {
+            const updated = await getDocument(
+              collectionId,
+              d.id,
+              controller.signal,
+            );
+            if (updated.status !== "processing") completed.push(d.id);
+          } catch {
+            // keep polling on error
+          }
+        }),
+      );
+      if (completed.length > 0) {
+        setProcessingDocs((prev) => prev.filter((d) => !completed.includes(d.id)));
+        fetchDocuments();
+      }
+    }, 3000);
+    return () => {
+      clearInterval(interval);
+      controller.abort();
+    };
+  }, [processingDocs, collectionId, fetchDocuments]);
+
   async function handleUpload(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -135,12 +164,12 @@ function DocumentsTab({
     setUploading(true);
     setUploadMsg(null);
     try {
-      await uploadDocument(collectionId, file);
+      const uploaded = await uploadDocument(collectionId, file);
       setUploadMsg({
         type: "success",
         text: `"${file.name}" subido correctamente.`,
       });
-      await fetchDocuments();
+      setProcessingDocs((prev) => [uploaded, ...prev]);
       onDocumentsMutated();
     } catch (err) {
       const { variant, text } = parseApiError(err, "Error al subir");
@@ -181,6 +210,7 @@ function DocumentsTab({
   }
 
   const paginationItems = usePagination(page, totalPages);
+  const allDocs = [...processingDocs, ...documents];
 
   return (
     <>
@@ -204,17 +234,12 @@ function DocumentsTab({
                 value={status}
                 onChange={(e) => {
                   setStatus(
-                    e.target.value as
-                      | ""
-                      | "processing"
-                      | "completed"
-                      | "failed",
+                    e.target.value as "" | "completed" | "failed",
                   );
                   setPage(1);
                 }}
               >
                 <option value="">Todos</option>
-                <option value="processing">Procesando</option>
                 <option value="completed">Completado</option>
                 <option value="failed">Error</option>
               </Form.Select>
@@ -307,9 +332,9 @@ function DocumentsTab({
         </Alert>
       )}
 
-      {loading ? (
+      {loading && allDocs.length === 0 ? (
         <LoadingSpinner />
-      ) : documents.length === 0 ? (
+      ) : allDocs.length === 0 ? (
         <div className="lm-empty">
           <span className="lm-empty-glyph">✦</span>
           <p>No hay documentos en esta colección.</p>
@@ -328,7 +353,7 @@ function DocumentsTab({
             </tr>
           </thead>
           <tbody>
-            {documents.map((doc) => (
+            {allDocs.map((doc) => (
               <tr key={doc.id}>
                 <td>{doc.filename}</td>
                 <td>{doc.file_type.toUpperCase()}</td>

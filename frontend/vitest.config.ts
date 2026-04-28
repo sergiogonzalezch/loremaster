@@ -10,8 +10,8 @@ export default mergeConfig(
       globals: true,
       coverage: {
         provider: "v8",
-        include: ["src/utils/**", "src/hooks/**", "src/components/**"],
-        exclude: ["src/pages/**", "src/types/**", "src/api/**"],
+        include: ["src/utils/**", "src/hooks/**", "src/components/**", "src/pages/**"],
+        exclude: ["src/types/**", "src/api/**"],
       },
     },
   }),
