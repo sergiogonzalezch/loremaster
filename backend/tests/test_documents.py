@@ -207,3 +207,26 @@ async def test_ingest_blocked_document_returns_422(client, sample_collection):
         files={"file": ("bad.txt", b"contenido porno xxx", "text/plain")},
     )
     assert response.status_code == 422
+
+
+@pytest.mark.anyio
+async def test_ingest_extraction_timeout_returns_422(
+    client, monkeypatch, sample_collection
+):
+    """DOC-13: Extracción que supera el timeout retorna 422."""
+    import time
+
+    def _slow_extract(*_args, **_kwargs):
+        time.sleep(0.05)
+        return "text"
+
+    monkeypatch.setattr("app.services.documents_service.extract_text", _slow_extract)
+    monkeypatch.setattr(
+        "app.services.documents_service._EXTRACTION_TIMEOUT_SECONDS", 0.01
+    )
+
+    response = await client.post(
+        f"/api/v1/collections/{sample_collection.id}/documents",
+        files={"file": ("slow.pdf", b"%PDF-1.4", "application/pdf")},
+    )
+    assert response.status_code == 422

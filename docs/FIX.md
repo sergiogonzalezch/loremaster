@@ -12,13 +12,13 @@ Lista de tech debt identificado y aún no corregido. Ordenado por impacto estima
 | 2 | Ingest de documentos síncrono | Backend | ✅ Resuelto | — |
 | 3 | Sin optimistic updates en contenidos | Frontend | ✅ Resuelto | — |
 | 4 | Token counter aproximado | Backend + Frontend | ✅ Resuelto | — |
-| 5 | Extracción de documentos sin timeout | Backend | 🟡 Pendiente | Implementar después — `ThreadPoolExecutor` + `asyncio.wait_for(30s)` |
+| 5 | Extracción de documentos sin timeout | Backend | ✅ Resuelto | — |
 | 6 | Cascading delete no atómico | Backend | 🟢 Cubierto | Observación — retry existente suficiente; revisar si `cascade_delete_collection` se vuelve async |
 | 7 | Background task sin recuperación | Backend | 🔴 Pendiente | Implementar — endpoint `POST /documents/{id}/retry` + campo `processing_error` |
 | 8 | Race condition en optimistic updates | Frontend | ✅ Resuelto | — |
-| 9 | `EntityDetailPage` excede SRP (~720 líneas) | Frontend | 🟡 Pendiente | Implementar después — extraer `EntityEditForm` y `EntityContentsPanel` |
-| 10 | Paginación duplicada en frontend | Frontend | 🟡 Pendiente | Implementar después — hook `usePagination(totalItems, pageSize)` |
-| 11 | `MAX_PENDING_CONTENTS` hardcodeado | Backend + Frontend | 🟡 Pendiente | Implementar después — plan 4 pasos: `config.py` → `generation_service` → `metadata` endpoint → frontend |
+| 9 | `EntityDetailPage` excede SRP (~720 líneas) | Frontend | ✅ Resuelto | — |
+| 10 | Paginación duplicada en frontend | Frontend | ✅ Resuelto | — |
+| 11 | `MAX_PENDING_CONTENTS` hardcodeado | Backend + Frontend | ✅ Resuelto | — |
 | 12 | Validación de categoría duplicada | Backend | ✅ Incorrecto | — (no había duplicación real) |
 | 13 | Jerarquía de excepciones plana | Backend | 🟢 Cubierto | Observación — todos los primitivos eliminados; bases `DomainError`/`InfrastructureError` solo si se necesita middleware global |
 | 14 | `ValueError("discarded")` como señal de dominio | Backend | ✅ Resuelto | — |
@@ -63,15 +63,10 @@ Todos los endpoints son públicos. No hay API keys, JWT ni ningún mecanismo de 
 
 ---
 
-## 5. Extracción de documentos sin timeout
+## ~~5. Extracción de documentos sin timeout~~ ✅ Resuelto
 
 **Capa:** Backend  
-**Archivo:** `backend/app/engine/extractor.py`, `backend/app/services/documents_service.py`  
-**Impacto:** Medio — el límite de tamaño mitiga el caso más común, pero un PDF válido en tamaño y malformado en estructura puede aún colgar el proceso.
-
-`documents_service.py:26` ya define `MAX_BYTES = 50 * 1024 * 1024` y lo valida en la línea 42 antes de llamar al extractor. Esto descarta archivos demasiado grandes. Sin embargo, `extract_text()` se invoca sin timeout: un PDF dentro del límite pero con estructura corrupta puede hacer que PyPDF itere indefinidamente.
-
-**Solución sugerida:** Ejecutar la extracción en un `ThreadPoolExecutor` con `asyncio.wait_for(..., timeout=30)` para acotar el tiempo máximo independientemente del contenido del archivo.
+**Solución aplicada:** `extract_text()` se ejecuta ahora en el executor de asyncio (`loop.run_in_executor(None, ...)`) envuelto en `asyncio.wait_for(..., timeout=_EXTRACTION_TIMEOUT_SECONDS)` (30 s). Un `asyncio.TimeoutError` se captura y convierte en `DocumentExtractionError`, que el route ya mapeaba a 422. La constante `_EXTRACTION_TIMEOUT_SECONDS` es parcheable en tests; se añadió DOC-13 que monkeypatchea el timeout a 0.01 s y verifica el 422.
 
 ---
 
@@ -106,50 +101,26 @@ Si `process_ingest_background` falla (timeout de Qdrant, error de embeddings), e
 
 ---
 
-## 9. `EntityDetailPage.tsx` excede responsabilidad única
+## ~~9. `EntityDetailPage.tsx` excede responsabilidad única~~ ✅ Resuelto
 
 **Capa:** Frontend  
-**Archivo:** `frontend/src/pages/EntityDetailPage.tsx` (~720 líneas, ~20 `useState`)  
-**Impacto:** Medio — dificulta el testing y el mantenimiento.
-
-El componente mezcla lógica de generación, edición de contenidos, paginación y display en un solo archivo. Hay ~20 `useState` directos sin ninguna composición.
-
-**Solución sugerida:** Extraer el formulario de edición a `EntityEditForm.tsx` y la sección de contenidos generados a `EntityContentsPanel.tsx`. Agrupar el estado relacionado con `useReducer` o mover la lógica a hooks especializados.
+**Solución aplicada:** Extraídos dos componentes de `EntityDetailPage.tsx` (~720 → ~280 líneas):
+- `components/EntityEditForm.tsx` — Modal de edición autocontenido; internaliza `editForm` y `saving`; props: `show`, `entity`, `collectionId`, `entityId`, `onClose`, `onSaved`, `onError`.
+- `components/EntityContentsPanel.tsx` — Sección completa de contenidos generados (tabs, filtros, lista, paginación); internaliza `useEntityContents`, estado de filtros y paginación, `handleOptimisticUpdate`, `handleContentAction`; comunica `pendingInCategoryCount` al padre via `onPendingCountChange`. Usa `usePagination` (ítem 10).
 
 ---
 
-## 10. Lógica de paginación duplicada en frontend
+## ~~10. Lógica de paginación duplicada en frontend~~ ✅ Resuelto
 
 **Capa:** Frontend  
-**Archivos:** `CollectionsPage.tsx`, `CollectionDetailPage.tsx`, `EntityDetailPage.tsx`  
-**Impacto:** Medio — DRY violation; un cambio en el comportamiento de paginación debe hacerse en tres sitios.
-
-Cada página implementa su propia lógica de control de página (botones anterior/siguiente, cálculo de total de páginas, reset al filtrar).
-
-**Solución sugerida:** Crear un hook `usePagination(totalItems, pageSize)` que centralice el estado y los handlers.
+**Solución aplicada:** Creado `hooks/usePagination(page, totalPages)` que centraliza el algoritmo de páginas con elipsis (antes duplicado 4 veces: `EntityDetailPage`, `CollectionsPage`, `CollectionDetailPage` DocumentsTab y EntitiesTab). Cada página sigue gestionando su propio estado de `page` y `totalPages` (local o URL params), y delega solo el cálculo del array de items al hook.
 
 ---
 
-## 11. `MAX_PENDING_CONTENTS` hardcodeado en frontend y backend
+## ~~11. `MAX_PENDING_CONTENTS` hardcodeado en frontend y backend~~ ✅ Resuelto
 
 **Capa:** Backend + Frontend  
-**Archivos afectados:**
-- `backend/app/services/generation_service.py:18` — constante de módulo `MAX_PENDING_CONTENTS = 5`
-- `backend/app/api/routes/metadata.py` — endpoint solo expone `ENTITY_CATEGORY_MAP`
-- `frontend/src/utils/constants.ts:34` — `export const MAX_PENDING_CONTENTS = 5` duplicado
-- `frontend/src/pages/EntityDetailPage.tsx` — consume la constante local en líneas 116, 407, 453, 505  
-**Impacto:** Bajo — si el backend cambia el límite, el frontend muestra información incorrecta.
-
-El valor `5` está duplicado sin sincronización. `config.py` ya usa `pydantic-settings` con `BaseSettings`; añadir el campo es trivial y lo haría configurable desde `.env`.
-
-**Plan de implementación:**
-
-1. `backend/app/core/config.py` — añadir `max_pending_contents: int = 5` a `Settings`.
-2. `backend/app/services/generation_service.py` — eliminar la constante de módulo y reemplazar los usos por `settings.max_pending_contents`.
-3. `backend/app/api/routes/metadata.py` — extender el endpoint `/entity-categories` (o añadir `/limits`) para devolver también `max_pending_contents` desde `settings`.
-4. Frontend — al inicializar, consumir el valor del endpoint de metadata en lugar de la constante local. Eliminar `MAX_PENDING_CONTENTS` de `constants.ts`.
-
-**Fricción conocida:** `backend/tests/test_generation_service.py` importa `MAX_PENDING_CONTENTS` directamente del servicio. Tras el cambio hay que actualizar esa importación a `settings.max_pending_contents` o usar el valor numérico directamente en los fixtures.
+**Solución aplicada:** `max_pending_contents: int = 5` añadido a `Settings` en `config.py` (configurable vía `MAX_PENDING_CONTENTS` en `.env`). `generation_service.py` elimina la constante de módulo y lee `settings.max_pending_contents`. Nuevo endpoint `GET /limits` en `metadata.py` expone el valor. `EntityDetailPage.tsx` llama `getLimits()` en el mismo `useEffect` que `getEntityCategories()`, almacena el resultado en estado local (fallback 5 si el backend no responde) y lo usa en la lógica del formulario. `MAX_PENDING_CONTENTS` eliminado de `constants.ts` y su test asociado.
 
 ---
 

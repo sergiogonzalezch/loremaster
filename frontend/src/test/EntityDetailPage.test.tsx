@@ -19,6 +19,7 @@ vi.mock("../api", () => ({
   generateContent: vi.fn(),
   updateEntity: vi.fn(),
   getEntityCategories: vi.fn().mockRejectedValue(new Error("mocked")),
+  getLimits: vi.fn().mockRejectedValue(new Error("mocked")),
 }));
 
 vi.mock("../hooks/useEntityContents", () => ({
@@ -159,10 +160,14 @@ describe("EntityDetailPage", () => {
     renderPage();
     await waitFor(() => screen.getByRole("heading", { name: "Gandalf" }));
 
-    expect(
-      screen.getByText(/contenidos pendientes en esta categoría/),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Generar" })).toBeDisabled();
+    await waitFor(() =>
+      expect(
+        screen.getByText(/contenidos pendientes en esta categoría/),
+      ).toBeInTheDocument(),
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Generar" })).toBeDisabled(),
+    );
   });
 
   it("llama a run al enviar el formulario de generación", async () => {

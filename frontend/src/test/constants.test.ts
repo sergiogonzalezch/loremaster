@@ -4,7 +4,6 @@ import {
   ENTITY_TYPE_BADGE,
   ENTITY_TYPE_LABELS,
   CATEGORY_LABELS,
-  MAX_PENDING_CONTENTS,
 } from "../utils/constants";
 import type { EntityType, ContentCategory } from "../utils/enums";
 
@@ -65,11 +64,5 @@ describe("CATEGORY_LABELS", () => {
     for (const cat of CONTENT_CATEGORIES) {
       expect(typeof CATEGORY_LABELS[cat]).toBe("string");
     }
-  });
-});
-
-describe("MAX_PENDING_CONTENTS", () => {
-  it("es 5", () => {
-    expect(MAX_PENDING_CONTENTS).toBe(5);
   });
 });

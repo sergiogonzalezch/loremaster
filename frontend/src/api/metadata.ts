@@ -6,3 +6,11 @@ export function getEntityCategories(): Promise<
 > {
   return apiFetch<Record<EntityType, ContentCategory[]>>("/entity-categories");
 }
+
+export interface AppLimits {
+  max_pending_contents: number;
+}
+
+export function getLimits(): Promise<AppLimits> {
+  return apiFetch<AppLimits>("/limits");
+}

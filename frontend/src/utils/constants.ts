@@ -31,6 +31,5 @@ export const CATEGORY_LABELS: Record<ContentCategory, string> = {
   chapter: "Capítulo",
 };
 
-export const MAX_PENDING_CONTENTS = 5;
 export const MIN_QUERY_LENGTH = 5;
 export const MAX_GENERATION_TOKENS = 2000;

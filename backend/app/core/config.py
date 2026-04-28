@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     temperature: float = 0.7
     max_tokens: int = 2000
     max_concurrent_llm_calls: int = 1
+    max_pending_contents: int = 5
 
     # Vector DB (Qdrant)
     qdrant_url: str = "http://localhost:6333"
