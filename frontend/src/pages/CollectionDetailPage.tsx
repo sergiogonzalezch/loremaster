@@ -147,7 +147,9 @@ function DocumentsTab({
         }),
       );
       if (completed.length > 0) {
-        setProcessingDocs((prev) => prev.filter((d) => !completed.includes(d.id)));
+        setProcessingDocs((prev) =>
+          prev.filter((d) => !completed.includes(d.id)),
+        );
         fetchDocuments();
       }
     }, 3000);
@@ -233,9 +235,7 @@ function DocumentsTab({
               <Form.Select
                 value={status}
                 onChange={(e) => {
-                  setStatus(
-                    e.target.value as "" | "completed" | "failed",
-                  );
+                  setStatus(e.target.value as "" | "completed" | "failed");
                   setPage(1);
                 }}
               >

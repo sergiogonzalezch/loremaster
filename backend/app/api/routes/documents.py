@@ -1,5 +1,4 @@
-from datetime import datetime
-from typing import Literal, Optional
+from typing import Annotated, Optional
 
 from fastapi import (
     APIRouter,
@@ -13,6 +12,7 @@ from fastapi import (
 )
 from sqlmodel import Session
 
+from app.core.query_params import DateRangeParams, PaginationParams
 from app.core.deps import get_collection_or_404, get_document_or_404
 from app.core.exceptions import (
     ContentNotAllowedError,
@@ -72,14 +72,11 @@ async def ingest(
 )
 def get_documents(
     collection_id: str,
-    page: int = Query(default=1, ge=1),
-    page_size: int = Query(default=20, ge=1, le=100),
+    pagination: Annotated[PaginationParams, Depends()],
+    dates: Annotated[DateRangeParams, Depends()],
     filename: Optional[str] = Query(default=None),
     file_type: Optional[str] = Query(default=None),
     status: Optional[DocumentStatus] = Query(default=None),
-    created_after: Optional[datetime] = Query(default=None),
-    created_before: Optional[datetime] = Query(default=None),
-    order: Literal["asc", "desc"] = Query(default="desc"),
     _: Collection = Depends(get_collection_or_404),
     session: Session = Depends(get_session),
 ):
@@ -91,16 +88,16 @@ def get_documents(
     docs, total = list_documents_service(
         session,
         collection_id,
-        page,
-        page_size,
+        pagination.page,
+        pagination.page_size,
         filename=filename,
         file_type=file_type,
         status=status,
-        created_after=created_after,
-        created_before=created_before,
-        order=order,
+        created_after=dates.created_after,
+        created_before=dates.created_before,
+        order=pagination.order,
     )
-    return PaginatedResponse.build(docs, total, page, page_size)
+    return PaginatedResponse.build(docs, total, pagination.page, pagination.page_size)
 
 
 @router.get("/{collection_id}/documents/{doc_id}", response_model=DocumentResponse)

@@ -25,7 +25,9 @@ def _normalize(text: str) -> str:
     # NFKD decomposes ligatures/full-width chars; stripping Mn removes combining
     # diacritics so that é→e, ó→o, etc., enabling accent-insensitive matching.
     return "".join(
-        c for c in unicodedata.normalize("NFKD", text) if unicodedata.category(c) != "Mn"
+        c
+        for c in unicodedata.normalize("NFKD", text)
+        if unicodedata.category(c) != "Mn"
     ).lower()
 
 

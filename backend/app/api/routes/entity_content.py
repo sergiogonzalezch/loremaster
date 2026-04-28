@@ -1,8 +1,9 @@
-from typing import Literal, Optional
+from typing import Annotated, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlmodel import Session
 
+from app.core.query_params import PaginationParams
 from app.core.deps import get_entity_or_404
 from app.core.exceptions import (
     ContentDiscardedError,
@@ -65,13 +66,11 @@ def generate_content(
 def list_contents(
     entity_id: str,
     collection_id: str,
+    pagination: Annotated[PaginationParams, Depends()],
     category: Optional[ContentCategory] = Query(default=None),
     status: Literal["active", "pending", "confirmed", "discarded", "all"] = Query(
         default="active"
     ),
-    page: int = Query(default=1, ge=1),
-    page_size: int = Query(default=20, ge=1, le=100),
-    order: Literal["asc", "desc"] = Query(default="desc"),
     _: Entity = Depends(get_entity_or_404),
     session: Session = Depends(get_session),
 ):
@@ -81,11 +80,11 @@ def list_contents(
         collection_id,
         category,
         status,
-        page,
-        page_size,
-        order,
+        pagination.page,
+        pagination.page_size,
+        pagination.order,
     )
-    return PaginatedResponse.build(items, total, page, page_size)
+    return PaginatedResponse.build(items, total, pagination.page, pagination.page_size)
 
 
 @router.patch(
