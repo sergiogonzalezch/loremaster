@@ -3,6 +3,7 @@ from sqlmodel import select
 
 from app.models.entities import Entity, EntityType
 from app.models.entity_content import EntityContent
+from app.models.generated_texts import GeneratedText
 from app.models.enums import ContentStatus
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -483,3 +484,66 @@ async def test_cnt_18_all_entity_types_accept_extended_description(
         assert (
             response.status_code == 201
         ), f"extended_description failed for {entity_type.value}: {response.json()}"
+
+
+# ── GeneratedText audit tests ─────────────────────────────────────────────────
+
+
+@pytest.mark.anyio
+async def test_cnt_audit_01_raw_content_never_changes_after_edit(
+    client, db_session, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
+    """El raw_content de generated_texts NO cambia al editar el content."""
+    created = await _create_content(client, sample_collection.id, sample_entity.id)
+    assert created.status_code == 201
+    data = created.json()
+    content_id = data["id"]
+    generated_text_id = data["generated_text_id"]
+    original_raw = db_session.get(GeneratedText, generated_text_id).raw_content
+
+    await client.patch(
+        f"/api/v1/collections/{sample_collection.id}/entities/"
+        f"{sample_entity.id}/contents/{content_id}",
+        json={"content": "Texto completamente diferente"},
+    )
+
+    gt = db_session.get(GeneratedText, generated_text_id)
+    assert gt.raw_content == original_raw
+
+
+@pytest.mark.anyio
+async def test_cnt_audit_02_was_edited_false_on_creation(
+    client, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
+    """was_edited es False cuando el content no ha sido modificado."""
+    resp = await _create_content(client, sample_collection.id, sample_entity.id)
+    assert resp.status_code == 201
+    assert resp.json()["was_edited"] is False
+
+
+@pytest.mark.anyio
+async def test_cnt_audit_03_was_edited_true_after_edit(
+    client, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
+    """was_edited es True después de editar el content."""
+    created = await _create_content(client, sample_collection.id, sample_entity.id)
+    content_id = created.json()["id"]
+
+    edited = await client.patch(
+        f"/api/v1/collections/{sample_collection.id}/entities/"
+        f"{sample_entity.id}/contents/{content_id}",
+        json={"content": "Texto editado manualmente"},
+    )
+    assert edited.status_code == 200
+    assert edited.json()["was_edited"] is True
+
+
+@pytest.mark.anyio
+async def test_cnt_audit_04_content_equals_raw_on_creation(
+    client, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
+    """Al crear, content y raw_content son idénticos."""
+    resp = await _create_content(client, sample_collection.id, sample_entity.id)
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["content"] == data["raw_content"]
