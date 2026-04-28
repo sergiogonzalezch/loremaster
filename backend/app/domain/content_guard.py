@@ -1,4 +1,5 @@
 import re
+import unicodedata
 
 from app.core.exceptions import ContentNotAllowedError, GeneratedContentBlockedError
 
@@ -20,9 +21,18 @@ _BLOCKED_PATTERNS: tuple[re.Pattern[str], ...] = (
 )
 
 
+def _normalize(text: str) -> str:
+    # NFKD decomposes ligatures/full-width chars; stripping Mn removes combining
+    # diacritics so that é→e, ó→o, etc., enabling accent-insensitive matching.
+    return "".join(
+        c for c in unicodedata.normalize("NFKD", text) if unicodedata.category(c) != "Mn"
+    ).lower()
+
+
 def _check_text(text: str, error: Exception) -> None:
+    normalized = _normalize(text)
     for pattern in _BLOCKED_PATTERNS:
-        if pattern.search(text):
+        if pattern.search(normalized):
             raise error
 
 
