@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import datetime
 from typing import Literal, Optional
@@ -24,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 ALLOWED_MIME_TYPES = ["text/plain", "application/pdf"]
 MAX_BYTES = 50 * 1024 * 1024
+_EXTRACTION_TIMEOUT_SECONDS = 30
 
 
 async def ingest_document_service(
@@ -45,8 +47,15 @@ async def ingest_document_service(
     logger.info(
         "Ingesting document '%s' into collection %s", data.filename, collection_id
     )
+    loop = asyncio.get_running_loop()
     try:
-        content = extract_text(content_bytes, data.content_type)
+        content = await asyncio.wait_for(
+            loop.run_in_executor(None, extract_text, content_bytes, data.content_type),
+            timeout=_EXTRACTION_TIMEOUT_SECONDS,
+        )
+    except asyncio.TimeoutError:
+        logger.error("Text extraction timed out for '%s'", data.filename)
+        raise DocumentExtractionError() from None
     except Exception as e:
         logger.error("Text extraction failed for '%s': %s", data.filename, e)
         raise DocumentExtractionError() from e

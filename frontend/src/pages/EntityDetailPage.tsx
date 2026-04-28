@@ -8,32 +8,24 @@ import {
   Button,
   Card,
   Form,
-  Modal,
-  Nav,
-  Pagination,
   Spinner,
 } from "react-bootstrap";
 import {
   getEntity,
-  updateEntity,
   getCollection,
   generateContent,
   getEntityCategories,
+  getLimits,
 } from "../api";
 import { ApiAbortError } from "../api/apiClient";
-import ContentCard from "../components/ContentCard";
+import EntityContentsPanel from "../components/EntityContentsPanel";
+import EntityEditForm from "../components/EntityEditForm";
 import LoadingSpinner from "../components/LoadingSpinner";
 import MarkdownContent from "../components/MarkdownContent";
 import TokenCounter from "../components/TokenCounter";
 import { useGenerate } from "../hooks/useGenerate";
-import { useEntityContents } from "../hooks/useEntityContents";
-import type {
-  Collection,
-  Entity,
-  EntityContent,
-  UpdateEntityRequest,
-} from "../types";
-import type { ContentCategory, EntityType } from "../utils/enums";
+import type { Collection, Entity } from "../types";
+import type { ContentCategory } from "../utils/enums";
 import { formatDate } from "../utils/formatters";
 import { getErrorMessage, parseApiError } from "../utils/errors";
 import {
@@ -41,7 +33,6 @@ import {
   ENTITY_CATEGORY_MAP,
   ENTITY_TYPE_BADGE,
   ENTITY_TYPE_LABELS,
-  MAX_PENDING_CONTENTS,
 } from "../utils/constants";
 
 export default function EntityDetailPage() {
@@ -51,6 +42,7 @@ export default function EntityDetailPage() {
   }>();
 
   const [categoryMap, setCategoryMap] = useState(ENTITY_CATEGORY_MAP);
+  const [maxPendingContents, setMaxPendingContents] = useState(5);
   const [collection, setCollection] = useState<Collection | null>(null);
   const [entity, setEntity] = useState<Entity | null>(null);
   const [loadingEntity, setLoadingEntity] = useState(true);
@@ -60,60 +52,27 @@ export default function EntityDetailPage() {
     getEntityCategories()
       .then(setCategoryMap)
       .catch(() => {}); // fallback: keep local constants if backend unreachable
+    getLimits()
+      .then((l) => setMaxPendingContents(l.max_pending_contents))
+      .catch(() => {}); // fallback: keep default 5 if backend unreachable
   }, []);
-
-  const {
-    contents,
-    setContents,
-    meta: contentsMeta,
-    loading: loadingContents,
-    error: contentsError,
-    refresh: refreshContents,
-    setError: setContentsError,
-  } = useEntityContents(collectionId, entityId);
 
   const [selectedCategory, setSelectedCategory] = useState<
     ContentCategory | ""
   >("");
-  const [contentsCategoryFilter, setContentsCategoryFilter] = useState<
-    ContentCategory | ""
-  >("");
-  const [contentsStatusFilter, setContentsStatusFilter] = useState<
-    "pending" | "confirmed" | "discarded"
-  >("pending");
-  const [contentsPage, setContentsPage] = useState(1);
-  const [contentsPageSize, setContentsPageSize] = useState(10);
+  const [pendingInCategoryCount, setPendingInCategoryCount] = useState(0);
   const [query, setQuery] = useState("");
   const [lastSubmittedQuery, setLastSubmittedQuery] = useState("");
-
-  useEffect(() => {
-    const controller = new AbortController();
-    refreshContents({
-      signal: controller.signal,
-      category: contentsCategoryFilter || undefined,
-      status: contentsStatusFilter,
-      page: contentsPage,
-      page_size: contentsPageSize,
-    });
-    return () => controller.abort();
-  }, [
-    contentsCategoryFilter,
-    contentsStatusFilter,
-    contentsPage,
-    contentsPageSize,
-    refreshContents,
-  ]);
+  const [showEdit, setShowEdit] = useState(false);
+  const [contentsRefreshTrigger, setContentsRefreshTrigger] = useState(0);
 
   const availableCategories = useMemo<ContentCategory[]>(
     () => (entity ? (categoryMap[entity.type] ?? []) : []),
     [entity, categoryMap],
   );
 
-  const pendingInCategory = contents.filter(
-    (c) => c.status === "pending" && c.category === selectedCategory,
-  ).length;
   const pendingLimitReached =
-    selectedCategory !== "" && pendingInCategory >= MAX_PENDING_CONTENTS;
+    selectedCategory !== "" && pendingInCategoryCount >= maxPendingContents;
 
   const {
     error: generateError,
@@ -123,14 +82,6 @@ export default function EntityDetailPage() {
     cancel: cancelGenerate,
     reset: resetGenerate,
   } = useGenerate(generateContent);
-
-  const [showEdit, setShowEdit] = useState(false);
-  const [editForm, setEditForm] = useState<UpdateEntityRequest>({
-    type: "character",
-    name: "",
-    description: "",
-  });
-  const [saving, setSaving] = useState(false);
 
   const fetchEntityData = useCallback(
     async (signal?: AbortSignal) => {
@@ -166,47 +117,9 @@ export default function EntityDetailPage() {
     }
   }, [collectionId, entityId]);
 
-  const handleOptimisticUpdate = useCallback(
-    (id: string, patch: Partial<EntityContent> | null) => {
-      setContents((prev) => {
-        if (patch === null) return prev.filter((c) => c.id !== id);
-        const target = prev.find((c) => c.id === id);
-        if (!target) return prev;
-        return prev.map((c) => {
-          if (c.id === id) return { ...c, ...patch };
-          if (
-            patch.status === "confirmed" &&
-            c.category === target.category &&
-            c.status === "pending"
-          ) {
-            return { ...c, status: "discarded" as const };
-          }
-          return c;
-        });
-      });
-    },
-    [setContents],
-  );
-
-  const handleContentAction = useCallback(async () => {
-    await Promise.all([
-      refreshContents({
-        silent: true,
-        category: contentsCategoryFilter || undefined,
-        status: contentsStatusFilter,
-        page: contentsPage,
-        page_size: contentsPageSize,
-      }),
-      refreshEntityQuiet(),
-    ]);
-  }, [
-    contentsCategoryFilter,
-    contentsStatusFilter,
-    contentsPage,
-    contentsPageSize,
-    refreshContents,
-    refreshEntityQuiet,
-  ]);
+  const handlePendingCountChange = useCallback((count: number) => {
+    setPendingInCategoryCount(count);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -222,7 +135,6 @@ export default function EntityDetailPage() {
     setSelectedCategory("");
   }, [entity?.type]);
 
-  // Inicializar la categoría seleccionada cuando se cargan las categorías disponibles
   useEffect(() => {
     if (availableCategories.length > 0 && selectedCategory === "") {
       setSelectedCategory(availableCategories[0]);
@@ -248,12 +160,7 @@ export default function EntityDetailPage() {
       { query: trimmedQuery },
     );
     if (result) {
-      await refreshContents({
-        category: contentsCategoryFilter || undefined,
-        status: contentsStatusFilter,
-        page: contentsPage,
-        page_size: contentsPageSize,
-      });
+      setContentsRefreshTrigger((t) => t + 1);
     }
   }
 
@@ -273,65 +180,13 @@ export default function EntityDetailPage() {
       { query: lastSubmittedQuery.trim() },
     );
     if (result) {
-      await refreshContents({
-        category: contentsCategoryFilter || undefined,
-        status: contentsStatusFilter,
-        page: contentsPage,
-        page_size: contentsPageSize,
-      });
-    }
-  }
-
-  function openEdit() {
-    if (!entity) return;
-    setEditForm({
-      type: entity.type,
-      name: entity.name,
-      description: entity.description,
-    });
-    setShowEdit(true);
-  }
-
-  async function handleSaveEntity(e: FormEvent) {
-    e.preventDefault();
-    if (!collectionId || !entityId) return;
-    setSaving(true);
-    try {
-      const updated = await updateEntity(collectionId, entityId, editForm);
-      setEntity(updated);
-      setShowEdit(false);
-    } catch (err) {
-      setEntityError(getErrorMessage(err, "Error al actualizar entidad"));
-    } finally {
-      setSaving(false);
+      setContentsRefreshTrigger((t) => t + 1);
     }
   }
 
   if (loadingEntity) return <LoadingSpinner />;
   if (entityError) return <Alert variant="danger">{entityError}</Alert>;
   if (!entity || !collectionId || !entityId) return null;
-
-  const contentsPaginationItems = (() => {
-    const totalPages = contentsMeta.total_pages;
-    const page = contentsPage;
-    const items: Array<number | "ellipsis-left" | "ellipsis-right"> = [];
-    if (totalPages <= 7) {
-      for (let i = 1; i <= totalPages; i += 1) items.push(i);
-      return items;
-    }
-    items.push(1);
-    if (page > 3) items.push("ellipsis-left");
-    for (
-      let i = Math.max(2, page - 1);
-      i <= Math.min(totalPages - 1, page + 1);
-      i += 1
-    ) {
-      items.push(i);
-    }
-    if (page < totalPages - 2) items.push("ellipsis-right");
-    items.push(totalPages);
-    return items;
-  })();
 
   return (
     <div className="lm-page">
@@ -376,7 +231,11 @@ export default function EntityDetailPage() {
                 )}
               </div>
             </div>
-            <Button variant="outline-secondary" size="sm" onClick={openEdit}>
+            <Button
+              variant="outline-secondary"
+              size="sm"
+              onClick={() => setShowEdit(true)}
+            >
               Editar
             </Button>
           </div>
@@ -403,9 +262,9 @@ export default function EntityDetailPage() {
       )}
       {pendingLimitReached && (
         <Alert variant="warning">
-          Ya tienes {pendingInCategory} contenidos pendientes en esta categoría
-          (máximo {MAX_PENDING_CONTENTS}). Confirma o descarta alguno antes de
-          generar uno nuevo.
+          Ya tienes {pendingInCategoryCount} contenidos pendientes en esta
+          categoría (máximo {maxPendingContents}). Confirma o descarta alguno
+          antes de generar uno nuevo.
         </Alert>
       )}
 
@@ -450,7 +309,7 @@ export default function EntityDetailPage() {
             style={{ whiteSpace: "nowrap" }}
             title={
               pendingLimitReached
-                ? `Máximo ${MAX_PENDING_CONTENTS} contenidos pendientes por categoría`
+                ? `Máximo ${maxPendingContents} contenidos pendientes por categoría`
                 : undefined
             }
           >
@@ -500,9 +359,9 @@ export default function EntityDetailPage() {
           <TokenCounter text={query} />
           {selectedCategory !== "" &&
             !pendingLimitReached &&
-            pendingInCategory > 0 && (
+            pendingInCategoryCount > 0 && (
               <small className="text-muted">
-                {pendingInCategory} / {MAX_PENDING_CONTENTS} borradores
+                {pendingInCategoryCount} / {maxPendingContents} borradores
                 pendientes en esta categoría.
               </small>
             )}
@@ -517,204 +376,28 @@ export default function EntityDetailPage() {
         </div>
       )}
 
-      <p className="lm-section-title">Contenidos generados</p>
-      <Nav
-        variant="tabs"
-        activeKey={contentsStatusFilter}
-        className="mb-3"
-        onSelect={(key) => {
-          if (!key) return;
-          setContentsStatusFilter(key as "pending" | "confirmed" | "discarded");
-          setContentsPage(1);
-        }}
-      >
-        <Nav.Item>
-          <Nav.Link eventKey="pending">Borradores</Nav.Link>
-        </Nav.Item>
-        <Nav.Item>
-          <Nav.Link eventKey="confirmed">Confirmados</Nav.Link>
-        </Nav.Item>
-        <Nav.Item>
-          <Nav.Link eventKey="discarded">Descartados</Nav.Link>
-        </Nav.Item>
-      </Nav>
-      <Card className="mb-3">
-        <Card.Body>
-          <div className="d-flex justify-content-between flex-wrap align-items-end">
-            <Form.Group style={{ minWidth: 240 }}>
-              <Form.Label>Filtrar por categoría</Form.Label>
-              <Form.Select
-                value={contentsCategoryFilter}
-                onChange={(e) => {
-                  setContentsCategoryFilter(
-                    e.target.value as ContentCategory | "",
-                  );
-                  setContentsPage(1);
-                }}
-              >
-                <option value="">Todas</option>
-                {availableCategories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {CATEGORY_LABELS[cat]}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-            <Form.Group style={{ minWidth: 130 }}>
-              <Form.Label>Page size</Form.Label>
-              <Form.Select
-                value={String(contentsPageSize)}
-                onChange={(e) => {
-                  setContentsPageSize(Number(e.target.value));
-                  setContentsPage(1);
-                }}
-              >
-                {[5, 10, 20, 50].map((size) => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-          </div>
-        </Card.Body>
-      </Card>
-      {contentsError && (
-        <Alert
-          variant="danger"
-          onClose={() => setContentsError(null)}
-          dismissible
-        >
-          {contentsError}
-        </Alert>
-      )}
-      {loadingContents ? (
-        <LoadingSpinner text="Cargando contenidos..." />
-      ) : contents.length === 0 ? (
-        <div className="lm-empty">
-          <span className="lm-empty-glyph">✦</span>
-          <p>No hay contenidos todavía.</p>
-          <p>Genera el primero usando el formulario de arriba.</p>
-        </div>
-      ) : (
-        <>
-          {contents.map((content) => (
-            <ContentCard
-              key={content.id}
-              content={content}
-              collectionId={collectionId}
-              entityId={entityId}
-              onAction={handleContentAction}
-              onOptimisticUpdate={handleOptimisticUpdate}
-            />
-          ))}
-          {contentsMeta.total_pages > 1 && (
-            <div className="d-flex justify-content-center mt-3">
-              <Pagination>
-                <Pagination.First
-                  onClick={() => setContentsPage(1)}
-                  disabled={contentsPage <= 1}
-                />
-                <Pagination.Prev
-                  onClick={() => setContentsPage((p) => Math.max(1, p - 1))}
-                  disabled={contentsPage <= 1}
-                />
-                {contentsPaginationItems.map((item) =>
-                  typeof item === "number" ? (
-                    <Pagination.Item
-                      key={item}
-                      active={item === contentsPage}
-                      onClick={() => setContentsPage(item)}
-                    >
-                      {item}
-                    </Pagination.Item>
-                  ) : (
-                    <Pagination.Ellipsis key={item} disabled />
-                  ),
-                )}
-                <Pagination.Next
-                  onClick={() =>
-                    setContentsPage((p) =>
-                      Math.min(contentsMeta.total_pages, p + 1),
-                    )
-                  }
-                  disabled={contentsPage >= contentsMeta.total_pages}
-                />
-                <Pagination.Last
-                  onClick={() => setContentsPage(contentsMeta.total_pages)}
-                  disabled={contentsPage >= contentsMeta.total_pages}
-                />
-              </Pagination>
-            </div>
-          )}
-        </>
-      )}
+      <EntityContentsPanel
+        collectionId={collectionId}
+        entityId={entityId}
+        availableCategories={availableCategories}
+        selectedCategory={selectedCategory}
+        refreshTrigger={contentsRefreshTrigger}
+        onRefreshEntity={refreshEntityQuiet}
+        onPendingCountChange={handlePendingCountChange}
+      />
 
-      <Modal show={showEdit} onHide={() => setShowEdit(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Editar entidad</Modal.Title>
-        </Modal.Header>
-        <Form onSubmit={handleSaveEntity}>
-          <Modal.Body>
-            <Form.Group className="mb-3">
-              <Form.Label>Tipo *</Form.Label>
-              <Form.Select
-                value={editForm.type}
-                onChange={(e) =>
-                  setEditForm((f) => ({
-                    ...f,
-                    type: e.target.value as EntityType,
-                  }))
-                }
-              >
-                {(Object.keys(ENTITY_TYPE_LABELS) as EntityType[]).map((t) => (
-                  <option key={t} value={t}>
-                    {ENTITY_TYPE_LABELS[t]}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Nombre *</Form.Label>
-              <Form.Control
-                type="text"
-                value={editForm.name}
-                onChange={(e) =>
-                  setEditForm((f) => ({ ...f, name: e.target.value }))
-                }
-                required
-              />
-            </Form.Group>
-            <Form.Group>
-              <Form.Label>Descripción</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={4}
-                value={editForm.description}
-                onChange={(e) =>
-                  setEditForm((f) => ({ ...f, description: e.target.value }))
-                }
-              />
-            </Form.Group>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button
-              variant="secondary"
-              onClick={() => setShowEdit(false)}
-              disabled={saving}
-            >
-              Cancelar
-            </Button>
-            <Button
-              variant="warning"
-              type="submit"
-              disabled={saving || !editForm.name?.trim()}
-            >
-              {saving ? "Guardando..." : "Guardar"}
-            </Button>
-          </Modal.Footer>
-        </Form>
-      </Modal>
+      <EntityEditForm
+        show={showEdit}
+        entity={entity}
+        collectionId={collectionId}
+        entityId={entityId}
+        onClose={() => setShowEdit(false)}
+        onSaved={(updated) => {
+          setEntity(updated);
+          setShowEdit(false);
+        }}
+        onError={setEntityError}
+      />
     </div>
   );
 }

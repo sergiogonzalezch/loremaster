@@ -5,6 +5,7 @@ from sqlmodel import Session, select
 
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.core.config import settings
 from app.core.exceptions import (
     DatabaseError,
     InvalidCategoryError,
@@ -18,8 +19,6 @@ from app.models.entity_content import EntityContent
 from app.models.enums import ContentCategory, ContentStatus
 
 logger = logging.getLogger(__name__)
-
-MAX_PENDING_CONTENTS = 5
 
 
 def generate(
@@ -45,10 +44,10 @@ def generate(
             EntityContent.is_deleted == False,
         )
     ).one()
-    if pending_count >= MAX_PENDING_CONTENTS:
+    if pending_count >= settings.max_pending_contents:
         raise PendingLimitExceededError(
             f"La entidad ya tiene {pending_count} contenidos pendientes en la categoría '{category}' "
-            f"(máximo {MAX_PENDING_CONTENTS}). Confirma o descarta alguno antes de generar uno nuevo."
+            f"(máximo {settings.max_pending_contents}). Confirma o descarta alguno antes de generar uno nuevo."
         )
 
     extra_context = ""

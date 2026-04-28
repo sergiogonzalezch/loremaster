@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import type { FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -23,6 +23,7 @@ import type { Collection } from "../types";
 import { formatDate } from "../utils/formatters";
 import { parseApiError } from "../utils/errors";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
+import { usePagination } from "../hooks/usePagination";
 
 export default function CollectionsPage() {
   const navigate = useNavigate();
@@ -174,25 +175,7 @@ export default function CollectionsPage() {
     }
   }
 
-  const paginationItems = useMemo(() => {
-    const items: Array<number | "ellipsis-left" | "ellipsis-right"> = [];
-    if (totalPages <= 7) {
-      for (let i = 1; i <= totalPages; i += 1) items.push(i);
-      return items;
-    }
-    items.push(1);
-    if (page > 3) items.push("ellipsis-left");
-    for (
-      let i = Math.max(2, page - 1);
-      i <= Math.min(totalPages - 1, page + 1);
-      i += 1
-    ) {
-      items.push(i);
-    }
-    if (page < totalPages - 2) items.push("ellipsis-right");
-    items.push(totalPages);
-    return items;
-  }, [page, totalPages]);
+  const paginationItems = usePagination(page, totalPages);
 
   return (
     <div className="lm-page">

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import {
@@ -34,6 +34,7 @@ import MarkdownContent from "../components/MarkdownContent";
 import TokenCounter from "../components/TokenCounter";
 import { useGenerate } from "../hooks/useGenerate";
 import { useCollectionDocumentsStatus } from "../hooks/useCollectionDocumentsStatus";
+import { usePagination } from "../hooks/usePagination";
 import type {
   Collection,
   Document,
@@ -179,25 +180,7 @@ function DocumentsTab({
     }
   }
 
-  const paginationItems = useMemo(() => {
-    const items: Array<number | "ellipsis-left" | "ellipsis-right"> = [];
-    if (totalPages <= 7) {
-      for (let i = 1; i <= totalPages; i += 1) items.push(i);
-      return items;
-    }
-    items.push(1);
-    if (page > 3) items.push("ellipsis-left");
-    for (
-      let i = Math.max(2, page - 1);
-      i <= Math.min(totalPages - 1, page + 1);
-      i += 1
-    ) {
-      items.push(i);
-    }
-    if (page < totalPages - 2) items.push("ellipsis-right");
-    items.push(totalPages);
-    return items;
-  }, [page, totalPages]);
+  const paginationItems = usePagination(page, totalPages);
 
   return (
     <>
@@ -544,25 +527,7 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
     }
   }
 
-  const paginationItems = useMemo(() => {
-    const items: Array<number | "ellipsis-left" | "ellipsis-right"> = [];
-    if (totalPages <= 7) {
-      for (let i = 1; i <= totalPages; i += 1) items.push(i);
-      return items;
-    }
-    items.push(1);
-    if (page > 3) items.push("ellipsis-left");
-    for (
-      let i = Math.max(2, page - 1);
-      i <= Math.min(totalPages - 1, page + 1);
-      i += 1
-    ) {
-      items.push(i);
-    }
-    if (page < totalPages - 2) items.push("ellipsis-right");
-    items.push(totalPages);
-    return items;
-  }, [page, totalPages]);
+  const paginationItems = usePagination(page, totalPages);
 
   return (
     <>

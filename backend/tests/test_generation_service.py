@@ -1,5 +1,6 @@
 import pytest
 
+from app.core.config import settings
 from app.core.exceptions import (
     ContentNotAllowedError,
     InvalidCategoryError,
@@ -7,10 +8,7 @@ from app.core.exceptions import (
 )
 from app.models.entities import Entity, EntityType
 from app.models.enums import ContentCategory, ContentStatus
-from app.services.generation_service import (
-    MAX_PENDING_CONTENTS,
-    generate,
-)
+from app.services.generation_service import generate
 
 
 def _make_entity(
@@ -115,10 +113,10 @@ def test_gen_svc_03_raises_invalid_category_error(
 def test_gen_svc_04_raises_pending_limit_exceeded(
     db_session, sample_collection, mock_pipeline
 ):
-    """GEN-SVC-04: generate() lanza PendingLimitExceededError al alcanzar MAX_PENDING_CONTENTS."""
+    """GEN-SVC-04: generate() lanza PendingLimitExceededError al alcanzar settings.max_pending_contents."""
     entity = _make_entity(db_session, sample_collection.id)
 
-    for i in range(MAX_PENDING_CONTENTS):
+    for i in range(settings.max_pending_contents):
         generate(
             db_session,
             entity,
@@ -174,7 +172,7 @@ def test_gen_svc_07_pending_limit_is_per_category(
     """GEN-SVC-07: El límite de pending es por categoría; backstory lleno no bloquea scene."""
     entity = _make_entity(db_session, sample_collection.id)
 
-    for i in range(MAX_PENDING_CONTENTS):
+    for i in range(settings.max_pending_contents):
         generate(
             db_session,
             entity,
