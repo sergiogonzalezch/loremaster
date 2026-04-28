@@ -24,6 +24,10 @@ Lista de tech debt identificado y aún no corregido. Ordenado por impacto estima
 | 14 | `ValueError("discarded")` como señal de dominio | Backend | ✅ Resuelto | — |
 | 15 | `RuntimeError` en `check_generated_output` conflado con infra | Backend | ✅ Resuelto | — |
 | 16 | Función privada `_fetch_counts` importada en route | Backend | ✅ Resuelto | — |
+| 17 | Guardrails sin normalización Unicode ni tests adversariales | Backend | 🔴 Pendiente | Implementar — lower() + NFKD antes de regex + batería adversarial |
+| 18 | Páginas excluidas del coverage de tests (`vitest.config.ts`) | Frontend | 🟡 Pendiente | Añadir `src/pages/**` al `include` de coverage |
+| 19 | Sin auditoría de contenido moderado | Backend | 🟡 Pendiente | Tabla `moderation_log` o campo en `EntityContent` + migración |
+| 20 | Polling de 3 s en `useCollectionDocumentsStatus` | Frontend | 🟡 Pendiente | Candidato a SSE/WebSocket — no urgente con volumen actual |
 
 **Leyenda:** 🔴 Pendiente urgente · 🟡 Pendiente no urgente · 🟢 Cubierto (mitigado, sin acción inmediata) · ✅ Cerrado
 
@@ -182,6 +186,58 @@ La jerarquía sigue siendo plana (todas heredan de `Exception`), pero los routes
 
 ---
 
+## 17. Guardrails sin normalización Unicode ni tests adversariales
+
+**Capa:** Backend  
+**Archivo:** `backend/app/domain/content_guard.py`  
+**Impacto:** Alto — los cinco patrones regex usan `re.IGNORECASE` pero no normalizan el texto. Variantes triviales (p0rn, s3x0, espacios entre caracteres, homoglifos Unicode) eluden todos los guardrails sin esfuerzo.
+
+Los patrones actuales en `_BLOCKED_PATTERNS` aplican `re.I` pero reciben el texto sin preprocesar. Un atacante puede sortear cualquier patrón con sustituciones básicas de caracteres o con Unicode de ancho completo.
+
+**Solución sugerida:** Antes de iterar los patrones en `_check_text`, aplicar:
+```python
+import unicodedata
+text = unicodedata.normalize("NFKD", text).lower()
+```
+Añadir una batería de tests adversariales en `tests/test_content_guard.py`: inputs con números intercalados (s3x), caracteres Unicode similares (ｐｏｒｎ), espacios entremedios, y strings vacíos.
+
+---
+
+## 18. Páginas excluidas del coverage de tests (`vitest.config.ts`)
+
+**Capa:** Frontend  
+**Archivo:** `frontend/vitest.config.ts`  
+**Impacto:** Medio — `coverage.include` cubre `src/utils/**`, `src/hooks/**` y `src/components/**`, pero excluye explícitamente `src/pages/**`. Los informes de cobertura muestran 0% para páginas aunque los tests de `src/test/` sí se ejecuten, generando una falsa sensación de seguridad.
+
+La lógica de UX más compleja (filtros de contenidos, paginación, polling de documentos, gating de generación) vive en las páginas y no aparece en los métricas de coverage.
+
+**Solución sugerida:** Añadir `"src/pages/**"` al array `include` en `vitest.config.ts`. Los tests ya existentes (`EntityDetailPage.test.tsx`, etc.) empezarán a contribuir al informe sin cambios adicionales. Complementar con tests de happy path donde la cobertura sea baja.
+
+---
+
+## 19. Sin auditoría de contenido moderado
+
+**Capa:** Backend  
+**Impacto:** Medio — cuando un guardrail rechaza una query o un documento, no queda ningún registro persistente. Es imposible revisar falsos positivos, analizar patrones de abuso ni demostrar cumplimiento.
+
+`check_user_input`, `check_document_content` y `check_generated_output` lanzan excepciones que el route convierte en 422/503, pero no escriben nada en base de datos.
+
+**Solución sugerida:** Añadir tabla `moderation_log` (id, layer `[input|document|output]`, snippet (primeros 200 chars), pattern_matched, created_at) con migración Alembic. Alternativamente, añadir campo `moderation_reason: str | None` a `EntityContent` para el caso de output bloqueado. La versión mínima (solo logging a fichero estructurado) puede ser suficiente en primera iteración.
+
+---
+
+## 20. Polling de 3 s en `useCollectionDocumentsStatus`
+
+**Capa:** Frontend  
+**Archivo:** `frontend/src/hooks/useCollectionDocumentsStatus.ts`  
+**Impacto:** Bajo (con el volumen actual) — genera una request al backend cada 3 s por pestaña activa mientras existan documentos en estado `processing`. Escala mal con muchos usuarios o colecciones grandes.
+
+El hook se auto-cancela cuando todos los documentos salen de `processing`, lo que mitiga el problema en condiciones normales. El coste real es bajo mientras el proyecto sea single-user local.
+
+**Solución sugerida:** Reemplazar el polling con SSE (Server-Sent Events) o WebSocket para notificaciones en tiempo real desde el backend. No urgente — abordar antes de cualquier despliegue multi-usuario.
+
+---
+
 ---
 
 ## Gaps de Producción
@@ -198,6 +254,7 @@ Aspectos que deben resolverse antes de cualquier despliegue fuera de entorno loc
 | P6 | Sin audit trail — no hay registro de quién modificó qué ni cuándo | Bajo |
 | P7 | Sin operaciones bulk — no se puede eliminar múltiples colecciones o entidades a la vez | Bajo |
 | P8 | Modelo LLM y embeddings hardcodeados — no hay forma de cambiarlos desde la UI | Bajo |
+| P9 | Sin auditoría de contenido moderado — rechazos de guardrail no persisten (ver ítem 19) | Bajo |
 
 ---
 
@@ -246,4 +303,4 @@ Aspectos que deben resolverse antes de cualquier despliegue fuera de entorno loc
 
 ---
 
-*Generado el 2026-04-25. Actualizado el 2026-04-26. Ver historial de correcciones aplicadas en los commits del branch `main`.*
+*Generado el 2026-04-25. Actualizado el 2026-04-28. Ver historial de correcciones aplicadas en los commits del branch `main`.*
