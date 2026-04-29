@@ -19,6 +19,7 @@ import {
 } from "../api";
 import { ApiAbortError } from "../api/apiClient";
 import EntityContentsPanel from "../components/EntityContentsPanel";
+import ImagePreviewCard from "../components/ImagePreviewCard";
 import EntityEditForm from "../components/EntityEditForm";
 import LoadingSpinner from "../components/LoadingSpinner";
 import MarkdownContent from "../components/MarkdownContent";
@@ -384,6 +385,13 @@ export default function EntityDetailPage() {
         refreshTrigger={contentsRefreshTrigger}
         onRefreshEntity={refreshEntityQuiet}
         onPendingCountChange={handlePendingCountChange}
+      />
+
+      <p className="lm-section-title">Vista previa de imagen</p>
+      <ImagePreviewCard
+        collectionId={collectionId}
+        entityId={entityId}
+        entityName={entity.name}
       />
 
       <EntityEditForm
