@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     chunk_size: int = 512
     chunk_overlap: int = 50
     top_k: int = 4
+    rag_score_threshold: float = 0.5
 
     # Database (default SQLite for local dev; set DATABASE_URL in .env for PostgreSQL)
     database_url: str = "sqlite:///./loremaster.db"

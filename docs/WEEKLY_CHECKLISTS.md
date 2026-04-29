@@ -281,7 +281,7 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 
 ### Mejora de Retrieval
 
-- [ ] `score_threshold` configurable para filtrar resultados de baja relevancia
+- [x] `score_threshold` configurable para filtrar resultados de baja relevancia
 - [x] `top_k` configurable (default 4, se lee de `config.py` y se pasa como parametro)
 - [x] Logging basico de queries y scores de retrieval
 
