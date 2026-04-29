@@ -37,6 +37,14 @@ def invoke_rag_pipeline(
     if score_threshold is None:
         score_threshold = settings.rag_score_threshold
 
+    logger.debug(
+        "invoke_rag_pipeline: collection=%s threshold=%.2f top_k=%d query='%.80s'",
+        collection_id,
+        score_threshold,
+        top_k,
+        query,
+    )
+
     try:
         context_chunks = search_context(
             collection_id=collection_id,
@@ -90,6 +98,16 @@ def invoke_generation_pipeline(
         top_k = settings.top_k
     if score_threshold is None:
         score_threshold = settings.rag_score_threshold
+
+    logger.debug(
+        "invoke_generation_pipeline: collection=%s entity='%s' category=%s threshold=%.2f top_k=%d query='%.80s'",
+        collection_id,
+        entity_name,
+        category,
+        score_threshold,
+        top_k,
+        query,
+    )
 
     try:
         context_chunks = search_context(

@@ -125,4 +125,11 @@ def search_context(
         len(results.points),
         effective_threshold,
     )
+    for point in results.points:
+        logger.debug(
+            "  chunk score=%.3f doc=%s: %.80s…",
+            point.score,
+            point.payload.get("doc_id", "?"),
+            point.payload.get("text", ""),
+        )
     return [point.payload["text"] for point in results.points]
