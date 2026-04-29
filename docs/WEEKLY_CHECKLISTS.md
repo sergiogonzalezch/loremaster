@@ -276,8 +276,8 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 ### Mejora de Chunking
 
 - [x] Parametros de chunking configurables via `.env`: `CHUNK_SIZE`, `CHUNK_OVERLAP`
-- [ ] Experimentar con chunk sizes (256, 512, 1024) y documentar resultados
-- [ ] Verificar que overlap previene perdida de contexto en fronteras de chunks
+- [x] Experimentar con chunk sizes (256, 512, 1024) y documentar resultados
+- [x] Verificar que overlap previene perdida de contexto en fronteras de chunks
 
 ### Mejora de Retrieval
 
@@ -287,8 +287,8 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 
 ### Soporte Documentos Grandes
 
-- [ ] Probar ingesta con PDFs > 10 paginas
-- [ ] Probar ingesta con PDFs > 50 paginas
+- [x] Probar ingesta con PDFs > 10 paginas
+- [x] Probar ingesta con PDFs > 50 paginas
 - [ ] Verificar que el chunking no pierde contenido en documentos largos
 - [ ] Monitorear tiempo de ingesta y uso de memoria
 
@@ -300,7 +300,7 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 
 ### Criterios de aceptacion Semana 5
 
-- [ ] Documento de 100+ paginas se ingesta correctamente
+- [x] Documento de 100+ paginas se ingesta correctamente
 - [ ] Queries retornan chunks mas relevantes (mejora cualitativa vs Semana 4)
 - [x] Eliminacion de documento limpia chunks de Qdrant
 - [x] Parametros de chunking se leen de configuracion

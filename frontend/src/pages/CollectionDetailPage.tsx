@@ -64,7 +64,7 @@ function DocumentsTab({
   } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadMsg, setUploadMsg] = useState<{
-    type: "success" | "warning" | "danger";
+    type: "success" | "warning" | "danger" | "secondary";
     text: string;
   } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Document | null>(null);
@@ -131,7 +131,8 @@ function DocumentsTab({
     if (processingDocs.length === 0) return;
     const controller = new AbortController();
     const interval = setInterval(async () => {
-      const completed: string[] = [];
+      const justCompleted: string[] = [];
+      const justFailed: string[] = [];
       await Promise.allSettled(
         processingDocs.map(async (d) => {
           try {
@@ -140,24 +141,47 @@ function DocumentsTab({
               d.id,
               controller.signal,
             );
-            if (updated.status !== "processing") completed.push(d.id);
+            if (updated.status === "completed") justCompleted.push(d.id);
+            else if (updated.status === "failed") justFailed.push(d.id);
           } catch {
             // keep polling on error
           }
         }),
       );
-      if (completed.length > 0) {
-        setProcessingDocs((prev) =>
-          prev.filter((d) => !completed.includes(d.id)),
-        );
+      const allDone = [...justCompleted, ...justFailed];
+      if (allDone.length > 0) {
+        const doneDocs = processingDocs.filter((d) => allDone.includes(d.id));
+        const failedDocs = doneDocs.filter((d) => justFailed.includes(d.id));
+        setProcessingDocs((prev) => prev.filter((d) => !allDone.includes(d.id)));
         fetchDocuments();
+        onDocumentsMutated();
+        if (failedDocs.length > 0) {
+          setUploadMsg({
+            type: "danger",
+            text:
+              failedDocs.length === 1
+                ? `Error al procesar "${failedDocs[0].filename}".`
+                : `Error al procesar ${failedDocs.length} documentos.`,
+          });
+        } else {
+          const completedDocs = doneDocs.filter((d) =>
+            justCompleted.includes(d.id),
+          );
+          setUploadMsg({
+            type: "success",
+            text:
+              completedDocs.length === 1
+                ? `"${completedDocs[0].filename}" procesado correctamente.`
+                : `${completedDocs.length} documentos procesados correctamente.`,
+          });
+        }
       }
     }, 3000);
     return () => {
       clearInterval(interval);
       controller.abort();
     };
-  }, [processingDocs, collectionId, fetchDocuments]);
+  }, [processingDocs, collectionId, fetchDocuments, onDocumentsMutated]);
 
   async function handleUpload(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -168,8 +192,8 @@ function DocumentsTab({
     try {
       const uploaded = await uploadDocument(collectionId, file);
       setUploadMsg({
-        type: "success",
-        text: `"${file.name}" subido correctamente.`,
+        type: "secondary",
+        text: `"${file.name}" subido. Procesando...`,
       });
       setProcessingDocs((prev) => [uploaded, ...prev]);
       onDocumentsMutated();
@@ -377,7 +401,11 @@ function DocumentsTab({
                     size="sm"
                     className="me-2"
                     onClick={() => handleOpenDocumentDetail(doc.id)}
-                    disabled={loadingDocumentDetail || deleting}
+                    disabled={
+                      loadingDocumentDetail ||
+                      deleting ||
+                      doc.status === "processing"
+                    }
                   >
                     Detalle
                   </Button>
@@ -385,7 +413,7 @@ function DocumentsTab({
                     variant="outline-danger"
                     size="sm"
                     onClick={() => setDeleteTarget(doc)}
-                    disabled={deleting}
+                    disabled={deleting || doc.status === "processing"}
                   >
                     Eliminar
                   </Button>
