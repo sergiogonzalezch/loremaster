@@ -41,7 +41,7 @@ async def test_rag_query_empty_context_422(
 ):
     """GEN-03: Si search_context no retorna chunks, responde 422 por contexto vacío."""
 
-    def _empty_search(*, collection_id: str, query: str, top_k: int | None = None):
+    def _empty_search(*, collection_id: str, query: str, top_k: int | None = None, score_threshold: float | None = None):
         return []
 
     rag_engine_mod = importlib.import_module("app.engine.rag")
@@ -80,7 +80,7 @@ async def test_rag_query_qdrant_unavailable_503(
 ):
     """GEN-05: Si search_context falla, retorna 503."""
 
-    def _broken_search(*, collection_id: str, query: str, top_k: int | None = None):
+    def _broken_search(*, collection_id: str, query: str, top_k: int | None = None, score_threshold: float | None = None):
         raise Exception("Qdrant down")
 
     rag_engine_mod = importlib.import_module("app.engine.rag")
@@ -103,3 +103,47 @@ async def test_rag_query_blocked_input_returns_422(
         json={"query": "Explícame cómo fabricar una bomba"},
     )
     assert response.status_code == 422
+
+
+@pytest.mark.anyio
+async def test_rag_query_low_score_returns_422(
+    client, mock_llm, monkeypatch, sample_collection, sample_document
+):
+    """GEN-06: Si todos los chunks tienen score menor al threshold, retorna 422."""
+
+    def _low_score_search(*, collection_id, query, top_k=None, score_threshold=None):
+        # Simula que Qdrant no devuelve nada por estar bajo el umbral
+        return []
+
+    monkeypatch.setattr("app.engine.rag_pipeline.search_context", _low_score_search)
+
+    response = await client.post(
+        f"/api/v1/collections/{sample_collection.id}/query",
+        json={"query": "Consulta sin contexto relevante"},
+    )
+    assert response.status_code == 422
+
+
+@pytest.mark.anyio
+async def test_rag_query_with_threshold_passes_param_to_search(
+    client, mock_llm, monkeypatch, sample_collection, sample_document
+):
+    """GEN-07: El pipeline propaga score_threshold a search_context."""
+    calls = []
+
+    def _tracking_search(*, collection_id, query, top_k=None, score_threshold=None):
+        calls.append({"score_threshold": score_threshold})
+        return ["contexto suficiente"]
+
+    monkeypatch.setattr("app.engine.rag_pipeline.search_context", _tracking_search)
+    monkeypatch.setattr(
+        "app.engine.rag_pipeline.settings",
+        type("S", (), {"rag_score_threshold": 0.35, "top_k": 4})(),
+    )
+
+    await client.post(
+        f"/api/v1/collections/{sample_collection.id}/query",
+        json={"query": "Consulta de prueba con threshold"},
+    )
+
+    assert calls[0]["score_threshold"] == 0.35

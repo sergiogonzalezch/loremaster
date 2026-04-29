@@ -24,6 +24,7 @@ def invoke_rag_pipeline(
     query: str,
     extra_context: str = "",
     top_k: int | None = None,
+    score_threshold: float | None = None,
 ) -> tuple[str, int]:
     """Search RAG context, build prompt, invoke LLM, return (answer, num_chunks).
 
@@ -33,12 +34,15 @@ def invoke_rag_pipeline(
     """
     if top_k is None:
         top_k = settings.top_k
+    if score_threshold is None:
+        score_threshold = settings.rag_score_threshold
 
     try:
         context_chunks = search_context(
             collection_id=collection_id,
             query=query,
             top_k=top_k,
+            score_threshold=score_threshold,
         )
     except Exception as e:
         logger.error("Qdrant search failed for collection %s: %s", collection_id, e)
@@ -74,6 +78,7 @@ def invoke_generation_pipeline(
     query: str,
     extra_context: str = "",
     top_k: int | None = None,
+    score_threshold: float | None = None,
 ) -> tuple[str, int]:
     """Entity-aware RAG pipeline using category-specific prompt templates.
 
@@ -83,12 +88,15 @@ def invoke_generation_pipeline(
     """
     if top_k is None:
         top_k = settings.top_k
+    if score_threshold is None:
+        score_threshold = settings.rag_score_threshold
 
     try:
         context_chunks = search_context(
             collection_id=collection_id,
             query=query,
             top_k=top_k,
+            score_threshold=score_threshold,
         )
     except Exception as e:
         logger.error("Qdrant search failed for collection %s: %s", collection_id, e)
