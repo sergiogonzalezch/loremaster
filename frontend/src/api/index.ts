@@ -4,3 +4,4 @@ export * from "./entities";
 export * from "./contents";
 export * from "./generate";
 export * from "./metadata";
+export * from "./images";

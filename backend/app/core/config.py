@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     max_concurrent_llm_calls: int = 1
     max_pending_contents: int = 5
 
+    # Image generation
+    image_prompt_max_tokens:int = 150
+    image_prompt_target_tokens: int = 75
+    image_backend:str = "mock"
+
     # Vector DB (Qdrant)
     qdrant_url: str = "http://localhost:6333"
 

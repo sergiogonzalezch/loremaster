@@ -13,6 +13,7 @@ from app.api.routes import (
     entities,
     entity_content,
     metadata,
+    image_generation,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -63,5 +64,6 @@ app.include_router(collections.router, prefix="/api/v1")
 app.include_router(documents.router, prefix="/api/v1")
 app.include_router(rag_query.router, prefix="/api/v1")
 app.include_router(entities.router, prefix="/api/v1")
+app.include_router(image_generation.router, prefix="/api/v1")
 app.include_router(entity_content.router, prefix="/api/v1")
 app.include_router(metadata.router, prefix="/api/v1")
