@@ -364,7 +364,10 @@ function DocumentsTab({
                   )}
                   {doc.status === "failed" && <Badge bg="danger">Error</Badge>}
                   {doc.status === "processing" && (
-                    <Badge bg="secondary">Procesando</Badge>
+                    <span className="d-inline-flex align-items-center gap-1">
+                      <Spinner animation="border" size="sm" />
+                      <Badge bg="secondary">Procesando</Badge>
+                    </span>
                   )}
                 </td>
                 <td>{formatDate(doc.created_at)}</td>
@@ -374,7 +377,7 @@ function DocumentsTab({
                     size="sm"
                     className="me-2"
                     onClick={() => handleOpenDocumentDetail(doc.id)}
-                    disabled={loadingDocumentDetail}
+                    disabled={loadingDocumentDetail || deleting}
                   >
                     Detalle
                   </Button>
@@ -382,6 +385,7 @@ function DocumentsTab({
                     variant="outline-danger"
                     size="sm"
                     onClick={() => setDeleteTarget(doc)}
+                    disabled={deleting}
                   >
                     Eliminar
                   </Button>
@@ -398,7 +402,7 @@ function DocumentsTab({
         message={`¿Eliminar "${deleteTarget?.filename}"? Se borrarán sus chunks del índice vectorial.`}
         onConfirm={handleDelete}
         onCancel={() => setDeleteTarget(null)}
-        variant={deleting ? "secondary" : "danger"}
+        loading={deleting}
       />
       <Modal
         show={selectedDocument !== null}
