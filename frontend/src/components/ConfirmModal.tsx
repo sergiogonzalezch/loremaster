@@ -1,4 +1,4 @@
-import { Modal, Button } from "react-bootstrap";
+import { Modal, Button, Spinner } from "react-bootstrap";
 
 interface ConfirmModalProps {
   show: boolean;
@@ -7,6 +7,7 @@ interface ConfirmModalProps {
   onConfirm: () => void;
   onCancel: () => void;
   variant?: string;
+  loading?: boolean;
 }
 
 export default function ConfirmModal({
@@ -16,19 +17,27 @@ export default function ConfirmModal({
   onConfirm,
   onCancel,
   variant = "danger",
+  loading = false,
 }: ConfirmModalProps) {
   return (
     <Modal show={show} onHide={onCancel} centered>
-      <Modal.Header closeButton>
+      <Modal.Header closeButton={!loading}>
         <Modal.Title>{title}</Modal.Title>
       </Modal.Header>
       <Modal.Body>{message}</Modal.Body>
       <Modal.Footer>
-        <Button variant="secondary" onClick={onCancel}>
+        <Button variant="secondary" onClick={onCancel} disabled={loading}>
           Cancelar
         </Button>
-        <Button variant={variant} onClick={onConfirm}>
-          Confirmar
+        <Button variant={variant} onClick={onConfirm} disabled={loading}>
+          {loading ? (
+            <>
+              <Spinner animation="border" size="sm" className="me-2" />
+              Eliminando…
+            </>
+          ) : (
+            "Confirmar"
+          )}
         </Button>
       </Modal.Footer>
     </Modal>
