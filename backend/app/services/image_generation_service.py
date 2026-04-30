@@ -7,11 +7,10 @@ from sqlmodel import Session, select
 
 from app.core.config import settings
 from app.core.exceptions import (
-    ContentNotAllowedError,
     DatabaseError,
-    NoContextAvailableError,
+    ContentNotConfirmedError
 )
-from app.domain.content_guard import check_user_input
+from app.domain.content_guard import check_generated_output
 from app.domain.prompt_builder import build_visual_prompt
 from app.models.entities import Entity
 from app.models.entity_content import EntityContent
@@ -54,11 +53,12 @@ def generate_image_service(
     ).first()
 
     if not content:
-        raise NoContextAvailableError()
+        raise ContentNotConfirmedError()
 
     # 2. Guardrail
     if content.content:
-        check_user_input(content.content[:500])
+        # check_user_input(content.content[:500])
+        check_generated_output(content.content[:500])
 
     # 3. Construir prompt visual
     build_result = build_visual_prompt(

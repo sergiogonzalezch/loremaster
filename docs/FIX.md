@@ -13,7 +13,7 @@ Lista de tech debt identificado y aún no corregido. Ordenado por impacto estima
 | 3 | Sin optimistic updates en contenidos | Frontend | ✅ Resuelto | — |
 | 4 | Token counter aproximado | Backend + Frontend | ✅ Resuelto | — |
 | 5 | Extracción de documentos sin timeout | Backend | ✅ Resuelto | — |
-| 6 | Cascading delete no atómico / `ImageRecord` excluido | Backend | 🔴 Pendiente | Gap nuevo — `ImageRecord` no se limpia en cascade entity/collection delete |
+| 6 | Cascading delete no atómico / `ImageRecord` excluido | Backend | ✅ Resuelto | — |
 | 7 | Background task sin recuperación | Backend | 🔴 Pendiente | Implementar — endpoint `POST /documents/{id}/retry` + campo `processing_error` |
 | 8 | Race condition en optimistic updates | Frontend | ✅ Resuelto | — |
 | 9 | `EntityDetailPage` excede SRP (~720 líneas) | Frontend | ✅ Resuelto | — |
@@ -28,11 +28,11 @@ Lista de tech debt identificado y aún no corregido. Ordenado por impacto estima
 | 18 | Páginas excluidas del coverage de tests (`vitest.config.ts`) | Frontend | ✅ Resuelto | — |
 | 19 | Sin auditoría de contenido moderado | Backend | 🟡 Pendiente | Tabla `moderation_log` o campo en `EntityContent` + migración |
 | 20 | Polling de 3 s en `useCollectionDocumentsStatus` | Frontend | 🟡 Pendiente | Candidato a SSE/WebSocket — no urgente con volumen actual |
-| 21 | `ImageRecord` excluido del cascade soft-delete | Backend | 🔴 Pendiente | Añadir `cascade_delete_by_entity` para `generated_images` en `deletion_service.py` |
-| 22 | Guardrail semánticamente incorrecto en image service | Backend | 🟡 Pendiente | `check_user_input()` se llama con contenido LLM — reemplazar por `check_generated_output()` |
-| 23 | `NoContextAvailableError` reutilizada para regla de negocio | Backend | 🟡 Pendiente | Añadir `ContentNotConfirmedError` en `exceptions.py` |
-| 24 | Flag `truncated` incorrecto en estrategia `entity_only` | Backend | 🟡 Pendiente | Bug en `prompt_builder.py:211` — compara tokens de `confirmed_content`, no de `entity_description` |
-| 25 | `image_url` `str` en response schema pero `Optional` en modelo | Backend | 🟡 Pendiente | Bug latente para OPTION_B — `GenerateImageResponse.image_url` debe ser `Optional[str]` |
+| 21 | `ImageRecord` excluido del cascade soft-delete | Backend | ✅ Resuelto | — |
+| 22 | Guardrail semánticamente incorrecto en image service | Backend | ✅ Resuelto | — |
+| 23 | `NoContextAvailableError` reutilizada para regla de negocio | Backend | ✅ Resuelto | — |
+| 24 | Flag `truncated` incorrecto en estrategia `entity_only` | Backend | ✅ Resuelto | — |
+| 25 | `image_url` `str` en response schema pero `Optional` en modelo | Backend | ✅ Resuelto | — |
 
 **Leyenda:** 🔴 Pendiente urgente · 🟡 Pendiente no urgente · 🟢 Cubierto (mitigado, sin acción inmediata) · ✅ Cerrado
 
@@ -79,22 +79,12 @@ Todos los endpoints son públicos. No hay API keys, JWT ni ningún mecanismo de 
 
 ---
 
-## 6. Cascading delete — `ImageRecord` excluido del cascade
+## ~~6. Cascading delete — `ImageRecord` excluido del cascade~~ ✅ Resuelto
 
 **Capa:** Backend  
-**Archivo:** `backend/app/services/deletion_service.py`  
-**Impacto:** Medio — al eliminar una entidad o colección, los registros `generated_images` asociados quedan activos (`is_deleted=False`) referenciando entidades/colecciones soft-deleted. Con OPTION_B real (imágenes físicas en disco/S3), los archivos físicos tampoco se limpiarían.
+**Solución aplicada:** Añadidos `_cascade_delete_images_by_entity(session, entity_id)` y `_cascade_delete_images_by_collection(session, collection_id)` como helpers privados en `deletion_service.py`. `cascade_delete_entity` los llama antes de hacer soft-delete de la entidad. `cascade_delete_collection` llama a `_cascade_delete_images_by_collection` tras el paso de orphan contents para capturar cualquier imagen huérfana restante. Ambos helpers reutilizan `soft_delete` de `core/common.py`.
 
-`cascade_delete_entity` solo soft-delete `EntityContent` y la entidad. `cascade_delete_collection` llama a `cascade_delete_entity` por cada entidad. Ninguna toca `ImageRecord`.
-
-Las FK de `generated_images` apuntan a `entities.id` y `collections.id`, pero como es soft-delete (el registro padre persiste en DB), no hay FK violation — los registros quedan silenciosamente huérfanos.
-
-**Nota sobre el problema original (atomicidad Qdrant):** `_delete_vectors_with_retry` con 3 intentos y 0.5s entre intentos sigue cubriendo el gap de vectores Qdrant. El `time.sleep()` bloqueante es aceptable mientras `cascade_delete_collection` sea sync.
-
-**Solución sugerida:**
-1. Añadir `cascade_delete_images_by_entity(session, entity_id)` en `content_management_service.py` (o en un nuevo `image_management_service.py`)
-2. Llamarla desde `cascade_delete_entity` antes de `soft_delete(session, entity)`
-3. Con OPTION_B: también eliminar archivos físicos desde `MEDIA_ROOT` en este paso
+**Nota sobre OPTION_B:** La eliminación de archivos físicos desde `MEDIA_ROOT` deberá añadirse en `_cascade_delete_images_by_entity` cuando se implemente el backend real de imágenes.
 
 ---
 
@@ -309,93 +299,38 @@ Aspectos que deben resolverse antes de cualquier despliegue fuera de entorno loc
 
 ---
 
-## 21. `ImageRecord` excluido del cascade soft-delete
+## ~~21. `ImageRecord` excluido del cascade soft-delete~~ ✅ Resuelto
 
-Ver cuerpo actualizado en **ítem 6** — el gap de `ImageRecord` fue detectado en la revisión de 2026-04-30 y se añadió allí para mantener la agrupación con el problema de cascade original.
+Ver solución aplicada en **ítem 6**.
 
 ---
 
-## 22. Guardrail semánticamente incorrecto en image generation service
+## ~~22. Guardrail semánticamente incorrecto en image generation service~~ ✅ Resuelto
 
 **Capa:** Backend  
-**Archivo:** `backend/app/services/image_generation_service.py:61`  
-**Impacto:** Bajo (el bloqueo funciona) — pero la semántica es incorrecta y crea deuda para el ítem 19 (auditoría de moderación).
-
-```python
-# Actual — incorrecto semánticamente:
-check_user_input(content.content[:500])
-
-# Correcto — content.content es output del LLM:
-check_generated_output(content.content[:500])
-```
-
-`check_user_input` está diseñado para texto introducido por el usuario (query, nombre de entidad). `content.content` es la respuesta generada por el LLM, por lo que debería pasar por `check_generated_output`. Actualmente ambas funciones usan los mismos patrones regex, así que el bloqueo ocurre igual — pero cuando se implemente la tabla `moderation_log` (ítem 19), el evento quedaría registrado como `layer=input` siendo `layer=output`.
-
-**Solución sugerida:** Reemplazar en `image_generation_service.py:61`:
-- `from app.domain.content_guard import check_user_input` → añadir `check_generated_output`
-- `check_user_input(content.content[:500])` → `check_generated_output(content.content[:500])`
-- El route ya no necesita cambios (captura `ContentNotAllowedError`; `check_generated_output` lanza `GeneratedContentBlockedError` — **añadir** `except GeneratedContentBlockedError` → 422 en el route).
+**Solución aplicada:** `check_user_input(content.content[:500])` reemplazado por `check_generated_output(content.content[:500])` en `image_generation_service.py`. Import de `check_user_input` eliminado. Route actualizado: `except GeneratedContentBlockedError` → 422 (era 403), y eliminado el bloque muerto `except NoContextAvailableError` junto a su import.
 
 ---
 
-## 23. `NoContextAvailableError` reutilizada para regla de negocio de imagen
+## ~~23. `NoContextAvailableError` reutilizada para regla de negocio de imagen~~ ✅ Resuelto
 
 **Capa:** Backend  
-**Archivo:** `backend/app/services/image_generation_service.py:57`  
-**Impacto:** Bajo — el error al usuario es correcto (422 + mensaje descriptivo), pero la excepción de dominio es semánticamente errónea.
-
-`NoContextAvailableError` significa "no hay documentos en Qdrant / el retrieval no encontró resultados". Se está reutilizando para el caso "el content_id no existe, no está confirmado o no pertenece a la entidad", que es una violación de regla de negocio distinta.
-
-**Solución sugerida:** Añadir `ContentNotConfirmedError` a `exceptions.py`:
-```python
-class ContentNotConfirmedError(Exception):
-    def __init__(self) -> None:
-        super().__init__(
-            "El contenido indicado no existe, no está confirmado "
-            "o no pertenece a esta entidad."
-        )
-```
-Actualizar `image_generation_service.py` para lanzar `ContentNotConfirmedError` y el route para capturarla → 422.
+**Solución aplicada:** Añadida `ContentNotConfirmedError` a `exceptions.py`. `image_generation_service.py` lanza `ContentNotConfirmedError()` en lugar de `NoContextAvailableError`. Route captura `except ContentNotConfirmedError as e` → 422 con `str(e)`.
 
 ---
 
-## 24. Flag `truncated` incorrecto en estrategia `entity_only`
+## ~~24. Flag `truncated` incorrecto en estrategia `entity_only`~~ ✅ Resuelto
 
 **Capa:** Backend  
-**Archivo:** `backend/app/domain/prompt_builder.py:211`  
-**Impacto:** Bajo — el prompt generado es correcto; solo el campo metadata `truncated` puede ser un falso positivo.
-
-```python
-# Línea 211 — en la rama donde la narrativa se truncó al target:
-truncated = _estimate_tokens(confirmed_content) > target_available
-```
-
-En estrategia `entity_only` (backstory, item), `narrative` proviene de `entity_description`, no de `confirmed_content`. La condición compara tokens de `confirmed_content` (que no se usó) en vez de `entity_description`. Si `confirmed_content` es largo pero `entity_description` corta cabe en target, se reporta `truncated=True` incorrectamente.
-
-**Solución sugerida:** Extraer la fuente de la narrativa a una variable antes de la rama de truncado:
-```python
-# Guardar qué texto fue la fuente real de narrative
-narrative_source_text = confirmed_content if source.startswith("content") else entity_description
-# ...
-truncated = _estimate_tokens(narrative_source_text) > target_available
-```
+**Solución aplicada:** Extraída `narrative_source_text = confirmed_content if source.startswith("content") else entity_description` antes de la rama de truncado en `prompt_builder.py`. `truncated` ahora compara tokens de `narrative_source_text` en vez de `confirmed_content` directamente, corrigiendo el falso positivo en estrategia `entity_only`.
 
 ---
 
-## 25. `image_url` `str` en response schema pero `Optional[str]` en modelo DB
+## ~~25. `image_url` `str` en response schema pero `Optional[str]` en modelo DB~~ ✅ Resuelto
 
 **Capa:** Backend  
-**Archivo:** `backend/app/models/image_generation.py`  
-**Impacto:** Bajo ahora — bug latente que fallará al implementar OPTION_B.
-
-`GenerateImageResponse.image_url: str` (no nullable en la respuesta Pydantic) pero `ImageRecord.image_url: Optional[str] = SQLField(default=None)` (nullable en DB). En el service actual siempre se asigna `placeholder_url`, por lo que no falla. En OPTION_B (imagen real sin URL hasta que S3 la sube), habría `ValidationError` de Pydantic al construir la response.
-
-**Solución sugerida:** En `GenerateImageResponse`:
-```python
-image_url: Optional[str] = None   # era: image_url: str
-```
-El frontend en `ImagePreviewPage` debe manejar `image_url=null` mostrando un estado de carga o el placeholder.
+**Solución aplicada:** `GenerateImageResponse.image_url` cambiado de `str` a `Optional[str] = None` en `models/image_generation.py`. Ahora el schema Pydantic es consistente con `ImageRecord.image_url: Optional[str] = None` y no lanzará `ValidationError` en OPTION_B cuando la URL aún no esté disponible.
 
 ---
 
-*Generado el 2026-04-25. Actualizado el 2026-04-28 (ítems 17, 18). Actualizado el 2026-04-30 (ítems 6 revisado, 21-25 nuevos — análisis del módulo image generation). Ver historial de correcciones aplicadas en los commits del branch `main`.*
+*Generado el 2026-04-25. Actualizado el 2026-04-28 (ítems 17, 18). Actualizado el 2026-04-30 (ítems 6 revisado, 21-25 nuevos — análisis del módulo image generation). Actualizado el 2026-04-30 (ítems 22-25 resueltos — correcciones en image generation service, route y models). Actualizado el 2026-04-30 (ítems 6 y 21 resueltos — cascade soft-delete de ImageRecord en deletion_service.py). Ver historial de correcciones aplicadas en los commits del branch `main`.*

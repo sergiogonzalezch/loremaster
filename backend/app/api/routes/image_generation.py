@@ -5,9 +5,9 @@ from sqlmodel import Session
 
 from app.core.deps import get_entity_or_404
 from app.core.exceptions import (
-    ContentNotAllowedError,
     DatabaseError,
-    NoContextAvailableError,
+    GeneratedContentBlockedError,
+    ContentNotConfirmedError
 )
 from app.database import get_session
 from app.models.entities import Entity
@@ -29,15 +29,9 @@ def generate_image(
 ):
     try:
         return generate_image_service(session, entity, request.content_id)
-    except NoContextAvailableError:
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                "El contenido indicado no existe, no está confirmado "
-                "o no pertenece a esta entidad."
-            ),
-        )
-    except ContentNotAllowedError as e:
+    except ContentNotConfirmedError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except GeneratedContentBlockedError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except DatabaseError:
         raise HTTPException(status_code=500, detail="Error interno del servidor.")
