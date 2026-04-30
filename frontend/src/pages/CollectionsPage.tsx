@@ -24,6 +24,7 @@ import { formatDate } from "../utils/formatters";
 import { parseApiError } from "../utils/errors";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { usePagination } from "../hooks/usePagination";
+import { useDeleteConfirm } from "../hooks/useDeleteConfirm";
 
 export default function CollectionsPage() {
   const navigate = useNavigate();
@@ -37,8 +38,14 @@ export default function CollectionsPage() {
     text: string;
   } | null>(null);
 
-  const [deleteTarget, setDeleteTarget] = useState<Collection | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  const deleteConfirm = useDeleteConfirm<Collection>({
+    onDelete: async (col) => {
+      await deleteCollection(col.id);
+      await fetchCollections();
+    },
+    onError: (e) =>
+      setError(parseApiError(e, "Error al eliminar la colección")),
+  });
 
   const [showCreate, setShowCreate] = useState(false);
   const [createName, setCreateName] = useState("");
@@ -116,21 +123,6 @@ export default function CollectionsPage() {
       }),
     );
   }, [collections, navigate]);
-
-  async function handleDelete() {
-    if (!deleteTarget) return;
-    setDeleting(true);
-    try {
-      await deleteCollection(deleteTarget.id);
-      setDeleteTarget(null);
-      await fetchCollections();
-    } catch (e) {
-      setError(parseApiError(e, "Error al eliminar la colección"));
-      setDeleteTarget(null);
-    } finally {
-      setDeleting(false);
-    }
-  }
 
   function handleOpenEdit(col: Collection) {
     setEditTarget(col);
@@ -356,8 +348,9 @@ export default function CollectionsPage() {
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setDeleteTarget(col);
+                          deleteConfirm.open(col);
                         }}
+                        disabled={deleteConfirm.deleting}
                       >
                         Eliminar
                       </Button>
@@ -398,12 +391,12 @@ export default function CollectionsPage() {
       )}
 
       <ConfirmModal
-        show={deleteTarget !== null}
+        show={deleteConfirm.target !== null}
         title="Eliminar colección"
-        message={`¿Estás seguro de que quieres eliminar "${deleteTarget?.name}"? Esta acción eliminará todos sus documentos y entidades.`}
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteTarget(null)}
-        variant={deleting ? "secondary" : "danger"}
+        message={`¿Estás seguro de que quieres eliminar "${deleteConfirm.target?.name}"? Esta acción eliminará todos sus documentos y entidades.`}
+        onConfirm={deleteConfirm.handleConfirm}
+        onCancel={deleteConfirm.cancel}
+        loading={deleteConfirm.deleting}
       />
 
       <Modal show={!!editTarget} onHide={() => setEditTarget(null)} centered>
