@@ -3,7 +3,7 @@ from typing import Optional
 from datetime import datetime, timezone
 
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import Column, ForeignKey, String
+from sqlalchemy import Column, ForeignKey, String, Text
 from sqlmodel import SQLModel, Field
 import uuid
 
@@ -35,6 +35,10 @@ class Document(SQLModel, table=True):
     file_type: str = Field(max_length=100)
     chunk_count: int = Field(default=0)
     status: DocumentStatus = Field(default=DocumentStatus.processing, max_length=50)
+    processing_error: Optional[str] = Field(
+        sa_column=Column(Text, nullable=True), default=None
+    )
+    raw_text: Optional[str] = Field(sa_column=Column(Text, nullable=True), default=None)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     is_deleted: bool = Field(default=False)
     deleted_at: Optional[datetime] = Field(default=None)
@@ -52,4 +56,5 @@ class DocumentResponse(BaseModel):
     file_type: str
     chunk_count: int
     status: DocumentStatus
+    processing_error: Optional[str] = None
     created_at: datetime

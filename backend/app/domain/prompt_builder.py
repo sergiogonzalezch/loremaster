@@ -202,7 +202,9 @@ def build_visual_prompt(
         narrative = entity_description.strip()
         source = "description"
 
-    narrative_source_text = confirmed_content if source.startswith("content") else entity_description
+    narrative_source_text = (
+        confirmed_content if source.startswith("content") else entity_description
+    )
 
     # ── Truncar para respetar límite de tokens ────────────────────────────────
     if narrative:

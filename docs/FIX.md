@@ -14,7 +14,7 @@ Lista de tech debt identificado y aún no corregido. Ordenado por impacto estima
 | 4 | Token counter aproximado | Backend + Frontend | ✅ Resuelto | — |
 | 5 | Extracción de documentos sin timeout | Backend | ✅ Resuelto | — |
 | 6 | Cascading delete no atómico / `ImageRecord` excluido | Backend | ✅ Resuelto | — |
-| 7 | Background task sin recuperación | Backend | 🔴 Pendiente | Implementar — endpoint `POST /documents/{id}/retry` + campo `processing_error` |
+| 7 | Background task sin recuperación | Backend | ✅ Resuelto | — |
 | 8 | Race condition en optimistic updates | Frontend | ✅ Resuelto | — |
 | 9 | `EntityDetailPage` excede SRP (~720 líneas) | Frontend | ✅ Resuelto | — |
 | 10 | Paginación duplicada en frontend | Frontend | ✅ Resuelto | — |
@@ -88,17 +88,18 @@ Todos los endpoints son públicos. No hay API keys, JWT ni ningún mecanismo de 
 
 ---
 
-## 7. Background task de ingestión sin recuperación
+## ~~7. Background task de ingestión sin recuperación~~ ✅ Resuelto
 
 **Capa:** Backend  
-**Archivo:** `backend/app/services/documents_service.py`  
-**Impacto:** Alto — documentos quedan en estado `failed` permanentemente sin forma de reintentar.
+**Solución aplicada:**
 
-Si `process_ingest_background` falla (timeout de Qdrant, error de embeddings), el documento queda en `status=failed` sin mecanismo de retry ni notificación al usuario más allá del polling de estado.
-
-**Antecedente (2026-04-28):** Refactor de `CollectionDetailPage` mejoró la visibilidad del fallo. Antes de este cambio, un documento en `failed` tampoco aparecía automáticamente en la tabla — el usuario debía hacer F5. Ahora, `DocumentsTab` rastrea en `processingDocs` cualquier documento recién subido, lo muestra con badge "Procesando" de inmediato, y al detectar que el estado cambió (a `completed` o `failed`) refresca la lista automáticamente. El bug visual queda resuelto; el retry y el campo `processing_error` siguen pendientes.
-
-**Solución sugerida:** Añadir un endpoint `POST /documents/{id}/retry` que permita reintentar la ingestión. Registrar el error detallado en el campo `processing_error` del documento.
+- Añadidos dos campos a `Document` (y migración Alembic `c7e4d1f82a3b`):
+  - `processing_error: Optional[str]` — registra el mensaje de error cuando el background task falla; se expone en `DocumentResponse`.
+  - `raw_text: Optional[str]` — almacena el texto extraído al momento del ingest inicial para permitir el retry sin re-subir el archivo.
+- `process_ingest_background` escribe el error en `processing_error` al fallar y lo limpia al completar con éxito.
+- `ingest_document_service` persiste `raw_text=content` al crear el documento.
+- Nuevo `retry_document_service(session, document)` en `documents_service.py`: verifica que el documento esté en `status=failed` y tenga `raw_text`, resetea a `processing`, limpia `processing_error`, y devuelve `(document, raw_text)` para el background task. Lanza `DocumentNotRetryableError` si las condiciones no se cumplen.
+- Nuevo endpoint `POST /collections/{collection_id}/documents/{doc_id}/retry` (202) que delega en `retry_document_service` y lanza `process_ingest_background` como `BackgroundTask`. Devuelve 409 si el documento no es retriable.
 
 ---
 
@@ -333,4 +334,4 @@ Ver solución aplicada en **ítem 6**.
 
 ---
 
-*Generado el 2026-04-25. Actualizado el 2026-04-28 (ítems 17, 18). Actualizado el 2026-04-30 (ítems 6 revisado, 21-25 nuevos — análisis del módulo image generation). Actualizado el 2026-04-30 (ítems 22-25 resueltos — correcciones en image generation service, route y models). Actualizado el 2026-04-30 (ítems 6 y 21 resueltos — cascade soft-delete de ImageRecord en deletion_service.py). Ver historial de correcciones aplicadas en los commits del branch `main`.*
+*Generado el 2026-04-25. Actualizado el 2026-04-28 (ítems 17, 18). Actualizado el 2026-04-30 (ítems 6 revisado, 21-25 nuevos — análisis del módulo image generation). Actualizado el 2026-04-30 (ítems 22-25 resueltos — correcciones en image generation service, route y models). Actualizado el 2026-04-30 (ítems 6 y 21 resueltos — cascade soft-delete de ImageRecord en deletion_service.py). Actualizado el 2026-04-30 (ítem 7 resuelto — retry endpoint + processing_error + raw_text en documents). Ver historial de correcciones aplicadas en los commits del branch `main`.*

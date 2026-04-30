@@ -27,6 +27,7 @@ class ContentNotConfirmedError(Exception):
             "o no pertenece a esta entidad."
         )
 
+
 class PendingLimitExceededError(Exception):
     pass
 
@@ -70,3 +71,11 @@ class ContentDiscardedError(Exception):
 class GeneratedContentBlockedError(Exception):
     def __init__(self) -> None:
         super().__init__("El contenido generado no está permitido.")
+
+
+class DocumentNotRetryableError(Exception):
+    def __init__(self) -> None:
+        super().__init__(
+            "El documento no está en estado 'failed' o no tiene texto almacenado "
+            "para reintentar la ingestión."
+        )

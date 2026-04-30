@@ -6,10 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Session, select
 
 from app.core.config import settings
-from app.core.exceptions import (
-    DatabaseError,
-    ContentNotConfirmedError
-)
+from app.core.exceptions import DatabaseError, ContentNotConfirmedError
 from app.domain.content_guard import check_generated_output
 from app.domain.prompt_builder import build_visual_prompt
 from app.models.entities import Entity

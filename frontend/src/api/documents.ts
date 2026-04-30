@@ -47,6 +47,16 @@ export function getDocument(
   });
 }
 
+export function retryDocument(
+  collectionId: string,
+  docId: string,
+): Promise<Document> {
+  return apiFetch<Document>(
+    `/collections/${collectionId}/documents/${docId}/retry`,
+    { method: "POST" },
+  );
+}
+
 export function deleteDocument(
   collectionId: string,
   docId: string,

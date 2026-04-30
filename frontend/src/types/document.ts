@@ -8,6 +8,7 @@ export interface Document {
   file_type: string;
   chunk_count: number;
   status: DocumentStatus;
+  processing_error?: string | null;
   created_at: string;
 }
 
