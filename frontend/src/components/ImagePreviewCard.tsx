@@ -9,7 +9,7 @@ import { parseApiError } from "../utils/errors";
 interface Props {
   collectionId: string;
   entityId: string;
-  confirmedContentId?: string;     // si viene de un ContentCard confirmado
+  confirmedContentId?: string; // si viene de un ContentCard confirmado
   entityName: string;
 }
 
@@ -47,7 +47,9 @@ export default function ImagePreviewCard({
   return (
     <Card className="mb-3">
       <Card.Header className="d-flex justify-content-between align-items-center">
-        <span style={{ fontFamily: "var(--lm-font-head)", fontSize: "0.85rem" }}>
+        <span
+          style={{ fontFamily: "var(--lm-font-head)", fontSize: "0.85rem" }}
+        >
           Preview de imagen
         </span>
         <div className="d-flex gap-2 align-items-center">
@@ -97,9 +99,7 @@ export default function ImagePreviewCard({
               }}
             />
             <div className="mt-2 d-flex justify-content-center gap-2">
-              <small className="text-muted">
-                ~{result.token_count} tokens
-              </small>
+              <small className="text-muted">~{result.token_count} tokens</small>
               {tokenWarning && (
                 <small className="text-warning">
                   (considera usar contenido más conciso)
@@ -169,8 +169,8 @@ export default function ImagePreviewCard({
                   {result.prompt_source === "content"
                     ? "contenido RAG"
                     : result.prompt_source === "description"
-                    ? "descripción de entidad"
-                    : "solo nombre"}
+                      ? "descripción de entidad"
+                      : "solo nombre"}
                 </strong>
               </small>
             </div>

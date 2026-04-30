@@ -77,11 +77,9 @@ describe("ImagePreviewCard — llamada a API", () => {
       screen.getByRole("button", { name: /generar preview/i }),
     );
     await waitFor(() =>
-      expect(mockGenerateImage).toHaveBeenCalledWith(
-        "col-1",
-        "ent-1",
-        { content_id: "cnt-1" },
-      ),
+      expect(mockGenerateImage).toHaveBeenCalledWith("col-1", "ent-1", {
+        content_id: "cnt-1",
+      }),
     );
   });
 
@@ -92,11 +90,9 @@ describe("ImagePreviewCard — llamada a API", () => {
       screen.getByRole("button", { name: /generar preview/i }),
     );
     await waitFor(() =>
-      expect(mockGenerateImage).toHaveBeenCalledWith(
-        "col-1",
-        "ent-1",
-        { content_id: undefined },
-      ),
+      expect(mockGenerateImage).toHaveBeenCalledWith("col-1", "ent-1", {
+        content_id: undefined,
+      }),
     );
   });
 });
@@ -170,7 +166,9 @@ describe("ImagePreviewCard — éxito", () => {
   });
 
   it("IP-10: muestra advertencia de tokens cuando token_count > 100", async () => {
-    mockGenerateImage.mockResolvedValue(makeImageResponse({ token_count: 120 }));
+    mockGenerateImage.mockResolvedValue(
+      makeImageResponse({ token_count: 120 }),
+    );
     renderCard();
     await userEvent.click(
       screen.getByRole("button", { name: /generar preview/i }),
@@ -204,15 +202,15 @@ describe("ImagePreviewCard — éxito", () => {
   });
 
   it("IP-13: NO muestra badge 'prompt truncado' cuando truncated=false", async () => {
-    mockGenerateImage.mockResolvedValue(makeImageResponse({ truncated: false }));
+    mockGenerateImage.mockResolvedValue(
+      makeImageResponse({ truncated: false }),
+    );
     renderCard();
     await userEvent.click(
       screen.getByRole("button", { name: /generar preview/i }),
     );
     await screen.findByRole("img");
-    expect(
-      screen.queryByText(/prompt truncado/i),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/prompt truncado/i)).not.toBeInTheDocument();
   });
 
   it("IP-14: el resumen del prompt colapsable está disponible tras éxito", async () => {
@@ -222,9 +220,7 @@ describe("ImagePreviewCard — éxito", () => {
       screen.getByRole("button", { name: /generar preview/i }),
     );
     await screen.findByRole("img");
-    expect(
-      screen.getByText(/ver prompt visual generado/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/ver prompt visual generado/i)).toBeInTheDocument();
   });
 
   it("IP-15: la fuente del prompt se muestra correctamente (contenido RAG)", async () => {
