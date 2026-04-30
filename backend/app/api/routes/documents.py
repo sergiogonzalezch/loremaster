@@ -35,6 +35,7 @@ from app.services.documents_service import (
     retry_document_service,
     delete_document_service,
 )
+from app.services.moderation_service import log_moderation_event
 
 router = APIRouter(prefix="/collections", tags=["documents"])
 
@@ -58,6 +59,7 @@ async def ingest(
     except FileTooLargeError:
         raise HTTPException(status_code=400, detail="File too large")
     except ContentNotAllowedError as e:
+        log_moderation_event(session, "document", e.snippet)
         raise HTTPException(status_code=422, detail=str(e))
     except DocumentExtractionError:
         raise HTTPException(

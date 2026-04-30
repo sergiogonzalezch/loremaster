@@ -26,7 +26,7 @@ Lista de tech debt identificado y aún no corregido. Ordenado por impacto estima
 | 16 | Función privada `_fetch_counts` importada en route | Backend | ✅ Resuelto | — |
 | 17 | Guardrails sin normalización Unicode ni tests adversariales | Backend | ✅ Resuelto | — |
 | 18 | Páginas excluidas del coverage de tests (`vitest.config.ts`) | Frontend | ✅ Resuelto | — |
-| 19 | Sin auditoría de contenido moderado | Backend | 🟡 Pendiente | Tabla `moderation_log` o campo en `EntityContent` + migración |
+| 19 | Sin auditoría de contenido moderado | Backend | ✅ Resuelto | — |
 | 20 | Polling de 3 s en `useCollectionDocumentsStatus` | Frontend | 🟡 Pendiente | Candidato a SSE/WebSocket — no urgente con volumen actual |
 | 21 | `ImageRecord` excluido del cascade soft-delete | Backend | ✅ Resuelto | — |
 | 22 | Guardrail semánticamente incorrecto en image service | Backend | ✅ Resuelto | — |
@@ -207,14 +207,15 @@ Creado `tests/test_content_guard.py` con 32 tests: baseline (inputs limpios y pa
 
 ---
 
-## 19. Sin auditoría de contenido moderado
+## ~~19. Sin auditoría de contenido moderado~~ ✅ Resuelto
 
 **Capa:** Backend  
-**Impacto:** Medio — cuando un guardrail rechaza una query o un documento, no queda ningún registro persistente. Es imposible revisar falsos positivos, analizar patrones de abuso ni demostrar cumplimiento.
+**Solución aplicada:**
 
-`check_user_input`, `check_document_content` y `check_generated_output` lanzan excepciones que el route convierte en 422/503, pero no escriben nada en base de datos.
-
-**Solución sugerida:** Añadir tabla `moderation_log` (id, layer `[input|document|output]`, snippet (primeros 200 chars), pattern_matched, created_at) con migración Alembic. Alternativamente, añadir campo `moderation_reason: str | None` a `EntityContent` para el caso de output bloqueado. La versión mínima (solo logging a fichero estructurado) puede ser suficiente en primera iteración.
+- `ContentNotAllowedError` y `GeneratedContentBlockedError` exponen ahora un atributo `snippet: str` (primeros 200 chars del texto bloqueado), poblado en `content_guard.py` al construir la excepción.
+- Nueva tabla `moderation_log` (id, layer, snippet, created_at) con migración Alembic `b1c2d3e4f5a6`. `layer` toma los valores `"input"` (query/prompt del usuario), `"document"` (texto extraído del documento) u `"output"` (respuesta del LLM).
+- `app/services/moderation_service.py` expone `log_moderation_event(session, layer, snippet)` que persiste la entrada; en caso de fallo de BD solo emite `WARNING` para no enmascarar el error original al cliente.
+- Los tres routes que capturan excepciones de moderación llaman a `log_moderation_event` antes de relanzar `HTTPException`: `documents.py` (layer=document), `entity_content.py` (layer=input y layer=output), `rag_query.py` (layer=input y layer=output, con `Session` añadida como dependencia).
 
 ---
 
@@ -334,4 +335,4 @@ Ver solución aplicada en **ítem 6**.
 
 ---
 
-*Generado el 2026-04-25. Actualizado el 2026-04-28 (ítems 17, 18). Actualizado el 2026-04-30 (ítems 6 revisado, 21-25 nuevos — análisis del módulo image generation). Actualizado el 2026-04-30 (ítems 22-25 resueltos — correcciones en image generation service, route y models). Actualizado el 2026-04-30 (ítems 6 y 21 resueltos — cascade soft-delete de ImageRecord en deletion_service.py). Actualizado el 2026-04-30 (ítem 7 resuelto — retry endpoint + processing_error + raw_text en documents). Ver historial de correcciones aplicadas en los commits del branch `main`.*
+*Generado el 2026-04-25. Actualizado el 2026-04-28 (ítems 17, 18). Actualizado el 2026-04-30 (ítems 6 revisado, 21-25 nuevos — análisis del módulo image generation). Actualizado el 2026-04-30 (ítems 22-25 resueltos — correcciones en image generation service, route y models). Actualizado el 2026-04-30 (ítems 6 y 21 resueltos — cascade soft-delete de ImageRecord en deletion_service.py). Actualizado el 2026-04-30 (ítem 7 resuelto — retry endpoint + processing_error + raw_text en documents). Actualizado el 2026-04-30 (ítem 19 resuelto — tabla moderation_log + log_moderation_event en los tres routes de moderación). Ver historial de correcciones aplicadas en los commits del branch `main`.*

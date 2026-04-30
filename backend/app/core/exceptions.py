@@ -11,7 +11,10 @@ class DuplicateCollectionNameError(Exception):
 
 
 class ContentNotAllowedError(Exception):
-    def __init__(self, message: str = "Contenido no permitido.") -> None:
+    def __init__(
+        self, message: str = "Contenido no permitido.", snippet: str = ""
+    ) -> None:
+        self.snippet = snippet[:200]
         super().__init__(message)
 
 
@@ -69,7 +72,8 @@ class ContentDiscardedError(Exception):
 
 
 class GeneratedContentBlockedError(Exception):
-    def __init__(self) -> None:
+    def __init__(self, snippet: str = "") -> None:
+        self.snippet = snippet[:200]
         super().__init__("El contenido generado no está permitido.")
 
 

@@ -24,6 +24,7 @@ from app.models.entity_content import (
 from app.models.enums import ContentCategory
 from app.models.shared import PaginatedResponse
 from app.services import content_management_service, generation_service
+from app.services.moderation_service import log_moderation_event
 
 router = APIRouter(prefix="/collections", tags=["entity-content"])
 
@@ -44,12 +45,14 @@ def generate_content(
     except PendingLimitExceededError as e:
         raise HTTPException(status_code=409, detail=str(e))
     except ContentNotAllowedError as e:
+        log_moderation_event(session, "input", e.snippet)
         raise HTTPException(status_code=422, detail=str(e))
     except InvalidCategoryError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except NoContextAvailableError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except GeneratedContentBlockedError as e:
+        log_moderation_event(session, "output", e.snippet)
         raise HTTPException(status_code=422, detail=str(e))
     except DatabaseError:
         raise HTTPException(status_code=500, detail="Error interno del servidor.")
