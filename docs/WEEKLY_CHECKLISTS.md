@@ -214,6 +214,17 @@ El plan de 12 semanas se enfocaba en backend. El frontend fue implementado en pa
 - [x] Filtrado por status en tabs de contenidos (pending / confirmed / discarded)
 - [x] Mensajes de error en español (`src/utils/errors.ts`)
 
+### Preview de Imágenes en frontend (implementado en Semana 6)
+
+- [x] `ImagePreviewPage` — página dedicada para preview de imágenes por contenido confirmado (`/collections/:id/entities/:eid/contents/:cid/image-preview`)
+- [x] Botón "✦ Preview imagen" en `ContentCard` — solo visible en el bloque `isConfirmed`; redirige a `ImagePreviewPage`
+- [x] Ruta registrada en `App.tsx` dentro del wrapper `<Layout>`
+- [x] `src/api/images.ts` — llamada tipada al endpoint de generación de imágenes
+- [x] `src/types/images.ts` — tipos `GenerateImageRequest` y `GenerateImageResponse`
+- [x] `apiClient.ts` — mapa `HTTP_STATUS_MESSAGES` con texto descriptivo en español para todos los códigos 4xx/5xx; errores de validación FastAPI (arrays) no se muestran al usuario
+- [x] `parseApiError()` diferencia `warning` (4xx) de `danger` (5xx) por rango numérico, sin overrides hardcodeados
+- [x] 94 tests frontend pasando (13 archivos de test)
+
 ---
 
 ## Nota — Guardrails de contenido implementados (fuera del plan original)
@@ -258,7 +269,7 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 - [x] Eliminación en cascada: colección → documentos + entidades + drafts (soft-delete)
 - [x] Eliminación de entidad → soft-delete de todos sus drafts (cualquier status)
 - [x] Guards en `discard_pending_drafts` y `soft_delete_all_drafts`: requieren al menos un filtro
-- [x] 65 tests passing (collections, documents, entities, entity_content, rag_query)
+- [x] 131 tests passing (collections, content_guard, documents, entities, entity_content, generation_service, image_generation, prompt_builder, rag_query)
 
 # Fase 2 — RAG Avanzado + Imagenes Locales (Semanas 5-8)
 
@@ -319,33 +330,33 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 - [ ] Manejo de queries fuera de contexto (el LLM responde "no hay informacion suficiente")
 - [ ] Respuestas consistentes en espanol
 
-### Prompt Builder
+### Prompt Builder (Opción C — plantillas deterministas por categoría de contenido)
 
-- [ ] `prompt_builder.py` creado con logica de construccion de prompts visuales
-- [ ] `STYLE_PREFIX` definido por tipo de entidad: character, scene, faction, item
-- [ ] `QUALITY_SUFFIX` con tags de calidad para Flux.2
-- [ ] Funcion `build_visual_prompt(entity_type, user_description, lore_context)` implementada
-- [ ] Limite de 500 caracteres en prompt visual (restriccion Flux.2 Klein)
+- [x] `prompt_builder.py` creado con lógica de construcción de prompts visuales — `backend/app/domain/prompt_builder.py`
+- [ ] `STYLE_PREFIX` definido por tipo de entidad — no implementado en Opción C (estrategia basada en `ContentCategory`, no en prefijos por tipo)
+- [ ] `QUALITY_SUFFIX` con tags de calidad para Flux.2 — pendiente para integración real con Flux.2 (Semana 7)
+- [x] Función `build_visual_prompt(entity_type, entity_name, entity_description, confirmed_content, category, max_tokens, target_tokens)` implementada con tres estrategias: `direct` (extended_description), `entity_only` (backstory/item), `first_sentences` (scene/chapter)
+- [x] Límite configurable de tokens en prompt visual (`image_prompt_max_tokens=150`) — marcadores `[OPTION_B]` en código para upgrade futuro con extracción LLM
 
 ### Filtrado de Contenido
 
-- [ ] `validate_prompt()` implementado con lista de keywords bloqueadas
-- [ ] Rechazo de prompts menores a 10 caracteres
-- [ ] Retorna razon de rechazo al cliente
+- [x] `check_user_input()` en `content_guard.py` valida el contenido confirmado antes de construir el prompt visual (keywords bloqueadas: sexual explícito, discurso de odio, armas, drogas, acoso)
+- [ ] Rechazo de prompts menores a 10 caracteres — no implementado
+- [x] Retorna razón de rechazo al cliente (HTTP 422 con mensaje descriptivo en español)
 
 ### Endpoint de Imagenes (Mock)
 
-- [ ] `POST /api/v1/collections/{id}/generate/image` — endpoint creado
-- [ ] Request schema: `description`, `entity_type` (opcional), `entity_id` (opcional)
-- [ ] Response mock: retorna URL placeholder + visual_prompt generado
-- [ ] Validacion: requiere al menos 1 documento en la coleccion
+- [x] `POST /api/v1/collections/{id}/entities/{entity_id}/generate/image` — endpoint creado (ruta bajo entidad para alinear con el flujo de contenidos RAG)
+- [x] Request schema: `GenerateImageRequest` con `content_id` (UUID de contenido confirmado, obligatorio)
+- [x] Response mock: retorna `visual_prompt`, `prompt_token_count`, `prompt_source`, `prompt_strategy`, `backend: "mock"`, `generation_ms: 0` — sin URL de imagen hasta integración real con Flux.2 (Semana 7)
+- [x] Validación: requiere `content_id` con status `confirmed` → HTTP 422 si pending, inexistente, o no pertenece a la entidad
 
 ### Criterios de aceptacion Semana 6
 
-- [ ] `build_visual_prompt` genera prompts coherentes por tipo de entidad
-- [ ] `validate_prompt` rechaza contenido bloqueado con mensaje claro
-- [ ] Endpoint `/generate/image` retorna 200 con mock response
-- [ ] Endpoint `/generate/image` retorna 422 si coleccion sin documentos
+- [x] `build_visual_prompt` genera prompts coherentes por categoría de contenido (9 tests en `test_prompt_builder.py` pasando)
+- [x] Contenido bloqueado es rechazado con HTTP 422 y mensaje descriptivo antes de construir el prompt
+- [x] Endpoint `/generate/image` retorna **201** con mock response (7 tests en `test_image_generation.py` pasando)
+- [x] Endpoint `/generate/image` retorna 422 si `content_id` no confirmado o inexistente
 
 ---
 
@@ -426,16 +437,16 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 
 ### Registro de Imagenes
 
-- [ ] Tabla/modelo `generated_images` con: `visual_prompt`, `seed`, `model_version`, `generation_ms`, `backend`
-- [ ] Cada imagen generada queda registrada con trazabilidad completa
-- [ ] Imagen puede asociarse opcionalmente a una entidad (`entity_id`)
+- [x] Tabla/modelo `ImageRecord` (`generated_images`) con: `visual_prompt`, `prompt_token_count`, `prompt_source`, `prompt_strategy`, `backend`, `generation_ms`, `entity_id`, `content_id` — migración `ca1c120370d0`
+- [x] Cada imagen generada queda registrada con trazabilidad completa (persiste en DB al generar)
+- [x] Imagen asociada a `entity_id` y `content_id` (el diseño evolucionó: asociación directa, no opcional)
 
 ### Criterios de aceptacion Semana 8
 
 - [ ] Flujo completo: ingestar lore → query de imagen → imagen coherente con el lore
 - [ ] Imagen guardada en LocalStack S3 y URL retornada al cliente
 - [x] CRUD de entidades funcional con soft delete
-- [ ] Metadata de generacion registrada (prompt, seed, tiempo, backend)
+- [x] Metadata de generación registrada (`visual_prompt`, `prompt_token_count`, `prompt_source`, `prompt_strategy`, `backend`, `generation_ms`)
 
 ### Checklist de Cierre Fase 2
 
