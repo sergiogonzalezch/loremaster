@@ -103,7 +103,10 @@ def ping_qdrant() -> None:
 
 
 def search_context(
-    collection_id: str, query: str, top_k: int | None = None, score_threshold: float | None = None
+    collection_id: str,
+    query: str,
+    top_k: int | None = None,
+    score_threshold: float | None = None,
 ) -> list[str]:
     name = f"lm_{collection_id}"
     if not _collection_exists(name):
@@ -111,7 +114,11 @@ def search_context(
     if top_k is None:
         top_k = settings.top_k
     query_vector = _embedding_model.encode([query])[0].tolist()
-    effective_threshold = score_threshold if (score_threshold is not None and score_threshold > 0.0) else None
+    effective_threshold = (
+        score_threshold
+        if (score_threshold is not None and score_threshold > 0.0)
+        else None
+    )
     results = _qdrant_client.query_points(
         collection_name=name,
         query=query_vector,

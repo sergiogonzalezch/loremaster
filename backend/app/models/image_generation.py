@@ -19,9 +19,9 @@ class GenerateImageResponse(BaseModel):
     visual_prompt: str
     token_count: int
     truncated: bool
-    prompt_source: str          # "content" | "description" | "name_only"
+    prompt_source: str  # "content" | "description" | "name_only"
     seed: int
-    backend: str                # "mock" | "local" | "runpod"
+    backend: str  # "mock" | "local" | "runpod"
     generation_ms: int
     entity_id: str
     collection_id: str

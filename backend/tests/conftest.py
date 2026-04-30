@@ -100,10 +100,19 @@ def mock_rag_engine(monkeypatch: pytest.MonkeyPatch) -> dict:
         return 5
 
     def _search_context(
-        *, collection_id: str, query: str, top_k: int | None = None, score_threshold: float | None = None
+        *,
+        collection_id: str,
+        query: str,
+        top_k: int | None = None,
+        score_threshold: float | None = None
     ) -> list[str]:
         calls["search_context"].append(
-            {"collection_id": collection_id, "query": query, "top_k": top_k, "score_threshold": score_threshold}
+            {
+                "collection_id": collection_id,
+                "query": query,
+                "top_k": top_k,
+                "score_threshold": score_threshold,
+            }
         )
         return ["contexto 1", "contexto 2"]
 

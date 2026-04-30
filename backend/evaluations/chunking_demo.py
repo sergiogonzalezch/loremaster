@@ -83,8 +83,8 @@ antes de que la plaga alcance las ciudades del interior.
 EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
 
 FIXED_CONFIGS = [
-    {"chunk_size": 256,  "chunk_overlap": 25},
-    {"chunk_size": 512,  "chunk_overlap": 50},
+    {"chunk_size": 256, "chunk_overlap": 25},
+    {"chunk_size": 512, "chunk_overlap": 50},
     {"chunk_size": 1024, "chunk_overlap": 100},
 ]
 
@@ -101,6 +101,7 @@ WIDTH = 80
 # Fixed-size chunking
 # --------------------------------------------------------------------------- #
 
+
 def fixed_size_chunks(text: str, chunk_size: int, chunk_overlap: int) -> list[str]:
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
@@ -114,9 +115,10 @@ def fixed_size_chunks(text: str, chunk_size: int, chunk_overlap: int) -> list[st
 # Semantic chunking
 # --------------------------------------------------------------------------- #
 
+
 def _split_into_sentences(text: str) -> list[str]:
     """Divide el texto en frases usando puntuacion final."""
-    raw = re.split(r'(?<=[.!?])\s+', text.replace("\n", " "))
+    raw = re.split(r"(?<=[.!?])\s+", text.replace("\n", " "))
     return [s.strip() for s in raw if len(s.strip()) > 8]
 
 
@@ -191,6 +193,7 @@ def semantic_chunks(
 # Helpers de salida
 # --------------------------------------------------------------------------- #
 
+
 def _sep(char: str = "=") -> None:
     print(char * WIDTH)
 
@@ -248,13 +251,16 @@ def _print_summary_table(results: list[tuple[str, dict]]) -> None:
     print(f"  {'Metodo':<26} | {'Chunks':>6} | {'Avg':>6} | {'Min':>6} | {'Max':>6}")
     print(f"  {'-'*26}-+-{'-'*6}-+-{'-'*6}-+-{'-'*6}-+-{'-'*6}")
     for name, s in results:
-        print(f"  {name:<26} | {s['count']:>6} | {s['avg']:>6} | {s['min']:>6} | {s['max']:>6}")
+        print(
+            f"  {name:<26} | {s['count']:>6} | {s['avg']:>6} | {s['min']:>6} | {s['max']:>6}"
+        )
     _sep("=")
 
 
 # --------------------------------------------------------------------------- #
 # Main
 # --------------------------------------------------------------------------- #
+
 
 def main() -> None:
     text = SAMPLE_TEXT
@@ -336,7 +342,9 @@ def main() -> None:
     print("    la perdida de contexto en fronteras de chunk.")
     print()
     print("  * Semantic:   cortes donde la similitud entre frases cae mas de lo")
-    print(f"    normal (percentil {int(SEMANTIC_THRESHOLD_PERCENTILE)} configurable). Mas lento (requiere embeddings).")
+    print(
+        f"    normal (percentil {int(SEMANTIC_THRESHOLD_PERCENTILE)} configurable). Mas lento (requiere embeddings)."
+    )
     print("    Produce chunks tematicamente coherentes y de tamano variable.")
     print()
     print("  * Para RAG: semantic mejora el retrieval en textos con secciones")
