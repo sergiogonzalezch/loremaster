@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
 import ContentCard from "../components/ContentCard";
 import type { EntityContent } from "../types";
@@ -42,12 +43,14 @@ function makeContent(overrides: Partial<EntityContent> = {}): EntityContent {
 
 function renderCard(content: EntityContent, onAction = vi.fn()) {
   return render(
-    <ContentCard
-      content={content}
-      collectionId="col-1"
-      entityId="ent-1"
-      onAction={onAction}
-    />,
+    <MemoryRouter>
+      <ContentCard
+        content={content}
+        collectionId="col-1"
+        entityId="ent-1"
+        onAction={onAction}
+      />
+    </MemoryRouter>,
   );
 }
 

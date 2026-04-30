@@ -1,10 +1,14 @@
-# app/api/routes/image_generation.py
+# backend/app/api/routes/image_generation.py
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
 from app.core.deps import get_entity_or_404
-from app.core.exceptions import ContentNotAllowedError, NoContextAvailableError
+from app.core.exceptions import (
+    ContentNotAllowedError,
+    DatabaseError,
+    NoContextAvailableError,
+)
 from app.database import get_session
 from app.models.entities import Entity
 from app.models.image_generation import GenerateImageRequest, GenerateImageResponse
@@ -16,7 +20,7 @@ router = APIRouter(prefix="/collections", tags=["image-generation"])
 @router.post(
     "/{collection_id}/entities/{entity_id}/generate/image",
     response_model=GenerateImageResponse,
-    status_code=200,
+    status_code=201,
 )
 def generate_image(
     request: GenerateImageRequest,
@@ -29,9 +33,11 @@ def generate_image(
         raise HTTPException(
             status_code=422,
             detail=(
-                "La entidad no tiene contenido confirmado. "
-                "Genera y confirma al menos un contenido antes de crear una imagen."
+                "El contenido indicado no existe, no está confirmado "
+                "o no pertenece a esta entidad."
             ),
         )
     except ContentNotAllowedError as e:
         raise HTTPException(status_code=422, detail=str(e))
+    except DatabaseError:
+        raise HTTPException(status_code=500, detail="Error interno del servidor.")

@@ -18,6 +18,7 @@ import {
 } from "../api/contents";
 import ConfirmModal from "./ConfirmModal";
 import { useDeleteConfirm } from "../hooks/useDeleteConfirm";
+import { useNavigate } from "react-router-dom";
 import MarkdownContent from "./MarkdownContent";
 import type { EntityContent } from "../types";
 import { CATEGORY_LABELS } from "../utils/constants";
@@ -54,6 +55,7 @@ export default function ContentCard({
 
   const [showDiscard, setShowDiscard] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const navigate = useNavigate();
 
   const deleteConfirm = useDeleteConfirm<EntityContent>({
     onDelete: async (c) => {
@@ -277,6 +279,7 @@ export default function ContentCard({
               >
                 Editar
               </Button>
+
               <Button
                 variant="outline-warning"
                 size="sm"
@@ -323,6 +326,19 @@ export default function ContentCard({
                   disabled={busy || deleteConfirm.deleting}
                 >
                   Editar
+                </Button>
+                <Button
+                  variant="outline-secondary"
+                  size="sm"
+                  onClick={() =>
+                    navigate(
+                      `/collections/${collectionId}/entities/${entityId}/contents/${content.id}/image-preview`,
+                    )
+                  }
+                  disabled={busy}
+                  title="Generar preview de imagen basado en este contenido"
+                >
+                  ✦ Preview imagen
                 </Button>
                 <Button
                   variant="outline-danger"

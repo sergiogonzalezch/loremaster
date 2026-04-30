@@ -63,8 +63,6 @@ export default function EntityContentsPanel({
       page_size: pageSize,
     });
     return () => controller.abort();
-    // refreshTrigger intentionally included to re-fetch after generate
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoryFilter, statusFilter, page, pageSize, refresh, refreshTrigger]);
 
   const handleOptimisticUpdate = useCallback(

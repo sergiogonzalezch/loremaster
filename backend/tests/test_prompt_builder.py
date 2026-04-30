@@ -2,6 +2,7 @@
 
 from app.domain.prompt_builder import build_visual_prompt, _estimate_tokens
 from app.models.entities import EntityType
+from app.models.enums import ContentCategory
 
 
 def test_pb_01_token_count_within_max():
@@ -12,6 +13,7 @@ def test_pb_01_token_count_within_max():
         entity_name="Aragorn",
         entity_description="Un guerrero valiente",
         confirmed_content=long_content,
+        category=ContentCategory.extended_description,
         max_tokens=150,
     )
     assert result["token_count"] <= 150
@@ -24,6 +26,7 @@ def test_pb_02_short_content_not_truncated():
         entity_name="Aria",
         entity_description="Elfa arquera",
         confirmed_content="Una elfa con arco de plata",
+        category=ContentCategory.extended_description,
         max_tokens=150,
     )
     assert result["truncated"] is False
@@ -36,6 +39,7 @@ def test_pb_03_long_content_is_truncated():
         entity_name="X",
         entity_description="",
         confirmed_content="palabra " * 200,
+        category=ContentCategory.extended_description,
         max_tokens=150,
     )
     assert result["truncated"] is True
@@ -49,6 +53,7 @@ def test_pb_04_empty_content_falls_back_to_description():
         entity_name="Espada Élfica",
         entity_description="Hoja forjada con luz de luna",
         confirmed_content="",
+        category=ContentCategory.extended_description,
         max_tokens=150,
     )
     assert result["source"] == "description"
@@ -62,6 +67,7 @@ def test_pb_05_empty_everything_falls_back_to_name_only():
         entity_name="Torre del Norte",
         entity_description="",
         confirmed_content="",
+        category=ContentCategory.extended_description,
         max_tokens=150,
     )
     assert result["source"] == "name_only"
@@ -70,14 +76,13 @@ def test_pb_05_empty_everything_falls_back_to_name_only():
 
 def test_pb_06_all_entity_types_produce_valid_prompt():
     """Todos los entity types generan un prompt con prefijo correcto."""
-    from app.models.entities import EntityType
-
     for etype in EntityType:
         result = build_visual_prompt(
             entity_type=etype,
             entity_name="Entidad de prueba",
             entity_description="desc",
             confirmed_content="contenido de prueba",
+            category=ContentCategory.extended_description,
             max_tokens=150,
         )
         assert result["token_count"] > 0
@@ -92,7 +97,36 @@ def test_pb_07_target_tokens_respected_when_possible():
         entity_name="Galadriel",
         entity_description="Reina élfica de gran poder",
         confirmed_content="Dama de luz, portadora de Nenya",
+        category=ContentCategory.extended_description,
         max_tokens=150,
         target_tokens=75,
     )
     assert result["token_count"] <= 75
+
+
+def test_pb_08_backstory_strategy_uses_entity_description():
+    """Backstory (entity_only) usa descripción, no el texto RAG."""
+    result = build_visual_prompt(
+        entity_type=EntityType.character,
+        entity_name="Gandalf",
+        entity_description="Mago de barba gris y cetro luminoso",
+        confirmed_content="Nació en el reino de los Maiar hace eras...",
+        category=ContentCategory.backstory,
+        max_tokens=150,
+    )
+    assert result["strategy"] == "entity_only"
+    assert result["source"] == "description"
+
+
+def test_pb_09_scene_strategy_extracts_first_sentences():
+    """Scene (first_sentences) extrae las primeras 2 oraciones."""
+    result = build_visual_prompt(
+        entity_type=EntityType.character,
+        entity_name="Frodo",
+        entity_description="Hobbit del Shire",
+        confirmed_content="El sol caía sobre las colinas. Las flores brillaban en el viento. Después llegó la oscuridad.",
+        category=ContentCategory.scene,
+        max_tokens=150,
+    )
+    assert result["strategy"] == "first_sentences"
+    assert result["source"] == "content_sentences"

@@ -45,7 +45,7 @@ async def _create_confirmed_content(
 async def test_img_01_generate_image_with_confirmed_content(
     client, db_session, mock_rag_engine, mock_llm, sample_collection, sample_entity
 ):
-    """IMG-01: Generar imagen con content_id confirmado retorna 200 con prompt."""
+    """IMG-01: Generar imagen con content_id confirmado retorna 201 con prompt."""
     content_id = await _create_confirmed_content(
         client,
         db_session,
@@ -61,12 +61,12 @@ async def test_img_01_generate_image_with_confirmed_content(
         json={"content_id": content_id},
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 201
     data = response.json()
     assert data["backend"] == "mock"
     assert data["visual_prompt"]
-    assert data["token_count"] > 0
-    assert data["token_count"] <= 150
+    assert data["prompt_token_count"] > 0
+    assert data["prompt_token_count"] <= 150
 
 
 @pytest.mark.anyio
@@ -90,15 +90,15 @@ async def test_img_02_prompt_token_count_within_bounds(
     )
 
     data = response.json()
-    assert data["token_count"] <= 150
+    assert data["prompt_token_count"] <= 150
 
 
 @pytest.mark.anyio
-async def test_img_03_generate_image_without_content_id_uses_latest_confirmed(
+async def test_img_03_prompt_source_is_valid_value(
     client, db_session, mock_rag_engine, mock_llm, sample_collection, sample_entity
 ):
-    """IMG-03: Sin content_id usa el confirmed más reciente automáticamente."""
-    await _create_confirmed_content(
+    """IMG-03: El prompt_source retornado es uno de los valores esperados."""
+    content_id = await _create_confirmed_content(
         client,
         db_session,
         mock_rag_engine,
@@ -110,22 +110,23 @@ async def test_img_03_generate_image_without_content_id_uses_latest_confirmed(
     response = await client.post(
         f"/api/v1/collections/{sample_collection.id}"
         f"/entities/{sample_entity.id}/generate/image",
-        json={},
+        json={"content_id": content_id},
     )
 
-    assert response.status_code == 200
-    assert response.json()["prompt_source"] in ("content", "description")
+    assert response.status_code == 201
+    valid_sources = {"content_direct", "content_sentences", "description", "name_only"}
+    assert response.json()["prompt_source"] in valid_sources
 
 
 @pytest.mark.anyio
-async def test_img_04_no_confirmed_content_returns_422(
+async def test_img_04_nonexistent_content_id_returns_422(
     client, mock_rag_engine, sample_collection, sample_entity
 ):
-    """IMG-04: Sin ningún contenido confirmado retorna 422."""
+    """IMG-04: content_id inexistente o no confirmado retorna 422."""
     response = await client.post(
         f"/api/v1/collections/{sample_collection.id}"
         f"/entities/{sample_entity.id}/generate/image",
-        json={},
+        json={"content_id": "00000000-0000-0000-0000-000000000000"},
     )
     assert response.status_code == 422
 
@@ -170,6 +171,7 @@ async def test_img_06_prompt_contains_entity_name(
         json={"content_id": content_id},
     )
 
+    assert response.status_code == 201
     assert sample_entity.name in response.json()["visual_prompt"]
 
 
@@ -193,5 +195,6 @@ async def test_img_07_response_is_mock_backend(
         json={"content_id": content_id},
     )
 
+    assert response.status_code == 201
     assert response.json()["backend"] == "mock"
     assert response.json()["generation_ms"] == 0
