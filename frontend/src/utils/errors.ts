@@ -4,7 +4,14 @@ export function getErrorMessage(
   error: unknown,
   fallback = "Error inesperado",
 ): string {
-  return error instanceof Error ? error.message : fallback;
+  if (error instanceof ApiError) {
+    // ApiError.message ya es descriptivo (ver apiClient.ts)
+    return error.message;
+  }
+  if (error instanceof Error) {
+    return error.message || fallback;
+  }
+  return fallback;
 }
 
 export function parseApiError(
@@ -12,15 +19,11 @@ export function parseApiError(
   fallback = "Error de conexión con el servidor.",
 ): { variant: "warning" | "danger"; text: string } {
   if (error instanceof ApiError) {
-    if ([400, 404, 409, 422].includes(error.status)) {
+    // 4xx del cliente: warning — el usuario puede corregirlo
+    if (error.status >= 400 && error.status < 500) {
       return { variant: "warning", text: error.message };
     }
-    if (error.status === 503) {
-      return {
-        variant: "danger",
-        text: "El servicio de generación no está disponible. Inténtalo de nuevo más tarde.",
-      };
-    }
+    // 5xx del servidor: danger
     return { variant: "danger", text: error.message };
   }
   return { variant: "danger", text: fallback };

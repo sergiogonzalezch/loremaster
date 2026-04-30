@@ -1,9 +1,7 @@
-import { apiFetch } from "./apiClient";
-import type { GenerateImageResponse } from "../types";
+// frontend/src/api/images.ts
 
-export interface GenerateImageRequest {
-  content_id?: string;
-}
+import { apiFetch } from "./apiClient";
+import type { GenerateImageResponse, GenerateImageRequest } from "../types";
 
 export function generateImage(
   collectionId: string,

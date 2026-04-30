@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     image_prompt_max_tokens: int = 150
     image_prompt_target_tokens: int = 75
     image_backend: str = "mock"
+    media_root: str = "./media"
 
     # Vector DB (Qdrant)
     qdrant_url: str = "http://localhost:6333"

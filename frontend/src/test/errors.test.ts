@@ -34,10 +34,9 @@ describe("parseApiError", () => {
     expect(result).toEqual({ variant: "warning", text: "No procesable" });
   });
 
-  it("503 → variant danger con texto hardcoded en español", () => {
+  it("503 → variant danger con el mensaje del error", () => {
     const result = parseApiError(new ApiError(503, "cualquier cosa"));
-    expect(result.variant).toBe("danger");
-    expect(result.text).toMatch(/no está disponible/i);
+    expect(result).toEqual({ variant: "danger", text: "cualquier cosa" });
   });
 
   it("500 → variant danger con mensaje del error", () => {
