@@ -10,6 +10,7 @@ from sqlmodel import Session, select
 from app.core.exceptions import (
     DatabaseError,
     DocumentExtractionError,
+    DocumentNotRetryableError,
     FileTooLargeError,
     MissingFilenameError,
     UnsupportedFileTypeError,
@@ -67,6 +68,7 @@ async def ingest_document_service(
         file_type=data.content_type,
         chunk_count=0,
         status=DocumentStatus.processing,
+        raw_text=content,
     )
     session.add(document)
     try:
@@ -92,9 +94,11 @@ def process_ingest_background(session: Session, document: Document, text: str) -
         )
         document.status = DocumentStatus.completed
         document.chunk_count = chunk_count
+        document.processing_error = None
     except Exception as e:
         logger.error("Background ingest failed for '%s': %s", document.filename, e)
         document.status = DocumentStatus.failed
+        document.processing_error = str(e)
     session.add(document)
     session.commit()
     logger.info("Document %s finished with status=%s", document.id, document.status)
@@ -143,6 +147,31 @@ def list_documents_service(
         .limit(page_size)
     ).all()
     return list(items), total
+
+
+def retry_document_service(
+    session: Session, document: Document
+) -> tuple[Document, str]:
+    """Reset a failed document to processing so it can be re-ingested.
+
+    Returns (document, raw_text) ready for a new process_ingest_background call.
+    Raises DocumentNotRetryableError if document is not failed or has no stored text.
+    """
+    if document.status != DocumentStatus.failed or not document.raw_text:
+        raise DocumentNotRetryableError()
+
+    raw_text = document.raw_text
+    document.status = DocumentStatus.processing
+    document.processing_error = None
+    session.add(document)
+    try:
+        session.commit()
+        session.refresh(document)
+    except Exception as e:
+        session.rollback()
+        logger.error("DB commit failed during retry for doc %s: %s", document.id, e)
+        raise DatabaseError() from e
+    return document, raw_text
 
 
 def delete_document_service(session: Session, document: Document) -> bool:

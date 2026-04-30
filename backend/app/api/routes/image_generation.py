@@ -7,7 +7,7 @@ from app.core.deps import get_entity_or_404
 from app.core.exceptions import (
     DatabaseError,
     GeneratedContentBlockedError,
-    ContentNotConfirmedError
+    ContentNotConfirmedError,
 )
 from app.database import get_session
 from app.models.entities import Entity

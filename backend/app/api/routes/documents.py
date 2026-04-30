@@ -18,6 +18,7 @@ from app.core.exceptions import (
     ContentNotAllowedError,
     DatabaseError,
     DocumentExtractionError,
+    DocumentNotRetryableError,
     FileTooLargeError,
     MissingFilenameError,
     UnsupportedFileTypeError,
@@ -31,6 +32,7 @@ from app.services.documents_service import (
     ingest_document_service,
     process_ingest_background,
     list_documents_service,
+    retry_document_service,
     delete_document_service,
 )
 
@@ -105,6 +107,26 @@ def get_document(
     doc: Document = Depends(get_document_or_404),
 ):
     return doc
+
+
+@router.post(
+    "/{collection_id}/documents/{doc_id}/retry",
+    response_model=DocumentResponse,
+    status_code=202,
+)
+async def retry_ingest(
+    background_tasks: BackgroundTasks,
+    doc: Document = Depends(get_document_or_404),
+    session: Session = Depends(get_session),
+):
+    try:
+        document, text = retry_document_service(session, doc)
+    except DocumentNotRetryableError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    except DatabaseError:
+        raise HTTPException(status_code=500, detail="Error interno del servidor.")
+    background_tasks.add_task(process_ingest_background, session, document, text)
+    return document
 
 
 @router.delete("/{collection_id}/documents/{doc_id}", status_code=204)

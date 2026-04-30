@@ -21,6 +21,7 @@ import {
   getDocuments,
   getDocument,
   uploadDocument,
+  retryDocument,
   deleteDocument,
   getEntities,
   createEntity,
@@ -88,6 +89,7 @@ function DocumentsTab({
   const [loadingDocumentDetail, setLoadingDocumentDetail] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState("");
   const [processingDocs, setProcessingDocs] = useState<Document[]>([]);
+  const [retrying, setRetrying] = useState<Set<string>>(new Set());
 
   const fetchDocuments = useCallback(
     async (signal?: AbortSignal) => {
@@ -191,6 +193,23 @@ function DocumentsTab({
       controller.abort();
     };
   }, [processingDocs, collectionId, fetchDocuments, onDocumentsMutated]);
+
+  async function handleRetry(doc: Document) {
+    setRetrying((prev) => new Set(prev).add(doc.id));
+    try {
+      const retried = await retryDocument(collectionId, doc.id);
+      setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
+      setProcessingDocs((prev) => [retried, ...prev]);
+    } catch (err) {
+      setError(parseApiError(err, "Error al reintentar la ingestión del documento."));
+    } finally {
+      setRetrying((prev) => {
+        const next = new Set(prev);
+        next.delete(doc.id);
+        return next;
+      });
+    }
+  }
 
   async function handleUpload(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -372,7 +391,16 @@ function DocumentsTab({
           <tbody>
             {allDocs.map((doc) => (
               <tr key={doc.id}>
-                <td>{doc.filename}</td>
+                <td>
+                  {doc.filename}
+                  {doc.status === "failed" && doc.processing_error && (
+                    <small className="d-block text-danger mt-1" style={{ fontSize: "0.75rem" }}>
+                      {doc.processing_error.length > 90
+                        ? `${doc.processing_error.slice(0, 90)}…`
+                        : doc.processing_error}
+                    </small>
+                  )}
+                </td>
                 <td>{doc.file_type.toUpperCase()}</td>
                 <td>{doc.chunk_count}</td>
                 <td>
@@ -389,6 +417,17 @@ function DocumentsTab({
                 </td>
                 <td>{formatDate(doc.created_at)}</td>
                 <td>
+                  {doc.status === "failed" && (
+                    <Button
+                      variant="outline-warning"
+                      size="sm"
+                      className="me-2"
+                      onClick={() => handleRetry(doc)}
+                      disabled={retrying.has(doc.id) || deleteConfirm.deleting}
+                    >
+                      {retrying.has(doc.id) ? "Reintentando…" : "Reintentar"}
+                    </Button>
+                  )}
                   <Button
                     variant="outline-secondary"
                     size="sm"
@@ -454,6 +493,14 @@ function DocumentsTab({
                 <small className="text-muted">Estado</small>
                 <div>{selectedDocument.status}</div>
               </div>
+              {selectedDocument.processing_error && (
+                <div>
+                  <small className="text-muted">Error de procesamiento</small>
+                  <div className="text-danger" style={{ fontSize: "0.875rem", wordBreak: "break-word" }}>
+                    {selectedDocument.processing_error}
+                  </div>
+                </div>
+              )}
               <div>
                 <small className="text-muted">Creado</small>
                 <div>{formatDate(selectedDocument.created_at, true)}</div>
