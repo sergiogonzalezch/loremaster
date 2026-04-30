@@ -201,7 +201,9 @@ function DocumentsTab({
       setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
       setProcessingDocs((prev) => [retried, ...prev]);
     } catch (err) {
-      setError(parseApiError(err, "Error al reintentar la ingestión del documento."));
+      setError(
+        parseApiError(err, "Error al reintentar la ingestión del documento."),
+      );
     } finally {
       setRetrying((prev) => {
         const next = new Set(prev);
@@ -394,7 +396,10 @@ function DocumentsTab({
                 <td>
                   {doc.filename}
                   {doc.status === "failed" && doc.processing_error && (
-                    <small className="d-block text-danger mt-1" style={{ fontSize: "0.75rem" }}>
+                    <small
+                      className="d-block text-danger mt-1"
+                      style={{ fontSize: "0.75rem" }}
+                    >
                       {doc.processing_error.length > 90
                         ? `${doc.processing_error.slice(0, 90)}…`
                         : doc.processing_error}
@@ -496,7 +501,10 @@ function DocumentsTab({
               {selectedDocument.processing_error && (
                 <div>
                   <small className="text-muted">Error de procesamiento</small>
-                  <div className="text-danger" style={{ fontSize: "0.875rem", wordBreak: "break-word" }}>
+                  <div
+                    className="text-danger"
+                    style={{ fontSize: "0.875rem", wordBreak: "break-word" }}
+                  >
                     {selectedDocument.processing_error}
                   </div>
                 </div>

@@ -169,9 +169,7 @@ describe("CollectionDetailPage — DocumentsTab retry", () => {
     await waitFor(() =>
       expect(screen.getByText("lore.pdf")).toBeInTheDocument(),
     );
-    expect(
-      screen.queryByText(/Connection to Qdrant/),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Connection to Qdrant/)).not.toBeInTheDocument();
   });
 
   it("reintentar exitoso llama a retryDocument y muestra badge Procesando", async () => {
@@ -222,9 +220,7 @@ describe("CollectionDetailPage — DocumentsTab retry", () => {
       ).toBeInTheDocument(),
     );
     await user.click(screen.getByRole("button", { name: "Reintentar" }));
-    await waitFor(() =>
-      expect(screen.getByRole("alert")).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
   });
 
   it("trunca processing_error largo a 90 caracteres con elipsis", async () => {
@@ -235,9 +231,7 @@ describe("CollectionDetailPage — DocumentsTab retry", () => {
       meta: { total: 1, page: 1, page_size: 10, total_pages: 1 },
     });
     renderPage();
-    await waitFor(() =>
-      expect(screen.getByText(/…$/)).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText(/…$/)).toBeInTheDocument());
     expect(screen.queryByText(longError)).not.toBeInTheDocument();
   });
 });
