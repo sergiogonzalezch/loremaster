@@ -202,13 +202,15 @@ def build_visual_prompt(
         narrative = entity_description.strip()
         source = "description"
 
+    narrative_source_text = confirmed_content if source.startswith("content") else entity_description
+
     # ── Truncar para respetar límite de tokens ────────────────────────────────
     if narrative:
         if _estimate_tokens(narrative) > target_available:
             narrative_at_target = _truncate_to_tokens(narrative, target_available)
             if narrative_at_target:
                 narrative = narrative_at_target
-                truncated = _estimate_tokens(confirmed_content) > target_available
+                truncated = _estimate_tokens(narrative_source_text) > target_available
             elif _estimate_tokens(narrative) <= available_tokens:
                 # No cabe en target pero sí en max
                 truncated = False

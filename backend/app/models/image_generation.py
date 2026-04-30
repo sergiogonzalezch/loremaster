@@ -57,7 +57,8 @@ class ImageRecord(SQLModel, table=True):
     # Ruta relativa desde MEDIA_ROOT: {collection_id}/{entity_id}/{id}.png
     # Ejemplo: "abc-123/def-456/img-uuid.png"
     image_path: Optional[str] = SQLField(default=None, max_length=500)
-    image_url: Optional[str] = SQLField(default=None, max_length=500)
+    # image_url: Optional[str] = SQLField(default=None, max_length=500)
+    image_url: Optional[str] = None
     filename: Optional[str] = SQLField(default=None, max_length=255)
     extension: str = SQLField(default="png", max_length=10)
     width: int = SQLField(default=1024)
@@ -104,7 +105,7 @@ class GenerateImageResponse(BaseModel):
     truncated: bool
 
     # Imagen
-    image_url: str
+    image_url: Optional[str] = None
     image_path: Optional[str]
     filename: Optional[str]
     extension: str

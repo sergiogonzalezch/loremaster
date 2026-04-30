@@ -6,6 +6,7 @@ from sqlmodel import Session, select
 from app.models.collections import Collection
 from app.models.documents import Document
 from app.models.entities import Entity
+from app.models.image_generation import ImageRecord
 from app.core.common import soft_delete
 from app.engine.rag import delete_collection_vectors
 from app.services import content_management_service
@@ -49,6 +50,11 @@ def cascade_delete_entity(session: Session, entity: Entity) -> None:
     )
     logger.info(
         "Soft-deleted %d EntityContent(s) for entity %s", deleted_contents, entity.id
+    )
+
+    deleted_images = _cascade_delete_images_by_entity(session, entity.id)
+    logger.info(
+        "Soft-deleted %d ImageRecord(s) for entity %s", deleted_images, entity.id
     )
 
     soft_delete(session, entity)
@@ -97,7 +103,39 @@ def cascade_delete_collection(session: Session, collection: Collection) -> bool:
             collection.id,
         )
 
+    orphan_images = _cascade_delete_images_by_collection(session, collection.id)
+    if orphan_images > 0:
+        logger.info(
+            "Soft-deleted %d orphan ImageRecord(s) for collection %s",
+            orphan_images,
+            collection.id,
+        )
+
     soft_delete(session, collection)
     logger.info("Collection %s soft-deleted", collection.id)
 
     return _delete_vectors_with_retry(collection.id)
+
+
+def _cascade_delete_images_by_entity(session: Session, entity_id: str) -> int:
+    images = session.exec(
+        select(ImageRecord).where(
+            ImageRecord.entity_id == entity_id,
+            ImageRecord.is_deleted == False,
+        )
+    ).all()
+    for img in images:
+        soft_delete(session, img)
+    return len(images)
+
+
+def _cascade_delete_images_by_collection(session: Session, collection_id: str) -> int:
+    images = session.exec(
+        select(ImageRecord).where(
+            ImageRecord.collection_id == collection_id,
+            ImageRecord.is_deleted == False,
+        )
+    ).all()
+    for img in images:
+        soft_delete(session, img)
+    return len(images)

@@ -20,6 +20,13 @@ class NoContextAvailableError(Exception):
         super().__init__("No hay contexto disponible para responder esta consulta.")
 
 
+class ContentNotConfirmedError(Exception):
+    def __init__(self) -> None:
+        super().__init__(
+            "El contenido indicado no existe, no está confirmado "
+            "o no pertenece a esta entidad."
+        )
+
 class PendingLimitExceededError(Exception):
     pass
 
