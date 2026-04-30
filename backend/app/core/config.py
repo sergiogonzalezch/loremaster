@@ -20,9 +20,9 @@ class Settings(BaseSettings):
     max_pending_contents: int = 5
 
     # Image generation
-    image_prompt_max_tokens:int = 150
+    image_prompt_max_tokens: int = 150
     image_prompt_target_tokens: int = 75
-    image_backend:str = "mock"
+    image_backend: str = "mock"
 
     # Vector DB (Qdrant)
     qdrant_url: str = "http://localhost:6333"
@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     chunk_size: int = 512
     chunk_overlap: int = 50
     top_k: int = 4
-    rag_score_threshold: float = 0.5
+    rag_score_threshold: float = 0.3
 
     # Database (default SQLite for local dev; set DATABASE_URL in .env for PostgreSQL)
     database_url: str = "sqlite:///./loremaster.db"

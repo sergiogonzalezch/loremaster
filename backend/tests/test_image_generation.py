@@ -3,8 +3,8 @@
 import pytest
 from app.models.enums import ContentStatus, ContentCategory
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 async def _confirm_content(client, db_session, collection_id, entity_id, content_id):
     """Confirma un contenido vía API."""
@@ -15,8 +15,13 @@ async def _confirm_content(client, db_session, collection_id, entity_id, content
 
 
 async def _create_confirmed_content(
-    client, db_session, mock_rag_engine, mock_llm,
-    collection_id, entity_id, category="backstory"
+    client,
+    db_session,
+    mock_rag_engine,
+    mock_llm,
+    collection_id,
+    entity_id,
+    category="backstory",
 ):
     """Genera y confirma un contenido, retorna su id."""
     gen = await client.post(
@@ -35,15 +40,19 @@ async def _create_confirmed_content(
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.anyio
 async def test_img_01_generate_image_with_confirmed_content(
-    client, db_session, mock_rag_engine, mock_llm,
-    sample_collection, sample_entity
+    client, db_session, mock_rag_engine, mock_llm, sample_collection, sample_entity
 ):
     """IMG-01: Generar imagen con content_id confirmado retorna 200 con prompt."""
     content_id = await _create_confirmed_content(
-        client, db_session, mock_rag_engine, mock_llm,
-        sample_collection.id, sample_entity.id
+        client,
+        db_session,
+        mock_rag_engine,
+        mock_llm,
+        sample_collection.id,
+        sample_entity.id,
     )
 
     response = await client.post(
@@ -62,13 +71,16 @@ async def test_img_01_generate_image_with_confirmed_content(
 
 @pytest.mark.anyio
 async def test_img_02_prompt_token_count_within_bounds(
-    client, db_session, mock_rag_engine, mock_llm,
-    sample_collection, sample_entity
+    client, db_session, mock_rag_engine, mock_llm, sample_collection, sample_entity
 ):
     """IMG-02: El prompt generado no supera 150 tokens estimados."""
     content_id = await _create_confirmed_content(
-        client, db_session, mock_rag_engine, mock_llm,
-        sample_collection.id, sample_entity.id
+        client,
+        db_session,
+        mock_rag_engine,
+        mock_llm,
+        sample_collection.id,
+        sample_entity.id,
     )
 
     response = await client.post(
@@ -83,13 +95,16 @@ async def test_img_02_prompt_token_count_within_bounds(
 
 @pytest.mark.anyio
 async def test_img_03_generate_image_without_content_id_uses_latest_confirmed(
-    client, db_session, mock_rag_engine, mock_llm,
-    sample_collection, sample_entity
+    client, db_session, mock_rag_engine, mock_llm, sample_collection, sample_entity
 ):
     """IMG-03: Sin content_id usa el confirmed más reciente automáticamente."""
     await _create_confirmed_content(
-        client, db_session, mock_rag_engine, mock_llm,
-        sample_collection.id, sample_entity.id
+        client,
+        db_session,
+        mock_rag_engine,
+        mock_llm,
+        sample_collection.id,
+        sample_entity.id,
     )
 
     response = await client.post(
@@ -117,8 +132,7 @@ async def test_img_04_no_confirmed_content_returns_422(
 
 @pytest.mark.anyio
 async def test_img_05_pending_content_id_returns_422(
-    client, db_session, mock_rag_engine, mock_llm,
-    sample_collection, sample_entity
+    client, db_session, mock_rag_engine, mock_llm, sample_collection, sample_entity
 ):
     """IMG-05: Pasar content_id de contenido pending (no confirmed) retorna 422."""
     gen = await client.post(
@@ -138,13 +152,16 @@ async def test_img_05_pending_content_id_returns_422(
 
 @pytest.mark.anyio
 async def test_img_06_prompt_contains_entity_name(
-    client, db_session, mock_rag_engine, mock_llm,
-    sample_collection, sample_entity
+    client, db_session, mock_rag_engine, mock_llm, sample_collection, sample_entity
 ):
     """IMG-06: El prompt visual contiene el nombre de la entidad."""
     content_id = await _create_confirmed_content(
-        client, db_session, mock_rag_engine, mock_llm,
-        sample_collection.id, sample_entity.id
+        client,
+        db_session,
+        mock_rag_engine,
+        mock_llm,
+        sample_collection.id,
+        sample_entity.id,
     )
 
     response = await client.post(
@@ -158,13 +175,16 @@ async def test_img_06_prompt_contains_entity_name(
 
 @pytest.mark.anyio
 async def test_img_07_response_is_mock_backend(
-    client, db_session, mock_rag_engine, mock_llm,
-    sample_collection, sample_entity
+    client, db_session, mock_rag_engine, mock_llm, sample_collection, sample_entity
 ):
     """IMG-07: En entorno de dev el backend es siempre mock."""
     content_id = await _create_confirmed_content(
-        client, db_session, mock_rag_engine, mock_llm,
-        sample_collection.id, sample_entity.id
+        client,
+        db_session,
+        mock_rag_engine,
+        mock_llm,
+        sample_collection.id,
+        sample_entity.id,
     )
 
     response = await client.post(

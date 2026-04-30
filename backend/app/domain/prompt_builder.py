@@ -17,8 +17,7 @@ STYLE_PREFIX: dict[EntityType, str] = {
         "atmospheric perspective, detailed environment,"
     ),
     EntityType.faction: (
-        "faction emblem design, heraldic composition, "
-        "fantasy art, symbolic imagery,"
+        "faction emblem design, heraldic composition, " "fantasy art, symbolic imagery,"
     ),
     EntityType.item: (
         "fantasy item showcase, neutral background, "
@@ -27,9 +26,8 @@ STYLE_PREFIX: dict[EntityType, str] = {
 }
 
 # ── Sufijo de calidad fijo ─────────────────────────────────────────────────────
-QUALITY_SUFFIX = (
-    "high quality, masterpiece, sharp focus, professional digital art"
-)
+QUALITY_SUFFIX = "high quality, masterpiece, sharp focus, professional digital art"
+
 
 # ── Heurística de tokens (igual que frontend) ──────────────────────────────────
 def _estimate_tokens(text: str) -> int:

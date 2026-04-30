@@ -71,6 +71,7 @@ def test_pb_05_empty_everything_falls_back_to_name_only():
 def test_pb_06_all_entity_types_produce_valid_prompt():
     """Todos los entity types generan un prompt con prefijo correcto."""
     from app.models.entities import EntityType
+
     for etype in EntityType:
         result = build_visual_prompt(
             entity_type=etype,

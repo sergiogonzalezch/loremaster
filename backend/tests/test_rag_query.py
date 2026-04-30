@@ -41,7 +41,13 @@ async def test_rag_query_empty_context_422(
 ):
     """GEN-03: Si search_context no retorna chunks, responde 422 por contexto vacío."""
 
-    def _empty_search(*, collection_id: str, query: str, top_k: int | None = None, score_threshold: float | None = None):
+    def _empty_search(
+        *,
+        collection_id: str,
+        query: str,
+        top_k: int | None = None,
+        score_threshold: float | None = None,
+    ):
         return []
 
     rag_engine_mod = importlib.import_module("app.engine.rag")
@@ -80,7 +86,13 @@ async def test_rag_query_qdrant_unavailable_503(
 ):
     """GEN-05: Si search_context falla, retorna 503."""
 
-    def _broken_search(*, collection_id: str, query: str, top_k: int | None = None, score_threshold: float | None = None):
+    def _broken_search(
+        *,
+        collection_id: str,
+        query: str,
+        top_k: int | None = None,
+        score_threshold: float | None = None,
+    ):
         raise Exception("Qdrant down")
 
     rag_engine_mod = importlib.import_module("app.engine.rag")
