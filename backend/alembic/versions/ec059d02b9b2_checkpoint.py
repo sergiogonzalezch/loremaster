@@ -1,8 +1,8 @@
 """Checkpoint
 
-Revision ID: 795e5268d857
+Revision ID: ec059d02b9b2
 Revises:
-Create Date: 2026-04-30 15:42:22.447076
+Create Date: 2026-04-30 16:07:39.937958
 
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 import sqlmodel
 
 # revision identifiers, used by Alembic.
-revision: str = "795e5268d857"
+revision: str = "ec059d02b9b2"
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -38,6 +38,16 @@ def upgrade() -> None:
     with op.batch_alter_table("collections", schema=None) as batch_op:
         batch_op.create_index(batch_op.f("ix_collections_name"), ["name"], unique=True)
 
+    op.create_table(
+        "moderation_log",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("layer", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+        sa.Column(
+            "snippet", sqlmodel.sql.sqltypes.AutoString(length=200), nullable=False
+        ),
+        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.PrimaryKeyConstraint("id"),
+    )
     op.create_table(
         "documents",
         sa.Column("id", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=False),
@@ -313,6 +323,7 @@ def downgrade() -> None:
         batch_op.drop_index(batch_op.f("ix_documents_collection_id"))
 
     op.drop_table("documents")
+    op.drop_table("moderation_log")
     with op.batch_alter_table("collections", schema=None) as batch_op:
         batch_op.drop_index(batch_op.f("ix_collections_name"))
 

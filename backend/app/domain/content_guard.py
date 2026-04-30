@@ -40,16 +40,17 @@ def _check_text(text: str, error: Exception) -> None:
 
 def check_user_input(text: str) -> None:
     """Raises ContentNotAllowedError if text contains blocked content."""
-    _check_text(text, ContentNotAllowedError("Contenido no permitido."))
+    _check_text(text, ContentNotAllowedError("Contenido no permitido.", text))
 
 
 def check_document_content(text: str) -> None:
     """Raises ContentNotAllowedError if extracted document text contains blocked content."""
     _check_text(
-        text, ContentNotAllowedError("El documento contiene contenido no permitido.")
+        text,
+        ContentNotAllowedError("El documento contiene contenido no permitido.", text),
     )
 
 
 def check_generated_output(text: str) -> None:
     """Raises GeneratedContentBlockedError if LLM output contains blocked content."""
-    _check_text(text, GeneratedContentBlockedError())
+    _check_text(text, GeneratedContentBlockedError(text))
