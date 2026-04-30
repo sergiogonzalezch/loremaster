@@ -35,6 +35,7 @@ import TokenCounter from "../components/TokenCounter";
 import { useGenerate } from "../hooks/useGenerate";
 import { useCollectionDocumentsStatus } from "../hooks/useCollectionDocumentsStatus";
 import { usePagination } from "../hooks/usePagination";
+import { useDeleteConfirm } from "../hooks/useDeleteConfirm";
 import type {
   Collection,
   Document,
@@ -67,8 +68,14 @@ function DocumentsTab({
     type: "success" | "warning" | "danger" | "secondary";
     text: string;
   } | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Document | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  const deleteConfirm = useDeleteConfirm<Document>({
+    onDelete: async (doc) => {
+      await deleteDocument(collectionId, doc.id);
+      await fetchDocuments();
+      onDocumentsMutated();
+    },
+    onError: (e) => setError(parseApiError(e, "Error al eliminar documento")),
+  });
   const [filename, setFilename] = useState("");
   const [status, setStatus] = useState<"" | "completed" | "failed">("");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
@@ -206,22 +213,6 @@ function DocumentsTab({
       setUploading(false);
       setSelectedFileName("");
       if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  }
-
-  async function handleDelete() {
-    if (!deleteTarget) return;
-    setDeleting(true);
-    try {
-      await deleteDocument(collectionId, deleteTarget.id);
-      setDeleteTarget(null);
-      await fetchDocuments();
-      onDocumentsMutated();
-    } catch (e) {
-      setError(parseApiError(e, "Error al eliminar documento"));
-      setDeleteTarget(null);
-    } finally {
-      setDeleting(false);
     }
   }
 
@@ -405,7 +396,7 @@ function DocumentsTab({
                     onClick={() => handleOpenDocumentDetail(doc.id)}
                     disabled={
                       loadingDocumentDetail ||
-                      deleting ||
+                      deleteConfirm.deleting ||
                       doc.status === "processing"
                     }
                   >
@@ -414,8 +405,10 @@ function DocumentsTab({
                   <Button
                     variant="outline-danger"
                     size="sm"
-                    onClick={() => setDeleteTarget(doc)}
-                    disabled={deleting || doc.status === "processing"}
+                    onClick={() => deleteConfirm.open(doc)}
+                    disabled={
+                      deleteConfirm.deleting || doc.status === "processing"
+                    }
                   >
                     Eliminar
                   </Button>
@@ -427,12 +420,12 @@ function DocumentsTab({
       )}
 
       <ConfirmModal
-        show={deleteTarget !== null}
+        show={deleteConfirm.target !== null}
         title="Eliminar documento"
-        message={`¿Eliminar "${deleteTarget?.filename}"? Se borrarán sus chunks del índice vectorial.`}
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteTarget(null)}
-        loading={deleting}
+        message={`¿Eliminar "${deleteConfirm.target?.filename}"? Se borrarán sus chunks del índice vectorial.`}
+        onConfirm={deleteConfirm.handleConfirm}
+        onCancel={deleteConfirm.cancel}
+        loading={deleteConfirm.deleting}
       />
       <Modal
         show={selectedDocument !== null}
@@ -515,8 +508,13 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
     variant: "warning" | "danger";
     text: string;
   } | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Entity | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  const deleteConfirm = useDeleteConfirm<Entity>({
+    onDelete: async (entity) => {
+      await deleteEntity(collectionId, entity.id);
+      await fetchEntities();
+    },
+    onError: (e) => setError(parseApiError(e, "Error al eliminar entidad")),
+  });
   const [nameFilter, setNameFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState<"" | EntityType>("");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
@@ -568,21 +566,6 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
       setError(parseApiError(err, "Error al crear entidad"));
     } finally {
       setCreating(false);
-    }
-  }
-
-  async function handleDelete() {
-    if (!deleteTarget) return;
-    setDeleting(true);
-    try {
-      await deleteEntity(collectionId, deleteTarget.id);
-      setDeleteTarget(null);
-      await fetchEntities();
-    } catch (e) {
-      setError(parseApiError(e, "Error al eliminar entidad"));
-      setDeleteTarget(null);
-    } finally {
-      setDeleting(false);
     }
   }
 
@@ -734,7 +717,8 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
                   <Button
                     variant="outline-danger"
                     size="sm"
-                    onClick={() => setDeleteTarget(entity)}
+                    onClick={() => deleteConfirm.open(entity)}
+                    disabled={deleteConfirm.deleting}
                   >
                     Eliminar
                   </Button>
@@ -746,12 +730,12 @@ function EntitiesTab({ collectionId }: { collectionId: string }) {
       )}
 
       <ConfirmModal
-        show={deleteTarget !== null}
+        show={deleteConfirm.target !== null}
         title="Eliminar entidad"
-        message={`¿Eliminar la entidad "${deleteTarget?.name}"? También se eliminarán todos sus drafts.`}
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteTarget(null)}
-        variant={deleting ? "secondary" : "danger"}
+        message={`¿Eliminar la entidad "${deleteConfirm.target?.name}"? También se eliminarán todos sus drafts.`}
+        onConfirm={deleteConfirm.handleConfirm}
+        onCancel={deleteConfirm.cancel}
+        loading={deleteConfirm.deleting}
       />
 
       <Modal show={showCreate} onHide={() => setShowCreate(false)} centered>

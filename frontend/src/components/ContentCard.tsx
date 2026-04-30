@@ -17,6 +17,7 @@ import {
   updateContent,
 } from "../api/contents";
 import ConfirmModal from "./ConfirmModal";
+import { useDeleteConfirm } from "../hooks/useDeleteConfirm";
 import MarkdownContent from "./MarkdownContent";
 import type { EntityContent } from "../types";
 import { CATEGORY_LABELS } from "../utils/constants";
@@ -52,8 +53,20 @@ export default function ContentCard({
   const [saving, setSaving] = useState(false);
 
   const [showDiscard, setShowDiscard] = useState(false);
-  const [showDelete, setShowDelete] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+
+  const deleteConfirm = useDeleteConfirm<EntityContent>({
+    onDelete: async (c) => {
+      setError(null);
+      onOptimisticUpdate?.(c.id, null);
+      await deleteContent(collectionId, entityId, c.id);
+      onAction();
+    },
+    onError: (e) => {
+      onOptimisticUpdate?.(content.id, content);
+      setError(parseApiError(e, "Error al eliminar"));
+    },
+  });
 
   async function handleConfirm() {
     setBusy(true);
@@ -103,23 +116,6 @@ export default function ContentCard({
       onOptimisticUpdate?.(content.id, content);
       setError(parseApiError(e, "Error al descartar"));
       setShowDiscard(false);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleDelete() {
-    setBusy(true);
-    setError(null);
-    onOptimisticUpdate?.(content.id, null);
-    try {
-      await deleteContent(collectionId, entityId, content.id);
-      setShowDelete(false);
-      onAction();
-    } catch (e) {
-      onOptimisticUpdate?.(content.id, content);
-      setError(parseApiError(e, "Error al eliminar"));
-      setShowDelete(false);
     } finally {
       setBusy(false);
     }
@@ -266,7 +262,7 @@ export default function ContentCard({
                 variant="success"
                 size="sm"
                 onClick={handleConfirm}
-                disabled={busy}
+                disabled={busy || deleteConfirm.deleting}
               >
                 {busy ? <Spinner animation="border" size="sm" /> : "Confirmar"}
               </Button>
@@ -277,7 +273,7 @@ export default function ContentCard({
                   setEditText(content.content);
                   setShowEdit(true);
                 }}
-                disabled={busy}
+                disabled={busy || deleteConfirm.deleting}
               >
                 Editar
               </Button>
@@ -285,15 +281,15 @@ export default function ContentCard({
                 variant="outline-warning"
                 size="sm"
                 onClick={() => setShowDiscard(true)}
-                disabled={busy}
+                disabled={busy || deleteConfirm.deleting}
               >
                 Descartar
               </Button>
               <Button
                 variant="outline-danger"
                 size="sm"
-                onClick={() => setShowDelete(true)}
-                disabled={busy}
+                onClick={() => deleteConfirm.open(content)}
+                disabled={busy || deleteConfirm.deleting}
               >
                 Eliminar
               </Button>
@@ -303,8 +299,8 @@ export default function ContentCard({
               <Button
                 variant="outline-danger"
                 size="sm"
-                onClick={() => setShowDelete(true)}
-                disabled={busy}
+                onClick={() => deleteConfirm.open(content)}
+                disabled={busy || deleteConfirm.deleting}
               >
                 Eliminar
               </Button>
@@ -324,15 +320,15 @@ export default function ContentCard({
                     setEditText(content.content);
                     setShowEdit(true);
                   }}
-                  disabled={busy}
+                  disabled={busy || deleteConfirm.deleting}
                 >
                   Editar
                 </Button>
                 <Button
                   variant="outline-danger"
                   size="sm"
-                  onClick={() => setShowDelete(true)}
-                  disabled={busy}
+                  onClick={() => deleteConfirm.open(content)}
+                  disabled={busy || deleteConfirm.deleting}
                 >
                   Eliminar
                 </Button>
@@ -390,12 +386,13 @@ export default function ContentCard({
       />
 
       <ConfirmModal
-        show={showDelete}
+        show={deleteConfirm.target !== null}
         title="Eliminar contenido"
         message="¿Eliminar este contenido permanentemente? Desaparecerá del listado."
-        onConfirm={handleDelete}
-        onCancel={() => setShowDelete(false)}
+        onConfirm={deleteConfirm.handleConfirm}
+        onCancel={deleteConfirm.cancel}
         variant="danger"
+        loading={deleteConfirm.deleting}
       />
     </>
   );
