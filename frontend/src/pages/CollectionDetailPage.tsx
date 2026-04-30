@@ -152,7 +152,9 @@ function DocumentsTab({
       if (allDone.length > 0) {
         const doneDocs = processingDocs.filter((d) => allDone.includes(d.id));
         const failedDocs = doneDocs.filter((d) => justFailed.includes(d.id));
-        setProcessingDocs((prev) => prev.filter((d) => !allDone.includes(d.id)));
+        setProcessingDocs((prev) =>
+          prev.filter((d) => !allDone.includes(d.id)),
+        );
         fetchDocuments();
         onDocumentsMutated();
         if (failedDocs.length > 0) {
