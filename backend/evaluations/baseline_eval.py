@@ -789,6 +789,7 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
 
     # Tracking de contenidos por categoria: category -> [content_id, ...]
     contents_by_cat: dict[str, list[str]] = {}
+    generated_order: list[str] = []
     last_content_id: Optional[str] = None
     image_resp: Optional[httpx.Response] = None
 
@@ -812,18 +813,16 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
             if err:
                 return fail(f"step {i} generate: {err}")
             contents_by_cat.setdefault(cat, []).append(cid_g)
+            generated_order.append(cid_g)
             last_content_id = cid_g
 
         elif action == "confirm":
             target_spec = step.get("target", "first")
             target: Optional[str] = None
             if target_spec == "first":
-                for ids in contents_by_cat.values():
-                    if ids:
-                        target = ids[0]
-                        break
+                target = generated_order[0] if generated_order else None
             elif target_spec == "last":
-                target = last_content_id
+                target = generated_order[-1] if generated_order else last_content_id
             elif target_spec.endswith("_first"):
                 cat_key = target_spec[: -len("_first")]
                 ids = contents_by_cat.get(cat_key, [])
