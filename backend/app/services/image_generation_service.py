@@ -21,7 +21,7 @@ def generate_image_service(
     content_id: str,
 ) -> GenerateImageResponse:
     """
-    Genera un preview de imagen para un EntityContent confirmado.
+    Genera una imagen para un EntityContent confirmado.
 
     Flujo:
     1. Verificar que content_id pertenece a esta entidad y está confirmed
