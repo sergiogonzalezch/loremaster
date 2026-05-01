@@ -774,13 +774,9 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
     # Crear entidad del setup si existe
     last_entity_id: Optional[str] = None
     entity_created = False
-    case_slug = (case.get("id") or "flow").lower()
-
     if setup:
         etype = setup.get("entity_type")
         ename = setup.get("entity_name")
-        if ename:
-            ename = f"{ename} :: {case_slug}"
         edesc = setup.get("entity_description", "")
         if ename:
             if ename not in entity_cache:
@@ -801,13 +797,12 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
         action = step.get("action")
 
         if action == "create_entity":
-            step_name = f"{step['name']} :: {case_slug}"
             eid, err = create_entity(
-                api, cid, step["type"], step_name, step.get("description", "")
+                api, cid, step["type"], step["name"], step.get("description", "")
             )
             if err:
                 return fail(f"step {i} create_entity: {err}")
-            entity_cache[step_name] = eid
+            entity_cache[step["name"]] = eid
             last_entity_id = eid
             entity_created = True
 
