@@ -118,7 +118,7 @@ def confirm_content(
         collection_id=entity.collection_id,
         category=content.category,
         exclude_id=content_id,
-        statuses=[ContentStatus.pending, ContentStatus.confirmed],
+        statuses=[ContentStatus.pending],
     )
     logger.info(
         "Auto-discarded %d sibling content(s) for entity %s category %s",

@@ -136,7 +136,7 @@ Los tests se encuentran en `src/test/`. Las llamadas a la API se mockean con `vi
 | `confirmed` | Editar · Eliminar                         |
 | `discarded` | — (solo visible en el historial)          |
 
-- **Confirmar** → descarta el resto de contenidos pendientes **de la misma categoría**.
+- **Confirmar** → descarta el resto de contenidos pendientes **de la misma categoría**, sin descartar contenidos ya confirmados.
 - **Descartar** → `PATCH .../discard`, cambia el estado a `discarded`, el contenido sigue visible.
 - **Eliminar** → soft-delete (`DELETE`), desaparece del listado.
 

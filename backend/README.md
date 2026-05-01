@@ -164,7 +164,7 @@ El nombre de entidad es único por colección con constraint a nivel de DB (`uq_
 
 Categorías válidas: `backstory`, `extended_description`, `scene`, `chapter`.
 
-Estados posibles: `pending` → `confirmed` | `discarded`. Máximo 5 contenidos `pending` por categoría por entidad. Confirmar uno descarta automáticamente los demás `pending` y el `confirmed` anterior **de esa misma categoría**. Los contenidos en estado `discarded` no se pueden editar.
+Estados posibles: `pending` → `confirmed` | `discarded`. Máximo 5 contenidos `pending` por categoría por entidad. Confirmar uno descarta automáticamente los demás `pending` de esa misma categoría **sin afectar contenidos ya `confirmed`**. Los contenidos en estado `discarded` no se pueden editar.
 
 | Método | Ruta | Descripción | Status |
 |---|---|---|---|
