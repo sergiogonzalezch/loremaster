@@ -43,7 +43,14 @@ DOC_POLL_MAX = 30  # max intentos (~60s)
 WIDTH = 90
 
 # Subset minimo para validar flujo feliz end-to-end
-HAPPY_PATH_CASE_IDS = ["RAG-001", "CHAR-001", "CHAR-005", "CHAR-008", "IMG-001"]
+HAPPY_PATH_CASE_IDS = [
+    "RAG-001",
+    "CHAR-001",
+    "CHAR-005",
+    "CHAR-008",
+    "IMG-001",
+    "FLOW-001",
+]
 
 
 # --------------------------------------------------------------------------- #
