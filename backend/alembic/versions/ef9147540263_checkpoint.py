@@ -1,8 +1,8 @@
 """Checkpoint
 
-Revision ID: a4f4b730fa50
+Revision ID: ef9147540263
 Revises: 
-Create Date: 2026-04-30 22:08:58.070682
+Create Date: 2026-04-30 23:58:03.697939
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'a4f4b730fa50'
+revision: str = 'ef9147540263'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

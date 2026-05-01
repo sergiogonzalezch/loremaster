@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#!/usr/bin/env python3
 """
 Baseline Evaluation -- Loremaster
 Ejecuta el golden dataset contra la API en ejecucion y reporta PASS/FAIL por caso.
@@ -160,44 +158,25 @@ def delete_collection(api: APIClient, cid: str) -> None:
     api.delete(f"/collections/{cid}")
 
 
-def ingest_seed(api: APIClient, cid: str, seed_path: Path) -> tuple[bool, Optional[str], str]:
+def ingest_seed(api: APIClient, cid: str, seed_path: Path) -> tuple[bool, str]:
     if not seed_path.exists():
-        return False, None, f"seed not found: {seed_path}"
+        return False, f"seed not found: {seed_path}"
     resp = api.post_file(f"/collections/{cid}/documents", seed_path)
     if resp.status_code not in (200, 201, 202):
-        return False, None, f"ingest HTTP {resp.status_code}: {resp.text[:80]}"
-
-    doc_id = None
-    try:
-        doc_id = resp.json().get("id")
-    except Exception:
-        doc_id = None
-
-    return True, doc_id, ""
+        return False, f"ingest HTTP {resp.status_code}: {resp.text[:80]}"
+    return True, ""
 
 
-def wait_for_docs(api: APIClient, cid: str, doc_id: Optional[str] = None) -> tuple[bool, str]:
+def wait_for_docs(api: APIClient, cid: str) -> tuple[bool, str]:
     for _ in range(DOC_POLL_MAX):
-        if doc_id:
-            resp = api.get(f"/collections/{cid}/documents/{doc_id}")
-            if resp.status_code != 200:
-                return False, f"get doc HTTP {resp.status_code}"
-            status = (resp.json().get("status") or "").lower()
-            if status == "processed":
-                return True, ""
-            if status in {"failed", "error"}:
-                return False, f"document processing failed (status={status})"
-        else:
-            resp = api.get(f"/collections/{cid}/documents")
-            if resp.status_code != 200:
-                return False, f"list docs HTTP {resp.status_code}"
-            # El listado excluye documentos en processing; si hay items, asumimos listo
-            items = resp.json().get("items", [])
-            if items:
-                return True, ""
-
+        resp = api.get(f"/collections/{cid}/documents")
+        if resp.status_code != 200:
+            return False, f"list docs HTTP {resp.status_code}"
+        # The list endpoint excludes 'processing' docs, so if we get items it's done
+        items = resp.json().get("items", [])
+        if items:
+            return True, ""
         time.sleep(DOC_POLL_INTERVAL)
-
     return False, "timeout waiting for document processing"
 
 
@@ -751,7 +730,7 @@ def _run_image_generation(
     )
     checks: list[Result] = [check_status(resp.status_code, exp["http_status"])]
 
-    if resp.status_code == 201:
+    if resp.status_code == 200:
         body = resp.json()
         if exp.get("has_image_url"):
             checks.append((bool(body.get("image_url")), "falta 'image_url'"))
@@ -793,13 +772,9 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
     # Crear entidad del setup si existe
     last_entity_id: Optional[str] = None
     entity_created = False
-    case_slug = (case.get("id") or "flow").lower()
-
     if setup:
         etype = setup.get("entity_type")
         ename = setup.get("entity_name")
-        if ename:
-            ename = f"{ename} :: {case_slug}"
         edesc = setup.get("entity_description", "")
         if ename:
             if ename not in entity_cache:
@@ -812,7 +787,6 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
 
     # Tracking de contenidos por categoria: category -> [content_id, ...]
     contents_by_cat: dict[str, list[str]] = {}
-    generated_order: list[str] = []
     last_content_id: Optional[str] = None
     image_resp: Optional[httpx.Response] = None
 
@@ -820,13 +794,12 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
         action = step.get("action")
 
         if action == "create_entity":
-            step_name = f"{step['name']} :: {case_slug}"
             eid, err = create_entity(
-                api, cid, step["type"], step_name, step.get("description", "")
+                api, cid, step["type"], step["name"], step.get("description", "")
             )
             if err:
                 return fail(f"step {i} create_entity: {err}")
-            entity_cache[step_name] = eid
+            entity_cache[step["name"]] = eid
             last_entity_id = eid
             entity_created = True
 
@@ -837,16 +810,18 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
             if err:
                 return fail(f"step {i} generate: {err}")
             contents_by_cat.setdefault(cat, []).append(cid_g)
-            generated_order.append(cid_g)
             last_content_id = cid_g
 
         elif action == "confirm":
             target_spec = step.get("target", "first")
             target: Optional[str] = None
             if target_spec == "first":
-                target = generated_order[0] if generated_order else None
+                for ids in contents_by_cat.values():
+                    if ids:
+                        target = ids[0]
+                        break
             elif target_spec == "last":
-                target = generated_order[-1] if generated_order else last_content_id
+                target = last_content_id
             elif target_spec.endswith("_first"):
                 cat_key = target_spec[: -len("_first")]
                 ids = contents_by_cat.get(cat_key, [])
@@ -1036,9 +1011,9 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
             checks.append((kw in text, f"texto sin '{kw}'"))
 
     if image_resp is not None:
-        img_status = exp.get("image_http_status", 201)
+        img_status = exp.get("image_http_status", 200)
         checks.append(check_status(image_resp.status_code, img_status))
-        if image_resp.status_code == 201:
+        if image_resp.status_code == 200:
             ibody = image_resp.json()
             if exp.get("image_has_url"):
                 checks.append((bool(ibody.get("image_url")), "falta image_url"))
@@ -1227,7 +1202,7 @@ def main() -> None:
     # ── Ingestar documento semilla ──────────────────────────────────────────
     seed_ok = True
     if not args.no_seed:
-        ingested, seed_doc_id, err = ingest_seed(api, cid, SEED_DOC_PATH)
+        ingested, err = ingest_seed(api, cid, SEED_DOC_PATH)
         if not ingested:
             _warn(f"Seed no ingestado: {err}")
             _warn("Los casos RAG y de generacion pueden fallar por falta de contexto")
@@ -1235,7 +1210,7 @@ def main() -> None:
         else:
             _ok(f"Documento semilla enviado ({SEED_DOC_PATH.name})")
             print("  Esperando procesamiento del documento...", end=" ", flush=True)
-            ready, err = wait_for_docs(api, cid, seed_doc_id)
+            ready, err = wait_for_docs(api, cid)
             if ready:
                 print("listo.")
             else:
