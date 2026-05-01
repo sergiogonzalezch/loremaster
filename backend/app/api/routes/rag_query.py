@@ -24,7 +24,13 @@ def rag_query(
     session: Session = Depends(get_session),
 ):
     try:
-        return execute_rag_query(request.query, collection_id=collection_id)
+        return execute_rag_query(
+            request.query,
+            collection_id=collection_id,
+            extra_context=request.extra_context,
+            top_k=request.top_k,
+            score_threshold=request.score_threshold,
+        )
     except ContentNotAllowedError as e:
         log_moderation_event(session, "input", e.snippet)
         raise HTTPException(status_code=422, detail=str(e))

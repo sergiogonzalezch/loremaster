@@ -237,7 +237,7 @@ def get_contents_by_status(
     resp = list_contents(api, cid, eid, **params)
     if resp.status_code != 200:
         return []
-    return resp.json().get("items", [])
+    return resp.json().get("data", [])
 
 
 def get_latest_pending(
@@ -431,7 +431,7 @@ def _run_entity_crud(
         resp = api.get(f"/collections/{cid}/entities", params=params)
         checks = [check_status(resp.status_code, exp["http_status"])]
         if resp.status_code == 200:
-            items = resp.json().get("items", [])
+            items = resp.json().get("data", [])
             if "count_gte" in exp:
                 checks.append(
                     (
@@ -519,7 +519,7 @@ def _run_entity_content(
         checks: list[Result] = [check_status(resp.status_code, exp["http_status"])]
         if resp.status_code == 200:
             body = resp.json()
-            items = body.get("items", [])
+            items = body.get("data", [])
             if exp.get("has_pagination_meta"):
                 checks.append(("meta" in body, "falta 'meta' en response"))
             for mf in exp.get("meta_fields", []):

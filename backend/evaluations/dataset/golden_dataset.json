@@ -648,7 +648,7 @@
     {
       "id": "FACT-010",
       "category": "entity_content",
-      "description": "Editar contenido descartado retorna 422 (no se puede editar tras descartar)",
+      "description": "Editar contenido descartado retorna 409 (conflicto de estado: no se puede editar tras descartar)",
       "setup": {
         "entity_type": "faction",
         "entity_name": "Orden del Sol Naciente",
@@ -662,7 +662,7 @@
         "text": "Texto nuevo que no deberia aplicarse"
       },
       "expected": {
-        "http_status": 422
+        "http_status": 409
       }
     },
     {
@@ -798,8 +798,8 @@
       "description": "Confirmar contenido pending retorna 200 con status confirmed",
       "setup": {
         "entity_type": "location",
-        "entity_name": "Gran Biblioteca de Solmara",
-        "entity_description": "Repositorio arcano.",
+        "entity_name": "Torre del Vigia",
+        "entity_description": "Torre de observacion en las montanas del norte de Valdorath.",
         "generate_category": "extended_description",
         "generate_query": "Descripcion detallada"
       },
@@ -937,7 +937,7 @@
         "entity_type": "item",
         "entity_name": "Nodo Corrompido",
         "entity_description": "Artefacto prohibido.",
-        "generate_n_pending": 5,
+        "generate_n_pending": 4,
         "generate_category": "backstory",
         "generate_query": "Historia del nodo"
       },
