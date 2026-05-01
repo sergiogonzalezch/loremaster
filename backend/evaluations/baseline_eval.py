@@ -14,6 +14,7 @@ Uso (desde backend/ con el venv activo):
     python evaluations/baseline_eval.py --ids RAG-001 CHAR-005 FLOW-001
     python evaluations/baseline_eval.py --keep-collection
     python evaluations/baseline_eval.py --no-seed
+    python evaluations/baseline_eval.py --happy-path
 """
 
 import argparse
@@ -40,6 +41,9 @@ CRUD_TIMEOUT = 30.0
 DOC_POLL_INTERVAL = 2  # segundos entre polls de estado del documento
 DOC_POLL_MAX = 30  # max intentos (~60s)
 WIDTH = 90
+
+# Subset minimo para validar flujo feliz end-to-end
+HAPPY_PATH_CASE_IDS = ["RAG-001", "CHAR-001", "CHAR-005", "CHAR-008", "IMG-001"]
 
 
 # --------------------------------------------------------------------------- #
@@ -1066,6 +1070,83 @@ def run_case(api: APIClient, cid: str, case: dict, entity_cache: dict) -> Result
         return False, f"{type(exc).__name__}: {exc}"
 
 
+def run_happy_path(api: APIClient, cid: str) -> list[dict]:
+    """
+    Happy path deterministico para smoke testing end-to-end.
+    Evita casos frágiles del golden dataset (limites acumulados, guardrails variables).
+    """
+    results: list[dict] = []
+
+    def add(case_id: str, description: str, result: Result, started_at: float) -> None:
+        passed, detail = result
+        duration_ms = int((time.monotonic() - started_at) * 1000)
+        status = "PASS" if passed else "FAIL"
+        _result_line(case_id, status, duration_ms, description)
+        if not passed and detail:
+            print(f"         => {detail}")
+        results.append(
+            {
+                "id": case_id,
+                "category": "happy_path",
+                "description": description,
+                "status": status,
+                "detail": detail if not passed else "",
+                "duration_ms": duration_ms,
+            }
+        )
+
+    # HP-001: RAG query básica
+    t0 = time.monotonic()
+    rag = {
+        "id": "HP-001",
+        "category": "rag_query",
+        "description": "RAG responde sobre fundador del reino",
+        "input": {"query": "Quien fundo Valdorath y que construyo?"},
+        "expected": {"http_status": 200, "has_answer": True, "sources_count_gte": 1},
+    }
+    add("HP-001", rag["description"], _run_rag_query(api, cid, rag), t0)
+
+    # HP-002: Crear entidad
+    t0 = time.monotonic()
+    ename = f"Aldric Happy {int(time.time())}"
+    eid, err = create_entity(api, cid, "character", ename, "Rey de Valdorath")
+    add("HP-002", "Creacion de entidad character", (bool(eid), err), t0)
+    if not eid:
+        return results
+
+    # HP-003: Generar contenido
+    t0 = time.monotonic()
+    content_id, err = generate_content(
+        api,
+        cid,
+        eid,
+        "backstory",
+        "Describe su historia y motivaciones politicas",
+    )
+    add("HP-003", "Generacion de backstory", (bool(content_id), err), t0)
+    if not content_id:
+        return results
+
+    # HP-004: Confirmar contenido
+    t0 = time.monotonic()
+    add("HP-004", "Confirmacion de contenido", confirm_content(api, cid, eid, content_id), t0)
+
+    # HP-005: Generar imagen desde contenido confirmado
+    t0 = time.monotonic()
+    resp = api.post(
+        f"/collections/{cid}/entities/{eid}/generate/image", json={"content_id": content_id}
+    )
+    hp5 = check_all(
+        [
+            check_status(resp.status_code, 200),
+            (bool(resp.json().get("image_url")) if resp.status_code == 200 else False, "falta image_url"),
+        ]
+    )
+    add("HP-005", "Generacion de imagen con contenido confirmado", hp5, t0)
+
+    return results
+
+
 # --------------------------------------------------------------------------- #
 # Reporting
 # --------------------------------------------------------------------------- #
@@ -1154,6 +1235,11 @@ def main() -> None:
         action="store_true",
         help="Omitir la ingestion del documento semilla",
     )
+    parser.add_argument(
+        "--happy-path",
+        action="store_true",
+        help="Ejecutar solo un subconjunto happy path del golden dataset",
+    )
     args = parser.parse_args()
 
     # ── Cargar dataset ──────────────────────────────────────────────────────
@@ -1168,6 +1254,8 @@ def main() -> None:
         all_cases = [c for c in all_cases if c.get("category") in args.categories]
     if args.ids:
         all_cases = [c for c in all_cases if c.get("id") in args.ids]
+    if args.happy_path:
+        all_cases = [c for c in all_cases if c.get("id") in HAPPY_PATH_CASE_IDS]
 
     _sep()
     print("  LOREMASTER -- BASELINE EVALUATION")
@@ -1175,6 +1263,8 @@ def main() -> None:
         f"  Dataset  : {DATASET_PATH.name}  ({len(dataset.get('cases', []))} casos totales)"
     )
     print(f"  Ejecutar : {len(all_cases)} casos")
+    if args.happy_path:
+        print(f"  Modo     : happy path ({len(HAPPY_PATH_CASE_IDS)} ids objetivo)")
     print(f"  Base URL : {args.base_url}")
     _sep()
 
@@ -1228,30 +1318,33 @@ def main() -> None:
     results: list[dict] = []
     entity_cache: dict[str, str] = {}
 
-    for case in all_cases:
-        case_id = case.get("id", "?")
-        desc = case.get("description", "")
-        category = case.get("category", "")
+    if args.happy_path:
+        results = run_happy_path(api, cid)
+    else:
+        for case in all_cases:
+            case_id = case.get("id", "?")
+            desc = case.get("description", "")
+            category = case.get("category", "")
 
-        t0 = time.monotonic()
-        passed, detail = run_case(api, cid, case, entity_cache)
-        duration_ms = int((time.monotonic() - t0) * 1000)
+            t0 = time.monotonic()
+            passed, detail = run_case(api, cid, case, entity_cache)
+            duration_ms = int((time.monotonic() - t0) * 1000)
 
-        status = "PASS" if passed else "FAIL"
-        _result_line(case_id, status, duration_ms, desc)
-        if not passed and detail:
-            print(f"         => {detail}")
+            status = "PASS" if passed else "FAIL"
+            _result_line(case_id, status, duration_ms, desc)
+            if not passed and detail:
+                print(f"         => {detail}")
 
-        results.append(
-            {
-                "id": case_id,
-                "category": category,
-                "description": desc,
-                "status": status,
-                "detail": detail if not passed else "",
-                "duration_ms": duration_ms,
-            }
-        )
+            results.append(
+                {
+                    "id": case_id,
+                    "category": category,
+                    "description": desc,
+                    "status": status,
+                    "detail": detail if not passed else "",
+                    "duration_ms": duration_ms,
+                }
+            )
 
     # ── Cleanup ─────────────────────────────────────────────────────────────
     print()
