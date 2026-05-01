@@ -1212,7 +1212,7 @@
     {
       "id": "FLOW-002",
       "category": "full_flow",
-      "description": "Confirmar un nuevo contenido reemplaza el unico confirmed previo de la misma categoria",
+      "description": "Confirmar un nuevo contenido mantiene los confirmed previos y solo descarta pending de la misma categoria",
       "setup": {
         "entity_type": "character",
         "entity_name": "Personaje Flujo 2",
@@ -1225,8 +1225,8 @@
         { "action": "confirm", "target": "last" }
       ],
       "expected": {
-        "confirmed_count": 1,
-        "discarded_count": 1,
+        "confirmed_count": 2,
+        "discarded_count": 0,
         "pending_count": 0,
         "active_confirmed_query_contains": "Segunda descripcion"
       }
