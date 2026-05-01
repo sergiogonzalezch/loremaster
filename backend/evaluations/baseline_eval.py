@@ -318,9 +318,6 @@ def _run_rag_query(api: APIClient, cid: str, case: dict) -> Result:
     exp = case.get("expected", {})
 
     payload: dict = {"query": inp.get("query", "")}
-    for key in ("extra_context", "score_threshold", "top_k"):
-        if key in inp:
-            payload[key] = inp[key]
 
     resp = api.post(f"/collections/{cid}/query", json=payload)
     checks: list[Result] = [check_status(resp.status_code, exp["http_status"])]

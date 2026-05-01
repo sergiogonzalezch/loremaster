@@ -23,8 +23,6 @@ def invoke_rag_pipeline(
     collection_id: str,
     query: str,
     extra_context: str = "",
-    top_k: int | None = None,
-    score_threshold: float | None = None,
 ) -> tuple[str, int]:
     """Search RAG context, build prompt, invoke LLM, return (answer, num_chunks).
 
@@ -32,10 +30,8 @@ def invoke_rag_pipeline(
         RuntimeError: If Qdrant or the LLM is unavailable.
         NoContextAvailableError: If there is no context at all (no chunks and no extra_context).
     """
-    if top_k is None:
-        top_k = settings.top_k
-    if score_threshold is None:
-        score_threshold = settings.rag_score_threshold
+    top_k = settings.top_k
+    score_threshold = settings.rag_score_threshold
 
     logger.debug(
         "invoke_rag_pipeline: collection=%s threshold=%.2f top_k=%d query='%.80s'",
@@ -85,8 +81,6 @@ def invoke_generation_pipeline(
     category: ContentCategory,
     query: str,
     extra_context: str = "",
-    top_k: int | None = None,
-    score_threshold: float | None = None,
 ) -> tuple[str, int]:
     """Entity-aware RAG pipeline using category-specific prompt templates.
 
@@ -94,10 +88,8 @@ def invoke_generation_pipeline(
         RuntimeError: If Qdrant or the LLM is unavailable.
         NoContextAvailableError: If there is no context at all (no chunks and no extra_context).
     """
-    if top_k is None:
-        top_k = settings.top_k
-    if score_threshold is None:
-        score_threshold = settings.rag_score_threshold
+    top_k = settings.top_k
+    score_threshold = settings.rag_score_threshold
 
     logger.debug(
         "invoke_generation_pipeline: collection=%s entity='%s' category=%s threshold=%.2f top_k=%d query='%.80s'",
