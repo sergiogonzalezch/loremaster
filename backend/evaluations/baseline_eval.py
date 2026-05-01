@@ -149,8 +149,10 @@ def check_fields(body: dict, fields: dict) -> list[Result]:
 # --------------------------------------------------------------------------- #
 
 
-def create_collection(api: APIClient, name: str) -> tuple[Optional[str], str]:
-    resp = api.post("/collections/", json={"name": name, "description": "Eval run"})
+def create_collection(
+    api: APIClient, name: str, description: str = "Eval run"
+) -> tuple[Optional[str], str]:
+    resp = api.post("/collections/", json={"name": name, "description": description})
     if resp.status_code == 201:
         return resp.json()["id"], ""
     return None, f"create collection failed: HTTP {resp.status_code}"
@@ -1194,8 +1196,11 @@ def main() -> None:
         sys.exit(1)
 
     # ── Crear coleccion ─────────────────────────────────────────────────────
-    collection_name = f"Eval Baseline {int(time.time())}"
-    cid, err = create_collection(api, collection_name)
+    collection_cfg = dataset.get("collection", {})
+    base_collection_name = collection_cfg.get("name", "Eval Baseline")
+    collection_description = collection_cfg.get("description", "Eval run")
+    collection_name = f"{base_collection_name} [baseline {int(time.time())}]"
+    cid, err = create_collection(api, collection_name, collection_description)
     if err:
         _err(f"No se pudo crear la coleccion: {err}")
         sys.exit(1)
@@ -1203,14 +1208,17 @@ def main() -> None:
 
     # ── Ingestar documento semilla ──────────────────────────────────────────
     seed_ok = True
+    seed_path = SEED_DOC_PATH
+    if dataset_seed := collection_cfg.get("seed_document"):
+        seed_path = Path(__file__).parents[1] / dataset_seed
     if not args.no_seed:
-        ingested, err = ingest_seed(api, cid, SEED_DOC_PATH)
+        ingested, err = ingest_seed(api, cid, seed_path)
         if not ingested:
             _warn(f"Seed no ingestado: {err}")
             _warn("Los casos RAG y de generacion pueden fallar por falta de contexto")
             seed_ok = False
         else:
-            _ok(f"Documento semilla enviado ({SEED_DOC_PATH.name})")
+            _ok(f"Documento semilla enviado ({seed_path.name})")
             print("  Esperando procesamiento del documento...", end=" ", flush=True)
             ready, err = wait_for_docs(api, cid)
             if ready:
