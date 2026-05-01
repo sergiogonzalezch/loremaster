@@ -256,27 +256,27 @@ Aspectos que deben resolverse antes de cualquier despliegue fuera de entorno loc
 ### Backend — Tests faltantes
 
 **`deletion_service.py`**
-- Fallo de Qdrant durante el delete (post-commit): verificar que los vectores huérfanos se detectan y se loguean.
-- Retry logic: confirmar que se reintenta el número correcto de veces y que el backoff funciona.
-- **Nuevo** (ítem 21): cascade entity delete no limpia `ImageRecord` — añadir test que verifique que al eliminar una entidad sus `generated_images` quedan soft-deleted.
+- ~~Fallo de Qdrant durante el delete (post-commit): verificar que los vectores huérfanos se detectan y se loguean.~~ ✅ Cubierto en `tests/test_deletion_service.py::test_delete_vectors_with_retry_logs_orphans_on_final_failure`.
+- ~~Retry logic: confirmar que se reintenta el número correcto de veces y que el backoff funciona.~~ ✅ Cubierto en `tests/test_deletion_service.py::test_delete_vectors_with_retry_retries_until_success`.
+- ~~**Nuevo** (ítem 21): cascade entity delete no limpia `ImageRecord` — añadir test que verifique que al eliminar una entidad sus `generated_images` quedan soft-deleted.~~ ✅ Cubierto en `tests/test_entities.py::test_delete_entity_cascades_generated_images`.
 
 **`image_generation_service.py`**
-- Guardrail semánticamente incorrecto (ítem 22): test que verifique que contenido LLM bloqueado lanza la excepción correcta.
-- `NoContextAvailableError` para content no confirmado (ítem 23): test que verifique que content en estado `pending` retorna 422 con mensaje de negocio apropiado (ya cubierto en `test_img_05`, pero el tipo de excepción interno no se valida).
+- ~~Guardrail semánticamente incorrecto (ítem 22): test que verifique que contenido LLM bloqueado lanza la excepción correcta.~~ ✅ Cubierto en `tests/test_image_generation.py::test_img_09_blocked_generated_content_returns_422`.
+- ~~`NoContextAvailableError` para content no confirmado (ítem 23): test que verifique que content en estado `pending` retorna 422 con mensaje de negocio apropiado (ya cubierto en `test_img_05`, pero el tipo de excepción interno no se valida).~~ ✅ Cubierto en `tests/test_image_generation.py::test_img_08_pending_content_error_has_business_message`.
 
 **`content_management_service.py`**
-- `_discard_sibling_contents` en isolation: verificar que solo descarta contenidos de la misma categoría, no de otras.
+- ~~`_discard_sibling_contents` en isolation: verificar que solo descarta contenidos de la misma categoría, no de otras.~~ ✅ Cubierto en `tests/test_content_management_service.py::test_discard_sibling_contents_only_affects_same_category`.
 
 **`entities_service.py` / `collection_service.py`**
-- Soft-delete + nombre reservado: una entidad eliminada (soft) no puede recrearse con el mismo nombre. Caso documentado en `CLAUDE.md` pero sin test.
+- ~~Soft-delete + nombre reservado: una entidad eliminada (soft) no puede recrearse con el mismo nombre. Caso documentado en `CLAUDE.md` pero sin test.~~ ✅ Cubierto en `tests/test_entities.py::test_deleted_entity_name_cannot_be_reused`.
 
 **`documents_service.py`**
-- Ingestión con PDF malformado: verificar que el documento queda en `status=failed` y no bloquea otros.
-- Timeout de Qdrant durante el background task: verificar manejo de error.
+- ~~Ingestión con PDF malformado: verificar que el documento queda en `status=failed` y no bloquea otros.~~ ✅ Cubierto en `tests/test_documents.py::test_ingest_malformed_pdf_marks_422_and_allows_following_ingest` (no bloquea ingestas posteriores).
+- ~~Timeout de Qdrant durante el background task: verificar manejo de error.~~ ✅ Cubierto en `tests/test_documents.py::test_ingest_qdrant_failure_sets_processing_error` (marca `failed` y persiste `processing_error`).
 
 **`rag_pipeline.py`**
 - Qdrant caído en tiempo de query: debe devolver error controlado, no 500 sin detalle.
-- LLM timeout: verificar que el semáforo se libera correctamente aunque el request falle.
+- ~~LLM timeout: verificar que el semáforo se libera correctamente aunque el request falle.~~ ✅ Cubierto en `tests/test_rag_query.py::test_rag_query_llm_failure_releases_semaphore`.
 
 **~~`content_guard.py`~~** ✅ Cubierto  
 - ~~Tests directos de los patrones regex: inputs válidos, inválidos, y edge cases (strings vacíos, unicode).~~ — `tests/test_content_guard.py` cubre 32 casos: baseline, full-width Unicode, diacríticos, mayúsculas mixtas, routing de excepciones y edge cases.
@@ -335,4 +335,4 @@ Ver solución aplicada en **ítem 6**.
 
 ---
 
-*Generado el 2026-04-25. Actualizado el 2026-04-28 (ítems 17, 18). Actualizado el 2026-04-30 (ítems 6 revisado, 21-25 nuevos — análisis del módulo image generation). Actualizado el 2026-04-30 (ítems 22-25 resueltos — correcciones en image generation service, route y models). Actualizado el 2026-04-30 (ítems 6 y 21 resueltos — cascade soft-delete de ImageRecord en deletion_service.py). Actualizado el 2026-04-30 (ítem 7 resuelto — retry endpoint + processing_error + raw_text en documents). Actualizado el 2026-04-30 (ítem 19 resuelto — tabla moderation_log + log_moderation_event en los tres routes de moderación). Ver historial de correcciones aplicadas en los commits del branch `main`.*
+*Generado el 2026-04-25. Actualizado el 2026-04-28 (ítems 17, 18). Actualizado el 2026-04-30 (ítems 6 revisado, 21-25 nuevos — análisis del módulo image generation). Actualizado el 2026-04-30 (ítems 22-25 resueltos — correcciones en image generation service, route y models). Actualizado el 2026-04-30 (ítems 6 y 21 resueltos — cascade soft-delete de ImageRecord en deletion_service.py). Actualizado el 2026-04-30 (ítem 7 resuelto — retry endpoint + processing_error + raw_text en documents). Actualizado el 2026-04-30 (ítem 19 resuelto — tabla moderation_log + log_moderation_event en los tres routes de moderación). Actualizado el 2026-05-01 (cobertura de tests backend en deletion_service, content_management_service e image_generation/tests de cascade). Actualizado el 2026-05-01 (tests de documents_service para PDF malformado/errores de ingest y release de semáforo en rag_query). Actualizado el 2026-05-01 (reserva de nombre tras soft-delete en entities_service + test ENT-14). Ver historial de correcciones aplicadas en los commits del branch `main`.*

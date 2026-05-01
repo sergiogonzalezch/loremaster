@@ -18,14 +18,14 @@ from app.services.deletion_service import cascade_delete_entity
 logger = logging.getLogger(__name__)
 
 
-def _find_active_by_name(
+def _find_by_name(
     session: Session, collection_id: str, name: str
 ) -> Entity | None:
+    """Reserva nombres incluso si la entidad fue soft-deleted."""
     return session.exec(
         select(Entity).where(
             Entity.collection_id == collection_id,
             Entity.name == name,
-            Entity.is_deleted == False,
         )
     ).first()
 
@@ -35,7 +35,7 @@ def create_entity_service(
 ) -> Entity:
     name = request.name.strip()
     description = request.description.strip()
-    if _find_active_by_name(session, collection_id, name):
+    if _find_by_name(session, collection_id, name):
         raise DuplicateEntityNameError(name)
     entity = Entity(
         collection_id=collection_id,
@@ -97,7 +97,7 @@ def update_entity_service(
     session: Session, entity: Entity, request: UpdateEntityRequest
 ) -> Entity:
     new_name = request.name.strip() if request.name is not None else entity.name
-    if new_name != entity.name and _find_active_by_name(
+    if new_name != entity.name and _find_by_name(
         session, entity.collection_id, new_name
     ):
         raise DuplicateEntityNameError(new_name)

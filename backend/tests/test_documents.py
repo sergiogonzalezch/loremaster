@@ -230,3 +230,53 @@ async def test_ingest_extraction_timeout_returns_422(
         files={"file": ("slow.pdf", b"%PDF-1.4", "application/pdf")},
     )
     assert response.status_code == 422
+
+
+@pytest.mark.anyio
+async def test_ingest_malformed_pdf_marks_422_and_allows_following_ingest(
+    client, monkeypatch, db_session, sample_collection
+):
+    """DOC-14: PDF malformado retorna 422 y no bloquea ingestas posteriores."""
+
+    def _broken_extract(_content_bytes, content_type):
+        if content_type == "application/pdf":
+            raise ValueError("malformed pdf")
+        return "texto ok"
+
+    monkeypatch.setattr("app.services.documents_service.extract_text", _broken_extract)
+
+    bad = await client.post(
+        f"/api/v1/collections/{sample_collection.id}/documents",
+        files={"file": ("broken.pdf", b"%PDF-1.4 broken", "application/pdf")},
+    )
+    assert bad.status_code == 422
+
+    ok = await client.post(
+        f"/api/v1/collections/{sample_collection.id}/documents",
+        files={"file": ("ok.txt", b"contenido sano", "text/plain")},
+    )
+    assert ok.status_code == 202
+
+
+@pytest.mark.anyio
+async def test_ingest_qdrant_failure_sets_processing_error(
+    client, monkeypatch, db_session, sample_collection
+):
+    """DOC-15: Falla de ingestión deja processing_error persistido."""
+
+    def _raise_ingest(*args, **kwargs):
+        raise TimeoutError("qdrant timeout")
+
+    monkeypatch.setattr("app.services.documents_service.ingest_chunks", _raise_ingest)
+
+    response = await client.post(
+        f"/api/v1/collections/{sample_collection.id}/documents",
+        files={"file": ("timeout.txt", b"contenido", "text/plain")},
+    )
+    assert response.status_code == 202
+
+    doc = db_session.exec(
+        select(Document).where(Document.filename == "timeout.txt")
+    ).first()
+    assert doc.status == DocumentStatus.failed
+    assert "qdrant timeout" in (doc.processing_error or "")
