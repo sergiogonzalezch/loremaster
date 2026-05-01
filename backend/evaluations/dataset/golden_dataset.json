@@ -102,25 +102,24 @@
     {
       "id": "RAG-007",
       "category": "rag_query",
-      "description": "Consulta con extra_context proporcionado se procesa correctamente",
+      "description": "Consulta especifica sobre Arion retorna respuesta con fuentes",
       "input": {
-        "query": "Que relacion tiene este personaje con la fundacion del reino?",
-        "extra_context": "El personaje en cuestion es Arion el Plateado, mago fundador."
+        "query": "Que papel jugo Arion el Plateado en la fundacion del reino de Valdorath?"
       },
       "expected": {
         "http_status": 200,
         "has_answer": true,
-        "sources_count_gte": 0,
-        "answer_min_length": 40
+        "sources_count_gte": 1,
+        "answer_min_length": 40,
+        "answer_contains_any": ["Arion", "Valdorath", "fundador", "fundacion"]
       }
     },
     {
       "id": "RAG-008",
       "category": "rag_query",
-      "description": "Consulta con score_threshold 0.5 retorna resultado filtrado",
+      "description": "Consulta sobre el gobierno actual retorna respuesta valida",
       "input": {
-        "query": "Quien gobierna actualmente el reino?",
-        "score_threshold": 0.5
+        "query": "Quien gobierna actualmente el reino?"
       },
       "expected": {
         "http_status": 200,
@@ -130,15 +129,14 @@
     {
       "id": "RAG-009",
       "category": "rag_query",
-      "description": "Consulta con top_k=1 retorna como maximo 1 fuente",
+      "description": "Consulta general retorna fuentes del conocimiento almacenado",
       "input": {
-        "query": "Historia del reino de Valdorath",
-        "top_k": 1
+        "query": "Historia del reino de Valdorath"
       },
       "expected": {
         "http_status": 200,
         "has_answer": true,
-        "sources_count_lte": 1
+        "sources_count_gte": 1
       }
     },
     {

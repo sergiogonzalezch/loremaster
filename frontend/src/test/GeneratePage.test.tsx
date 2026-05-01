@@ -108,7 +108,7 @@ describe("GeneratePage", () => {
   it("botón Generar habilitado con query válida", async () => {
     renderPage();
     await userEvent.type(
-      screen.getByPlaceholderText(/Escribe tu consulta/),
+      screen.getByRole("textbox"),
       "¿Quién es el portador del Anillo?",
     );
     expect(screen.getByRole("button", { name: "Generar" })).toBeEnabled();
@@ -123,7 +123,7 @@ describe("GeneratePage", () => {
 
     renderPage();
     await userEvent.type(
-      screen.getByPlaceholderText(/Escribe tu consulta/),
+      screen.getByRole("textbox"),
       "¿Quién es el portador del Anillo Único?",
     );
     await userEvent.click(screen.getByRole("button", { name: "Generar" }));
