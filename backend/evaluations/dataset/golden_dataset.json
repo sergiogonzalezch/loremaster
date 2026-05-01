@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "description": "Golden dataset de Lore Master — cobertura completa: RAG, CRUD de entidades (5 tipos x 10 casos), todas las combinaciones de categoria valida e invalida, guardrails, preview de imagen y flujos de ciclo de vida.",
+  "description": "Golden dataset de Lore Master — cobertura completa: RAG, CRUD de entidades (5 tipos x 10 casos), todas las combinaciones de categoria valida e invalida, guardrails, generacion de imagen y flujos de ciclo de vida.",
   "created_at": "2026-04-29",
   "collection": {
     "name": "Mundo de Valdorath",
@@ -1101,7 +1101,7 @@
     },
     {
       "id": "IMG-001",
-      "category": "image_preview",
+      "category": "image_generation",
       "description": "Preview mock con contenido confirmed retorna imagen y prompt visual",
       "setup": {
         "entity_type": "character",
@@ -1121,8 +1121,8 @@
     },
     {
       "id": "IMG-002",
-      "category": "image_preview",
-      "description": "Preview sin contenido confirmed usa descripcion de entidad como fuente del prompt",
+      "category": "image_generation",
+      "description": "Generacion de imagen sin contenido confirmed usa descripcion de entidad como fuente del prompt",
       "input": {
         "entity_type": "character",
         "entity_name": "Mercader Itinerante",
@@ -1138,8 +1138,8 @@
     },
     {
       "id": "IMG-003",
-      "category": "image_preview",
-      "description": "Preview con content_id de contenido confirmed lo usa como fuente del prompt",
+      "category": "image_generation",
+      "description": "Generacion de imagen con content_id de contenido confirmed lo usa como fuente del prompt",
       "setup": {
         "entity_type": "creature",
         "entity_name": "Dragon de Piedra",
@@ -1159,8 +1159,8 @@
     },
     {
       "id": "IMG-004",
-      "category": "image_preview",
-      "description": "Preview con content_id de contenido pending (no confirmed) retorna 422",
+      "category": "image_generation",
+      "description": "Generacion de imagen con content_id de contenido pending (no confirmed) retorna 422",
       "setup": {
         "entity_type": "character",
         "entity_name": "Explorador Pendiente",
@@ -1177,8 +1177,8 @@
     },
     {
       "id": "IMG-005",
-      "category": "image_preview",
-      "description": "Preview de location con solo descripcion de entidad retorna 200 con backend mock",
+      "category": "image_generation",
+      "description": "Generacion de imagen de location con solo descripcion de entidad retorna 200 con backend mock",
       "input": {
         "entity_type": "location",
         "entity_name": "Llanura de las Cenizas",
@@ -1278,7 +1278,7 @@
     {
       "id": "FLOW-005",
       "category": "full_flow",
-      "description": "Flujo completo end-to-end: crear entidad, generar contenido, confirmar, generar preview de imagen",
+      "description": "Flujo completo end-to-end: crear entidad, generar contenido, confirmar, generar imagen",
       "steps": [
         { "action": "create_entity", "type": "character", "name": "Heroe Final", "description": "Personaje protagonista de la evaluacion completa." },
         { "action": "generate", "category": "backstory", "query": "Describe el origen heroico de este personaje y su conexion con el mundo de Valdorath" },
@@ -1301,7 +1301,7 @@
       "entity_crud": 18,
       "entity_content": 28,
       "guardrail": 6,
-      "image_preview": 5,
+      "image_generation": 5,
       "full_flow": 5
     },
     "coverage": {

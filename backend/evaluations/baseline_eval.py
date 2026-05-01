@@ -12,7 +12,7 @@ Prerequisitos:
 Uso (desde backend/ con el venv activo):
     python evaluations/baseline_eval.py
     python evaluations/baseline_eval.py --base-url http://localhost:8000
-    python evaluations/baseline_eval.py --categories rag_query guardrail image_preview
+    python evaluations/baseline_eval.py --categories rag_query guardrail image_generation
     python evaluations/baseline_eval.py --ids RAG-001 CHAR-005 FLOW-001
     python evaluations/baseline_eval.py --keep-collection
     python evaluations/baseline_eval.py --no-seed
@@ -681,7 +681,7 @@ def _run_guardrail(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
     return fail(f"endpoint desconocido: {endpoint}")
 
 
-def _run_image_preview(
+def _run_image_generation(
     api: APIClient, cid: str, case: dict, entity_cache: dict
 ) -> Result:
     inp = case.get("input", {})
@@ -707,7 +707,7 @@ def _run_image_preview(
 
     if setup:
         gen_cat = setup.get("generate_category")
-        gen_query = setup.get("generate_query", "Setup image preview")
+        gen_query = setup.get("generate_query", "Setup image generation")
         then = setup.get("then")
         if gen_cat:
             cid_g, err = generate_content(api, cid, entity_id, gen_cat, gen_query)
@@ -1055,8 +1055,8 @@ def run_case(api: APIClient, cid: str, case: dict, entity_cache: dict) -> Result
             return _run_entity_content(api, cid, case, entity_cache)
         if category == "guardrail":
             return _run_guardrail(api, cid, case, entity_cache)
-        if category == "image_preview":
-            return _run_image_preview(api, cid, case, entity_cache)
+        if category == "image_generation":
+            return _run_image_generation(api, cid, case, entity_cache)
         if category == "full_flow":
             return _run_full_flow(api, cid, case, entity_cache)
         return False, f"categoria desconocida: {category}"
