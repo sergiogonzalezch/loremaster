@@ -23,6 +23,8 @@ export default function GeneratePage() {
   const [collectionName, setCollectionName] = useState<string>("");
   const [query, setQuery] = useState("");
   const [lastQuery, setLastQuery] = useState("");
+  const [extraContext, setExtraContext] = useState("");
+  const [lastExtraContext, setLastExtraContext] = useState("");
   const [errorDismissed, setErrorDismissed] = useState(false);
   const { hasCompletedDocs, refresh } =
     useCollectionDocumentsStatus(collectionId);
@@ -57,14 +59,15 @@ export default function GeneratePage() {
     const canGenerate = await refresh();
     if (!canGenerate) return;
     setLastQuery(trimmedQuery);
-    await run(collectionId, { query: trimmedQuery });
+    setLastExtraContext(extraContext.trim());
+    await run(collectionId, { query: trimmedQuery, extra_context: extraContext.trim() });
   }
 
   async function handleRegenerate() {
     if (!collectionId || lastQuery.trim().length < 5) return;
     const canGenerate = await refresh();
     if (!canGenerate) return;
-    await run(collectionId, { query: lastQuery.trim() });
+    await run(collectionId, { query: lastQuery.trim(), extra_context: lastExtraContext });
   }
 
   return (
@@ -127,6 +130,21 @@ export default function GeneratePage() {
             disabled={isLoading || hasCompletedDocs === false}
           />
           <TokenCounter text={query} />
+        </Form.Group>
+        <Form.Group className="mb-3">
+          <Form.Label className="fw-semibold">Contexto adicional</Form.Label>
+          <Form.Control
+            as="textarea"
+            rows={2}
+            value={extraContext}
+            onChange={(e) => setExtraContext(e.target.value)}
+            placeholder="Aporta información de apoyo que el modelo tendrá en cuenta al responder..."
+            maxLength={5000}
+            disabled={isLoading || hasCompletedDocs === false}
+          />
+          <Form.Text className="text-muted">
+            Opcional. Por ejemplo: el rol del personaje, el tono que buscas o restricciones del mundo.
+          </Form.Text>
         </Form.Group>
         <div className="d-flex gap-2">
           <Button
