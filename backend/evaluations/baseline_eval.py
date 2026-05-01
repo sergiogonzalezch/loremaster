@@ -144,6 +144,15 @@ def check_fields(body: dict, fields: dict) -> list[Result]:
     ]
 
 
+def get_response_items(body: dict) -> list[dict]:
+    """Compatibilidad de paginados: prioriza `data` y soporta legacy `items`."""
+    if isinstance(body.get("data"), list):
+        return body["data"]
+    if isinstance(body.get("items"), list):
+        return body["items"]
+    return []
+
+
 # --------------------------------------------------------------------------- #
 # API helpers
 # --------------------------------------------------------------------------- #
@@ -175,7 +184,7 @@ def wait_for_docs(api: APIClient, cid: str) -> tuple[bool, str]:
         if resp.status_code != 200:
             return False, f"list docs HTTP {resp.status_code}"
         # The list endpoint excludes 'processing' docs, so if we get items it's done
-        items = resp.json().get("items", [])
+        items = get_response_items(resp.json())
         if items:
             return True, ""
         time.sleep(DOC_POLL_INTERVAL)
@@ -237,7 +246,7 @@ def get_contents_by_status(
     resp = list_contents(api, cid, eid, **params)
     if resp.status_code != 200:
         return []
-    return resp.json().get("items", [])
+    return get_response_items(resp.json())
 
 
 def get_latest_pending(
@@ -257,6 +266,7 @@ def apply_setup(
     cid: str,
     setup: dict,
     entity_cache: dict,
+    case_id: str = "",
 ) -> tuple[Optional[str], Optional[str], str]:
     """
     Crea entidad + genera/confirma/descarta contenido segun el setup.
@@ -267,17 +277,18 @@ def apply_setup(
 
     etype = setup.get("entity_type")
     ename = setup.get("entity_name") or setup.get("entity")
+    scoped_ename = f"{ename}::{case_id}" if (ename and case_id) else ename
     edesc = setup.get("entity_description", "")
 
     entity_id: Optional[str] = None
-    if ename:
-        if ename in entity_cache:
-            entity_id = entity_cache[ename]
+    if scoped_ename:
+        if scoped_ename in entity_cache:
+            entity_id = entity_cache[scoped_ename]
         else:
             entity_id, err = create_entity(api, cid, etype, ename, edesc)
             if err:
                 return None, None, f"setup.create_entity: {err}"
-            entity_cache[ename] = entity_id
+            entity_cache[scoped_ename] = entity_id
 
     content_id: Optional[str] = None
     gen_cat = setup.get("generate_category")
@@ -374,7 +385,9 @@ def _run_entity_crud(
     entity_id: Optional[str] = None
 
     if setup:
-        entity_id, _, err = apply_setup(api, cid, setup, entity_cache)
+        entity_id, _, err = apply_setup(
+            api, cid, setup, entity_cache, case.get("id", "")
+        )
         if err:
             return fail(f"setup: {err}")
 
@@ -431,7 +444,7 @@ def _run_entity_crud(
         resp = api.get(f"/collections/{cid}/entities", params=params)
         checks = [check_status(resp.status_code, exp["http_status"])]
         if resp.status_code == 200:
-            items = resp.json().get("items", [])
+            items = get_response_items(resp.json())
             if "count_gte" in exp:
                 checks.append(
                     (
@@ -463,13 +476,15 @@ def _run_entity_content(
         return fail("no entity_name en input ni setup")
 
     entity_id: Optional[str]
-    if ename in entity_cache:
-        entity_id = entity_cache[ename]
+    case_scope = case.get("id", "")
+    cache_key = f"{ename}::{case_scope}" if case_scope else ename
+    if cache_key in entity_cache:
+        entity_id = entity_cache[cache_key]
     else:
         entity_id, err = create_entity(api, cid, etype, ename, edesc)
         if err:
             return fail(f"create entity: {err}")
-        entity_cache[ename] = entity_id
+        entity_cache[cache_key] = entity_id
 
     # Procesar setup (generate, confirm, discard, generate_n)
     setup_content_id: Optional[str] = None
@@ -519,7 +534,7 @@ def _run_entity_content(
         checks: list[Result] = [check_status(resp.status_code, exp["http_status"])]
         if resp.status_code == 200:
             body = resp.json()
-            items = body.get("items", [])
+            items = get_response_items(body)
             if exp.get("has_pagination_meta"):
                 checks.append(("meta" in body, "falta 'meta' en response"))
             for mf in exp.get("meta_fields", []):
@@ -666,12 +681,14 @@ def _run_guardrail(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
         edesc = inp.get("entity_description", "")
         category = inp.get("category")
         query = inp.get("query", "")
-        if ename not in entity_cache:
+        case_scope = case.get("id", "")
+        cache_key = f"{ename}::{case_scope}" if case_scope else ename
+        if cache_key not in entity_cache:
             entity_id, err = create_entity(api, cid, etype, ename, edesc)
             if err:
                 return fail(f"create entity: {err}")
-            entity_cache[ename] = entity_id
-        eid = entity_cache[ename]
+            entity_cache[cache_key] = entity_id
+        eid = entity_cache[cache_key]
         resp = api.post(
             f"/collections/{cid}/entities/{eid}/generate/{category}",
             json={"query": query},
@@ -695,12 +712,14 @@ def _run_image_generation(
     if not ename:
         return fail("no entity_name")
 
-    if ename not in entity_cache:
+    case_scope = case.get("id", "")
+    cache_key = f"{ename}::{case_scope}" if case_scope else ename
+    if cache_key not in entity_cache:
         entity_id, err = create_entity(api, cid, etype, ename, edesc)
         if err:
             return fail(f"create entity: {err}")
-        entity_cache[ename] = entity_id
-    entity_id = entity_cache[ename]
+        entity_cache[cache_key] = entity_id
+    entity_id = entity_cache[cache_key]
 
     confirmed_content_id: Optional[str] = None
     pending_content_id: Optional[str] = None
@@ -779,12 +798,14 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
         ename = setup.get("entity_name")
         edesc = setup.get("entity_description", "")
         if ename:
-            if ename not in entity_cache:
+            case_scope = case.get("id", "")
+            cache_key = f"{ename}::{case_scope}" if case_scope else ename
+            if cache_key not in entity_cache:
                 eid, err = create_entity(api, cid, etype, ename, edesc)
                 if err:
                     return fail(f"setup create: {err}")
-                entity_cache[ename] = eid
-            last_entity_id = entity_cache[ename]
+                entity_cache[cache_key] = eid
+            last_entity_id = entity_cache[cache_key]
             entity_created = True
 
     # Tracking de contenidos por categoria: category -> [content_id, ...]
