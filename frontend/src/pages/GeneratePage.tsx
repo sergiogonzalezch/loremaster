@@ -60,14 +60,20 @@ export default function GeneratePage() {
     if (!canGenerate) return;
     setLastQuery(trimmedQuery);
     setLastExtraContext(extraContext.trim());
-    await run(collectionId, { query: trimmedQuery, extra_context: extraContext.trim() });
+    await run(collectionId, {
+      query: trimmedQuery,
+      extra_context: extraContext.trim(),
+    });
   }
 
   async function handleRegenerate() {
     if (!collectionId || lastQuery.trim().length < 5) return;
     const canGenerate = await refresh();
     if (!canGenerate) return;
-    await run(collectionId, { query: lastQuery.trim(), extra_context: lastExtraContext });
+    await run(collectionId, {
+      query: lastQuery.trim(),
+      extra_context: lastExtraContext,
+    });
   }
 
   return (
@@ -143,7 +149,8 @@ export default function GeneratePage() {
             disabled={isLoading || hasCompletedDocs === false}
           />
           <Form.Text className="text-muted">
-            Opcional. Por ejemplo: el rol del personaje, el tono que buscas o restricciones del mundo.
+            Opcional. Por ejemplo: el rol del personaje, el tono que buscas o
+            restricciones del mundo.
           </Form.Text>
         </Form.Group>
         <div className="d-flex gap-2">
