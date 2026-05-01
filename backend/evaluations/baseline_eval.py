@@ -14,6 +14,7 @@ Uso (desde backend/ con el venv activo):
     python evaluations/baseline_eval.py --ids RAG-001 CHAR-005 FLOW-001
     python evaluations/baseline_eval.py --keep-collection
     python evaluations/baseline_eval.py --no-seed
+    python evaluations/baseline_eval.py --happy-path
 """
 
 import argparse
@@ -40,6 +41,16 @@ CRUD_TIMEOUT = 30.0
 DOC_POLL_INTERVAL = 2  # segundos entre polls de estado del documento
 DOC_POLL_MAX = 30  # max intentos (~60s)
 WIDTH = 90
+
+# Subset minimo para validar flujo feliz end-to-end
+HAPPY_PATH_CASE_IDS = [
+    "RAG-001",
+    "CHAR-001",
+    "CHAR-005",
+    "CHAR-008",
+    "IMG-001",
+    "FLOW-001",
+]
 
 
 # --------------------------------------------------------------------------- #
@@ -1154,6 +1165,11 @@ def main() -> None:
         action="store_true",
         help="Omitir la ingestion del documento semilla",
     )
+    parser.add_argument(
+        "--happy-path",
+        action="store_true",
+        help="Ejecutar solo un subconjunto happy path del golden dataset",
+    )
     args = parser.parse_args()
 
     # ── Cargar dataset ──────────────────────────────────────────────────────
@@ -1168,6 +1184,8 @@ def main() -> None:
         all_cases = [c for c in all_cases if c.get("category") in args.categories]
     if args.ids:
         all_cases = [c for c in all_cases if c.get("id") in args.ids]
+    if args.happy_path:
+        all_cases = [c for c in all_cases if c.get("id") in HAPPY_PATH_CASE_IDS]
 
     _sep()
     print("  LOREMASTER -- BASELINE EVALUATION")
@@ -1175,6 +1193,8 @@ def main() -> None:
         f"  Dataset  : {DATASET_PATH.name}  ({len(dataset.get('cases', []))} casos totales)"
     )
     print(f"  Ejecutar : {len(all_cases)} casos")
+    if args.happy_path:
+        print(f"  Modo     : happy path ({len(HAPPY_PATH_CASE_IDS)} ids objetivo)")
     print(f"  Base URL : {args.base_url}")
     _sep()
 
