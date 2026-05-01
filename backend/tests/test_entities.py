@@ -233,3 +233,38 @@ async def test_filter_entities_created_after_future(client, sample_collection):
     )
     assert response.status_code == 200
     assert response.json()["meta"]["total"] == 0
+
+
+@pytest.mark.anyio
+async def test_delete_entity_cascades_generated_images(
+    client, db_session, sample_collection, sample_entity
+):
+    """ENT-13: Eliminar entidad hace soft-delete de sus ImageRecord."""
+    from app.models.image_generation import ImageRecord
+
+    image = ImageRecord(
+        entity_id=sample_entity.id,
+        collection_id=sample_collection.id,
+        content_id=None,
+        category="backstory",
+        visual_prompt="prompt",
+        prompt_token_count=12,
+        prompt_source="content_direct",
+        prompt_strategy="direct",
+        truncated=False,
+        image_url="https://example.com/image.png",
+        image_path="path/image.png",
+        filename="image.png",
+        status="pending",
+    )
+    db_session.add(image)
+    db_session.commit()
+    db_session.refresh(image)
+
+    response = await client.delete(
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}"
+    )
+    assert response.status_code == 204
+
+    db_session.refresh(image)
+    assert image.is_deleted is True
