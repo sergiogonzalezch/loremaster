@@ -732,7 +732,7 @@ def _run_image_generation(
     )
     checks: list[Result] = [check_status(resp.status_code, exp["http_status"])]
 
-    if resp.status_code == 200:
+    if resp.status_code == 201:
         body = resp.json()
         if exp.get("has_image_url"):
             checks.append((bool(body.get("image_url")), "falta 'image_url'"))
@@ -1013,9 +1013,9 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
             checks.append((kw in text, f"texto sin '{kw}'"))
 
     if image_resp is not None:
-        img_status = exp.get("image_http_status", 200)
+        img_status = exp.get("image_http_status", 201)
         checks.append(check_status(image_resp.status_code, img_status))
-        if image_resp.status_code == 200:
+        if image_resp.status_code == 201:
             ibody = image_resp.json()
             if exp.get("image_has_url"):
                 checks.append((bool(ibody.get("image_url")), "falta image_url"))
