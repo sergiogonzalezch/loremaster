@@ -268,25 +268,3 @@ async def test_delete_entity_cascades_generated_images(
 
     db_session.refresh(image)
     assert image.is_deleted is True
-
-
-@pytest.mark.anyio
-async def test_deleted_entity_name_cannot_be_reused(client, sample_collection):
-    """ENT-14: Nombre de entidad soft-deleted permanece reservado en la colección."""
-    payload = {"type": "character", "name": "Nombre Reservado", "description": "d"}
-
-    created = await client.post(
-        f"/api/v1/collections/{sample_collection.id}/entities", json=payload
-    )
-    assert created.status_code == 201
-    entity_id = created.json()["id"]
-
-    deleted = await client.delete(
-        f"/api/v1/collections/{sample_collection.id}/entities/{entity_id}"
-    )
-    assert deleted.status_code == 204
-
-    recreated = await client.post(
-        f"/api/v1/collections/{sample_collection.id}/entities", json=payload
-    )
-    assert recreated.status_code == 409

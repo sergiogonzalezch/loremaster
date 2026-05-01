@@ -1102,7 +1102,7 @@
     {
       "id": "IMG-001",
       "category": "image_generation",
-      "description": "Preview mock con contenido confirmed retorna imagen y prompt visual",
+      "description": "Generacion mock con contenido confirmed retorna 201 con imagen y prompt visual",
       "setup": {
         "entity_type": "character",
         "entity_name": "Arion el Plateado",
@@ -1111,8 +1111,11 @@
         "generate_query": "Describe sus origenes",
         "then": "confirm"
       },
+      "input": {
+        "use_confirmed_content_id": true
+      },
       "expected": {
-        "http_status": 200,
+        "http_status": 201,
         "has_image_url": true,
         "has_visual_prompt": true,
         "backend": "mock",
@@ -1122,7 +1125,7 @@
     {
       "id": "IMG-002",
       "category": "image_generation",
-      "description": "Generacion de imagen sin contenido confirmed usa descripcion de entidad como fuente del prompt",
+      "description": "Generacion de imagen sin content_id retorna 422 (campo requerido desde image_generation)",
       "input": {
         "entity_type": "character",
         "entity_name": "Mercader Itinerante",
@@ -1130,10 +1133,7 @@
         "content_id": null
       },
       "expected": {
-        "http_status": 200,
-        "has_image_url": true,
-        "has_visual_prompt": true,
-        "prompt_source_not": "content"
+        "http_status": 422
       }
     },
     {
@@ -1152,9 +1152,9 @@
         "use_confirmed_content_id": true
       },
       "expected": {
-        "http_status": 200,
+        "http_status": 201,
         "has_image_url": true,
-        "prompt_source": "content"
+        "prompt_source": "content_direct"
       }
     },
     {
@@ -1178,7 +1178,7 @@
     {
       "id": "IMG-005",
       "category": "image_generation",
-      "description": "Generacion de imagen de location con solo descripcion de entidad retorna 200 con backend mock",
+      "description": "Generacion de imagen de location sin content_id retorna 422 (campo requerido)",
       "input": {
         "entity_type": "location",
         "entity_name": "Llanura de las Cenizas",
@@ -1186,10 +1186,7 @@
         "content_id": null
       },
       "expected": {
-        "http_status": 200,
-        "has_image_url": true,
-        "has_visual_prompt": true,
-        "backend": "mock"
+        "http_status": 422
       }
     },
     {
@@ -1288,7 +1285,7 @@
       "expected": {
         "entity_created": true,
         "content_status": "confirmed",
-        "image_http_status": 200,
+        "image_http_status": 201,
         "image_has_url": true,
         "image_backend": "mock"
       }
