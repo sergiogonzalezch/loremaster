@@ -198,3 +198,64 @@ async def test_img_07_response_is_mock_backend(
     assert response.status_code == 201
     assert response.json()["backend"] == "mock"
     assert response.json()["generation_ms"] == 0
+
+
+@pytest.mark.anyio
+async def test_img_08_pending_content_error_has_business_message(
+    client, db_session, mock_rag_engine, mock_llm, sample_collection, sample_entity
+):
+    """IMG-08: content pending retorna 422 con mensaje de regla de negocio."""
+    gen = await client.post(
+        f"/api/v1/collections/{sample_collection.id}"
+        f"/entities/{sample_entity.id}/generate/backstory",
+        json={"query": "Historia del personaje para imagen"},
+    )
+    pending_id = gen.json()["id"]
+
+    response = await client.post(
+        f"/api/v1/collections/{sample_collection.id}"
+        f"/entities/{sample_entity.id}/generate/image",
+        json={"content_id": pending_id},
+    )
+
+    assert response.status_code == 422
+    assert "no está confirmado" in response.json()["detail"]
+
+
+@pytest.mark.anyio
+async def test_img_09_blocked_generated_content_returns_422(
+    client,
+    monkeypatch,
+    db_session,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
+    sample_entity,
+):
+    """IMG-09: Guardrail de salida bloquea contenido y retorna 422 semántico."""
+    from app.core.exceptions import GeneratedContentBlockedError
+
+    content_id = await _create_confirmed_content(
+        client,
+        db_session,
+        mock_rag_engine,
+        mock_llm,
+        sample_collection.id,
+        sample_entity.id,
+    )
+
+    def _raise_blocked(_text: str):
+        raise GeneratedContentBlockedError()
+
+    monkeypatch.setattr(
+        "app.services.image_generation_service.check_generated_output", _raise_blocked
+    )
+
+    response = await client.post(
+        f"/api/v1/collections/{sample_collection.id}"
+        f"/entities/{sample_entity.id}/generate/image",
+        json={"content_id": content_id},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "El contenido generado no está permitido."
