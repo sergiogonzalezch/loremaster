@@ -774,9 +774,13 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
     # Crear entidad del setup si existe
     last_entity_id: Optional[str] = None
     entity_created = False
+    case_slug = (case.get("id") or "flow").lower()
+
     if setup:
         etype = setup.get("entity_type")
         ename = setup.get("entity_name")
+        if ename:
+            ename = f"{ename} :: {case_slug}"
         edesc = setup.get("entity_description", "")
         if ename:
             if ename not in entity_cache:
@@ -789,6 +793,7 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
 
     # Tracking de contenidos por categoria: category -> [content_id, ...]
     contents_by_cat: dict[str, list[str]] = {}
+    generated_order: list[str] = []
     last_content_id: Optional[str] = None
     image_resp: Optional[httpx.Response] = None
 
@@ -796,12 +801,13 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
         action = step.get("action")
 
         if action == "create_entity":
+            step_name = f"{step['name']} :: {case_slug}"
             eid, err = create_entity(
-                api, cid, step["type"], step["name"], step.get("description", "")
+                api, cid, step["type"], step_name, step.get("description", "")
             )
             if err:
                 return fail(f"step {i} create_entity: {err}")
-            entity_cache[step["name"]] = eid
+            entity_cache[step_name] = eid
             last_entity_id = eid
             entity_created = True
 
@@ -812,18 +818,16 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
             if err:
                 return fail(f"step {i} generate: {err}")
             contents_by_cat.setdefault(cat, []).append(cid_g)
+            generated_order.append(cid_g)
             last_content_id = cid_g
 
         elif action == "confirm":
             target_spec = step.get("target", "first")
             target: Optional[str] = None
             if target_spec == "first":
-                for ids in contents_by_cat.values():
-                    if ids:
-                        target = ids[0]
-                        break
+                target = generated_order[0] if generated_order else None
             elif target_spec == "last":
-                target = last_content_id
+                target = generated_order[-1] if generated_order else last_content_id
             elif target_spec.endswith("_first"):
                 cat_key = target_spec[: -len("_first")]
                 ids = contents_by_cat.get(cat_key, [])
