@@ -159,3 +159,36 @@ async def test_rag_query_with_threshold_passes_param_to_search(
     )
 
     assert calls[0]["score_threshold"] == 0.35
+
+
+@pytest.mark.anyio
+async def test_rag_query_llm_failure_releases_semaphore(
+    client, mock_rag_engine, monkeypatch, sample_collection, sample_document
+):
+    """GEN-08: Si el LLM falla, el semáforo se libera y el siguiente request puede ejecutar."""
+
+    class FailsOnceChain:
+        def __init__(self):
+            self.calls = 0
+
+        def invoke(self, payload: dict):
+            self.calls += 1
+            if self.calls == 1:
+                raise TimeoutError("llm timeout")
+            return "ok after failure"
+
+    broken_then_ok = FailsOnceChain()
+    monkeypatch.setattr("app.engine.rag_pipeline.chain", broken_then_ok)
+
+    first = await client.post(
+        f"/api/v1/collections/{sample_collection.id}/query",
+        json={"query": "Describe el mundo"},
+    )
+    assert first.status_code == 503
+
+    second = await client.post(
+        f"/api/v1/collections/{sample_collection.id}/query",
+        json={"query": "Describe el mundo"},
+    )
+    assert second.status_code == 200
+    assert second.json()["answer"] == "ok after failure"
