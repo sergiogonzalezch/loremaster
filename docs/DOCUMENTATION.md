@@ -13,7 +13,7 @@ A diferencia de los asistentes de IA genéricos basados en chat, Lore Master ofr
 - Ingesta y vectoriza documentos de lore (PDF/TXT) proporcionados por el usuario.
 - Recupera contexto relevante del lore antes de cada generación de texto.
 - Genera texto narrativo expandido, consistente con el lore cargado.
-- Genera **contenidos RAG por categoría** para cada entidad: el usuario puede editar, confirmar (descarta automáticamente los demás pendientes de la misma categoría) o descartar cada contenido.
+- Genera **contenidos RAG por categoría** para cada entidad: el usuario puede editar, confirmar (descarta automáticamente los demás pendientes de la misma categoría, sin afectar confirmados previos) o descartar cada contenido.
 - Gestiona entidades del mundo (personajes, criaturas, escenarios, facciones, ítems) con atributos estructurados.
 - Aplica moderación de contenido en tres capas (input, documentos y output del LLM) mediante filtros regex (`domain/content_guard.py`).
 
@@ -81,7 +81,7 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 | **HU-03** | Generación de texto (RAG) | Como creador de mundos, quiero hacer consultas sobre una colección para obtener texto coherente basado en el lore cargado.                             |
 | **HU-04** | Generación de imágenes    | Como creador de mundos, quiero generar imágenes consistentes con mi lore utilizando contexto de la colección.                                          |
 | **HU-05** | Gestión de entidades      | Como creador de mundos, quiero gestionar personajes, escenarios y objetos dentro de una colección para estructurar mi mundo.                           |
-| **HU-06** | Contenidos RAG por categoría | Como creador de mundos, quiero generar contenidos RAG por categoría para una entidad y confirmar el mejor, descartando automáticamente los demás pendientes de esa categoría.   |
+| **HU-06** | Contenidos RAG por categoría | Como creador de mundos, quiero generar contenidos RAG por categoría para una entidad y confirmar el mejor, descartando automáticamente los demás pendientes de esa categoría sin afectar confirmados previos.   |
 
 ### Diagramas
 
