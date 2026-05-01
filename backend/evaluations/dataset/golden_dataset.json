@@ -662,7 +662,7 @@
         "text": "Texto nuevo que no deberia aplicarse"
       },
       "expected": {
-        "http_status": 422
+        "http_status": 409
       }
     },
     {
