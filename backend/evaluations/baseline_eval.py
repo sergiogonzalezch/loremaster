@@ -160,25 +160,44 @@ def delete_collection(api: APIClient, cid: str) -> None:
     api.delete(f"/collections/{cid}")
 
 
-def ingest_seed(api: APIClient, cid: str, seed_path: Path) -> tuple[bool, str]:
+def ingest_seed(api: APIClient, cid: str, seed_path: Path) -> tuple[bool, Optional[str], str]:
     if not seed_path.exists():
-        return False, f"seed not found: {seed_path}"
+        return False, None, f"seed not found: {seed_path}"
     resp = api.post_file(f"/collections/{cid}/documents", seed_path)
     if resp.status_code not in (200, 201, 202):
-        return False, f"ingest HTTP {resp.status_code}: {resp.text[:80]}"
-    return True, ""
+        return False, None, f"ingest HTTP {resp.status_code}: {resp.text[:80]}"
+
+    doc_id = None
+    try:
+        doc_id = resp.json().get("id")
+    except Exception:
+        doc_id = None
+
+    return True, doc_id, ""
 
 
-def wait_for_docs(api: APIClient, cid: str) -> tuple[bool, str]:
+def wait_for_docs(api: APIClient, cid: str, doc_id: Optional[str] = None) -> tuple[bool, str]:
     for _ in range(DOC_POLL_MAX):
-        resp = api.get(f"/collections/{cid}/documents")
-        if resp.status_code != 200:
-            return False, f"list docs HTTP {resp.status_code}"
-        # The list endpoint excludes 'processing' docs, so if we get items it's done
-        items = resp.json().get("items", [])
-        if items:
-            return True, ""
+        if doc_id:
+            resp = api.get(f"/collections/{cid}/documents/{doc_id}")
+            if resp.status_code != 200:
+                return False, f"get doc HTTP {resp.status_code}"
+            status = (resp.json().get("status") or "").lower()
+            if status == "processed":
+                return True, ""
+            if status in {"failed", "error"}:
+                return False, f"document processing failed (status={status})"
+        else:
+            resp = api.get(f"/collections/{cid}/documents")
+            if resp.status_code != 200:
+                return False, f"list docs HTTP {resp.status_code}"
+            # El listado excluye documentos en processing; si hay items, asumimos listo
+            items = resp.json().get("items", [])
+            if items:
+                return True, ""
+
         time.sleep(DOC_POLL_INTERVAL)
+
     return False, "timeout waiting for document processing"
 
 
@@ -1208,7 +1227,7 @@ def main() -> None:
     # ── Ingestar documento semilla ──────────────────────────────────────────
     seed_ok = True
     if not args.no_seed:
-        ingested, err = ingest_seed(api, cid, SEED_DOC_PATH)
+        ingested, seed_doc_id, err = ingest_seed(api, cid, SEED_DOC_PATH)
         if not ingested:
             _warn(f"Seed no ingestado: {err}")
             _warn("Los casos RAG y de generacion pueden fallar por falta de contexto")
@@ -1216,7 +1235,7 @@ def main() -> None:
         else:
             _ok(f"Documento semilla enviado ({SEED_DOC_PATH.name})")
             print("  Esperando procesamiento del documento...", end=" ", flush=True)
-            ready, err = wait_for_docs(api, cid)
+            ready, err = wait_for_docs(api, cid, seed_doc_id)
             if ready:
                 print("listo.")
             else:
