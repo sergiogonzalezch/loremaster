@@ -18,9 +18,7 @@ from app.services.deletion_service import cascade_delete_entity
 logger = logging.getLogger(__name__)
 
 
-def _find_by_name(
-    session: Session, collection_id: str, name: str
-) -> Entity | None:
+def _find_by_name(session: Session, collection_id: str, name: str) -> Entity | None:
     """Reserva nombres incluso si la entidad fue soft-deleted."""
     return session.exec(
         select(Entity).where(
