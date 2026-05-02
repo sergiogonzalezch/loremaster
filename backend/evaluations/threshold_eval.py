@@ -236,7 +236,6 @@ def run_evaluation(
 
 
 def _print_query_block(query: dict, rows_for_query: list[dict]) -> None:
-    q = rows_for_query[0]
     expected = "SI" if query["expect_context"] else "NO"
     _sep("-")
     print(f"  {query['id']}  {query['label']}")
@@ -317,9 +316,10 @@ def _print_recommendation(rows: list[dict]) -> None:
     for thr in THRESHOLDS:
         thr_rows = [r for r in rows if r["threshold"] == thr]
         fallos = sum(1 for r in thr_rows if not r["correct"])
-        recall_vals = [r["hits"] / TOP_K for r in thr_rows]
+        on_topic_rows = [r for r in thr_rows if r["expect_context"]]
+        recall_vals = [r["hits"] / TOP_K for r in on_topic_rows]
         prec_vals = [r["avg_score"] for r in thr_rows if r["hits"] > 0]
-        recall = sum(recall_vals) / len(recall_vals)
+        recall = sum(recall_vals) / len(recall_vals) if recall_vals else 0.0
         prec = sum(prec_vals) / len(prec_vals) if prec_vals else 0.0
         # Combinación heurística: maximizar precision * recall y minimizar fallos
         score = prec * recall - fallos * 0.15

@@ -119,7 +119,7 @@ def fixed_size_chunks(text: str, chunk_size: int, chunk_overlap: int) -> list[st
 def _split_into_sentences(text: str) -> list[str]:
     """Divide el texto en frases usando puntuacion final."""
     raw = re.split(r"(?<=[.!?])\s+", text.replace("\n", " "))
-    return [s.strip() for s in raw if len(s.strip()) > 8]
+    return [s.strip() for s in raw if s.strip()]
 
 
 def _cosine_distance(a: np.ndarray, b: np.ndarray) -> float:
@@ -264,14 +264,12 @@ def _print_summary_table(results: list[tuple[str, dict]]) -> None:
 
 def main() -> None:
     text = SAMPLE_TEXT
-    sentences = _split_into_sentences(text)
 
     _sep("=")
     print("  LOREMASTER -- CHUNKING DEMO")
     print("  Fixed-Size (RecursiveCharacterTextSplitter) vs Semantic Chunking")
     _sep("=")
     print(f"\n  Texto fuente : {len(text)} caracteres")
-    print(f"  Frases aprox.: {len(sentences)}")
     print()
 
     all_results: list[tuple[str, dict]] = []
