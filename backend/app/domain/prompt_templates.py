@@ -27,7 +27,7 @@ _TEMPLATES: dict[ContentCategory, str] = {
         _SAFETY_INSTRUCTION
         + _PREAMBLE
         + "Expande la descripción de '{entity_name}' ({entity_type}). "
-        + "Detalla rasgos, apariencia, personalidad o características distintivas "
+        + "Detalla rasgos físicos, apariencia, ropa, personalidad o características distintivas "
         + "sin inventar eventos narrativos. "
         + _ONLY_CONTEXT
         + _SECTIONS
