@@ -19,34 +19,23 @@ _llm_semaphore = threading.Semaphore(settings.max_concurrent_llm_calls)
 generation_chain = llm | StrOutputParser()
 
 
-def invoke_rag_pipeline(
+def _retrieve_context(
     collection_id: str,
     query: str,
     extra_context: str = "",
 ) -> tuple[str, int]:
-    """Search RAG context, build prompt, invoke LLM, return (answer, num_chunks).
+    """Search Qdrant, merge extra_context, return (context_str, num_chunks).
 
     Raises:
-        RuntimeError: If Qdrant or the LLM is unavailable.
-        NoContextAvailableError: If there is no context at all (no chunks and no extra_context).
+        RuntimeError: If Qdrant is unavailable.
+        NoContextAvailableError: If no context is found from any source.
     """
-    top_k = settings.top_k
-    score_threshold = settings.rag_score_threshold
-
-    logger.debug(
-        "invoke_rag_pipeline: collection=%s threshold=%.2f top_k=%d query='%.80s'",
-        collection_id,
-        score_threshold,
-        top_k,
-        query,
-    )
-
     try:
         context_chunks = search_context(
             collection_id=collection_id,
             query=query,
-            top_k=top_k,
-            score_threshold=score_threshold,
+            top_k=settings.top_k,
+            score_threshold=settings.rag_score_threshold,
         )
     except Exception as e:
         logger.error("Qdrant search failed for collection %s: %s", collection_id, e)
@@ -59,6 +48,30 @@ def invoke_rag_pipeline(
     if not context.strip():
         raise NoContextAvailableError()
 
+    return context, len(context_chunks)
+
+
+def invoke_rag_pipeline(
+    collection_id: str,
+    query: str,
+    extra_context: str = "",
+) -> tuple[str, int]:
+    """Search RAG context, build prompt, invoke LLM, return (answer, num_chunks).
+
+    Raises:
+        RuntimeError: If Qdrant or the LLM is unavailable.
+        NoContextAvailableError: If there is no context at all (no chunks and no extra_context).
+    """
+    logger.debug(
+        "invoke_rag_pipeline: collection=%s threshold=%.2f top_k=%d query='%.80s'",
+        collection_id,
+        settings.rag_score_threshold,
+        settings.top_k,
+        query,
+    )
+
+    context, num_chunks = _retrieve_context(collection_id, query, extra_context)
+
     try:
         with _llm_semaphore:
             answer = chain.invoke({"context": context, "query": query})
@@ -69,9 +82,9 @@ def invoke_rag_pipeline(
     logger.info(
         "RAG response generated for collection %s using %d chunk(s)",
         collection_id,
-        len(context_chunks),
+        num_chunks,
     )
-    return answer, len(context_chunks)
+    return answer, num_chunks
 
 
 def invoke_generation_pipeline(
@@ -88,36 +101,17 @@ def invoke_generation_pipeline(
         RuntimeError: If Qdrant or the LLM is unavailable.
         NoContextAvailableError: If there is no context at all (no chunks and no extra_context).
     """
-    top_k = settings.top_k
-    score_threshold = settings.rag_score_threshold
-
     logger.debug(
         "invoke_generation_pipeline: collection=%s entity='%s' category=%s threshold=%.2f top_k=%d query='%.80s'",
         collection_id,
         entity_name,
         category,
-        score_threshold,
-        top_k,
+        settings.rag_score_threshold,
+        settings.top_k,
         query,
     )
 
-    try:
-        context_chunks = search_context(
-            collection_id=collection_id,
-            query=query,
-            top_k=top_k,
-            score_threshold=score_threshold,
-        )
-    except Exception as e:
-        logger.error("Qdrant search failed for collection %s: %s", collection_id, e)
-        raise RuntimeError("Vector search unavailable") from e
-
-    rag_context = "\n\n---\n\n".join(context_chunks) if context_chunks else ""
-    parts = [p for p in (extra_context, rag_context) if p]
-    context = "\n\n---\n\n".join(parts)
-
-    if not context.strip():
-        raise NoContextAvailableError()
+    context, num_chunks = _retrieve_context(collection_id, query, extra_context)
 
     rendered_prompt = render_prompt(
         category=category,
@@ -143,6 +137,6 @@ def invoke_generation_pipeline(
         "Generation pipeline completed for entity '%s' (category=%s) using %d chunk(s)",
         entity_name,
         category,
-        len(context_chunks),
+        num_chunks,
     )
-    return answer, len(context_chunks)
+    return answer, num_chunks
