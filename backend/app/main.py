@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title=settings.project_name,
     version=settings.api_version,
-    description="API for lore management and knowledge base",
+    description="API para gestión de lore y base de conocimiento",
     lifespan=lifespan,
 )
 
