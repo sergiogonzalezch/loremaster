@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -38,6 +38,15 @@ class Settings(BaseSettings):
 
     # Database (default SQLite for local dev; set DATABASE_URL in .env for PostgreSQL)
     database_url: str = "sqlite:///./loremaster.db"
+
+    @model_validator(mode="after")
+    def _validate_cors(self) -> "Settings":
+        if "*" in self.allowed_origins:
+            raise ValueError(
+                "ALLOWED_ORIGINS no puede contener '*' cuando allow_credentials=True. "
+                "Especifica los orígenes concretos en .env"
+            )
+        return self
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
