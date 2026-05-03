@@ -214,3 +214,23 @@ def sample_entity(db_session: Session, sample_collection: Collection) -> Entity:
     db_session.commit()
     db_session.refresh(entity)
     return entity
+
+
+@pytest.fixture
+def sample_entity_content_confirmed(db_session: Session, sample_entity: Entity) -> "EntityContent":
+    """FX-08: Persisted confirmed sample entity content for image generation."""
+    from app.models.entity_content import EntityContent
+    from app.models.enums import ContentCategory, ContentStatus
+
+    content = EntityContent(
+        entity_id=sample_entity.id,
+        collection_id=sample_entity.collection_id,
+        generated_text_id="gen-test-001",
+        category=ContentCategory.backstory,
+        content="En las montañas nevadas del norte nació un héroe valeroso.",
+        status=ContentStatus.confirmed,
+    )
+    db_session.add(content)
+    db_session.commit()
+    db_session.refresh(content)
+    return content
