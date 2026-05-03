@@ -239,23 +239,35 @@ async def test_filter_entities_created_after_future(client, sample_collection):
 async def test_delete_entity_cascades_generated_images(
     client, db_session, sample_collection, sample_entity
 ):
-    """ENT-13: Eliminar entidad hace soft-delete de sus ImageRecord."""
-    from app.models.image_generation import ImageRecord
+    """ENT-13: Eliminar entidad hace soft-delete de sus ImageGeneration e ImageRecord."""
+    from app.models.image_generation import ImageGeneration, ImageRecord
 
-    image = ImageRecord(
+    # Crear primero un ImageGeneration (el batch)
+    generation = ImageGeneration(
+        id="gen-test-001",
         entity_id=sample_entity.id,
         collection_id=sample_collection.id,
         content_id=None,
         category="backstory",
-        visual_prompt="prompt",
-        prompt_token_count=12,
+        auto_prompt="test auto",
+        final_prompt="test final",
+        prompt_token_count=10,
         prompt_source="content_direct",
-        prompt_strategy="direct",
         truncated=False,
-        image_url="https://example.com/image.png",
-        image_path="path/image.png",
+        batch_size=1,
+        backend="mock",
+    )
+    db_session.add(generation)
+
+    # Luego crear el ImageRecord asociado
+    image = ImageRecord(
+        id="img-test-001",
+        generation_id=generation.id,
+        entity_id=sample_entity.id,
+        collection_id=sample_collection.id,
+        seed=42,
         filename="image.png",
-        status="pending",
+        extension="png",
     )
     db_session.add(image)
     db_session.commit()
