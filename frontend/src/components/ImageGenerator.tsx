@@ -31,7 +31,6 @@ export default function ImageGenerator({
     auto_prompt: string;
     prompt_source: string;
     prompt_source_label: string;
-    prompt_strategy: string;
     token_count: number;
     truncated: boolean;
   } | null>(null);
@@ -166,8 +165,7 @@ export default function ImageGenerator({
                     <strong>Prompt generado</strong>
                     <br />
                     <small className="text-muted">
-                      Fuente: {promptData.prompt_source_label} | Estrategia:{" "}
-                      {promptData.prompt_strategy} | Tokens:{" "}
+                      {promptData.prompt_source_label} | Tokens:{" "}
                       {promptData.token_count}
                       {promptData.truncated && " (truncado)"}
                     </small>
