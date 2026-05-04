@@ -745,20 +745,6 @@ def _run_image_generation(
         for kw in exp.get("visual_prompt_contains", []):
             vp = body.get("visual_prompt", "").lower()
             checks.append((kw.lower() in vp, f"visual_prompt sin '{kw}'"))
-        if "prompt_source" in exp:
-            checks.append(
-                (
-                    body.get("prompt_source") == exp["prompt_source"],
-                    f"prompt_source {body.get('prompt_source')!r} != {exp['prompt_source']!r}",
-                )
-            )
-        if "prompt_source_not" in exp:
-            checks.append(
-                (
-                    body.get("prompt_source") != exp["prompt_source_not"],
-                    f"prompt_source no deberia ser {exp['prompt_source_not']!r}",
-                )
-            )
 
     return check_all(checks)
 

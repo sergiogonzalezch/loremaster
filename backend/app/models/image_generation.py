@@ -54,10 +54,6 @@ class ImageGeneration(SQLModel, table=True):
     auto_prompt: str = SQLField(max_length=1000)
     final_prompt: str = SQLField(max_length=1000)
     prompt_token_count: int = SQLField(default=0)
-    prompt_source: str = SQLField(
-        max_length=50
-    )  # extended | scene | entity_desc | name_only
-    truncated: bool = SQLField(default=False)
 
     # Generación
     batch_size: int = SQLField(default=4)
