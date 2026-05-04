@@ -183,6 +183,25 @@ Estados posibles: `pending` → `confirmed` | `discarded`. Máximo 5 contenidos 
 
 Respuesta: `{ answer, query, sources_count }`.
 
+### Generación de imágenes
+
+Generación de imágenes para entidades mediante prompts visuales. El flujo opera en dos pasos:
+
+1. **build-prompt**: Construye el `auto_prompt` (prompt visual generado por LLM) a partir de un contenido confirmado de la entidad.
+2. **generate**: Genera imágenes usando el `auto_prompt` del frontend + `final_prompt` del usuario. No hay regeneración del prompt en backend.
+
+El módulo `app/engine/image_prompt_builder.py` consolida la lógica de construcción de prompts visuales (anteriormente `image_pipeline` + `prompt_builder`).
+
+| Método | Ruta | Descripción | Status |
+|---|---|---|---|
+| `POST` | `/collections/{id}/entities/{entity_id}/image-generation/build-prompt` | Construye el prompt visual (`auto_prompt`) desde un contenido confirmado | 200 |
+| `POST` | `/collections/{id}/entities/{entity_id}/image-generation/generate` | Genera batch de imágenes (1-4) | 201 |
+| `GET` | `/collections/{id}/entities/{entity_id}/image-generation` | Lista todas las generaciones de una entidad | 200 |
+| `GET` | `/collections/{id}/entities/{entity_id}/image-generation/{generation_id}` | Obtiene una generación con sus imágenes | 200 |
+| `DELETE` | `/collections/{id}/entities/{entity_id}/image-generation/{generation_id}/images/{image_id}` | Elimina una imagen del batch | 204 |
+
+**Request (generate):** `{ content_id, auto_prompt, final_prompt, batch_size }` — donde `auto_prompt` viene del frontend (previamente generado en `build-prompt`).
+
 ## Moderación de contenido
 
 `app/domain/content_guard.py` aplica filtros de seguridad basados en expresiones regulares en tres puntos del pipeline:
