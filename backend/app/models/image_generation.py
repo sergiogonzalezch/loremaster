@@ -234,3 +234,29 @@ class ImageRecordResponse(BaseModel):
     created_at: datetime
     is_deleted: bool
     deleted_at: Optional[datetime] = None
+
+
+class ImageGenerationListItem(BaseModel):
+    """Una generación con sus imágenes para mostrar en lista."""
+    id: str
+    entity_id: str
+    collection_id: str
+    content_id: Optional[str] = None
+    category: str
+    auto_prompt: str
+    final_prompt: str
+    prompt_source: str
+    batch_size: int
+    backend: str
+    width: int
+    height: int
+    created_at: datetime
+    is_deleted: bool
+
+    images: list[ImageRecordResponse]
+
+
+class ImageGenerationListResponse(BaseModel):
+    """Lista de generaciones de imágenes de una entidad."""
+    generations: list[ImageGenerationListItem]
+    total: int

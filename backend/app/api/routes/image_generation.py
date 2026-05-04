@@ -15,12 +15,14 @@ from app.models.image_generation import (
     BuildPromptResponse,
     GenerateImagesRequest,
     GenerateImagesResponse,
+    ImageGenerationListResponse,
 )
 from app.services.image_generation_service import (
     build_prompt_service,
     generate_images_service,
     delete_image_service,
     get_generation_service,
+    list_generations_service,
 )
 
 router = APIRouter(prefix="/collections", tags=["image-generation"])
@@ -129,5 +131,21 @@ def get_generation(
             status_code=404,
             detail="Generación no encontrada.",
         )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get(
+    "/{collection_id}/entities/{entity_id}/image-generation",
+    response_model=ImageGenerationListResponse,
+)
+def list_generations(
+    entity: Entity = Depends(get_entity_or_404),
+    session: Session = Depends(get_session),
+):
+    """Lista todas las generaciones de imágenes de una entidad."""
+    try:
+        generations, total = list_generations_service(session, entity)
+        return ImageGenerationListResponse(generations=generations, total=total)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

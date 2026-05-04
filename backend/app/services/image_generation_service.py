@@ -23,6 +23,7 @@ from app.models.image_generation import (
     ImageResult,
     ImageGenerationResponse,
     ImageRecordResponse,
+    ImageGenerationListItem,
 )
 
 ALLOWED_IMAGE_CATEGORIES = {
@@ -348,3 +349,73 @@ def get_generation_service(
         backend=generation.backend,
         images=images,
     )
+
+
+def list_generations_service(
+    session: Session,
+    entity: Entity,
+) -> tuple[list, int]:
+    """
+    Lista todas las generaciones de imágenes de una entidad.
+
+    Returns:
+        (generations_list, total_count)
+    """
+    generations = session.exec(
+        select(ImageGeneration).where(
+            ImageGeneration.entity_id == entity.id,
+            ImageGeneration.collection_id == entity.collection_id,
+            ImageGeneration.is_deleted == False,
+        ).order_by(ImageGeneration.created_at.desc())
+    ).all()
+
+    result = []
+    for gen in generations:
+        records = session.exec(
+            select(ImageRecord).where(
+                ImageRecord.generation_id == gen.id,
+                ImageRecord.is_deleted == False,
+            ).order_by(ImageRecord.seed.asc())
+        ).all()
+
+        images = [
+            ImageRecordResponse(
+                id=r.id,
+                generation_id=r.generation_id,
+                entity_id=r.entity_id,
+                collection_id=r.collection_id,
+                seed=r.seed,
+                storage_path=r.storage_path,
+                filename=r.filename,
+                extension=r.extension,
+                width=r.width,
+                height=r.height,
+                generation_ms=r.generation_ms,
+                created_at=r.created_at,
+                is_deleted=r.is_deleted,
+                deleted_at=r.deleted_at,
+            )
+            for r in records
+        ]
+
+        result.append(
+            ImageGenerationListItem(
+                id=gen.id,
+                entity_id=gen.entity_id,
+                collection_id=gen.collection_id,
+                content_id=gen.content_id,
+                category=gen.category,
+                auto_prompt=gen.auto_prompt,
+                final_prompt=gen.final_prompt,
+                prompt_source=gen.prompt_source,
+                batch_size=gen.batch_size,
+                backend=gen.backend,
+                width=gen.width,
+                height=gen.height,
+                created_at=gen.created_at,
+                is_deleted=gen.is_deleted,
+                images=images,
+            )
+        )
+
+    return result, len(result)
