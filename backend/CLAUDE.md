@@ -67,3 +67,4 @@ docker-compose --profile postgres up -d   # + postgres
 
 **Full documentation:** [README.md](./README.md)
 **Documentation:** [../docs/DOCUMENTATION.md](../docs/DOCUMENTATION.md)
+**Skills:** [SKILLS.md](./SKILLS.md)

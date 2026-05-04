@@ -35,6 +35,7 @@ src/
 ## Image Generation
 
 Flujo de dos pasos (ImageGenerator.tsx):
+
 1. `buildPrompt(contentId)` → `POST /image-generation/build-prompt` → `auto_prompt`
 2. `generate(auto_prompt, final_prompt, batch_size)` → `POST /image-generation/generate`
 
@@ -48,3 +49,4 @@ Flujo de dos pasos (ImageGenerator.tsx):
 
 **Full documentation:** [README.md](./README.md)
 **Documentation:** [../docs/DOCUMENTATION.md](../docs/DOCUMENTATION.md)
+**Skills:** [SKILLS.md](./SKILLS.md)
