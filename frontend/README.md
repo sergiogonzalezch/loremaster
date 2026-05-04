@@ -59,6 +59,7 @@ src/
 │   ├── entities.ts         → CRUD de entidades
 │   ├── contents.ts         → generate / list / edit / confirm / discard / delete EntityContent
 │   ├── generate.ts         → consulta RAG libre (POST /collections/{id}/query)
+│   ├── imageGeneration.ts  → buildPrompt / generate / list / get / deleteImage
 │   ├── query.ts            → buildQuery() — utilidad para construir query strings de URL
 │   └── index.ts            → barrel export (no incluye query.ts — uso interno)
 ├── components/
@@ -80,12 +81,13 @@ src/
 │   ├── EntityDetailPage.tsx      → Detalle de entidad + generación de contenido por categoría
 │   └── GeneratePage.tsx          → Consulta RAG libre contra una colección
 ├── types/
-│   ├── collection.ts  → Collection, CreateCollectionRequest, CollectionListResponse
-│   ├── content.ts     → EntityContent, PaginatedResponse<T>, request types
-│   ├── document.ts    → Document, DocumentListResponse
-│   ├── entity.ts      → Entity, CreateEntityRequest, UpdateEntityRequest, EntityListResponse
-│   ├── generate.ts    → GenerateTextRequest, GenerateTextResponse
-│   └── index.ts       → barrel export
+│   ├── collection.ts     → Collection, CreateCollectionRequest, CollectionListResponse
+│   ├── content.ts         → EntityContent, PaginatedResponse<T>, request types
+│   ├── document.ts        → Document, DocumentListResponse
+│   ├── entity.ts          → Entity, CreateEntityRequest, UpdateEntityRequest, EntityListResponse
+│   ├── generate.ts        → GenerateTextRequest, GenerateTextResponse
+│   ├── imageGeneration.ts → BuildPromptRequest/Response, GenerateImagesRequest/Response, ImageGeneration
+│   └── index.ts           → barrel export
 ├── test/
 │   ├── setup.ts                  → Configura @testing-library/jest-dom globalmente
 │   ├── errors.test.ts            → getErrorMessage + parseApiError
@@ -125,8 +127,17 @@ Los tests se encuentran en `src/test/`. Las llamadas a la API se mockean con `vi
 | -------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/`                              | Colecciones       | Cards con todas las colecciones; crear (modal) o eliminar con confirmación                                                                      |
 | `/collections/:id`               | Detalle colección | **Documentos**: upload PDF/TXT, tabla con estado; **Entidades**: tabla con badges, navegación al detalle; **Generar texto**: consulta RAG libre |
-| `/collections/:id/entities/:eid` | Detalle entidad   | Card de entidad editable; formulario de generación con selector de categoría; lista de `ContentCard`                                            |
+| `/collections/:id/entities/:eid` | Detalle entidad   | Card de entidad editable; formulario de generación con selector de categoría; lista de `ContentCard`; navegación a generación de imágenes      |
 | `/collections/:id/generate`      | Generar texto     | Consulta RAG libre con manejo de errores 422/503                                                                                                |
+
+## Generación de imágenes
+
+Flujo de dos pasos para generar imágenes de entidades:
+
+1. **build-prompt** → `POST .../image-generation/build-prompt`: Genera el `auto_prompt` (prompt visual LLM) a partir de un contenido confirmado de la entidad.
+2. **generate** → `POST .../image-generation/generate`: Genera imágenes usando el `auto_prompt` del frontend + `final_prompt` del usuario. No hay regeneración en backend.
+
+El componente `ImageGenerator.tsx` orquesta este flujo: construye el prompt visual, permite editar `final_prompt`, y genera batches de 1-4 imágenes.
 
 ## Ciclo de vida de EntityContent
 
