@@ -4,7 +4,6 @@ import CollectionsPage from "./pages/CollectionsPage";
 import CollectionDetailPage from "./pages/CollectionDetailPage";
 import EntityDetailPage from "./pages/EntityDetailPage";
 import GeneratePage from "./pages/GeneratePage";
-import ImagePreviewPage from "./pages/ImagePreviewPage";
 
 export default function App() {
   return (
@@ -23,10 +22,6 @@ export default function App() {
           <Route
             path="/collections/:collectionId/generate"
             element={<GeneratePage />}
-          />
-          <Route
-            path="/collections/:collectionId/entities/:entityId/contents/:contentId/image-preview"
-            element={<ImagePreviewPage />}
           />
         </Route>
       </Routes>

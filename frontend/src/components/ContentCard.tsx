@@ -328,19 +328,6 @@ export default function ContentCard({
                   Editar
                 </Button>
                 <Button
-                  variant="outline-secondary"
-                  size="sm"
-                  onClick={() =>
-                    navigate(
-                      `/collections/${collectionId}/entities/${entityId}/contents/${content.id}/image-preview`,
-                    )
-                  }
-                  disabled={busy}
-                  title="Generar preview de imagen basado en este contenido"
-                >
-                  ✦ Preview imagen
-                </Button>
-                <Button
                   variant="outline-danger"
                   size="sm"
                   onClick={() => deleteConfirm.open(content)}
