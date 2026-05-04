@@ -150,7 +150,7 @@ export default function ImagePanel({
 
     return (
       <div className="d-flex flex-column gap-3">
-        <div className="p-3 border rounded" style={{ background: "var(--lm-surface)" }}>
+        <div className="lm-card p-3">
           <div className="d-flex justify-content-between align-items-start mb-2">
             <Badge bg="secondary">
               {CATEGORY_LABELS[confirmedContent.category] || confirmedContent.category}
@@ -183,7 +183,7 @@ export default function ImagePanel({
                 Construyendo...
               </>
             ) : promptData ? (
-              "✓ Listo"
+              "Listo"
             ) : (
               "Crear prompt visual"
             )}
@@ -194,6 +194,7 @@ export default function ImagePanel({
               onClick={handleRegenerate}
               disabled={building || generating}
               title="Regenerar prompt"
+              size="sm"
             >
               ↻
             </Button>
@@ -202,17 +203,13 @@ export default function ImagePanel({
 
         {promptData && (
           <>
-            <Alert variant="info" className="py-2">
-              <div className="d-flex justify-content-between">
-                <small className="text-muted">
-                  {promptData.prompt_source_label} • {promptData.token_count} tokens
-                  {promptData.truncated && " (truncado)"}
-                </small>
-              </div>
-            </Alert>
+            <div className="text-muted small">
+              {promptData.prompt_source_label} · {promptData.token_count} tokens
+              {promptData.truncated && " (truncado)"}
+            </div>
 
             <Form.Group>
-              <Form.Label className="small text-muted mb-1">Prompt (editable)</Form.Label>
+              <Form.Label className="small text-muted mb-1">Prompt</Form.Label>
               <Form.Control
                 as="textarea"
                 rows={6}
@@ -220,21 +217,17 @@ export default function ImagePanel({
                 onChange={(e) => setFinalPrompt(e.target.value)}
                 disabled={generating}
                 placeholder="Edita el prompt si deseas..."
-                style={{
-                  fontSize: "0.9rem",
-                  lineHeight: 1.6,
-                  resize: "vertical",
-                  minHeight: 120,
-                }}
+                className="lm-input"
               />
             </Form.Group>
 
-            <div className="d-flex align-items-center gap-3 py-2">
+            <div className="d-flex align-items-center gap-3">
               <Form.Label className="mb-0 small text-muted">Imágenes:</Form.Label>
               <Form.Select
                 value={batchSize}
                 onChange={(e) => setBatchSize(Number(e.target.value))}
                 disabled={generating}
+                className="lm-select"
                 style={{ width: "auto" }}
                 size="sm"
               >
@@ -248,8 +241,7 @@ export default function ImagePanel({
               variant="primary"
               onClick={handleGenerate}
               disabled={generating || !finalPrompt.trim()}
-              className="mt-2"
-              style={{ padding: "0.75rem" }}
+              className="lm-btn"
             >
               {generating ? (
                 <>
@@ -292,9 +284,9 @@ export default function ImagePanel({
     }
 
     return (
-      <div className="d-flex flex-column gap-3" style={{ maxHeight: "calc(100vh - 200px)", overflowY: "auto" }}>
+      <div className="d-flex flex-column gap-3" style={{ maxHeight: "calc(100vh - 220px)", overflowY: "auto" }}>
         {generations.map((gen) => (
-          <div key={gen.id} className="border rounded p-3" style={{ background: "var(--lm-surface)" }}>
+          <div key={gen.id} className="lm-card p-3">
             <div className="d-flex justify-content-between align-items-center mb-2">
               <div>
                 <Badge bg="secondary" className="me-2">
@@ -330,18 +322,18 @@ export default function ImagePanel({
       show={show}
       onHide={onHide}
       placement="end"
-      style={{ width: 480, background: "var(--lm-bg)" }}
+      className="lm-offcanvas"
+      style={{ width: 480 }}
     >
-      <Offcanvas.Header closeButton className="border-bottom" style={{ background: "var(--lm-surface)" }}>
-        <Offcanvas.Title>🎨 Imágenes</Offcanvas.Title>
+      <Offcanvas.Header closeButton className="lm-offcanvas-header border-bottom">
+        <Offcanvas.Title className="mb-0">Generar imágenes</Offcanvas.Title>
       </Offcanvas.Header>
       <Offcanvas.Body className="p-3">
-        <Nav variant="tabs" className="mb-3">
+        <Nav variant="tabs" className="lm-tabs mb-3">
           <Nav.Item>
             <Nav.Link
               active={activeTab === "generar"}
               onClick={() => setActiveTab("generar")}
-              style={{ cursor: "pointer", padding: "0.5rem 1rem" }}
             >
               Generar
             </Nav.Link>
@@ -350,7 +342,6 @@ export default function ImagePanel({
             <Nav.Link
               active={activeTab === "historial"}
               onClick={() => setActiveTab("historial")}
-              style={{ cursor: "pointer", padding: "0.5rem 1rem" }}
             >
               Historial
             </Nav.Link>
