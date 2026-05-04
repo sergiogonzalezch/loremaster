@@ -127,7 +127,7 @@ Los tests se encuentran en `src/test/`. Las llamadas a la API se mockean con `vi
 | -------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/`                              | Colecciones       | Cards con todas las colecciones; crear (modal) o eliminar con confirmación                                                                      |
 | `/collections/:id`               | Detalle colección | **Documentos**: upload PDF/TXT, tabla con estado; **Entidades**: tabla con badges, navegación al detalle; **Generar texto**: consulta RAG libre |
-| `/collections/:id/entities/:eid` | Detalle entidad   | Card de entidad editable; formulario de generación con selector de categoría; lista de `ContentCard`; navegación a generación de imágenes      |
+| `/collections/:id/entities/:eid` | Detalle entidad   | Card de entidad editable; formulario de generación con selector de categoría; lista de `ContentCard`; navegación a generación de imágenes       |
 | `/collections/:id/generate`      | Generar texto     | Consulta RAG libre con manejo de errores 422/503                                                                                                |
 
 ## Generación de imágenes

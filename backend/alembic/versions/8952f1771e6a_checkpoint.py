@@ -1,8 +1,8 @@
 """Checkpoint
 
-Revision ID: 721158ba3166
+Revision ID: 8952f1771e6a
 Revises:
-Create Date: 2026-05-04 07:26:07.786532
+Create Date: 2026-05-04 10:56:59.878206
 
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 import sqlmodel
 
 # revision identifiers, used by Alembic.
-revision: str = "721158ba3166"
+revision: str = "8952f1771e6a"
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -233,10 +233,6 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column("prompt_token_count", sa.Integer(), nullable=False),
-        sa.Column(
-            "prompt_source", sqlmodel.sql.sqltypes.AutoString(length=50), nullable=False
-        ),
-        sa.Column("truncated", sa.Boolean(), nullable=False),
         sa.Column("batch_size", sa.Integer(), nullable=False),
         sa.Column(
             "backend", sqlmodel.sql.sqltypes.AutoString(length=20), nullable=False
