@@ -29,10 +29,7 @@ export default function ImageGenerator({
   const [selectedContentId, setSelectedContentId] = useState("");
   const [promptData, setPromptData] = useState<{
     auto_prompt: string;
-    prompt_source: string;
-    prompt_source_label: string;
     token_count: number;
-    truncated: boolean;
   } | null>(null);
   const [finalPrompt, setFinalPrompt] = useState("");
   const [batchSize, setBatchSize] = useState(4);
@@ -75,6 +72,7 @@ export default function ImageGenerator({
     try {
       await generateImages(collectionId, entityId, {
         content_id: selectedContentId,
+        auto_prompt: promptData?.auto_prompt || finalPrompt,
         final_prompt: finalPrompt.trim(),
         batch_size: batchSize,
       });
@@ -165,9 +163,7 @@ export default function ImageGenerator({
                     <strong>Prompt generado</strong>
                     <br />
                     <small className="text-muted">
-                      {promptData.prompt_source_label} | Tokens:{" "}
-                      {promptData.token_count}
-                      {promptData.truncated && " (truncado)"}
+                      Tokens: {promptData.token_count}
                     </small>
                   </div>
                 </div>

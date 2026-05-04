@@ -90,10 +90,7 @@ export default function ImagePanel({
   const [confirmedContent, setConfirmedContent] = useState<EntityContent | null>(null);
   const [promptData, setPromptData] = useState<{
     auto_prompt: string;
-    prompt_source: string;
-    prompt_source_label: string;
     token_count: number;
-    truncated: boolean;
   } | null>(null);
   const [finalPrompt, setFinalPrompt] = useState("");
   const [batchSize, setBatchSize] = useState(4);
@@ -179,6 +176,7 @@ export default function ImagePanel({
     try {
       await generateImages(collectionId, entityId, {
         content_id: confirmedContent.id,
+        auto_prompt: promptData?.auto_prompt || finalPrompt,
         final_prompt: finalPrompt.trim(),
         batch_size: batchSize,
       });
@@ -191,7 +189,7 @@ export default function ImagePanel({
     } finally {
       setGenerating(false);
     }
-  }, [collectionId, entityId, finalPrompt, batchSize, confirmedContent, onGenerated]);
+  }, [collectionId, entityId, finalPrompt, batchSize, confirmedContent, onGenerated, promptData]);
 
   const handleTabChange = (tab: "generar" | "historial") => {
     setActiveTab(tab);
@@ -275,8 +273,7 @@ export default function ImagePanel({
         {promptData && (
           <>
             <div className="text-muted small">
-              {promptData.prompt_source_label} · {promptData.token_count} tokens
-              {promptData.truncated && " (truncado)"}
+              {promptData.token_count} tokens
             </div>
 
             <Form.Group>

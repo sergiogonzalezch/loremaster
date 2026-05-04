@@ -9,19 +9,17 @@ from sqlmodel import Session, select
 
 from app.core.config import settings
 from app.core.exceptions import DatabaseError, NoContextAvailableError
-from app.domain.prompt_builder import build_visual_prompt, get_prompt_source_label
+from app.domain.content_guard import check_user_input
+from app.engine.image_prompt_builder import build_visual_prompt
 from app.models.entities import Entity
 from app.models.entity_content import EntityContent
 from app.models.enums import ContentCategory, ContentStatus
 from app.models.image_generation import (
     ImageGeneration,
     ImageRecord,
-    BuildPromptRequest,
     BuildPromptResponse,
-    GenerateImagesRequest,
     GenerateImagesResponse,
     ImageResult,
-    ImageGenerationResponse,
     ImageRecordResponse,
     ImageGenerationListItem,
 )
@@ -104,8 +102,6 @@ def build_prompt_service(
 
     build_result = build_visual_prompt(
         entity_type=entity.type,
-        entity_name=entity.name,
-        entity_description=entity.description,
         confirmed_content=content.content,
         category=content.category,
         max_tokens=settings.image_prompt_tokens,
@@ -113,11 +109,7 @@ def build_prompt_service(
 
     return BuildPromptResponse(
         auto_prompt=build_result["prompt"],
-        prompt_source=build_result["source"],
-        prompt_source_label=get_prompt_source_label(build_result["source"]),
-        prompt_strategy=build_result["strategy"],
         token_count=build_result["token_count"],
-        truncated=build_result["truncated"],
     )
 
 
@@ -125,6 +117,7 @@ def generate_images_service(
     session: Session,
     entity: Entity,
     content_id: str,
+    auto_prompt: str,
     final_prompt: str,
     batch_size: int,
 ) -> GenerateImagesResponse:
@@ -133,7 +126,7 @@ def generate_images_service(
 
     Flujo:
     1. Validar content_id confirmado
-    2. Obtener auto_prompt del content_id (para guardar en DB)
+    2. Validar prompts con content_guard
     3. Si backend == "mock": generar placeholders (sin persistencia)
     4. Si backend != "mock": generar imágenes reales + persistir
     5. Retornar respuesta
@@ -145,14 +138,8 @@ def generate_images_service(
     if not content:
         raise NoContextAvailableError()
 
-    auto_build = build_visual_prompt(
-        entity_type=entity.type,
-        entity_name=entity.name,
-        entity_description=entity.description,
-        confirmed_content=content.content,
-        category=content.category,
-        max_tokens=settings.image_prompt_tokens,
-    )
+    check_user_input(auto_prompt)
+    check_user_input(final_prompt)
 
     generation_id = str(_uuid.uuid4())
     generation = ImageGeneration(
@@ -161,11 +148,11 @@ def generate_images_service(
         collection_id=entity.collection_id,
         content_id=content_id,
         category=content.category.value,
-        auto_prompt=auto_build["prompt"],
+        auto_prompt=auto_prompt,
         final_prompt=final_prompt,
-        prompt_token_count=auto_build["token_count"],
-        prompt_source=auto_build["source"],
-        truncated=auto_build["truncated"],
+        prompt_token_count=len(auto_prompt) // 4,
+        prompt_source="llm_extraction",
+        truncated=False,
         batch_size=batch_size,
         backend=settings.image_backend,
         width=settings.image_width,
@@ -247,10 +234,8 @@ def generate_images_service(
 
     return GenerateImagesResponse(
         generation_id=generation_id,
-        auto_prompt=auto_build["prompt"],
+        auto_prompt=auto_prompt,
         final_prompt=final_prompt,
-        prompt_source=auto_build["source"],
-        prompt_source_label=get_prompt_source_label(auto_build["source"]),
         batch_size=batch_size,
         backend=settings.image_backend,
         images=images_result,
@@ -344,8 +329,6 @@ def get_generation_service(
         generation_id=generation.id,
         auto_prompt=generation.auto_prompt,
         final_prompt=generation.final_prompt,
-        prompt_source=generation.prompt_source,
-        prompt_source_label=get_prompt_source_label(generation.prompt_source),
         batch_size=generation.batch_size,
         backend=generation.backend,
         images=images,
@@ -363,20 +346,24 @@ def list_generations_service(
         (generations_list, total_count)
     """
     generations = session.exec(
-        select(ImageGeneration).where(
+        select(ImageGeneration)
+        .where(
             ImageGeneration.entity_id == entity.id,
             ImageGeneration.collection_id == entity.collection_id,
             ImageGeneration.is_deleted == False,
-        ).order_by(ImageGeneration.created_at.desc())
+        )
+        .order_by(ImageGeneration.created_at.desc())
     ).all()
 
     result = []
     for gen in generations:
         records = session.exec(
-            select(ImageRecord).where(
+            select(ImageRecord)
+            .where(
                 ImageRecord.generation_id == gen.id,
                 ImageRecord.is_deleted == False,
-            ).order_by(ImageRecord.seed.asc())
+            )
+            .order_by(ImageRecord.seed.asc())
         ).all()
 
         images = [

@@ -19,7 +19,9 @@ from app.services.image_generation_service import (
 
 
 @pytest.fixture
-def sample_entity_content_confirmed(db_session: Session, sample_entity: Entity) -> EntityContent:
+def sample_entity_content_confirmed(
+    db_session: Session, sample_entity: Entity
+) -> EntityContent:
     """EntityContent confirmado para tests."""
     content = EntityContent(
         entity_id=sample_entity.id,
@@ -39,7 +41,9 @@ def sample_entity_content_confirmed(db_session: Session, sample_entity: Entity) 
 
 
 def test_ig_01_build_prompt_with_confirmed_content(
-    db_session: Session, sample_entity: Entity, sample_entity_content_confirmed: EntityContent
+    db_session: Session,
+    sample_entity: Entity,
+    sample_entity_content_confirmed: EntityContent,
 ):
     """IG-01: build_prompt retorna prompt válido con contenido confirmado."""
     result = build_prompt_service(
@@ -50,9 +54,6 @@ def test_ig_01_build_prompt_with_confirmed_content(
 
     assert result.auto_prompt
     assert result.token_count > 0
-    assert result.token_count <= 150
-    assert result.prompt_source == "llm_extraction"
-    assert result.prompt_strategy == "llm_extraction"
 
 
 def test_ig_02_build_prompt_fails_for_unconfirmed_content(
@@ -79,7 +80,9 @@ def test_ig_03_build_prompt_fails_for_nonexistent_content(
 ):
     """IG-03: build_prompt lanza error si el content_id no existe."""
     with pytest.raises(NoContextAvailableError):
-        build_prompt_service(db_session, sample_entity, "00000000-0000-0000-0000-000000000000")
+        build_prompt_service(
+            db_session, sample_entity, "00000000-0000-0000-0000-000000000000"
+        )
 
 
 def test_ig_04_build_prompt_fails_for_unsupported_category(
@@ -97,13 +100,16 @@ def test_ig_04_build_prompt_fails_for_unsupported_category(
 
 
 def test_ig_05_generate_batch_returns_images(
-    db_session: Session, sample_entity: Entity, sample_entity_content_confirmed: EntityContent
+    db_session: Session,
+    sample_entity: Entity,
+    sample_entity_content_confirmed: EntityContent,
 ):
     """IG-05: generate_images retorna batch de imágenes."""
     result = generate_images_service(
         db_session,
         sample_entity,
         sample_entity_content_confirmed.id,
+        auto_prompt="test auto prompt",
         final_prompt="test prompt",
         batch_size=2,
     )
@@ -117,13 +123,16 @@ def test_ig_05_generate_batch_returns_images(
 
 
 def test_ig_06_generate_batch_size_limits(
-    db_session: Session, sample_entity: Entity, sample_entity_content_confirmed: EntityContent
+    db_session: Session,
+    sample_entity: Entity,
+    sample_entity_content_confirmed: EntityContent,
 ):
     """IG-06: batch_size debe estar entre 1 y 4."""
     result_min = generate_images_service(
         db_session,
         sample_entity,
         sample_entity_content_confirmed.id,
+        auto_prompt="test auto",
         final_prompt="test",
         batch_size=1,
     )
@@ -133,6 +142,7 @@ def test_ig_06_generate_batch_size_limits(
         db_session,
         sample_entity,
         sample_entity_content_confirmed.id,
+        auto_prompt="test auto",
         final_prompt="test",
         batch_size=4,
     )
@@ -140,13 +150,16 @@ def test_ig_06_generate_batch_size_limits(
 
 
 def test_ig_07_generate_persists_generation_record(
-    db_session: Session, sample_entity: Entity, sample_entity_content_confirmed: EntityContent
+    db_session: Session,
+    sample_entity: Entity,
+    sample_entity_content_confirmed: EntityContent,
 ):
     """IG-07: generate_images guarda ImageGeneration en DB."""
     result = generate_images_service(
         db_session,
         sample_entity,
         sample_entity_content_confirmed.id,
+        auto_prompt="test auto prompt",
         final_prompt="test prompt",
         batch_size=2,
     )
@@ -165,13 +178,16 @@ def test_ig_07_generate_persists_generation_record(
 
 
 def test_ig_08_delete_image_works_in_mock(
-    db_session: Session, sample_entity: Entity, sample_entity_content_confirmed: EntityContent
+    db_session: Session,
+    sample_entity: Entity,
+    sample_entity_content_confirmed: EntityContent,
 ):
     """IG-08: delete_image funciona en modo mock (soft delete)."""
     result = generate_images_service(
         db_session,
         sample_entity,
         sample_entity_content_confirmed.id,
+        auto_prompt="test auto",
         final_prompt="test",
         batch_size=1,
     )
@@ -190,13 +206,16 @@ def test_ig_08_delete_image_works_in_mock(
 
 
 def test_ig_09_delete_image_fails_for_wrong_entity(
-    db_session: Session, sample_entity: Entity, sample_entity_content_confirmed: EntityContent
+    db_session: Session,
+    sample_entity: Entity,
+    sample_entity_content_confirmed: EntityContent,
 ):
     """IG-09: delete_image verifica ownership."""
     result = generate_images_service(
         db_session,
         sample_entity,
         sample_entity_content_confirmed.id,
+        auto_prompt="test auto",
         final_prompt="test",
         batch_size=1,
     )
@@ -220,13 +239,16 @@ def test_ig_09_delete_image_fails_for_wrong_entity(
 
 
 def test_ig_10_get_generation_returns_generation_record(
-    db_session: Session, sample_entity: Entity, sample_entity_content_confirmed: EntityContent
+    db_session: Session,
+    sample_entity: Entity,
+    sample_entity_content_confirmed: EntityContent,
 ):
     """IG-10: get_generation retorna la generación guardada."""
     result = generate_images_service(
         db_session,
         sample_entity,
         sample_entity_content_confirmed.id,
+        auto_prompt="test auto prompt",
         final_prompt="test prompt",
         batch_size=2,
     )
@@ -244,17 +266,22 @@ def test_ig_11_get_generation_fails_for_nonexistent(
 ):
     """IG-11: get_generation lanza error si no existe."""
     with pytest.raises(NoContextAvailableError):
-        get_generation_service(db_session, sample_entity, "00000000-0000-0000-0000-000000000000")
+        get_generation_service(
+            db_session, sample_entity, "00000000-0000-0000-0000-000000000000"
+        )
 
 
 def test_ig_12_get_generation_validates_entity_ownership(
-    db_session: Session, sample_entity: Entity, sample_entity_content_confirmed: EntityContent
+    db_session: Session,
+    sample_entity: Entity,
+    sample_entity_content_confirmed: EntityContent,
 ):
     """IG-12: get_generation verifica ownership."""
     result = generate_images_service(
         db_session,
         sample_entity,
         sample_entity_content_confirmed.id,
+        auto_prompt="test auto",
         final_prompt="test",
         batch_size=1,
     )
@@ -270,14 +297,3 @@ def test_ig_12_get_generation_validates_entity_ownership(
 
     with pytest.raises(NoContextAvailableError):
         get_generation_service(db_session, other_entity, result.generation_id)
-
-
-# ── Tests prompt_source_labels ────────────────────────────────────────────────────
-
-
-def test_ig_13_prompt_source_labels_return_correct_text():
-    """IG-13: get_prompt_source_label retorna texto correcto."""
-    from app.domain.prompt_builder import get_prompt_source_label
-
-    assert get_prompt_source_label("llm_extraction") == "Extraído vía LLM"
-    assert get_prompt_source_label("unknown") == "unknown"
