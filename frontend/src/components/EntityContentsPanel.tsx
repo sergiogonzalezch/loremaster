@@ -16,6 +16,7 @@ interface Props {
   refreshTrigger: number;
   onRefreshEntity: () => void;
   onPendingCountChange: (count: number) => void;
+  onOpenImagePanel?: (content: EntityContent) => void;
 }
 
 export default function EntityContentsPanel({
@@ -26,6 +27,7 @@ export default function EntityContentsPanel({
   refreshTrigger,
   onRefreshEntity,
   onPendingCountChange,
+  onOpenImagePanel,
 }: Props) {
   const { contents, setContents, meta, loading, error, refresh, setError } =
     useEntityContents(collectionId, entityId);
@@ -185,6 +187,7 @@ export default function EntityContentsPanel({
               entityId={entityId}
               onAction={handleContentAction}
               onOptimisticUpdate={handleOptimisticUpdate}
+              onOpenImagePanel={onOpenImagePanel}
             />
           ))}
           {meta.total_pages > 1 && (
