@@ -9,38 +9,159 @@ from app.engine.llm import chain, llm
 from app.engine.rag import search_context
 from app.core.config import settings
 from app.models.enums import ContentCategory
+from app.models.entities import EntityType
 
 logger = logging.getLogger(__name__)
 
-_llm_instruction_by_category = {
-    ContentCategory.extended_description: (
-        "Del siguiente texto que describe rasgos físicos y apariencia de una entidad, "
-        "extrae solo los descriptores visuales (color, forma, textura, material, detalles distintivos). "
-        "Formato: lista de adjetivos y sustantivos separados por coma. "
-        "Máximo 15 palabras. Ignora narrativa, motivaciones o emociones."
+_llm_instruction_by_entity_category = {
+    (EntityType.character, ContentCategory.extended_description): (
+        "Del siguiente texto que describe la apariencia física de un personaje, "
+        "extrae SOLO atributos visuales para generación de imagen: género aproximado, edad, "
+        "tipo de cuerpo, tono de piel, color y estilo de cabello, color de ojos, "
+        "rasgos faciales distintivos, tipo de vestimenta, accesorios, expresión facial, postura. "
+        "Formato: lista de atributos separados por coma (ej: female, young adult, slender, fair skin, "
+        "long dark hair, brown eyes, angular face, elegant blue gown, pearl necklace, serene expression). "
+        "IGNORA: narrativa, motivaciones, emociones, historia, nombres."
     ),
-    ContentCategory.backstory: (
-        "Del siguiente texto narrativo de trasfondo, extrae solo: "
-        "- El lugar o entorno visual donde происходят los eventos formativos "
-        "- Rasgos físicos del personaje en esa época si se mencionan "
-        "- Atmósfera o mood visual (oscuro, iluminado, peligroso, pacífico) "
-        "Máximo 10 palabras visuales. Ignora nombres de personajes y eventos."
+    (EntityType.character, ContentCategory.backstory): (
+        "Del siguiente texto de trasfondo histórico de un personaje, "
+        "extrae SOLO atributos visuales: vestimenta de época, época histórica, entorno donde creció, "
+        "condición social reflejada en ropa, objetos que porta, estado físico de esa época. "
+        "Formato: lista de atributos visuales separados por coma. "
+        "IGNORA: nombres, fechas, eventos históricos, motivaciones."
     ),
-    ContentCategory.scene: (
-        "De la siguiente escena o diálogo, extrae solo: "
-        "- El setting visual (lugar, iluminación, tiempo) "
-        "- Postura y acción de los personajes "
-        "- Elementos visuales importantes en primer plano "
-        "Máximo 12 palabras. Ignora diálogo y pensamientos."
+    (EntityType.character, ContentCategory.scene): (
+        "De la siguiente escena, extrae SOLO atributos visuales del personaje: "
+        "acción que realiza, postura, vestimenta actual, expresión, objetos que porta, "
+        "iluminación sobre él, interacción con el entorno. "
+        "Formato: lista de atributos separados por coma. "
+        "IGNORA: diálogo, pensamientos, emociones."
     ),
-    ContentCategory.chapter: (
-        "Del siguiente capítulo, extrae solo la descripción visual de la escena de apertura: "
-        "- Lugar y ambientación "
-        "- Iluminación y atmósfera "
-        "- Elementos visuales principales "
-        "Máximo 10 palabras. Ignora desarrollo y cierre de la trama."
+    (EntityType.character, ContentCategory.chapter): (
+        "Del siguiente capítulo, extrae SOLO los atributos visuales del personaje en la escena de apertura: "
+        "posición en el espacio, vestimenta, expresión, iluminación, atmósfera. "
+        "Formato: lista de atributos separados por coma. "
+        "IGNORA: trama, desarrollo, personajes secundarios."
+    ),
+    (EntityType.creature, ContentCategory.extended_description): (
+        "Del siguiente texto que describe una criatura, extrae SOLO atributos visuales: "
+        "especie, tipo de cuerpo, color primario, color secundario, textura de piel/pelaje/escamas, "
+        "características distintivas (alas, cola, cuernos, garras), tamaño aproximado, postura típica, "
+        "elementos fantásticos (magia, energía, luminescencia). "
+        "Formato: lista de atributos separados por coma. "
+        "IGNORA: nombre, habilidades, comportamiento, historia."
+    ),
+    (EntityType.creature, ContentCategory.backstory): (
+        "Del siguiente texto de trasfondo de una criatura, "
+        "extrae SOLO atributos visuales: entorno nativo, condición física en esa época, "
+        "características distintivas que tuvo desde joven, atmósfera del lugar. "
+        "Formato: lista de atributos separados por coma. "
+        "IGNORA: nombre, eventos, motivaciones."
+    ),
+    (EntityType.creature, ContentCategory.scene): (
+        "De la siguiente escena, extrae SOLO atributos visuales de la criatura: "
+        "posición, acción, expresión corporal, interacción con entorno, iluminación. "
+        "Formato: lista de atributos separados por coma. "
+        "IGNORA: diálogo, pensamientos."
+    ),
+    (EntityType.creature, ContentCategory.chapter): (
+        "Del siguiente capítulo, extrae SOLO atributos visuales de la criatura en la escena de apertura: "
+        "posición, acción, entorno, iluminación, atmósfera. "
+        "Formato: lista de atributos separados por coma. "
+        "IGNORA: trama, desarrollo."
+    ),
+    (EntityType.location, ContentCategory.extended_description): (
+        "Del siguiente texto que describe un lugar, extrae SOLO atributos visuales: "
+        "tipo de entorno (bosque, castillo, ciudad, caverna, etc.), estilo arquitectónico, "
+        "época/diseño, materiales predominantes, elementos distintivos, iluminación típica, "
+        "escala (diminuto, enorme, vasto), atmósfera (misterioso, acogedor, peligroso). "
+        "Formato: lista de atributos separados por coma. "
+        "IGNORA: historia, eventos, personajes."
+    ),
+    (EntityType.location, ContentCategory.backstory): (
+        "Del siguiente texto histórico de un lugar, "
+        "extrae SOLO atributos visuales: apariencia original del lugar, época dorada, "
+        "arquitectura de ese período, estado actual vs pasado, símbolo distintivo. "
+        "Formato: lista de atributos separados por coma. "
+        "IGNORA: eventos, fechas, personajes."
+    ),
+    (EntityType.location, ContentCategory.scene): (
+        "De la siguiente escena, extrae SOLO atributos visuales del lugar: "
+        "elementos en primer plano, iluminación, clima, atmósfera, acción que ocurre, "
+        "elementos destacados visibles. "
+        "Formato: lista de atributos separados por coma. "
+        "IGNORA: diálogo, pensamientos."
+    ),
+    (EntityType.location, ContentCategory.chapter): (
+        "Del siguiente capítulo, extrae SOLO atributos visuales del lugar en la escena de apertura: "
+        "descripción inicial del espacio, iluminación, atmósfera, elementos presentes. "
+        "Formato: lista de atributos separados por coma. "
+        "IGNORA: trama, desarrollo."
+    ),
+    (EntityType.faction, ContentCategory.extended_description): (
+        "Del siguiente texto que describe una facción, extrae SOLO atributos visuales: "
+        "estilo del emblema/heraldry, símbolo principal, paleta de colores, "
+        "material appearance (metálico, tejido, mágico), mood (amenazante, noble, misterioso), "
+        "elementos arquitectónicos asociados, tipo de escritura/símbolos. "
+        "Formato: lista de atributos separados por coma. "
+        "IGNORA: historia, motivaciones, miembros."
+    ),
+    (EntityType.faction, ContentCategory.backstory): (
+        "Del siguiente texto de trasfondo de una facción, "
+        "extrae SOLO atributos visuales de su origen: estilo de la época, símbolos originales, "
+        "colores fundacionales, elementos de poder de ese tiempo. "
+        "Formato: lista de atributos separados por coma. "
+        "IGNORA: eventos, fechas, personajes."
+    ),
+    (EntityType.faction, ContentCategory.scene): (
+        "De la siguiente escena que involucra una facción, "
+        "extrae SOLO atributos visuales: cómo se manifiesta el símbolo, colores dominantes, "
+        "presencia de miembros, atmósfera. "
+        "Formato: lista de atributos separados por coma. "
+        "IGNORA: diálogo, pensamientos."
+    ),
+    (EntityType.faction, ContentCategory.chapter): (
+        "Del siguiente capítulo, extrae SOLO atributos visuales de la facción en la escena de apertura: "
+        "símbolo visible, colores, presencia, atmósfera. "
+        "Formato: lista de atributos separados por coma. "
+        "IGNORA: trama, desarrollo."
+    ),
+    (EntityType.item, ContentCategory.extended_description): (
+        "Del siguiente texto que describe un objeto, extrae SOLO atributos visuales: "
+        "tipo de objeto (espada, amuleto, libro, etc.), material principal, material secundario, "
+        "color predominante, color secundario, textura, condición (nuevo, antiguo, dañado, mágico), "
+        "tamaño aproximado, elementos decorativos, indicadores mágicos (brillo, runas, energía). "
+        "Formato: lista de atributos separados por coma. "
+        "IGNORA: historia, propiedades, uso."
+    ),
+    (EntityType.item, ContentCategory.backstory): (
+        "Del siguiente texto de trasfondo de un objeto, "
+        "extrae SOLO atributos visuales de su origen: apariencia original, material de la época, "
+        "símbolos grabados, condición en ese tiempo. "
+        "Formato: lista de atributos separados por coma. "
+        "IGNORA: eventos, propietarios, fechas."
+    ),
+    (EntityType.item, ContentCategory.scene): (
+        "De la siguiente escena donde aparece el objeto, "
+        "extrae SOLO atributos visuales: cómo se muestra, posición, iluminación, "
+        "interacción con personajes, estado visible. "
+        "Formato: lista de atributos separados por coma. "
+        "IGNORA: diálogo, pensamientos."
+    ),
+    (EntityType.item, ContentCategory.chapter): (
+        "Del siguiente capítulo, extrae SOLO atributos visuales del objeto en la escena de apertura: "
+        "presencia, posición, iluminación, estado visible. "
+        "Formato: lista de atributos separados por coma. "
+        "IGNORA: trama, desarrollo."
     ),
 }
+
+_llm_instruction_fallback = (
+    "Del siguiente texto, extrae SOLO descriptores visuales relevantes para generación de imagen: "
+    "colores, formas, texturas, materiales, atmósfera, iluminación, elementos destacados. "
+    "Formato: lista de atributos separados por coma. "
+    "IGNORA: narrativa, personajes, historia, nombres."
+)
 
 # Limits concurrent LLM calls to avoid overwhelming Ollama (local, single-threaded).
 _llm_semaphore = threading.Semaphore(settings.max_concurrent_llm_calls)
@@ -70,25 +191,28 @@ def _truncate_to_tokens(text: str, max_tokens: int) -> str:
 
 def invoke_prompt_extraction_pipeline(
     content_text: str,
+    entity_type: EntityType,
     category: ContentCategory,
-    target_tokens: int = 75,
+    target_tokens: int = 150,
 ) -> str:
-    """Usa el LLM para extraer descriptores visuales de un texto.
+    """Usa el LLM para extraer atributos visuales de un texto por tipo de entidad.
 
     Args:
         content_text: Texto del EntityContent confirmado
+        entity_type: Tipo de entidad (character, creature, location, faction, item)
         category: Categoría del contenido (determina la instrucción)
         target_tokens: Límite de tokens para el resultado
 
     Returns:
-        Descriptores visuales extraídos por el LLM
+        Atributos visuales extraídos por el LLM (sin nombre de entidad)
 
     Raises:
         RuntimeError: Si el LLM no está disponible
     """
-    llm_instruction = _llm_instruction_by_category.get(
-        category,
-        _llm_instruction_by_category[ContentCategory.extended_description],
+    instruction_key = (entity_type, category)
+    llm_instruction = _llm_instruction_by_entity_category.get(
+        instruction_key,
+        _llm_instruction_fallback,
     )
 
     full_prompt = f"""{llm_instruction}
@@ -98,10 +222,11 @@ TEXTO A ANALIZAR:
 {content_text}
 ---
 
-Responde únicamente con la lista de descriptores, sin explicación."""
+Responde únicamente con la lista de atributos visuales, sin explicación."""
 
     logger.debug(
-        "invoke_prompt_extraction_pipeline: category=%s target_tokens=%d text_len=%d",
+        "invoke_prompt_extraction_pipeline: entity_type=%s category=%s target_tokens=%d text_len=%d",
+        entity_type,
         category,
         target_tokens,
         len(content_text),
@@ -115,11 +240,11 @@ Responde únicamente con la lista de descriptores, sin explicación."""
         raise RuntimeError("LLM service unavailable") from e
 
     if not result or not result.strip():
-        logger.warning("LLM returned empty result for category %s", category)
+        logger.warning("LLM returned empty result for entity_type=%s category=%s", entity_type, category)
         return ""
 
     truncated = _truncate_to_tokens(result.strip(), target_tokens)
-    logger.info("Extracted %d tokens for category %s", _estimate_tokens(truncated), category)
+    logger.info("Extracted %d tokens for entity_type=%s category=%s", _estimate_tokens(truncated), entity_type, category)
 
     return truncated
 
