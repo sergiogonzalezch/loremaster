@@ -114,6 +114,7 @@ class ImageRecord(SQLModel, table=True):
     # Imagen
     seed: int = SQLField(default=42)
     storage_path: Optional[str] = SQLField(default=None, max_length=500)
+    image_url: Optional[str] = SQLField(default=None, max_length=500)
     filename: Optional[str] = SQLField(default=None, max_length=255)
     extension: str = SQLField(default="png", max_length=10)
     width: int = SQLField(default=1024)
@@ -225,6 +226,7 @@ class ImageRecordResponse(BaseModel):
 
     seed: int
     storage_path: Optional[str] = None
+    image_url: Optional[str] = None
     filename: Optional[str] = None
     extension: str
     width: int
