@@ -17,6 +17,7 @@ _llm_semaphore = threading.Semaphore(settings.max_concurrent_llm_calls)
 
 generation_chain = None
 
+_ATTRIBUTE_EXTRACT_SUFFIX = "Respond IN ENGLISH only with the list of visual attributes, without explanation."
 
 def _get_generation_chain():
     global generation_chain
@@ -70,6 +71,7 @@ def invoke_prompt_extraction(
         _TYPE_EXTRACT_PROMPT,
     )
 
+# 
     instruction_key = (entity_type, category)
     llm_instruction = _llm_instruction_by_entity_category[instruction_key]
     type_prompt = _TYPE_EXTRACT_PROMPT.get(entity_type, "")
@@ -87,7 +89,7 @@ def invoke_prompt_extraction(
             chain = _get_generation_chain()
 
             tipo_result = chain.invoke(
-                f"{type_prompt}\n\nTEXTO:\n---\n{content_text}\n---"
+                f"{type_prompt}\n\nTEXT:\n---\n{content_text}\n---"
             )
             tipo_especifico = tipo_result.strip().lower() if tipo_result else ""
             if not tipo_especifico:
@@ -95,12 +97,12 @@ def invoke_prompt_extraction(
 
             attributes_prompt = f"""{llm_instruction}
 
-TEXTO A ANALIZAR:
+TEXT TO ANALYZE:
 ---
 {content_text}
 ---
 
-Responde únicamente con la lista de atributos visuales, sin explicación."""
+{_ATTRIBUTE_EXTRACT_SUFFIX}"""
 
             result = chain.invoke(attributes_prompt)
     except Exception as e:
