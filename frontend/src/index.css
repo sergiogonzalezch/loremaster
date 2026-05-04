@@ -975,3 +975,98 @@ a:hover {
 .lm-markdown td {
   background: transparent;
 }
+
+/* ─── Image Panel (Offcanvas) ───────────────────────────────────────────────*/
+.lm-offcanvas {
+  background: var(--lm-surface) !important;
+  border-left: 1px solid var(--lm-border) !important;
+  backdrop-filter: blur(20px);
+}
+
+.lm-offcanvas-header {
+  background: var(--lm-raised);
+  color: var(--lm-text);
+}
+
+.lm-offcanvas-header .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%);
+  opacity: 0.5;
+}
+
+.lm-offcanvas-header .btn-close:hover {
+  opacity: 1;
+}
+
+.lm-tabs .nav-link {
+  color: var(--lm-text-muted);
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.lm-tabs .nav-link:hover {
+  color: var(--lm-text);
+}
+
+.lm-tabs .nav-link.active {
+  color: var(--lm-accent);
+  border-bottom-color: var(--lm-accent);
+  background: transparent;
+}
+
+.lm-card {
+  background: var(--lm-raised);
+  border: 1px solid var(--lm-border);
+  border-radius: var(--lm-radius);
+}
+
+.lm-input,
+.lm-input:focus {
+  background: var(--lm-bg);
+  border: 1px solid var(--lm-border);
+  color: var(--lm-text);
+  border-radius: var(--lm-radius);
+}
+
+.lm-input:focus {
+  border-color: var(--lm-accent);
+  box-shadow: 0 0 0 2px var(--lm-accent-glow);
+}
+
+.lm-input::placeholder {
+  color: var(--lm-text-dim);
+}
+
+.lm-select {
+  background: var(--lm-bg);
+  border: 1px solid var(--lm-border);
+  color: var(--lm-text);
+  border-radius: var(--lm-radius);
+}
+
+.lm-select:focus {
+  border-color: var(--lm-accent);
+  box-shadow: 0 0 0 2px var(--lm-accent-glow);
+}
+
+.lm-btn {
+  background: var(--lm-accent);
+  border: 1px solid var(--lm-border-accent);
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--lm-radius);
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.lm-btn:hover:not(:disabled) {
+  background: var(--lm-gold-light);
+  border-color: var(--lm-accent);
+}
+
+.lm-btn:disabled {
+  opacity: 0.6;
+}
