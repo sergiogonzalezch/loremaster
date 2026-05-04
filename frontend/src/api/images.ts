@@ -15,11 +15,7 @@ export function buildPrompt(
 ) {
   return apiFetch<{
     auto_prompt: string;
-    prompt_source: string;
-    prompt_source_label: string;
-    prompt_strategy: string;
     token_count: number;
-    truncated: boolean;
   }>(
     `/collections/${collectionId}/entities/${entityId}/image-generation/build-prompt`,
     {

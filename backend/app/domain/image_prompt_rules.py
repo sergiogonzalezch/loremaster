@@ -8,7 +8,9 @@ from app.models.entities import EntityType
 # === REUSABLE CONSTANTS ===
 
 ENGLISH_RESPONSE_INSTRUCTION = "Respond IN ENGLISH"
-_TYPE_EXTRACT_SUFFIX = f". {ENGLISH_RESPONSE_INSTRUCTION} with only one word or short term: "
+_TYPE_EXTRACT_SUFFIX = (
+    f". {ENGLISH_RESPONSE_INSTRUCTION} with only one word or short term: "
+)
 
 _BASE_EXTRACT = "extract ALL visual attributes that the text EXPLICITLY mentions. "
 _NO_SKIP = "DO NOT summarize, DO NOT skip. Every visual detail must be included. "
@@ -161,6 +163,7 @@ _PREFIX_BY_CATEGORY = {
 
 # === BUILDER FUNCTIONS ===
 
+
 def _build_instruction(entity_type: EntityType, category: ContentCategory) -> str:
     """Builds the LLM instruction for an entity_type + category combination."""
     prefix = _PREFIX_BY_CATEGORY.get(category, "From the following text")
@@ -170,7 +173,9 @@ def _build_instruction(entity_type: EntityType, category: ContentCategory) -> st
     else:
         entity_desc = f"a {entity_en}"
 
-    attrs = _ATTRIBUTOS_BY_ENTITY_CATEGORY.get((entity_type, category), "colors, shapes, textures, sizes")
+    attrs = _ATTRIBUTOS_BY_ENTITY_CATEGORY.get(
+        (entity_type, category), "colors, shapes, textures, sizes"
+    )
     type_label = _TYPE_LABEL_BY_ENTITY.get(entity_type, "")
     ignore = _IGNORA_BY_CATEGORY.get(category, "IGNORE: narrative, history.")
 

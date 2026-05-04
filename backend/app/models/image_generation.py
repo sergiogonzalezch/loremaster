@@ -8,7 +8,6 @@ from pydantic import BaseModel, Field
 from sqlalchemy import Column, ForeignKey, String
 from sqlmodel import SQLModel, Field as SQLField
 
-
 # ── Tabla DB: image_generations (un registro por batch) ───────────────────────────────
 
 
@@ -17,6 +16,7 @@ class ImageGeneration(SQLModel, table=True):
     Registro de generación de imágenes en batch.
     Almacena los metadatos del prompt y configuración de la generación.
     """
+
     __tablename__ = "image_generations"
 
     id: str = SQLField(
@@ -54,7 +54,9 @@ class ImageGeneration(SQLModel, table=True):
     auto_prompt: str = SQLField(max_length=1000)
     final_prompt: str = SQLField(max_length=1000)
     prompt_token_count: int = SQLField(default=0)
-    prompt_source: str = SQLField(max_length=50)  # extended | scene | entity_desc | name_only
+    prompt_source: str = SQLField(
+        max_length=50
+    )  # extended | scene | entity_desc | name_only
     truncated: bool = SQLField(default=False)
 
     # Generación
@@ -64,9 +66,7 @@ class ImageGeneration(SQLModel, table=True):
     height: int = SQLField(default=1024)
 
     # Ciclo de vida
-    created_at: datetime = SQLField(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    created_at: datetime = SQLField(default_factory=lambda: datetime.now(timezone.utc))
     is_deleted: bool = SQLField(default=False)
     deleted_at: Optional[datetime] = SQLField(default=None)
 
@@ -79,6 +79,7 @@ class ImageRecord(SQLModel, table=True):
     Registro de imagen individual generada dentro de un batch.
     La imagen física se almacena en: media/{collection_id}/{entity_id}/{generation_id}/{id}.png
     """
+
     __tablename__ = "image_records"
 
     id: str = SQLField(
@@ -122,9 +123,7 @@ class ImageRecord(SQLModel, table=True):
     generation_ms: int = SQLField(default=0)
 
     # Ciclo de vida
-    created_at: datetime = SQLField(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    created_at: datetime = SQLField(default_factory=lambda: datetime.now(timezone.utc))
     is_deleted: bool = SQLField(default=False)
     deleted_at: Optional[datetime] = SQLField(default=None)
 
@@ -143,6 +142,10 @@ class GenerateImagesRequest(BaseModel):
     content_id: str = Field(
         ...,
         description="ID del EntityContent confirmado.",
+    )
+    auto_prompt: str = Field(
+        ...,
+        description="Prompt generado por el LLM (del build).",
     )
     final_prompt: str = Field(
         ...,
@@ -177,19 +180,13 @@ class ImageResult(BaseModel):
 
 class BuildPromptResponse(BaseModel):
     auto_prompt: str
-    prompt_source: str
-    prompt_source_label: str
-    prompt_strategy: str
     token_count: int
-    truncated: bool
 
 
 class GenerateImagesResponse(BaseModel):
     generation_id: str
     auto_prompt: str
     final_prompt: str
-    prompt_source: str
-    prompt_source_label: str
     batch_size: int
     backend: str
     images: list[ImageResult]
@@ -205,8 +202,6 @@ class ImageGenerationResponse(BaseModel):
     auto_prompt: str
     final_prompt: str
     prompt_token_count: int
-    prompt_source: str
-    truncated: bool
 
     batch_size: int
     backend: str
@@ -239,7 +234,6 @@ class ImageRecordResponse(BaseModel):
 
 
 class ImageGenerationListItem(BaseModel):
-    """Una generación con sus imágenes para mostrar en lista."""
     id: str
     entity_id: str
     collection_id: str
@@ -247,7 +241,6 @@ class ImageGenerationListItem(BaseModel):
     category: str
     auto_prompt: str
     final_prompt: str
-    prompt_source: str
     batch_size: int
     backend: str
     width: int
@@ -260,5 +253,6 @@ class ImageGenerationListItem(BaseModel):
 
 class ImageGenerationListResponse(BaseModel):
     """Lista de generaciones de imágenes de una entidad."""
+
     generations: list[ImageGenerationListItem]
     total: int

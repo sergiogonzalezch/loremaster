@@ -68,6 +68,7 @@ def generate_images(
             session,
             entity,
             request.content_id,
+            request.auto_prompt,
             request.final_prompt,
             request.batch_size,
         )

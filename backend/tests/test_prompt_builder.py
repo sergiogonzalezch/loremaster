@@ -1,6 +1,10 @@
 # tests/test_prompt_builder.py
 
-from app.domain.prompt_builder import build_visual_prompt, _estimate_tokens, QUALITY_SUFFIX
+from app.domain.prompt_builder import (
+    build_visual_prompt,
+    _estimate_tokens,
+    QUALITY_SUFFIX,
+)
 from app.models.entities import EntityType
 from app.models.enums import ContentCategory
 
@@ -100,7 +104,12 @@ def test_pb_06_all_categories_supported():
     with patch("app.engine.image_pipeline.invoke_prompt_extraction") as mock:
         mock.return_value = ("test", "test attributes")
 
-        for category in [ContentCategory.extended_description, ContentCategory.backstory, ContentCategory.scene, ContentCategory.chapter]:
+        for category in [
+            ContentCategory.extended_description,
+            ContentCategory.backstory,
+            ContentCategory.scene,
+            ContentCategory.chapter,
+        ]:
             result = build_visual_prompt(
                 entity_type=EntityType.character,
                 entity_name="Test",

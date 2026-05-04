@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     max_pending_contents: int = 5
 
     # Image generation
-    image_prompt_tokens: int = 150
+    image_prompt_tokens: int = 512
     image_backend: str = "mock"
     image_batch_size_default: int = 4
     image_width: int = 1024

@@ -217,7 +217,9 @@ def sample_entity(db_session: Session, sample_collection: Collection) -> Entity:
 
 
 @pytest.fixture
-def sample_entity_content_confirmed(db_session: Session, sample_entity: Entity) -> "EntityContent":
+def sample_entity_content_confirmed(
+    db_session: Session, sample_entity: Entity
+) -> "EntityContent":
     """FX-08: Persisted confirmed sample entity content for image generation."""
     from app.models.entity_content import EntityContent
     from app.models.enums import ContentCategory, ContentStatus

@@ -2,8 +2,6 @@
 
 export type ImageStatus = "pending" | "confirmed" | "discarded";
 export type ImageBackend = "mock" | "local" | "runpod";
-export type PromptSource = "llm_extraction";
-export type PromptStrategy = "llm_extraction";
 
 export interface ImageRecord {
   id: string;
@@ -31,7 +29,6 @@ export interface ImageGenerationItem {
   category: string;
   auto_prompt: string;
   final_prompt: string;
-  prompt_source: string;
   batch_size: number;
   backend: string;
   width: number;
@@ -48,6 +45,7 @@ export interface ImageGenerationListResponse {
 
 export interface GenerateImageRequest {
   content_id: string;
+  auto_prompt: string;
   final_prompt: string;
   batch_size: number;
 }
@@ -56,8 +54,6 @@ export interface GenerateImagesResponse {
   generation_id: string;
   auto_prompt: string;
   final_prompt: string;
-  prompt_source: string;
-  prompt_source_label: string;
   batch_size: number;
   backend: string;
   images: {
