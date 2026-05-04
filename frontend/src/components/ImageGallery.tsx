@@ -101,9 +101,15 @@ export default function ImageGallery({
                   {gen.batch_size} imagenes
                 </Badge>
                 <Badge
-                  bg={gen.category === "extended_description" ? "info" : "secondary"}
+                  bg={
+                    gen.category === "extended_description"
+                      ? "info"
+                      : "secondary"
+                  }
                 >
-                  {CATEGORY_LABELS[gen.category as keyof typeof CATEGORY_LABELS] || gen.category}
+                  {CATEGORY_LABELS[
+                    gen.category as keyof typeof CATEGORY_LABELS
+                  ] || gen.category}
                 </Badge>
                 <small className="text-muted ms-2">
                   {formatDate(gen.created_at)}
@@ -126,7 +132,11 @@ export default function ImageGallery({
                     style={{ minWidth: 120 }}
                   >
                     <img
-                      src={img.storage_path ? `http://localhost:8000/media/${img.storage_path}` : img.storage_path || ""}
+                      src={
+                        img.storage_path
+                          ? `http://localhost:8000/media/${img.storage_path}`
+                          : img.storage_path || ""
+                      }
                       alt={`Imagen ${img.seed}`}
                       className="img-fluid rounded"
                       style={{ width: 120, height: 120, objectFit: "cover" }}
@@ -169,7 +179,9 @@ export default function ImageGallery({
                   {selectedGeneration.batch_size} imágenes
                 </Badge>
                 <Badge bg="info">
-                  {CATEGORY_LABELS[selectedGeneration.category as keyof typeof CATEGORY_LABELS] || selectedGeneration.category}
+                  {CATEGORY_LABELS[
+                    selectedGeneration.category as keyof typeof CATEGORY_LABELS
+                  ] || selectedGeneration.category}
                 </Badge>
                 <small className="text-muted ms-2">
                   {formatDate(selectedGeneration.created_at)}
@@ -179,7 +191,11 @@ export default function ImageGallery({
                 {selectedGeneration.images.map((img) => (
                   <div key={img.id} className="text-center">
                     <img
-                      src={img.storage_path ? `http://localhost:8000/media/${img.storage_path}` : img.storage_path || ""}
+                      src={
+                        img.storage_path
+                          ? `http://localhost:8000/media/${img.storage_path}`
+                          : img.storage_path || ""
+                      }
                       alt={`Imagen ${img.seed}`}
                       className="img-fluid rounded"
                       style={{
@@ -210,7 +226,10 @@ export default function ImageGallery({
           )}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setSelectedGeneration(null)}>
+          <Button
+            variant="secondary"
+            onClick={() => setSelectedGeneration(null)}
+          >
             Cerrar
           </Button>
         </Modal.Footer>

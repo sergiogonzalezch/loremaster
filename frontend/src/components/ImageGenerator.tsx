@@ -1,11 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import {
-  Alert,
-  Button,
-  Card,
-  Form,
-  Spinner,
-} from "react-bootstrap";
+import { Alert, Button, Card, Form, Spinner } from "react-bootstrap";
 import { buildPrompt, generateImages } from "../api/images";
 import { getContents } from "../api/contents";
 import type { EntityContent } from "../types";
@@ -23,9 +17,9 @@ export default function ImageGenerator({
   entityId,
   onGenerated,
 }: Props) {
-  const [confirmedContents, setConfirmedContents] = useState<
-    EntityContent[]
-  >([]);
+  const [confirmedContents, setConfirmedContents] = useState<EntityContent[]>(
+    [],
+  );
   const [selectedContentId, setSelectedContentId] = useState("");
   const [promptData, setPromptData] = useState<{
     auto_prompt: string;
@@ -51,11 +45,7 @@ export default function ImageGenerator({
     setBuilding(true);
     setError(null);
     try {
-      const data = await buildPrompt(
-        collectionId,
-        entityId,
-        selectedContentId,
-      );
+      const data = await buildPrompt(collectionId, entityId, selectedContentId);
       setPromptData(data);
       setFinalPrompt(data.auto_prompt);
     } catch (e) {
@@ -101,9 +91,7 @@ export default function ImageGenerator({
         <div className="lm-empty">
           <span className="lm-empty-glyph">🎨</span>
           <p>No hay contenidos confirmados para generar imágenes.</p>
-          <p>
-            Confirma un contenido en la sección de contenidos primero.
-          </p>
+          <p>Confirma un contenido en la sección de contenidos primero.</p>
         </div>
       </>
     );
@@ -143,11 +131,7 @@ export default function ImageGenerator({
           >
             {building ? (
               <>
-                <Spinner
-                  animation="border"
-                  size="sm"
-                  className="me-1"
-                />
+                <Spinner animation="border" size="sm" className="me-1" />
                 Construyendo prompt...
               </>
             ) : (
@@ -204,11 +188,7 @@ export default function ImageGenerator({
               >
                 {loading ? (
                   <>
-                    <Spinner
-                      animation="border"
-                      size="sm"
-                      className="me-1"
-                    />
+                    <Spinner animation="border" size="sm" className="me-1" />
                     Generando...
                   </>
                 ) : (
@@ -219,7 +199,12 @@ export default function ImageGenerator({
           )}
 
           {error && (
-            <Alert variant="danger" className="mt-3" dismissible onClose={() => setError(null)}>
+            <Alert
+              variant="danger"
+              className="mt-3"
+              dismissible
+              onClose={() => setError(null)}
+            >
               {error}
             </Alert>
           )}

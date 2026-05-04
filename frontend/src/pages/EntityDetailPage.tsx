@@ -66,7 +66,8 @@ export default function EntityDetailPage() {
   const [lastSubmittedQuery, setLastSubmittedQuery] = useState("");
   const [showEdit, setShowEdit] = useState(false);
   const [showImagePanel, setShowImagePanel] = useState(false);
-  const [selectedContentForImage, setSelectedContentForImage] = useState<EntityContent | null>(null);
+  const [selectedContentForImage, setSelectedContentForImage] =
+    useState<EntityContent | null>(null);
   const [contentsRefreshTrigger, setContentsRefreshTrigger] = useState(0);
 
   const availableCategories = useMemo<ContentCategory[]>(
