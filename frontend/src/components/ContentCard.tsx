@@ -18,7 +18,6 @@ import {
 } from "../api/contents";
 import ConfirmModal from "./ConfirmModal";
 import { useDeleteConfirm } from "../hooks/useDeleteConfirm";
-import { useNavigate } from "react-router-dom";
 import MarkdownContent from "./MarkdownContent";
 import type { EntityContent } from "../types";
 import { CATEGORY_LABELS } from "../utils/constants";
@@ -34,6 +33,7 @@ interface ContentCardProps {
     id: string,
     patch: Partial<EntityContent> | null,
   ) => void;
+  onOpenImagePanel?: (content: EntityContent) => void;
 }
 
 export default function ContentCard({
@@ -42,6 +42,7 @@ export default function ContentCard({
   entityId,
   onAction,
   onOptimisticUpdate,
+  onOpenImagePanel,
 }: ContentCardProps) {
   const [error, setError] = useState<{
     variant: "warning" | "danger";
@@ -55,7 +56,6 @@ export default function ContentCard({
 
   const [showDiscard, setShowDiscard] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const navigate = useNavigate();
 
   const deleteConfirm = useDeleteConfirm<EntityContent>({
     onDelete: async (c) => {
@@ -327,6 +327,16 @@ export default function ContentCard({
                 >
                   Editar
                 </Button>
+                {onOpenImagePanel && (
+                  <Button
+                    variant="outline-primary"
+                    size="sm"
+                    onClick={() => onOpenImagePanel(content)}
+                    disabled={busy || deleteConfirm.deleting}
+                  >
+                    🎨 Imagen
+                  </Button>
+                )}
                 <Button
                   variant="outline-danger"
                   size="sm"

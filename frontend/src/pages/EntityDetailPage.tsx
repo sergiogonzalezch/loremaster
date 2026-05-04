@@ -25,7 +25,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import MarkdownContent from "../components/MarkdownContent";
 import TokenCounter from "../components/TokenCounter";
 import { useGenerate } from "../hooks/useGenerate";
-import type { Collection, Entity } from "../types";
+import type { Collection, Entity, EntityContent } from "../types";
 import type { ContentCategory } from "../utils/enums";
 import { formatDate } from "../utils/formatters";
 import { getErrorMessage, parseApiError } from "../utils/errors";
@@ -66,6 +66,7 @@ export default function EntityDetailPage() {
   const [lastSubmittedQuery, setLastSubmittedQuery] = useState("");
   const [showEdit, setShowEdit] = useState(false);
   const [showImagePanel, setShowImagePanel] = useState(false);
+  const [selectedContentForImage, setSelectedContentForImage] = useState<EntityContent | null>(null);
   const [contentsRefreshTrigger, setContentsRefreshTrigger] = useState(0);
 
   const availableCategories = useMemo<ContentCategory[]>(
@@ -386,6 +387,10 @@ export default function EntityDetailPage() {
         refreshTrigger={contentsRefreshTrigger}
         onRefreshEntity={refreshEntityQuiet}
         onPendingCountChange={handlePendingCountChange}
+        onOpenImagePanel={(content) => {
+          setSelectedContentForImage(content);
+          setShowImagePanel(true);
+        }}
       />
 
       <div className="mb-4">
@@ -398,8 +403,12 @@ export default function EntityDetailPage() {
         collectionId={collectionId}
         entityId={entityId}
         show={showImagePanel}
-        onHide={() => setShowImagePanel(false)}
+        onHide={() => {
+          setShowImagePanel(false);
+          setSelectedContentForImage(null);
+        }}
         onGenerated={() => {}}
+        initialContent={selectedContentForImage}
       />
 
       <EntityEditForm
