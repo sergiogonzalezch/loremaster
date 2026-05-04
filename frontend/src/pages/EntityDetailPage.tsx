@@ -19,9 +19,7 @@ import {
 } from "../api";
 import { ApiAbortError } from "../api/apiClient";
 import EntityContentsPanel from "../components/EntityContentsPanel";
-import ImageGallery from "../components/ImageGallery";
-import ImageGenerator from "../components/ImageGenerator";
-// import ImagePreviewCard from "../components/ImagePreviewCard";
+import ImagePanel from "../components/ImagePanel";
 import EntityEditForm from "../components/EntityEditForm";
 import LoadingSpinner from "../components/LoadingSpinner";
 import MarkdownContent from "../components/MarkdownContent";
@@ -67,8 +65,8 @@ export default function EntityDetailPage() {
   const [query, setQuery] = useState("");
   const [lastSubmittedQuery, setLastSubmittedQuery] = useState("");
   const [showEdit, setShowEdit] = useState(false);
+  const [showImagePanel, setShowImagePanel] = useState(false);
   const [contentsRefreshTrigger, setContentsRefreshTrigger] = useState(0);
-  const [galleryRefreshTrigger, setGalleryRefreshTrigger] = useState(0);
 
   const availableCategories = useMemo<ContentCategory[]>(
     () => (entity ? (categoryMap[entity.type] ?? []) : []),
@@ -390,16 +388,18 @@ export default function EntityDetailPage() {
         onPendingCountChange={handlePendingCountChange}
       />
 
-      <ImageGenerator
-        collectionId={collectionId}
-        entityId={entityId}
-        onGenerated={() => setGalleryRefreshTrigger((t) => t + 1)}
-      />
+      <div className="mb-4">
+        <Button variant="outline-primary" onClick={() => setShowImagePanel(true)}>
+          🎨 Generar imágenes
+        </Button>
+      </div>
 
-      <ImageGallery
+      <ImagePanel
         collectionId={collectionId}
         entityId={entityId}
-        refreshTrigger={galleryRefreshTrigger}
+        show={showImagePanel}
+        onHide={() => setShowImagePanel(false)}
+        onGenerated={() => {}}
       />
 
       <EntityEditForm
