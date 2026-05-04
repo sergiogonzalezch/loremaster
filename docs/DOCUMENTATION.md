@@ -1,5 +1,11 @@
 # 1. Resumen Ejecutivo
 
+> ⚠️ **NOTA SOBRE DIAGRAMAS**: Los diagramas referenciados en este documento (flujo, secuencia, ERD, arquitectura) fueron creados en versiones anteriores del proyecto y pueden no reflejar el estado actual. En particular:
+> - El flujo de generación de imágenes ha cambiado (build-prompt → generate, sin regeneración en backend)
+> - La estructura del engine ahora incluye `image_prompt_builder.py` (consolidado)
+> - Los modelos de datos han evolucionado (eliminados campos como `truncated`, `prompt_source`)
+> **→ Los diagramas necesitan ser recreados para reflejar el estado actual.**
+
 ## ¿Qué es Lore Master?
 
 Lore Master es una plataforma web interactiva para escritores, narradores de rol (RPG), diseñadores de videojuegos y creadores de contenido que necesitan construir, organizar y expandir mundos ficticios de manera coherente y visualmente rica.
@@ -16,11 +22,16 @@ A diferencia de los asistentes de IA genéricos basados en chat, Lore Master ofr
 - Genera **contenidos RAG por categoría** para cada entidad: el usuario puede editar, confirmar (descarta automáticamente los demás pendientes de la misma categoría, sin afectar confirmados previos) o descartar cada contenido.
 - Gestiona entidades del mundo (personajes, criaturas, escenarios, facciones, ítems) con atributos estructurados.
 - Aplica moderación de contenido en tres capas (input, documentos y output del LLM) mediante filtros regex (`domain/content_guard.py`).
+- **Generación de imágenes** (flujo de dos pasos):
+  1. `build-prompt`: Genera `auto_prompt` (prompt visual LLM) a partir de un contenido confirmado de la entidad.
+  2. `generate`: Genera imágenes usando el `auto_prompt` del frontend + `final_prompt` del usuario. No hay regeneración del prompt en backend.
+- Módulo consolidado `engine/image_prompt_builder.py` (anteriormente `image_pipeline` + `prompt_builder`).
+- Límite de 512 tokens para prompts visuales (text encoder).
 
-**Planificado (Fases 2-3):**
+**Parcialmente implementado:**
 
-- Construcción de prompts visuales y generación de imágenes a través de ComfyUI + Flux.2 Klein 4B.
-- Almacenamiento de imágenes y metadatos generados en S3 (LocalStack local / AWS S3 o R2 en producción).
+- Integración con ComfyUI/RunPod para generación de imágenes — en desarrollo.
+- Almacenamiento S3 — staging (docker-compose incluye LocalStack).
 
 ## ¿Qué problema resuelve?
 
@@ -177,36 +188,46 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 # HU-04 — Generación de imágenes
 
-### Diagramas
+> ⚠️ **NOTA**: Los diagramas de flujo y secuencia para esta historia necesitan actualización para reflejar el nuevo flujo de dos pasos (build-prompt → generate).
 
-- Diagrama de flujo — Generación de imágenes
+### Nuevo flujo (implementado)
 
-![Diagrama de flujo HU-04](./diagrams/Diagrama-Flujo-HU-04.png)
+1. **build-prompt** → `POST .../image-generation/build-prompt`: Genera el `auto_prompt` (prompt visual LLM) a partir de un contenido confirmado de la entidad.
+2. **generate** → `POST .../image-generation/generate`: Genera imágenes usando el `auto_prompt` del frontend + `final_prompt` del usuario. No hay regeneración del prompt en backend.
 
-- Diagrama de secuencia — Cliente → FastAPI → ComfyUI / RunPod
+**Endpoints:**
 
-![Diagrama de secuencia HU-04](./diagrams/Diagrama-Secuencia-HU-04.png)
+| Método | Ruta | Descripción |
+|---|---|---|
+| `POST` | `/collections/{id}/entities/{eid}/image-generation/build-prompt` | Construye el prompt visual (`auto_prompt`) |
+| `POST` | `/collections/{id}/entities/{eid}/image-generation/generate` | Genera batch de imágenes (1-4) |
+| `GET` | `/collections/{id}/entities/{eid}/image-generation` | Lista generaciones |
+| `GET` | `/collections/{id}/entities/{eid}/image-generation/{gid}` | Obtiene una generación |
+| `DELETE` | `/collections/{id}/entities/{eid}/image-generation/{gid}/images/{iid}` | Elimina una imagen |
 
-### Criterios de aceptación (ajustados)
+**Request (generate):** `{ content_id, auto_prompt, final_prompt, batch_size }`
 
-- La imagen se genera a partir de:
-  - descripción del usuario
-  - contexto RAG (colección)
-  - (opcional) entidad
-- Se retorna URL + metadata (prompt, seed)
-- Timeout → `HTTP 503`
+### Criterios de aceptación (actualizados)
 
-### Secuencia corregida
+- `auto_prompt` viene del frontend (previamente generado en `build-prompt`)
+- `final_prompt` es editable por el usuario
+- `batch_size` entre 1 y 4
+- Validación de contenido con `check_user_input()` antes de generar
+- Límite de 512 tokens para el prompt visual
 
-| **Paso** | **Actor → Actor**        | **Mensaje / Operación**               |
-| -------- | ------------------------ | ------------------------------------- |
-| 1        | Cliente → FastAPI        | POST /collections/{id}/generate/image |
-| 2        | FastAPI → RAG            | Obtener contexto                      |
-| 3        | FastAPI                  | Construir prompt                      |
-| 4        | FastAPI → ComfyUI/RunPod | Generar imagen                        |
-| 5        | ComfyUI → FastAPI        | image_bytes                           |
-| 6        | FastAPI → Storage        | Guardar imagen                        |
-| 7        | FastAPI → Cliente        | HTTP 200 { image_url }                |
+### Secuencia (actualizada)
+
+| **Paso** | **Actor → Actor**    | **Mensaje / Operación**                                              |
+| -------- | --------------------- | ------------------------------------------------------------------- |
+| 1        | Cliente → FastAPI    | POST /image-generation/build-prompt con content_id                  |
+| 2        | FastAPI → Qdrant     | search_context para obtener contexto del contenido                  |
+| 3        | FastAPI → LLM        | Genera auto_prompt                                                  |
+| 4        | FastAPI → Cliente    | HTTP 200 { auto_prompt }                                            |
+| 5        | Cliente → FastAPI    | POST /image-generation/generate (auto_prompt + final_prompt)        |
+| 6        | FastAPI              | Valida input con check_user_input()                                 |
+| 7        | FastAPI → DB         | Guarda ImageGeneration con auto_prompt, final_prompt, batch_size   |
+| 8        | FastAPI → ComfyUI    | Genera imágenes (pendiente de integración completa)                |
+| 9        | FastAPI → Cliente    | HTTP 201 { generation_id, images }                                  |
 
 # HU-05 — Gestión de entidades
 
@@ -341,11 +362,12 @@ loremaster/
 │   │   │   ├── lifespan.py                # Startup: migraciones Alembic (crítico) + health checks
 │   │   │   ├── deps.py                    # Dependencias FastAPI: get_collection_or_404, get_entity_or_404, get_document_or_404
 │   │   │   └── common.py                  # Helpers DB: soft_delete, get_active_by_id, list_active_by_collection
-│   │   ├── engine/                        # Pipeline IA — LLM + Qdrant + RAG
+│   │   ├── engine/                        # Pipeline IA — LLM + Qdrant + RAG + Imágenes
 │   │   │   ├── rag.py                     # Qdrant: ingest_chunks, search_context, delete, ping_qdrant
 │   │   │   ├── rag_pipeline.py            # invoke_rag_pipeline() (libre) + invoke_generation_pipeline() (por entidad/categoría)
 │   │   │   ├── llm.py                     # OllamaLLM singletons: llm (bare) + chain (PromptTemplate pipeline)
-│   │   │   └── extractor.py               # Extracción de texto PDF/TXT
+│   │   │   ├── extractor.py               # Extracción de texto PDF/TXT
+│   │   │   ├── image_prompt_builder.py    # Consolidado: prompt_builder + image_pipeline (generación visual)
 │   │   ├── domain/                        # Lógica de dominio pura — sin I/O ni DB
 │   │   │   ├── category_rules.py          # ENTITY_CATEGORY_MAP, validate_category_for_entity()
 │   │   │   ├── content_guard.py           # Moderación de contenido: check_user_input(), check_document_content(), check_generated_output()
@@ -531,7 +553,7 @@ DATABASE_URL=postgresql://user:pass@postgres:5432/loremaster
 | **documents** | id (UUID PK), collection_id (FK), filename, file_type, chunk_count, status, created_at, is_deleted, deleted_at | Sin campo `content` — el texto vive en Qdrant. Sin `updated_at` — los documentos no se editan. `status`: processing \| completed \| failed. |
 | **entities** | id (UUID PK), collection_id (FK), type (ENUM), name, description, created_at, updated_at, is_deleted, deleted_at | `type`: character \| creature \| location \| faction \| item. Nombre único por colección: constraint DB `uq_entity_collection_name` (collection_id, name) + validación en servicio. Los nombres de entidades eliminadas quedan reservados. |
 | **entity_contents** | id (UUID PK), entity_id (FK), collection_id (FK), query, sources_count, category, content, status, created_at, updated_at, is_deleted, deleted_at | `status`: pending \| confirmed \| discarded. Máx. 5 `pending` por entidad **y por categoría**. El discard al confirmar es category-scoped. |
-| **generated_images** | id (UUID PK), collection_id (FK), entity_id (FK?), image_url, visual_prompt, seed, model_version, generation_ms, backend, created_at | Planificado (Fase 3). backend: local \| runpod. |
+| **generated_images** | id (UUID PK), collection_id (FK), entity_id (FK), content_id (FK), auto_prompt, final_prompt, batch_size, images (JSON), created_at | Implementado. |
 | **entity_relations** | id (UUID PK), source_id (FK entities), target_id (FK entities), relation_type, created_at | Planificado. ENUM: belongs_to, contains, allied_with, enemy_of. |
 
 ### Diagrama ERD
@@ -626,7 +648,7 @@ Tres fases de 4 semanas. Cada semana cierra con un entregable concreto, verifica
 
 # 10. Guardrails de Contenido
 
-El sistema implementa control de contenido en el texto y, cuando se integre la generación de imágenes, también en el pipeline visual.
+El sistema implementa control de contenido en el texto y en el pipeline visual (imágenes).
 
 ## Capa 1 — Moderación de texto (IMPLEMENTADO)
 
@@ -640,31 +662,30 @@ El sistema implementa control de contenido en el texto y, cuando se integre la g
 
 Patrones bloqueados: contenido sexual explícito, discurso de odio / supremacismo, instrucciones de armas o explosivos, síntesis de drogas, y lenguaje de acoso.
 
-## Capa 2 — Construcción estructurada del prompt visual (PLANIFICADO — Fase 2)
+## Capa 2 — Construcción estructurada del prompt visual (IMPLEMENTADO)
 
-Cuando se integre ComfyUI, `backend/app/services/prompt_builder.py` construirá el prompt visual automáticamente usando prefijos por tipo de entidad y un sufijo de calidad fijo:
+El módulo `backend/app/engine/image_prompt_builder.py` construye el prompt visual automáticamente usando:
+- Prefijos por tipo de entidad (`STYLE_PREFIX` por EntityType)
+- Contexto RAG recuperado del contenido confirmado de la entidad
+- Sufijo de calidad fijo (`QUALITY_SUFFIX`)
+- Límite de 512 tokens (text encoder limit)
 
 ```python
 STYLE_PREFIX = {
     "character": "fantasy character portrait, detailed face, cinematic lighting, epic atmosphere,",
-    "scene":     "fantasy landscape, wide establishing shot, atmospheric, detailed environment,",
-    "faction":   "faction emblem, heraldic design, fantasy art, symbolic imagery,",
-    "item":      "fantasy item showcase, clean background, detailed textures, magical aura,"
+    "creature": "fantasy creature, detailed, monstrous, epic atmosphere,",
+    "location": "fantasy landscape, wide establishing shot, atmospheric, detailed environment,",
+    "faction": "faction emblem, heraldic design, fantasy art, symbolic imagery,",
+    "item": "fantasy item showcase, clean background, detailed textures, magical aura,"
 }
 
 QUALITY_SUFFIX = (
     "high quality, masterpiece, 8k resolution, sharp focus, "
     "professional digital art, trending on artstation"
 )
-
-def build_visual_prompt(entity_type: str, user_description: str, lore_context: str) -> str:
-    prefix   = STYLE_PREFIX.get(entity_type, ‘’)
-    combined = f’{prefix} {user_description}’
-    if lore_context:
-        combined += f’, consistent with: {lore_context[:200]}’
-    full = f’{combined}, {QUALITY_SUFFIX}’
-    return full[:500]  # Flux.2 Klein acepta hasta ~512 tokens de texto
 ```
+
+La validación de prompts se realiza con `check_user_input()` antes de cualquier generación.
 
 ## Capa 3 — Parámetros fijos del workflow de imágenes (PLANIFICADO — Fase 2)
 
