@@ -1,8 +1,8 @@
 """Checkpoint
 
-Revision ID: 7af798a2428f
+Revision ID: 721158ba3166
 Revises: 
-Create Date: 2026-05-03 22:26:55.740056
+Create Date: 2026-05-04 07:26:07.786532
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = '7af798a2428f'
+revision: str = '721158ba3166'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -154,6 +154,7 @@ def upgrade() -> None:
     sa.Column('collection_id', sa.String(length=36), nullable=False),
     sa.Column('seed', sa.Integer(), nullable=False),
     sa.Column('storage_path', sqlmodel.sql.sqltypes.AutoString(length=500), nullable=True),
+    sa.Column('image_url', sqlmodel.sql.sqltypes.AutoString(length=500), nullable=True),
     sa.Column('filename', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True),
     sa.Column('extension', sqlmodel.sql.sqltypes.AutoString(length=10), nullable=False),
     sa.Column('width', sa.Integer(), nullable=False),
