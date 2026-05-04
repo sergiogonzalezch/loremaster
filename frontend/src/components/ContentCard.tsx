@@ -334,7 +334,7 @@ export default function ContentCard({
                     onClick={() => onOpenImagePanel(content)}
                     disabled={busy || deleteConfirm.deleting}
                   >
-                    🎨 Imagen
+                    Imagen
                   </Button>
                 )}
                 <Button
