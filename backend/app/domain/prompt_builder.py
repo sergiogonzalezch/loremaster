@@ -128,7 +128,11 @@ def _build_with_template(
     max_tokens: int,
     target_tokens: int,
 ) -> dict[str, str | int | bool]:
-    """Estrategia determinista (template) - fallback cuando LLM no está disponible."""
+    """Estrategia determinista (template) - fallback cuando LLM no está disponible.
+    
+    NOTA: El nombre de la entidad NO se incluye en el prompt.
+    Solo se usan atributos visuales del contenido/descripción.
+    """
     strategy_config = CATEGORY_VISUAL_STRATEGY.get(
         category,
         {"strategy": "entity_only", "prefix_addition": ""},
@@ -142,8 +146,7 @@ def _build_with_template(
 
     prefix_tokens = _estimate_tokens(prefix)
     suffix_tokens = _estimate_tokens(QUALITY_SUFFIX)
-    name_tokens = _estimate_tokens(entity_name)
-    overhead = prefix_tokens + suffix_tokens + name_tokens + 5
+    overhead = prefix_tokens + suffix_tokens + 5
     available_tokens = max_tokens - overhead
     target_available = max(10, target_tokens - overhead)
 
@@ -185,7 +188,7 @@ def _build_with_template(
                 narrative = _truncate_to_tokens(narrative, available_tokens)
                 truncated = True
 
-    parts = [prefix, entity_name]
+    parts = [prefix]
     if narrative:
         parts.append(narrative)
     parts.append(QUALITY_SUFFIX)
@@ -210,21 +213,22 @@ def build_visual_prompt(
     confirmed_content: str,
     category: ContentCategory,
     max_tokens: int = 150,
-    target_tokens: int = 75,
-    use_llm_extraction: bool | None = None,
 ) -> dict[str, str | int | bool]:
     """
-    Construye un prompt visual para generación de imagen.
+    Construye un prompt visual para generación de imagen usando LLM.
+
+    El prompt NO incluye el nombre de la entidad - solo atributos visuales
+    que los modelos de imagen pueden interpretar correctamente.
+
+    Si el LLM falla, usa fallback determinista (template).
 
     Args:
         entity_type: Tipo de entidad (character, creature, etc.)
-        entity_name: Nombre de la entidad
+        entity_name: Nombre de la entidad (para fallback, no se incluye en prompt)
         entity_description: Descripción general de la entidad
         confirmed_content: Contenido confirmado del EntityContent
         category: Categoría del contenido
-        max_tokens: Límite máximo de tokens
-        target_tokens: Token objetivo para el prompt
-        use_llm_extraction: Override - si None, usa settings.prompt_strategy
+        max_tokens: Límite de tokens para el prompt (default 150)
 
     Returns:
         {
@@ -232,67 +236,59 @@ def build_visual_prompt(
             "token_count": int,
             "truncated": bool,
             "source": str,      # extended | scene | entity_desc | name_only
-            "strategy": str,   # template | llm_extraction | fallback
+            "strategy": str,   # llm_extraction | fallback
             "category": str,
         }
     """
-    if use_llm_extraction is None:
-        use_llm_extraction = settings.prompt_strategy == "llm"
+    try:
+        from app.engine.rag_pipeline import invoke_prompt_extraction_pipeline
 
-    if use_llm_extraction:
-        try:
-            from app.engine.rag_pipeline import invoke_prompt_extraction_pipeline
+        llm_attributes = invoke_prompt_extraction_pipeline(
+            content_text=confirmed_content,
+            entity_type=entity_type,
+            category=category,
+            target_tokens=max_tokens,
+        )
 
-            llm_narrative = invoke_prompt_extraction_pipeline(
-                content_text=confirmed_content,
-                category=category,
-                target_tokens=target_tokens,
-            )
+        if llm_attributes.strip():
+            prefix = STYLE_PREFIX.get(entity_type, "fantasy art,")
+            prefix_tokens = _estimate_tokens(prefix)
+            suffix_tokens = _estimate_tokens(QUALITY_SUFFIX)
+            overhead = prefix_tokens + suffix_tokens + 5
+            available = max(10, max_tokens - overhead)
 
-            if llm_narrative.strip():
-                prefix = STYLE_PREFIX.get(entity_type, "fantasy art,")
-                prefix_tokens = _estimate_tokens(prefix)
-                suffix_tokens = _estimate_tokens(QUALITY_SUFFIX)
-                name_tokens = _estimate_tokens(entity_name)
-                overhead = prefix_tokens + suffix_tokens + name_tokens + 5
-                target_available = max(10, target_tokens - overhead)
+            attributes = _truncate_to_tokens(llm_attributes, available)
 
-                narrative = _truncate_to_tokens(llm_narrative, target_available)
+            parts = [prefix]
+            if attributes:
+                parts.append(attributes)
+            parts.append(QUALITY_SUFFIX)
 
-                parts = [prefix, entity_name]
-                if narrative:
-                    parts.append(narrative)
-                parts.append(QUALITY_SUFFIX)
+            prompt = ", ".join(p.strip().rstrip(",") for p in parts if p.strip())
+            token_count = _estimate_tokens(prompt)
 
-                prompt = ", ".join(p.strip().rstrip(",") for p in parts if p.strip())
-                token_count = _estimate_tokens(prompt)
+            return {
+                "prompt": prompt,
+                "token_count": token_count,
+                "truncated": _estimate_tokens(llm_attributes) > max_tokens,
+                "source": _map_source_to_code("content_direct"),
+                "strategy": "llm_extraction",
+                "category": category.value,
+            }
+    except Exception:
+        pass
 
-                return {
-                    "prompt": prompt,
-                    "token_count": token_count,
-                    "truncated": _estimate_tokens(llm_narrative) > target_tokens,
-                    "source": _map_source_to_code("content_direct"),
-                    "strategy": "llm_extraction",
-                    "category": category.value,
-                }
-        except Exception:
-            pass
-
-    # Template/deterministic strategy (o fallback cuando LLM falla)
-    template_result = _build_with_template(
+    fallback_result = _build_with_template(
         entity_type=entity_type,
         entity_name=entity_name,
         entity_description=entity_description,
         confirmed_content=confirmed_content,
         category=category,
         max_tokens=max_tokens,
-        target_tokens=target_tokens,
+        target_tokens=max_tokens,
     )
-    # Si use_llm_extraction era True pero falló, marcar como fallback
-    # Si use_llm_extraction es False, usar la estrategia real
-    if use_llm_extraction:
-        template_result["strategy"] = "fallback"
-    return template_result
+    fallback_result["strategy"] = "fallback"
+    return fallback_result
 
 
 def get_prompt_source_label(source: str) -> str:

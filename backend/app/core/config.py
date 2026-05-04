@@ -20,14 +20,12 @@ class Settings(BaseSettings):
     max_pending_contents: int = 5
 
     # Image generation
-    image_prompt_max_tokens: int = 150
-    image_prompt_target_tokens: int = 75
+    image_prompt_tokens: int = 150
     image_backend: str = "mock"
     image_batch_size_default: int = 4
     image_width: int = 1024
     image_height: int = 1024
     image_seed_base: int = 42
-    prompt_strategy: str = "llm"  # llm | template (llm uses LLM extraction, template uses deterministic)
 
     # Storage
     media_root: str = "./media"

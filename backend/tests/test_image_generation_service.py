@@ -2,10 +2,13 @@
 
 import pytest
 from sqlalchemy.orm import Session
+from sqlmodel import select
+
 from app.core.exceptions import NoContextAvailableError
 from app.models.entities import Entity, EntityType
 from app.models.enums import ContentCategory, ContentStatus
 from app.models.entity_content import EntityContent
+from app.models.image_generation import ImageRecord
 from app.services.image_generation_service import (
     build_prompt_service,
     generate_images_service,
@@ -161,10 +164,10 @@ def test_ig_07_generate_persists_generation_record(
 # ── Tests delete_image_service ────────────────────────────────────────────────────
 
 
-def test_ig_08_delete_image_not_found_in_mock(
+def test_ig_08_delete_image_works_in_mock(
     db_session: Session, sample_entity: Entity, sample_entity_content_confirmed: EntityContent
 ):
-    """IG-08: delete_image falla porque mock no persiste imágenes."""
+    """IG-08: delete_image funciona en modo mock (soft delete)."""
     result = generate_images_service(
         db_session,
         sample_entity,
@@ -175,8 +178,15 @@ def test_ig_08_delete_image_not_found_in_mock(
 
     image_id = result.images[0].id
 
-    with pytest.raises(NoContextAvailableError):
-        delete_image_service(db_session, sample_entity, result.generation_id, image_id)
+    delete_image_service(db_session, sample_entity, result.generation_id, image_id)
+
+    record = db_session.exec(
+        select(ImageRecord).where(ImageRecord.id == image_id)
+    ).first()
+
+    assert record is not None
+    assert record.is_deleted is True
+    assert record.deleted_at is not None
 
 
 def test_ig_09_delete_image_fails_for_wrong_entity(

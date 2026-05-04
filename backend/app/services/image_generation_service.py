@@ -107,8 +107,7 @@ def build_prompt_service(
         entity_description=entity.description,
         confirmed_content=content.content,
         category=content.category,
-        max_tokens=settings.image_prompt_max_tokens,
-        target_tokens=settings.image_prompt_target_tokens,
+        max_tokens=settings.image_prompt_tokens,
     )
 
     return BuildPromptResponse(
@@ -151,8 +150,7 @@ def generate_images_service(
         entity_description=entity.description,
         confirmed_content=content.content,
         category=content.category,
-        max_tokens=settings.image_prompt_max_tokens,
-        target_tokens=settings.image_prompt_target_tokens,
+        max_tokens=settings.image_prompt_tokens,
     )
 
     generation_id = str(_uuid.uuid4())
@@ -179,12 +177,27 @@ def generate_images_service(
 
     if settings.image_backend == "mock":
         mock_images = _generate_mock_images(entity, batch_size)
-        for image_id, image_url in mock_images:
+        for i, (image_id, image_url) in enumerate(mock_images):
+            record = ImageRecord(
+                id=image_id,
+                generation_id=generation_id,
+                entity_id=entity.id,
+                collection_id=entity.collection_id,
+                seed=settings.image_seed_base + i,
+                storage_path=None,
+                filename=f"{image_id}.png",
+                extension="png",
+                width=settings.image_width,
+                height=settings.image_height,
+                generation_ms=0,
+            )
+            session.add(record)
+
             images_result.append(
                 ImageResult(
                     id=image_id,
                     image_url=image_url,
-                    seed=settings.image_seed_base + len(images_result),
+                    seed=settings.image_seed_base + i,
                     width=settings.image_width,
                     height=settings.image_height,
                     generation_ms=0,
