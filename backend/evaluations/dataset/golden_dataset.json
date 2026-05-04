@@ -1117,7 +1117,7 @@
         "has_image_url": true,
         "has_visual_prompt": true,
         "backend": "mock",
-        "visual_prompt_contains": ["fantasy", "high quality"]
+        "visual_prompt_contains": ["high quality", "masterpiece"]
       }
     },
     {
@@ -1152,7 +1152,7 @@
       "expected": {
         "http_status": 201,
         "has_image_url": true,
-        "prompt_source": "content_direct"
+        "prompt_source": "llm_extraction"
       }
     },
     {
