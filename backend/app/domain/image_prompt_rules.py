@@ -12,6 +12,10 @@ _TYPE_EXTRACT_SUFFIX = (
     f". {ENGLISH_RESPONSE_INSTRUCTION} with only one word or short term: "
 )
 
+_ATTRIBUTE_EXTRACT_SUFFIX = (
+    "Respond IN ENGLISH only with the list of visual attributes, without explanation."
+)
+
 _BASE_EXTRACT = "extract ALL visual attributes that the text EXPLICITLY mentions. "
 _NO_SKIP = "DO NOT summarize, DO NOT skip. Every visual detail must be included. "
 _FORMAT_ATTRS = f"ONLY loose attributes in ENGLISH, NO complete sentences. {ENGLISH_RESPONSE_INSTRUCTION}. "

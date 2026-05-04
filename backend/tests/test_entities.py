@@ -252,8 +252,6 @@ async def test_delete_entity_cascades_generated_images(
         auto_prompt="test auto",
         final_prompt="test final",
         prompt_token_count=10,
-        prompt_source="content_direct",
-        truncated=False,
         batch_size=1,
         backend="mock",
     )

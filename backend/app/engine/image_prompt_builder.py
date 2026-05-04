@@ -14,6 +14,7 @@ from app.models.entities import EntityType
 from app.domain.image_prompt_rules import (
     _llm_instruction_by_entity_category,
     _TYPE_EXTRACT_PROMPT,
+    _ATTRIBUTE_EXTRACT_SUFFIX,
 )
 
 logger = logging.getLogger(__name__)
@@ -23,10 +24,6 @@ _llm_semaphore = threading.Semaphore(settings.max_concurrent_llm_calls)
 generation_chain = None
 
 QUALITY_SUFFIX = "high quality, masterpiece, sharp focus, professional digital art"
-
-_ATTRIBUTE_EXTRACT_SUFFIX = (
-    "Respond IN ENGLISH only with the list of visual attributes, without explanation."
-)
 
 
 def _get_generation_chain():
@@ -109,16 +106,16 @@ TEXT TO ANALYZE:
         )
         return tipo_especifico, ""
 
-    truncated = _truncate_to_tokens(result.strip(), target_tokens)
+    attributes = _truncate_to_tokens(result.strip(), target_tokens)
     logger.info(
         "Extracted %d tokens for entity_type=%s category=%s, tipo=%s",
-        _estimate_tokens(truncated),
+        _estimate_tokens(attributes),
         entity_type,
         category,
         tipo_especifico,
     )
 
-    return tipo_especifico, truncated
+    return tipo_especifico, attributes
 
 
 def build_visual_prompt(
@@ -137,7 +134,9 @@ def build_visual_prompt(
         entity_type: Tipo de entidad (character, creature, etc.)
         confirmed_content: Contenido confirmado del EntityContent
         category: Categoría del contenido
-        max_tokens: Límite de tokens para el prompt (default 512)
+        max_tokens: Límite de tokens para el prompt (default 512).
+            El límite de 512 es el máximo del text encoder de Stable Diffusion.
+            Reservamos 15 tokens (~60 chars) para prefijo (tipo específico) y sufijo (quality).
 
     Returns:
         {
