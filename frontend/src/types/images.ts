@@ -12,6 +12,7 @@ export interface ImageRecord {
   collection_id: string;
   seed: number;
   storage_path: string | null;
+  image_url: string | null;
   filename: string | null;
   extension: string;
   width: number;
