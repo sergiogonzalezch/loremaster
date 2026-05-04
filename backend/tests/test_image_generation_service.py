@@ -51,8 +51,8 @@ def test_ig_01_build_prompt_with_confirmed_content(
     assert result.auto_prompt
     assert result.token_count > 0
     assert result.token_count <= 150
-    assert result.prompt_source in {"extended", "scene", "entity_desc", "name_only"}
-    assert result.prompt_strategy in {"llm_extraction", "fallback", "direct", "first_sentences", "entity_only"}
+    assert result.prompt_source == "llm_extraction"
+    assert result.prompt_strategy == "llm_extraction"
 
 
 def test_ig_02_build_prompt_fails_for_unconfirmed_content(
@@ -279,9 +279,5 @@ def test_ig_13_prompt_source_labels_return_correct_text():
     """IG-13: get_prompt_source_label retorna texto correcto."""
     from app.domain.prompt_builder import get_prompt_source_label
 
-    assert get_prompt_source_label("extended") == "Basado en la descripción extendida de la entidad"
-    assert get_prompt_source_label("scene") == "Basado en la escena o capítulo generado"
-    assert get_prompt_source_label("entity_desc") == "Basado en la descripción general de la entidad"
-    assert get_prompt_source_label("name_only") == "Solo el nombre — la entidad no tiene suficiente contexto"
-    assert get_prompt_source_label("template") == "Prompt determinista (template)"
-    assert get_prompt_source_label("fallback") == "Prompt determinista (fallback)"
+    assert get_prompt_source_label("llm_extraction") == "Extraído vía LLM"
+    assert get_prompt_source_label("unknown") == "unknown"
