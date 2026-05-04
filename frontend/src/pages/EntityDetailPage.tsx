@@ -393,12 +393,6 @@ export default function EntityDetailPage() {
         }}
       />
 
-      <div className="mb-4">
-        <Button variant="outline-primary" onClick={() => setShowImagePanel(true)}>
-          🎨 Generar imágenes
-        </Button>
-      </div>
-
       <ImagePanel
         collectionId={collectionId}
         entityId={entityId}
