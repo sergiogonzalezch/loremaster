@@ -226,8 +226,16 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 | 5        | Cliente → FastAPI    | POST /image-generation/generate (auto_prompt + final_prompt)        |
 | 6        | FastAPI              | Valida input con check_user_input()                                 |
 | 7        | FastAPI → DB         | Guarda ImageGeneration con auto_prompt, final_prompt, batch_size   |
-| 8        | FastAPI → ComfyUI    | Genera imágenes (pendiente de integración completa)                |
+| 8        | FastAPI → ComfyUI    | Genera imágenes via ComfyUI local o RunPod Serverless              |
 | 9        | FastAPI → Cliente    | HTTP 201 { generation_id, images }                                  |
+
+### Objetivo: Integración con ComfyUI + Flux.2 Klein 4B
+
+El objetivo final de la generación de imágenes es la integración con:
+- **ComfyUI** (local) o **RunPod Serverless** (cloud)
+- Modelo **Flux.2 Klein 4B Distilled** (FP8, ~8.4 GB VRAM)
+
+Esta integración está planificada. La lógica actual de construcción de prompts (`image_prompt_builder.py`) y el flujo de dos pasos prepare el terreno para la conexión con ComfyUI/RunPod.
 
 # HU-05 — Gestión de entidades
 
