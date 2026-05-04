@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { Offcanvas, Nav, Button, Form, Alert, Spinner, Badge } from "react-bootstrap";
-import { buildPrompt, generateImages, listImageGenerations } from "../api/images";
+import { buildPrompt, generateImages, listImageGenerations, deleteImage } from "../api/images";
 import { getContents } from "../api/contents";
 import type { EntityContent, ImageGenerationItem } from "../types";
 import { CATEGORY_LABELS } from "../utils/constants";
@@ -16,7 +16,13 @@ interface Props {
   initialContent?: EntityContent | null;
 }
 
-function ImageGrid({ images }: { images: ImageGenerationItem["images"] }) {
+function ImageGrid({
+  images,
+  onDelete,
+}: {
+  images: ImageGenerationItem["images"];
+  onDelete: (imageId: string) => void;
+}) {
   const count = images.length;
 
   const getImageUrl = (img: ImageGenerationItem["images"][0]) => {
@@ -44,7 +50,7 @@ function ImageGrid({ images }: { images: ImageGenerationItem["images"] }) {
       {images.map((img) => {
         const url = getImageUrl(img);
         return (
-          <div key={img.id} className="image-cell">
+          <div key={img.id} className="image-cell position-relative">
             {url ? (
               <img
                 src={url}
@@ -57,6 +63,13 @@ function ImageGrid({ images }: { images: ImageGenerationItem["images"] }) {
                 <span>Generando...</span>
               </div>
             )}
+            <button
+              className="image-delete-btn"
+              onClick={() => onDelete(img.id)}
+              title="Eliminar"
+            >
+              ×
+            </button>
             <small className="d-block text-center text-muted mt-1">{img.seed}</small>
           </div>
         );
@@ -128,6 +141,17 @@ export default function ImagePanel({
       fetchData();
     }
   }, [show, fetchData]);
+
+  const handleDeleteImage = useCallback(async (imageId: string) => {
+    const gen = generations[0];
+    if (!gen) return;
+    try {
+      await deleteImage(collectionId, entityId, gen.id, imageId);
+      await fetchData();
+    } catch (e) {
+      setError(getErrorMessage(e, "Error al eliminar imagen"));
+    }
+  }, [collectionId, entityId, generations, fetchData]);
 
   const handleBuildPrompt = useCallback(async () => {
     if (!confirmedContent) return;
@@ -345,7 +369,10 @@ export default function ImagePanel({
                 <small className="text-muted ms-2">{formatDate(gen.created_at)}</small>
               </div>
             </div>
-            <ImageGrid images={gen.images} />
+            <ImageGrid
+                  images={gen.images}
+                  onDelete={handleDeleteImage}
+                />
           </div>
         ))}
       </div>
