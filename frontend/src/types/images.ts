@@ -2,12 +2,8 @@
 
 export type ImageStatus = "pending" | "confirmed" | "discarded";
 export type ImageBackend = "mock" | "local" | "runpod";
-export type PromptSource =
-  | "content_direct"
-  | "content_sentences"
-  | "description"
-  | "name_only";
-export type PromptStrategy = "direct" | "first_sentences" | "entity_only";
+export type PromptSource = "llm_extraction";
+export type PromptStrategy = "llm_extraction";
 
 export interface ImageRecord {
   id: string;
