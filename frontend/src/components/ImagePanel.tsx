@@ -16,6 +16,42 @@ interface Props {
   initialContent?: EntityContent | null;
 }
 
+function ImageGrid({ images }: { images: ImageGenerationItem["images"] }) {
+  const count = images.length;
+
+  const getGridClass = () => {
+    switch (count) {
+      case 1: return "grid-1";
+      case 2: return "grid-2";
+      case 3: return "grid-3";
+      case 4: return "grid-4";
+      default: return "grid-1";
+    }
+  };
+
+  return (
+    <div className={`image-grid ${getGridClass()}`}>
+      {images.map((img) => (
+        <div key={img.id} className="image-cell">
+          {img.storage_path ? (
+            <img
+              src={`http://localhost:8000/media/${img.storage_path}`}
+              alt=""
+              className="img-fluid rounded"
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          ) : (
+            <div className="image-placeholder">
+              <span>Generando...</span>
+            </div>
+          )}
+          <small className="d-block text-center text-muted mt-1">{img.seed}</small>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function ImagePanel({
   collectionId,
   entityId,
@@ -46,13 +82,9 @@ export default function ImagePanel({
     if (show) {
       if (initialContent) {
         setConfirmedContent(initialContent);
-        setPromptData(null);
-        setFinalPrompt("");
       }
     } else {
       setConfirmedContent(null);
-      setPromptData(null);
-      setFinalPrompt("");
       setError(null);
     }
   }, [show, initialContent]);
@@ -113,8 +145,6 @@ export default function ImagePanel({
         final_prompt: finalPrompt.trim(),
         batch_size: batchSize,
       });
-      setPromptData(null);
-      setFinalPrompt("");
       onGenerated();
       const genRes = await listImageGenerations(collectionId, entityId);
       setGenerations(genRes.generations);
@@ -125,6 +155,10 @@ export default function ImagePanel({
       setGenerating(false);
     }
   }, [collectionId, entityId, finalPrompt, batchSize, confirmedContent, onGenerated]);
+
+  const handleTabChange = (tab: "generar" | "historial") => {
+    setActiveTab(tab);
+  };
 
   const renderGenerarTab = () => {
     if (loading) {
@@ -139,7 +173,7 @@ export default function ImagePanel({
     if (!confirmedContent) {
       return (
         <div className="lm-empty">
-          <span className="lm-empty-glyph">🎨</span>
+          <span className="lm-empty-glyph">🖼️</span>
           <p>No hay contenidos confirmados.</p>
           <p className="small text-muted">
             Confirma un contenido en la sección de contenidos primero.
@@ -222,7 +256,7 @@ export default function ImagePanel({
             </Form.Group>
 
             <div className="d-flex align-items-center gap-3">
-              <Form.Label className="mb-0 small text-muted">Imágenes:</Form.Label>
+              <Form.Label className="mb-0 small text-muted">Imagenes:</Form.Label>
               <Form.Select
                 value={batchSize}
                 onChange={(e) => setBatchSize(Number(e.target.value))}
@@ -278,7 +312,7 @@ export default function ImagePanel({
       return (
         <div className="lm-empty">
           <span className="lm-empty-glyph">🖼️</span>
-          <p>No hay imágenes generadas.</p>
+          <p>No hay imagenes generadas.</p>
         </div>
       );
     }
@@ -298,19 +332,7 @@ export default function ImagePanel({
                 <small className="text-muted ms-2">{formatDate(gen.created_at)}</small>
               </div>
             </div>
-            <div className="d-flex gap-2 overflow-auto pb-1">
-              {gen.images.map((img) => (
-                <div key={img.id} style={{ minWidth: 100, flexShrink: 0 }}>
-                  <img
-                    src={img.storage_path ? `http://localhost:8000/media/${img.storage_path}` : img.storage_path || ""}
-                    alt=""
-                    className="img-fluid rounded"
-                    style={{ width: 100, height: 100, objectFit: "cover" }}
-                  />
-                  <small className="d-block text-center text-muted mt-1">{img.seed}</small>
-                </div>
-              ))}
-            </div>
+            <ImageGrid images={gen.images} />
           </div>
         ))}
       </div>
@@ -326,14 +348,14 @@ export default function ImagePanel({
       style={{ width: 480 }}
     >
       <Offcanvas.Header closeButton className="lm-offcanvas-header border-bottom">
-        <Offcanvas.Title className="mb-0">Generar imágenes</Offcanvas.Title>
+        <Offcanvas.Title className="mb-0">Generar imagenes</Offcanvas.Title>
       </Offcanvas.Header>
       <Offcanvas.Body className="p-3">
         <Nav variant="tabs" className="lm-tabs mb-3">
           <Nav.Item>
             <Nav.Link
               active={activeTab === "generar"}
-              onClick={() => setActiveTab("generar")}
+              onClick={() => handleTabChange("generar")}
             >
               Generar
             </Nav.Link>
@@ -341,7 +363,7 @@ export default function ImagePanel({
           <Nav.Item>
             <Nav.Link
               active={activeTab === "historial"}
-              onClick={() => setActiveTab("historial")}
+              onClick={() => handleTabChange("historial")}
             >
               Historial
             </Nav.Link>
