@@ -29,5 +29,3 @@ lint:
 
 clean:
 	rm -rf $(PY_CACHE_DIR)
-	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-	find . -name "*.pyc" -delete
