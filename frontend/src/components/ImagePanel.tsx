@@ -19,6 +19,16 @@ interface Props {
 function ImageGrid({ images }: { images: ImageGenerationItem["images"] }) {
   const count = images.length;
 
+  const getImageUrl = (img: ImageGenerationItem["images"][0]) => {
+    if (img.storage_path) {
+      return `http://localhost:8000/media/${img.storage_path}`;
+    }
+    if (img.image_url) {
+      return img.image_url;
+    }
+    return "";
+  };
+
   const getGridClass = () => {
     switch (count) {
       case 1: return "grid-1";
@@ -31,23 +41,26 @@ function ImageGrid({ images }: { images: ImageGenerationItem["images"] }) {
 
   return (
     <div className={`image-grid ${getGridClass()}`}>
-      {images.map((img) => (
-        <div key={img.id} className="image-cell">
-          {img.storage_path ? (
-            <img
-              src={`http://localhost:8000/media/${img.storage_path}`}
-              alt=""
-              className="img-fluid rounded"
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
-          ) : (
-            <div className="image-placeholder">
-              <span>Generando...</span>
-            </div>
-          )}
-          <small className="d-block text-center text-muted mt-1">{img.seed}</small>
-        </div>
-      ))}
+      {images.map((img) => {
+        const url = getImageUrl(img);
+        return (
+          <div key={img.id} className="image-cell">
+            {url ? (
+              <img
+                src={url}
+                alt=""
+                className="img-fluid rounded"
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            ) : (
+              <div className="image-placeholder">
+                <span>Generando...</span>
+              </div>
+            )}
+            <small className="d-block text-center text-muted mt-1">{img.seed}</small>
+          </div>
+        );
+      })}
     </div>
   );
 }
