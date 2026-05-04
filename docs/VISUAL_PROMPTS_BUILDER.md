@@ -315,3 +315,5 @@ El prompt **NO** incluye el nombre de la entidad (ej: "Aragorn"). Solo incluye:
 | 2026-05-03 | Eliminación de fallback/template |
 | 2026-05-03 | Implementación de doble llamada LLM para tipo |
 | 2026-05-03 | Refactor de image_prompt_rules con builder functions |
+| 2026-05-03 | Traducción de prompts a inglés para compatibilidad con Flux/Klein |
+| 2026-05-03 | Agregada constante ENGLISH_RESPONSE_INSTRUCTION para forzar respuesta en inglés |
