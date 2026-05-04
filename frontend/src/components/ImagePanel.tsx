@@ -1,6 +1,19 @@
 import { useEffect, useState, useCallback } from "react";
-import { Offcanvas, Nav, Button, Form, Alert, Spinner, Badge } from "react-bootstrap";
-import { buildPrompt, generateImages, listImageGenerations, deleteImage } from "../api/images";
+import {
+  Offcanvas,
+  Nav,
+  Button,
+  Form,
+  Alert,
+  Spinner,
+  Badge,
+} from "react-bootstrap";
+import {
+  buildPrompt,
+  generateImages,
+  listImageGenerations,
+  deleteImage,
+} from "../api/images";
 import { getContents } from "../api/contents";
 import type { EntityContent, ImageGenerationItem } from "../types";
 import { CATEGORY_LABELS } from "../utils/constants";
@@ -37,11 +50,16 @@ function ImageGrid({
 
   const getGridClass = () => {
     switch (count) {
-      case 1: return "grid-1";
-      case 2: return "grid-2";
-      case 3: return "grid-3";
-      case 4: return "grid-4";
-      default: return "grid-1";
+      case 1:
+        return "grid-1";
+      case 2:
+        return "grid-2";
+      case 3:
+        return "grid-3";
+      case 4:
+        return "grid-4";
+      default:
+        return "grid-1";
     }
   };
 
@@ -70,7 +88,9 @@ function ImageGrid({
             >
               ×
             </button>
-            <small className="d-block text-center text-muted mt-1">{img.seed}</small>
+            <small className="d-block text-center text-muted mt-1">
+              {img.seed}
+            </small>
           </div>
         );
       })}
@@ -86,8 +106,11 @@ export default function ImagePanel({
   onGenerated,
   initialContent,
 }: Props) {
-  const [activeTab, setActiveTab] = useState<"generar" | "historial">("generar");
-  const [confirmedContent, setConfirmedContent] = useState<EntityContent | null>(null);
+  const [activeTab, setActiveTab] = useState<"generar" | "historial">(
+    "generar",
+  );
+  const [confirmedContent, setConfirmedContent] =
+    useState<EntityContent | null>(null);
   const [promptData, setPromptData] = useState<{
     auto_prompt: string;
     token_count: number;
@@ -117,7 +140,10 @@ export default function ImagePanel({
     setLoadingGenerations(true);
     try {
       const [contentsRes, generationsRes] = await Promise.all([
-        getContents(collectionId, entityId, { status: "confirmed", page_size: 50 }),
+        getContents(collectionId, entityId, {
+          status: "confirmed",
+          page_size: 50,
+        }),
         listImageGenerations(collectionId, entityId),
       ]);
       const contents = contentsRes.data ?? [];
@@ -139,23 +165,30 @@ export default function ImagePanel({
     }
   }, [show, fetchData]);
 
-  const handleDeleteImage = useCallback(async (imageId: string) => {
-    const gen = generations[0];
-    if (!gen) return;
-    try {
-      await deleteImage(collectionId, entityId, gen.id, imageId);
-      await fetchData();
-    } catch (e) {
-      setError(getErrorMessage(e, "Error al eliminar imagen"));
-    }
-  }, [collectionId, entityId, generations, fetchData]);
+  const handleDeleteImage = useCallback(
+    async (imageId: string) => {
+      const gen = generations[0];
+      if (!gen) return;
+      try {
+        await deleteImage(collectionId, entityId, gen.id, imageId);
+        await fetchData();
+      } catch (e) {
+        setError(getErrorMessage(e, "Error al eliminar imagen"));
+      }
+    },
+    [collectionId, entityId, generations, fetchData],
+  );
 
   const handleBuildPrompt = useCallback(async () => {
     if (!confirmedContent) return;
     setBuilding(true);
     setError(null);
     try {
-      const data = await buildPrompt(collectionId, entityId, confirmedContent.id);
+      const data = await buildPrompt(
+        collectionId,
+        entityId,
+        confirmedContent.id,
+      );
       setPromptData(data);
       setFinalPrompt(data.auto_prompt);
     } catch (e) {
@@ -189,7 +222,15 @@ export default function ImagePanel({
     } finally {
       setGenerating(false);
     }
-  }, [collectionId, entityId, finalPrompt, batchSize, confirmedContent, onGenerated, promptData]);
+  }, [
+    collectionId,
+    entityId,
+    finalPrompt,
+    batchSize,
+    confirmedContent,
+    onGenerated,
+    promptData,
+  ]);
 
   const handleTabChange = (tab: "generar" | "historial") => {
     setActiveTab(tab);
@@ -222,9 +263,12 @@ export default function ImagePanel({
         <div className="lm-card p-3">
           <div className="d-flex justify-content-between align-items-start mb-2">
             <Badge bg="secondary">
-              {CATEGORY_LABELS[confirmedContent.category] || confirmedContent.category}
+              {CATEGORY_LABELS[confirmedContent.category] ||
+                confirmedContent.category}
             </Badge>
-            <small className="text-muted">{formatDate(confirmedContent.confirmed_at!)}</small>
+            <small className="text-muted">
+              {formatDate(confirmedContent.confirmed_at!)}
+            </small>
           </div>
           <div
             className="text-muted small"
@@ -290,7 +334,9 @@ export default function ImagePanel({
             </Form.Group>
 
             <div className="d-flex align-items-center gap-3">
-              <Form.Label className="mb-0 small text-muted">Imagenes:</Form.Label>
+              <Form.Label className="mb-0 small text-muted">
+                Imagenes:
+              </Form.Label>
               <Form.Select
                 value={batchSize}
                 onChange={(e) => setBatchSize(Number(e.target.value))}
@@ -300,7 +346,9 @@ export default function ImagePanel({
                 size="sm"
               >
                 {[1, 2, 3, 4].map((n) => (
-                  <option key={n} value={n}>{n}</option>
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
                 ))}
               </Form.Select>
             </div>
@@ -324,7 +372,12 @@ export default function ImagePanel({
         )}
 
         {error && (
-          <Alert variant="danger" className="mt-2" dismissible onClose={() => setError(null)}>
+          <Alert
+            variant="danger"
+            className="mt-2"
+            dismissible
+            onClose={() => setError(null)}
+          >
             {error}
           </Alert>
         )}
@@ -352,7 +405,10 @@ export default function ImagePanel({
     }
 
     return (
-      <div className="d-flex flex-column gap-3" style={{ maxHeight: "calc(100vh - 220px)", overflowY: "auto" }}>
+      <div
+        className="d-flex flex-column gap-3"
+        style={{ maxHeight: "calc(100vh - 220px)", overflowY: "auto" }}
+      >
         {generations.map((gen) => (
           <div key={gen.id} className="lm-card p-3">
             <div className="d-flex justify-content-between align-items-center mb-2">
@@ -361,15 +417,16 @@ export default function ImagePanel({
                   {gen.batch_size}
                 </Badge>
                 <Badge bg="info">
-                  {CATEGORY_LABELS[gen.category as keyof typeof CATEGORY_LABELS] || gen.category}
+                  {CATEGORY_LABELS[
+                    gen.category as keyof typeof CATEGORY_LABELS
+                  ] || gen.category}
                 </Badge>
-                <small className="text-muted ms-2">{formatDate(gen.created_at)}</small>
+                <small className="text-muted ms-2">
+                  {formatDate(gen.created_at)}
+                </small>
               </div>
             </div>
-            <ImageGrid
-                  images={gen.images}
-                  onDelete={handleDeleteImage}
-                />
+            <ImageGrid images={gen.images} onDelete={handleDeleteImage} />
           </div>
         ))}
       </div>
@@ -384,7 +441,10 @@ export default function ImagePanel({
       className="lm-offcanvas"
       style={{ width: 480 }}
     >
-      <Offcanvas.Header closeButton className="lm-offcanvas-header border-bottom">
+      <Offcanvas.Header
+        closeButton
+        className="lm-offcanvas-header border-bottom"
+      >
         <Offcanvas.Title className="mb-0">Generar imagenes</Offcanvas.Title>
       </Offcanvas.Header>
       <Offcanvas.Body className="p-3">
