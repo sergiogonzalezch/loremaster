@@ -45,3 +45,12 @@ npm run dev   # http://localhost:5173  — proxies /api/* → http://localhost:8
 ```
 
 Copy `backend/.env.example` to `backend/.env` before starting. See `backend/CLAUDE.md` for env variables and `backend/docker-compose.yml` for service ports.
+
+## Git conventions
+
+- Use conventional commits: type(scope): description
+- Types: feat, fix, docs, style, refactor, test, chore, perf, ci
+- Scope: the affected module or area (auth, api, db, ui, etc.)
+- Description: imperative, lowercase, no trailing period
+- Body: explain the "why", not the "what" (the diff already shows the what)
+- Max 72 characters on the first line
