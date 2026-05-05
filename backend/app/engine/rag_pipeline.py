@@ -3,11 +3,11 @@ import threading
 
 from langchain_core.output_parsers import StrOutputParser
 
+from app.core.config import settings
 from app.core.exceptions import NoContextAvailableError
 from app.domain.prompt_templates import render_prompt
 from app.engine.llm import chain, llm
-from app.engine.rag import search_context
-from app.core.config import settings
+from app.engine.rag import retrieve_context
 from app.models.enums import ContentCategory
 
 logger = logging.getLogger(__name__)
@@ -15,38 +15,6 @@ logger = logging.getLogger(__name__)
 _llm_semaphore = threading.Semaphore(settings.max_concurrent_llm_calls)
 
 generation_chain = llm | StrOutputParser()
-
-
-def _retrieve_context(
-    collection_id: str,
-    query: str,
-    extra_context: str = "",
-) -> tuple[str, int]:
-    """Search Qdrant, merge extra_context, return (context_str, num_chunks).
-
-    Raises:
-        RuntimeError: If Qdrant is unavailable.
-        NoContextAvailableError: If no context is found from any source.
-    """
-    try:
-        context_chunks = search_context(
-            collection_id=collection_id,
-            query=query,
-            top_k=settings.top_k,
-            score_threshold=settings.rag_score_threshold,
-        )
-    except Exception as e:
-        logger.error("Qdrant search failed for collection %s: %s", collection_id, e)
-        raise RuntimeError("Vector search unavailable") from e
-
-    rag_context = "\n\n---\n\n".join(context_chunks) if context_chunks else ""
-    parts = [p for p in (extra_context, rag_context) if p]
-    context = "\n\n---\n\n".join(parts)
-
-    if not context.strip():
-        raise NoContextAvailableError()
-
-    return context, len(context_chunks)
 
 
 def invoke_rag_pipeline(
@@ -68,7 +36,7 @@ def invoke_rag_pipeline(
         query,
     )
 
-    context, num_chunks = _retrieve_context(collection_id, query, extra_context)
+    context, num_chunks = retrieve_context(collection_id, query, extra_context)
 
     try:
         with _llm_semaphore:
@@ -109,7 +77,7 @@ def invoke_generation_pipeline(
         query,
     )
 
-    context, num_chunks = _retrieve_context(collection_id, query, extra_context)
+    context, num_chunks = retrieve_context(collection_id, query, extra_context)
 
     rendered_prompt = render_prompt(
         category=category,

@@ -140,3 +140,36 @@ def search_context(
             point.payload.get("text", ""),
         )
     return [point.payload["text"] for point in results.points]
+
+
+def retrieve_context(
+    collection_id: str,
+    query: str,
+    extra_context: str = "",
+) -> tuple[str, int]:
+    """Search Qdrant, merge extra_context, return (context_str, num_chunks).
+
+    Raises:
+        NoContextAvailableError: If no context is found from any source.
+    """
+    from app.core.exceptions import NoContextAvailableError
+
+    try:
+        context_chunks = search_context(
+            collection_id=collection_id,
+            query=query,
+            top_k=settings.top_k,
+            score_threshold=settings.rag_score_threshold,
+        )
+    except Exception as e:
+        logger.error("Qdrant search failed for collection %s: %s", collection_id, e)
+        raise RuntimeError("Vector search unavailable") from e
+
+    rag_context = "\n\n---\n\n".join(context_chunks) if context_chunks else ""
+    parts = [p for p in (extra_context, rag_context) if p]
+    context = "\n\n---\n\n".join(parts)
+
+    if not context.strip():
+        raise NoContextAvailableError()
+
+    return context, len(context_chunks)
