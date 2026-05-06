@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 from app.core.query_params import DateRangeParams, PaginationParams
 from app.core.deps import get_collection_or_404
+from app.core.auth_deps import get_current_user
 from app.core.exceptions import DatabaseError, DuplicateCollectionNameError
 from app.database import get_session
 from app.models.collections import (
@@ -31,6 +32,7 @@ router = APIRouter(prefix="/collections", tags=["collections"])
 @router.post("/", response_model=CollectionResponse, status_code=201)
 def create_collection(
     request: CreateCollectionRequest,
+    _: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     try:
@@ -44,6 +46,7 @@ def get_collections(
     pagination: Annotated[PaginationParams, Depends()],
     dates: Annotated[DateRangeParams, Depends()],
     name: Optional[str] = Query(default=None),
+    _: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     items, total = list_collections_service(
@@ -70,6 +73,7 @@ def get_collection(
 def update_collection(
     request: UpdateCollectionRequest,
     collection: Collection = Depends(get_collection_or_404),
+    _: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     try:
@@ -81,6 +85,7 @@ def update_collection(
 @router.delete("/{collection_id}", status_code=204)
 def delete_collection(
     collection: Collection = Depends(get_collection_or_404),
+    _: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     try:

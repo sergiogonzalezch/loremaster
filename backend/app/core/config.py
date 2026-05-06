@@ -43,6 +43,13 @@ class Settings(BaseSettings):
     top_k: int = 4
     rag_score_threshold: float = 0.3
 
+    secret_key: str = "your-secret-key"
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 1440
+
+    clerk_jwks_url: str = "https://your-org.clerk.accounts.dev/.well-known/jwks.json"
+    clerk_audience: str = "your-audience-id"
+
     # Database (default SQLite for local dev; set DATABASE_URL in .env for PostgreSQL)
     database_url: str = "sqlite:///./loremaster.db"
 

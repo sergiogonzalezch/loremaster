@@ -14,6 +14,7 @@ from sqlmodel import Session
 
 from app.core.query_params import DateRangeParams, PaginationParams
 from app.core.deps import get_collection_or_404, get_document_or_404
+from app.core.auth_deps import get_current_user
 from app.core.exceptions import (
     ContentNotAllowedError,
     DatabaseError,
@@ -48,6 +49,7 @@ async def ingest(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     _: Collection = Depends(get_collection_or_404),
+    __: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     try:
@@ -82,6 +84,7 @@ def get_documents(
     file_type: Optional[str] = Query(default=None),
     status: Optional[DocumentStatus] = Query(default=None),
     _: Collection = Depends(get_collection_or_404),
+    __: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     if status == DocumentStatus.processing:
@@ -119,6 +122,7 @@ def get_document(
 async def retry_ingest(
     background_tasks: BackgroundTasks,
     doc: Document = Depends(get_document_or_404),
+    _: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     try:
@@ -134,6 +138,7 @@ async def retry_ingest(
 @router.delete("/{collection_id}/documents/{doc_id}", status_code=204)
 def delete_document(
     doc: Document = Depends(get_document_or_404),
+    _: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     try:

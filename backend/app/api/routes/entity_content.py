@@ -5,6 +5,7 @@ from sqlmodel import Session
 
 from app.core.query_params import PaginationParams
 from app.core.deps import get_entity_or_404
+from app.core.auth_deps import get_current_user
 from app.core.exceptions import (
     ContentDiscardedError,
     ContentNotAllowedError,
@@ -38,6 +39,7 @@ def generate_content(
     category: ContentCategory,
     request: GenerateContentRequest,
     entity: Entity = Depends(get_entity_or_404),
+    _: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     try:
@@ -75,6 +77,7 @@ def list_contents(
         default="active"
     ),
     _: Entity = Depends(get_entity_or_404),
+    __: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     items, total = content_management_service.list_contents(
@@ -100,6 +103,7 @@ def edit_content(
     content_id: str,
     request: UpdateContentRequest,
     _: Entity = Depends(get_entity_or_404),
+    __: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     try:
@@ -122,6 +126,7 @@ def edit_content(
 def confirm_content(
     content_id: str,
     entity: Entity = Depends(get_entity_or_404),
+    _: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     try:
@@ -143,6 +148,7 @@ def discard_content(
     collection_id: str,
     content_id: str,
     _: Entity = Depends(get_entity_or_404),
+    __: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     try:
@@ -165,6 +171,7 @@ def delete_content(
     collection_id: str,
     content_id: str,
     _: Entity = Depends(get_entity_or_404),
+    __: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     try:

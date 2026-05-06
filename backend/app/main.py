@@ -14,6 +14,8 @@ from app.api.routes import (
     entity_content,
     metadata,
     image_generation,
+    auth,
+    auth_clerk,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -67,3 +69,5 @@ app.include_router(entities.router, prefix="/api/v1")
 app.include_router(image_generation.router, prefix="/api/v1")
 app.include_router(entity_content.router, prefix="/api/v1")
 app.include_router(metadata.router, prefix="/api/v1")
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(auth_clerk.router, prefix="/api/v1")

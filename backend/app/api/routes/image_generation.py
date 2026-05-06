@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
 from app.core.deps import get_entity_or_404
+from app.core.auth_deps import get_current_user
 from app.core.exceptions import (
     DatabaseError,
     NoContextAvailableError,
@@ -35,6 +36,7 @@ router = APIRouter(prefix="/collections", tags=["image-generation"])
 def build_prompt(
     request: BuildPromptRequest,
     entity: Entity = Depends(get_entity_or_404),
+    _: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     """Construye el prompt automático sin guardar nada."""
@@ -60,6 +62,7 @@ def build_prompt(
 def generate_images(
     request: GenerateImagesRequest,
     entity: Entity = Depends(get_entity_or_404),
+    _: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     """Genera el batch de imágenes."""
@@ -99,6 +102,7 @@ def delete_image(
     generation_id: str,
     image_id: str,
     entity: Entity = Depends(get_entity_or_404),
+    _: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     """Elimina una imagen individual del batch."""
@@ -122,6 +126,7 @@ def delete_image(
 def get_generation(
     generation_id: str,
     entity: Entity = Depends(get_entity_or_404),
+    _: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     """Obtiene una generación existente con sus imágenes."""
@@ -142,6 +147,7 @@ def get_generation(
 )
 def list_generations(
     entity: Entity = Depends(get_entity_or_404),
+    _: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     """Lista todas las generaciones de imágenes de una entidad."""

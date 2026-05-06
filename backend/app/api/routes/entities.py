@@ -5,6 +5,7 @@ from sqlmodel import Session
 
 from app.core.query_params import DateRangeParams, PaginationParams
 from app.core.deps import get_collection_or_404, get_entity_or_404
+from app.core.auth_deps import get_current_user
 from app.core.exceptions import DatabaseError, DuplicateEntityNameError
 from app.database import get_session
 from app.models.collections import Collection
@@ -33,6 +34,7 @@ def create_entity(
     collection_id: str,
     request: CreateEntityRequest,
     _: Collection = Depends(get_collection_or_404),
+    __: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     try:
@@ -51,6 +53,7 @@ def list_entities(
     name: Optional[str] = Query(default=None),
     type: Optional[EntityType] = Query(default=None),
     _: Collection = Depends(get_collection_or_404),
+    __: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     entities, total = list_entities_service(
@@ -72,6 +75,7 @@ def list_entities(
 @router.get("/{collection_id}/entities/{entity_id}", response_model=EntityResponse)
 def get_entity(
     entity: Entity = Depends(get_entity_or_404),
+    _: dict = Depends(get_current_user),
 ):
     return entity
 
@@ -80,6 +84,7 @@ def get_entity(
 def update_entity(
     request: UpdateEntityRequest,
     entity: Entity = Depends(get_entity_or_404),
+    _: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     try:
@@ -91,6 +96,7 @@ def update_entity(
 @router.delete("/{collection_id}/entities/{entity_id}", status_code=204)
 def delete_entity(
     entity: Entity = Depends(get_entity_or_404),
+    _: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     try:
