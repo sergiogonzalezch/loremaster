@@ -8,7 +8,7 @@ Lista de tech debt identificado y aún no corregido. Ordenado por impacto estima
 
 | # | Descripción | Capa | Estado | Acción |
 |---|-------------|------|--------|--------|
-| 1 | Sin autenticación | Backend | 🔴 Pendiente | Implementar — crítico pre-deploy |
+| 1 | Sin autenticación | Backend | ✅ Resuelto | — |
 | 2 | Ingest de documentos síncrono | Backend | ✅ Resuelto | — |
 | 3 | Sin optimistic updates en contenidos | Frontend | ✅ Resuelto | — |
 | 4 | Token counter aproximado | Backend + Frontend | ✅ Resuelto | — |
@@ -33,19 +33,27 @@ Lista de tech debt identificado y aún no corregido. Ordenado por impacto estima
 | 23 | `NoContextAvailableError` reutilizada para regla de negocio | Backend | ✅ Resuelto | — |
 | 24 | Flag `truncated` incorrecto en estrategia `entity_only` | Backend | ✅ Resuelto | — |
 | 25 | `image_url` `str` en response schema pero `Optional` en modelo | Backend | ✅ Resuelto | — |
+| 26 | Info leak en handlers catch-all de `image_generation.py` | Backend | 🔴 Pendiente | `detail=str(e)` expone trazas internas al cliente |
+| 27 | `UpdateContentRequest` sin `max_length` | Backend | 🔴 Pendiente | Desalineado con columna DB `max_length=10000` |
+| 28 | Cache JWKS sin lock en `auth_clerk.py` | Backend | 🟡 Pendiente | Race condition en producción multi-hilo |
+| 29 | Log "Auto-discarded" emitido antes de commit | Backend | 🟢 Cubierto | Impacto muy bajo; confunde en caso de rollback |
+| 30 | `delete_image_service` no valida `collection_id` directamente | Backend | 🟢 Cubierto | Protegido indirectamente vía `get_entity_or_404` |
 
 **Leyenda:** 🔴 Pendiente urgente · 🟡 Pendiente no urgente · 🟢 Cubierto (mitigado, sin acción inmediata) · ✅ Cerrado
 
 ---
 
-## 1. Sin autenticación
+## ~~1. Sin autenticación~~ ✅ Resuelto
 
 **Capa:** Backend  
-**Impacto:** Alto — crítico para cualquier despliegue fuera de entorno local.
+**Solución aplicada:** Autenticación JWT implementada completamente:
 
-Todos los endpoints son públicos. No hay API keys, JWT ni ningún mecanismo de identidad. Cualquier cliente con acceso a la red puede leer, escribir o borrar colecciones, entidades y documentos.
-
-**Solución sugerida:** Añadir autenticación HTTP Basic o JWT con middleware de FastAPI. Para un proyecto single-user, un API key estático configurado vía `.env` es suficiente en primera iteración.
+- `app/api/routes/auth.py` — endpoints `POST /auth/register` y `POST /auth/login`. Registro crea usuario + devuelve token directamente (login implícito). Login valida credenciales y devuelve token. Ambos responden con `{ access_token, token_type: "bearer" }`.
+- `app/core/auth.py` — `create_access_token` (HS256, `python-jose`), `verify_token`, `hash_password` y `verify_password`. Hash con `bcrypt` directo (sin `passlib`, incompatible con `bcrypt >= 4.x`).
+- `app/core/auth_deps.py` — dependencia `get_current_user` que extrae y valida el Bearer token. Inyectada en todos los routers protegidos.
+- En producción (`ENVIRONMENT=production`) la dependencia se reemplaza por `decode_clerk_token` (`auth_clerk.py`) que valida tokens RS256 via JWKS de Clerk.
+- Variables de entorno: `SECRET_KEY`, `ALGORITHM` (HS256), `ACCESS_TOKEN_EXPIRE_MINUTES` (1440 = 24 h), `CLERK_JWKS_URL`, `CLERK_AUDIENCE`.
+- Frontend: `LoginPage.tsx` con tabs login/registro, `ProtectedRoute.tsx` como guard de rutas, utilidades `getToken`/`setToken`/`removeToken`/`isAuthenticated` en `utils/token.ts`, y cabecera `Authorization: Bearer <token>` en `apiFetch`.
 
 ---
 
@@ -239,7 +247,7 @@ Aspectos que deben resolverse antes de cualquier despliegue fuera de entorno loc
 
 | # | Gap | Impacto |
 |---|---|---|
-| P1 | Sin autenticación/autorización (ver ítem 1) | Crítico |
+| P1 | ~~Sin autenticación/autorización (ver ítem 1)~~ | ✅ Resuelto |
 | P2 | Sin rate limiting — un usuario puede saturar la cola del LLM | Alto |
 | P3 | CORS configurado solo para `localhost` — requiere revisión antes de deploy | Alto |
 | P4 | Sin detección de documentos duplicados — el vector store crece con contenido repetido | Medio |
@@ -247,7 +255,7 @@ Aspectos que deben resolverse antes de cualquier despliegue fuera de entorno loc
 | P6 | Sin audit trail — no hay registro de quién modificó qué ni cuándo | Bajo |
 | P7 | Sin operaciones bulk — no se puede eliminar múltiples colecciones o entidades a la vez | Bajo |
 | P8 | Modelo LLM y embeddings hardcodeados — no hay forma de cambiarlos desde la UI | Bajo |
-| P9 | Sin auditoría de contenido moderado — rechazos de guardrail no persisten (ver ítem 19) | Bajo |
+| P9 | ~~Sin auditoría de contenido moderado — rechazos de guardrail no persisten (ver ítem 19)~~ | ✅ Resuelto |
 
 ---
 
@@ -335,4 +343,101 @@ Ver solución aplicada en **ítem 6**.
 
 ---
 
-*Generado el 2026-04-25. Actualizado el 2026-04-28 (ítems 17, 18). Actualizado el 2026-04-30 (ítems 6 revisado, 21-25 nuevos — análisis del módulo image generation). Actualizado el 2026-04-30 (ítems 22-25 resueltos — correcciones en image generation service, route y models). Actualizado el 2026-04-30 (ítems 6 y 21 resueltos — cascade soft-delete de ImageRecord en deletion_service.py). Actualizado el 2026-04-30 (ítem 7 resuelto — retry endpoint + processing_error + raw_text en documents). Actualizado el 2026-04-30 (ítem 19 resuelto — tabla moderation_log + log_moderation_event en los tres routes de moderación). Actualizado el 2026-05-01 (cobertura de tests backend en deletion_service, content_management_service e image_generation/tests de cascade). Ver historial de correcciones aplicadas en los commits del branch `main`.*
+## 26. Info leak en handlers catch-all de `image_generation.py`
+
+**Capa:** Backend  
+**Archivo:** `backend/app/api/routes/image_generation.py` (líneas ~54, 94, 119, 141, 158)  
+**Impacto:** Medio — expone trazas de stack internas y detalles de infraestructura al cliente.  
+**Clasificación:** Error confirmado.
+
+Todos los handlers del route de image generation tienen un bloque final:
+
+```python
+except Exception as e:
+    raise HTTPException(status_code=500, detail=str(e))
+```
+
+`str(e)` puede incluir rutas de archivo, nombres de clases internas o mensajes de librerías de terceros. En producción, esta información facilita el reconocimiento de la infraestructura.
+
+**Solución sugerida:** Reemplazar `detail=str(e)` por un mensaje genérico y loguear el error internamente:
+
+```python
+except Exception as e:
+    logger.exception("Unexpected error in image generation")
+    raise HTTPException(status_code=500, detail="Error interno del servidor")
+```
+
+---
+
+## 27. `UpdateContentRequest` sin `max_length`
+
+**Capa:** Backend  
+**Archivo:** `backend/app/models/entity_content.py`  
+**Impacto:** Bajo — permite enviar payloads que superan el límite de la columna DB, causando error de truncado o excepción no controlada en SQLite/PostgreSQL.  
+**Clasificación:** Error confirmado.
+
+`UpdateContentRequest` define `content: str = Field(..., min_length=1)` sin `max_length`, pero la columna `EntityContent.content` tiene `max_length=10000`.
+
+**Solución sugerida:**
+
+```python
+content: str = Field(..., min_length=1, max_length=10000)
+```
+
+---
+
+## 28. Cache JWKS sin lock en `auth_clerk.py`
+
+**Capa:** Backend  
+**Archivo:** `backend/app/core/auth_clerk.py`  
+**Impacto:** Bajo en producción — race condition bajo carga alta: múltiples threads pueden refrescar el cache simultáneamente, causando N llamadas HTTP redundantes a Clerk en el mismo instante.  
+**Clasificación:** Error confirmado (solo relevante en entorno `production`).
+
+Las variables globales `_jwks_cache` y `_jwks_cache_time` se leen y escriben sin sincronización. FastAPI ejecuta los endpoints síncronos en un thread pool, por lo que varios threads pueden pasar la condición `if _jwks_cache is None or elapsed > CACHE_TTL` al mismo tiempo.
+
+**Solución sugerida:** Proteger la sección crítica con `threading.Lock`:
+
+```python
+_jwks_lock = threading.Lock()
+
+def get_jwks() -> dict:
+    global _jwks_cache, _jwks_cache_time
+    with _jwks_lock:
+        now = time.time()
+        if _jwks_cache is None or (now - _jwks_cache_time) > CACHE_TTL:
+            resp = httpx.get(settings.clerk_jwks_url, timeout=5)
+            resp.raise_for_status()
+            _jwks_cache = resp.json()
+            _jwks_cache_time = now
+    return _jwks_cache
+```
+
+---
+
+## 29. Log "Auto-discarded" emitido antes de commit
+
+**Capa:** Backend  
+**Archivo:** `backend/app/services/content_management_service.py` — función `confirm_content`  
+**Impacto:** Muy bajo — el log puede aparecer en los registros aunque el commit posterior falle, generando entradas misleading.  
+**Clasificación:** Confirmado, impacto muy bajo.
+
+`logger.info("Auto-discarded %d sibling...")` se emite después de `session.flush()` pero antes de `session.commit()`. Si el commit falla (p. ej. fallo de BD en el momento del write), el log queda registrado pero la acción no ocurrió.
+
+**Solución sugerida:** Mover el log al bloque `after_commit` o simplemente colocarlo después del `session.commit()`.
+
+---
+
+## 30. `delete_image_service` no valida `collection_id` directamente
+
+**Capa:** Backend  
+**Archivo:** `backend/app/services/image_generation_service.py` — función `delete_image_service`  
+**Impacto:** Muy bajo — la validación se realiza indirectamente.  
+**Clasificación:** Parcialmente mitigado.
+
+`delete_image_service(session, entity_id, generation_id, image_id)` no recibe ni valida `collection_id`. Sin embargo, el route llama antes a `get_entity_or_404(session, collection_id, entity_id)`, que verifica que la entidad pertenece a la colección, haciendo imposible acceder a imágenes de otra colección en el flujo normal.
+
+El riesgo real se materializa solo si se llama al servicio directamente (e.g., desde tests o futuras integraciones) sin pasar por el route. No requiere acción inmediata, pero documentar la invariante mejoraría la mantenibilidad.
+
+---
+
+*Generado el 2026-04-25. Actualizado el 2026-04-28 (ítems 17, 18). Actualizado el 2026-04-30 (ítems 6 revisado, 21-25 nuevos — análisis del módulo image generation). Actualizado el 2026-04-30 (ítems 22-25 resueltos — correcciones en image generation service, route y models). Actualizado el 2026-04-30 (ítems 6 y 21 resueltos — cascade soft-delete de ImageRecord en deletion_service.py). Actualizado el 2026-04-30 (ítem 7 resuelto — retry endpoint + processing_error + raw_text en documents). Actualizado el 2026-04-30 (ítem 19 resuelto — tabla moderation_log + log_moderation_event en los tres routes de moderación). Actualizado el 2026-05-01 (cobertura de tests backend en deletion_service, content_management_service e image_generation/tests de cascade). Actualizado el 2026-05-06 (ítem 1 resuelto — auth JWT implementado; gaps P1 y P9 cerrados; ítems 26-30 añadidos — análisis bug-search completo). Ver historial de correcciones aplicadas en los commits del branch `main`.*
