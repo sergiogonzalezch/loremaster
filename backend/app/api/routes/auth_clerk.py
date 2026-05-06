@@ -1,49 +1,47 @@
+import time
+from typing import Optional
+
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
-import httpx
-from functools import lru_cache
 
 from app.core.config import settings
 
 router = APIRouter(prefix="/auth/clerk", tags=["auth"])
 security = HTTPBearer(auto_error=False)
 
+_jwks_cache: Optional[dict] = None
+_jwks_cache_time: float = 0.0
+_JWKS_TTL = 3600  # 1 hora; Clerk rota claves ocasionalmente
 
-@lru_cache(maxsize=1)
-def get_cached_jwks() -> dict:
+
+def get_jwks() -> dict:
+    global _jwks_cache, _jwks_cache_time
+    if _jwks_cache is None or time.monotonic() - _jwks_cache_time > _JWKS_TTL:
+        try:
+            response = httpx.get(settings.clerk_jwks_url, timeout=10.0)
+            response.raise_for_status()
+            _jwks_cache = response.json()
+            _jwks_cache_time = time.monotonic()
+        except httpx.HTTPError:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="No se pudo obtener las claves de Clerk",
+            )
+    return _jwks_cache
+
+
+def decode_clerk_token(token: str) -> dict:
     try:
-        response = httpx.get(settings.clerk_jwks_url, timeout=10.0)
-        response.raise_for_status()
-        return response.json()
-    except httpx.HTTPError:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="No se pudo obtener las claves de Clerk"
-        )
-
-
-async def verify_clerk_token(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-) -> dict:
-    if not credentials:
-        raise HTTPException(status_code=401, detail="No autorizado")
-
-    token = credentials.credentials
-    jwks = get_cached_jwks()
-
-    try:
-        payload = jwt.decode(
-            token,
-            jwks,
-            algorithms=["RS256"],
-            audience=settings.clerk_audience,
-        )
-        return payload
+        return jwt.decode(token, get_jwks(), algorithms=["RS256"], audience=settings.clerk_audience)
     except JWTError:
-        raise HTTPException(status_code=401, detail="Token inválido")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido")
 
 
 @router.get("/verify")
-def verify(clerk_payload: dict = Depends(verify_clerk_token)):
-    return {"valid": True, "user_id": clerk_payload.get("sub")}
+def verify(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    if not credentials:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No autorizado")
+    payload = decode_clerk_token(credentials.credentials)
+    return {"valid": True, "user_id": payload.get("sub")}

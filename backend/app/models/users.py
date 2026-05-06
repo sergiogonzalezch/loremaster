@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import Optional
 from pydantic import BaseModel, ConfigDict
 from sqlmodel import SQLModel, Field
 import uuid
@@ -13,6 +14,8 @@ class User(SQLModel, table=True):
     username: str = Field(index=True, unique=True, max_length=255)
     hashed_password: str = Field(max_length=255)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    is_deleted: bool = Field(default=False)
+    deleted_at: Optional[datetime] = Field(default=None)
 
 
 class UserResponse(BaseModel):
