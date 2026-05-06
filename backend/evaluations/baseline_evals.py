@@ -12,6 +12,8 @@ Prerequisitos:
 Uso (desde backend/ con el venv activo):
     python evaluations/baseline_eval.py
     python evaluations/baseline_eval.py --base-url http://localhost:8000
+    python evaluations/baseline_eval.py --username eval --password eval123
+    python evaluations/baseline_eval.py --token <jwt>
     python evaluations/baseline_eval.py --categories rag_query guardrail image_generation
     python evaluations/baseline_eval.py --ids RAG-001 CHAR-005 FLOW-001
     python evaluations/baseline_eval.py --keep-collection
@@ -78,23 +80,33 @@ def _result_line(case_id: str, status: str, duration_ms: int, desc: str) -> None
 
 
 class APIClient:
-    def __init__(self, base_url: str) -> None:
+    def __init__(self, base_url: str, token: Optional[str] = None) -> None:
         self._client = httpx.Client(base_url=base_url, timeout=LLM_TIMEOUT)
         self._prefix = API_PREFIX
+        self._token = token
+
+    def _auth_headers(self) -> dict:
+        if self._token:
+            return {"Authorization": f"Bearer {self._token}"}
+        return {}
 
     def _url(self, path: str) -> str:
         return f"{self._prefix}{path}"
 
     def get(self, path: str, **kw) -> httpx.Response:
+        kw.setdefault("headers", {}).update(self._auth_headers())
         return self._client.get(self._url(path), **kw)
 
     def post(self, path: str, json=None, **kw) -> httpx.Response:
+        kw.setdefault("headers", {}).update(self._auth_headers())
         return self._client.post(self._url(path), json=json, **kw)
 
     def patch(self, path: str, json=None, **kw) -> httpx.Response:
+        kw.setdefault("headers", {}).update(self._auth_headers())
         return self._client.patch(self._url(path), json=json, **kw)
 
     def delete(self, path: str, **kw) -> httpx.Response:
+        kw.setdefault("headers", {}).update(self._auth_headers())
         return self._client.delete(self._url(path), **kw)
 
     def post_file(self, path: str, file_path: Path) -> httpx.Response:
@@ -102,6 +114,7 @@ class APIClient:
             return self._client.post(
                 self._url(path),
                 files={"file": (file_path.name, f, "text/plain")},
+                headers=self._auth_headers(),
                 timeout=CRUD_TIMEOUT,
             )
 
@@ -1120,6 +1133,21 @@ def main() -> None:
         help="URL base del backend (default: http://localhost:8000)",
     )
     parser.add_argument(
+        "--token",
+        default=None,
+        help="JWT ya existente para autenticar las peticiones",
+    )
+    parser.add_argument(
+        "--username",
+        default="eval_runner",
+        help="Usuario para login/registro (default: eval_runner)",
+    )
+    parser.add_argument(
+        "--password",
+        default="eval_password_123",
+        help="Contraseña para login/registro (default: eval_password_123)",
+    )
+    parser.add_argument(
         "--categories",
         nargs="*",
         help="Ejecutar solo estas categorias (ej: rag_query guardrail)",
@@ -1163,11 +1191,10 @@ def main() -> None:
     print(f"  Base URL : {args.base_url}")
     _sep()
 
-    api = APIClient(args.base_url)
-
-    # ── Verificar backend ───────────────────────────────────────────────────
+    # ── Verificar backend (sin auth) ────────────────────────────────────────
+    probe = httpx.Client(base_url=args.base_url, timeout=5)
     try:
-        health = api._client.get("/health", timeout=5)
+        health = probe.get("/health")
         if health.status_code != 200:
             _err(f"Backend no disponible: HTTP {health.status_code}")
             sys.exit(1)
@@ -1175,6 +1202,37 @@ def main() -> None:
     except Exception as exc:
         _err(f"No se puede conectar al backend: {exc}")
         sys.exit(1)
+    finally:
+        probe.close()
+
+    # ── Obtener token JWT ───────────────────────────────────────────────────
+    token = args.token
+    if not token:
+        creds = {"username": args.username, "password": args.password}
+        auth_client = httpx.Client(base_url=args.base_url, timeout=10)
+        try:
+            resp = auth_client.post(f"{API_PREFIX}/auth/login", json=creds)
+            if resp.status_code == 200:
+                token = resp.json()["access_token"]
+                _ok(f"Login OK como '{args.username}'")
+            elif resp.status_code in (401, 404):
+                resp = auth_client.post(f"{API_PREFIX}/auth/register", json=creds)
+                if resp.status_code == 200:
+                    token = resp.json()["access_token"]
+                    _ok(f"Usuario '{args.username}' registrado y autenticado")
+                else:
+                    _err(f"No se pudo registrar el usuario: HTTP {resp.status_code}")
+                    sys.exit(1)
+            else:
+                _err(f"Error de autenticacion: HTTP {resp.status_code}")
+                sys.exit(1)
+        except Exception as exc:
+            _err(f"Error obteniendo token: {exc}")
+            sys.exit(1)
+        finally:
+            auth_client.close()
+
+    api = APIClient(args.base_url, token=token)
 
     # ── Crear coleccion ─────────────────────────────────────────────────────
     collection_name = f"Eval Baseline {int(time.time())}"

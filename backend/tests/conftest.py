@@ -41,6 +41,7 @@ if "app.engine.rag" not in sys.modules:
     rag_stub.delete_collection_vectors = _stub_delete_collection_vectors
     sys.modules["app.engine.rag"] = rag_stub
 
+from app.core.auth_deps import get_current_user
 from app.database import get_session
 from app.main import app
 from app.models.collections import Collection
@@ -76,7 +77,11 @@ async def client(db_session: Session) -> AsyncGenerator[AsyncClient, None]:
     def _get_test_session():
         yield db_session
 
+    def _stub_user():
+        return {"sub": "test-user-id", "username": "testuser"}
+
     app.dependency_overrides[get_session] = _get_test_session
+    app.dependency_overrides[get_current_user] = _stub_user
 
     async with AsyncClient(
         transport=ASGITransport(app=app),
