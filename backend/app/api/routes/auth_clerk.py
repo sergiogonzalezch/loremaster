@@ -1,3 +1,4 @@
+import threading
 import time
 from typing import Optional
 
@@ -13,23 +14,25 @@ security = HTTPBearer(auto_error=False)
 
 _jwks_cache: Optional[dict] = None
 _jwks_cache_time: float = 0.0
+_jwks_lock = threading.Lock()
 _JWKS_TTL = 3600  # 1 hora; Clerk rota claves ocasionalmente
 
 
 def get_jwks() -> dict:
     global _jwks_cache, _jwks_cache_time
-    if _jwks_cache is None or time.monotonic() - _jwks_cache_time > _JWKS_TTL:
-        try:
-            response = httpx.get(settings.clerk_jwks_url, timeout=10.0)
-            response.raise_for_status()
-            _jwks_cache = response.json()
-            _jwks_cache_time = time.monotonic()
-        except httpx.HTTPError:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="No se pudo obtener las claves de Clerk",
-            )
-    return _jwks_cache
+    with _jwks_lock:
+        if _jwks_cache is None or time.monotonic() - _jwks_cache_time > _JWKS_TTL:
+            try:
+                response = httpx.get(settings.clerk_jwks_url, timeout=10.0)
+                response.raise_for_status()
+                _jwks_cache = response.json()
+                _jwks_cache_time = time.monotonic()
+            except httpx.HTTPError:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="No se pudo obtener las claves de Clerk",
+                )
+        return _jwks_cache
 
 
 def decode_clerk_token(token: str) -> dict:

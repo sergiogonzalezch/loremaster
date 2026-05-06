@@ -83,4 +83,4 @@ class GenerateContentRequest(BaseModel):
 
 
 class UpdateContentRequest(BaseModel):
-    content: str = Field(..., min_length=1)
+    content: str = Field(..., min_length=1, max_length=10000)

@@ -1,7 +1,11 @@
 # backend/app/api/routes/image_generation.py
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
+
+logger = logging.getLogger(__name__)
 
 from app.core.deps import get_entity_or_404
 from app.core.auth_deps import get_current_user
@@ -50,8 +54,9 @@ def build_prompt(
                 "o no pertenece a esta entidad."
             ),
         )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Error inesperado en build_prompt")
+        raise HTTPException(status_code=500, detail="Error interno del servidor.")
 
 
 @router.post(
@@ -90,8 +95,9 @@ def generate_images(
         )
     except DatabaseError:
         raise HTTPException(status_code=500, detail="Error interno del servidor.")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Error inesperado en generate_images")
+        raise HTTPException(status_code=500, detail="Error interno del servidor.")
 
 
 @router.delete(
@@ -115,8 +121,9 @@ def delete_image(
         )
     except DatabaseError:
         raise HTTPException(status_code=500, detail="Error interno del servidor.")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Error inesperado en delete_image")
+        raise HTTPException(status_code=500, detail="Error interno del servidor.")
 
 
 @router.get(
@@ -137,8 +144,9 @@ def get_generation(
             status_code=404,
             detail="Generación no encontrada.",
         )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Error inesperado en get_generation")
+        raise HTTPException(status_code=500, detail="Error interno del servidor.")
 
 
 @router.get(
@@ -154,5 +162,6 @@ def list_generations(
     try:
         generations, total = list_generations_service(session, entity)
         return ImageGenerationListResponse(generations=generations, total=total)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Error inesperado en list_generations")
+        raise HTTPException(status_code=500, detail="Error interno del servidor.")

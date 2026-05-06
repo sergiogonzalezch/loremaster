@@ -137,7 +137,7 @@ Flujo JWT local. Al iniciar la app, `ProtectedRoute` comprueba si hay un token v
 
 | Ruta                             | Página            | Descripción                                                                                                                                     |
 | -------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/login`                         | Login / Registro  | Formulario con tabs "Iniciar sesión" / "Registrarse"; redirige a `/` tras autenticar                                                           |
+| `/login`                         | Login / Registro  | Formulario con tabs "Iniciar sesión" / "Registrarse"; redirige a `/` tras autenticar                                                            |
 | `/`                              | Colecciones       | Cards con todas las colecciones; crear (modal) o eliminar con confirmación                                                                      |
 | `/collections/:id`               | Detalle colección | **Documentos**: upload PDF/TXT, tabla con estado; **Entidades**: tabla con badges, navegación al detalle; **Generar texto**: consulta RAG libre |
 | `/collections/:id/entities/:eid` | Detalle entidad   | Card de entidad editable; formulario de generación con selector de categoría; lista de `ContentCard`; navegación a generación de imágenes       |

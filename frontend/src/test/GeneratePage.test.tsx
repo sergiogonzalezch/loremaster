@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import GeneratePage from "../pages/GeneratePage";
@@ -49,12 +49,14 @@ const DEFAULT_DOCS_HOOK = {
   refresh: vi.fn().mockResolvedValue(true),
 };
 
-function renderPage() {
-  return render(
+async function renderPage() {
+  const result = render(
     <MemoryRouter>
       <GeneratePage />
     </MemoryRouter>,
   );
+  await act(async () => {});
+  return result;
 }
 
 beforeEach(() => {
@@ -74,7 +76,7 @@ beforeEach(() => {
 
 describe("GeneratePage", () => {
   it("muestra el formulario de consulta", async () => {
-    renderPage();
+    await renderPage();
     expect(
       screen.getByPlaceholderText(/Escribe tu consulta/),
     ).toBeInTheDocument();
@@ -82,31 +84,31 @@ describe("GeneratePage", () => {
   });
 
   it("muestra el nombre de la colección en el breadcrumb", async () => {
-    renderPage();
+    await renderPage();
     await waitFor(() =>
       expect(screen.getByText("Middle Earth")).toBeInTheDocument(),
     );
   });
 
-  it("muestra aviso cuando la colección no tiene documentos procesados", () => {
+  it("muestra aviso cuando la colección no tiene documentos procesados", async () => {
     mockUseDocsStatus.mockReturnValue({
       ...DEFAULT_DOCS_HOOK,
       hasCompletedDocs: false,
     });
-    renderPage();
+    await renderPage();
     expect(
       screen.getByText(/no tiene documentos procesados/),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Generar" })).toBeDisabled();
   });
 
-  it("botón Generar deshabilitado con query menor de 5 caracteres", () => {
-    renderPage();
+  it("botón Generar deshabilitado con query menor de 5 caracteres", async () => {
+    await renderPage();
     expect(screen.getByRole("button", { name: "Generar" })).toBeDisabled();
   });
 
   it("botón Generar habilitado con query válida", async () => {
-    renderPage();
+    await renderPage();
     await userEvent.type(
       screen.getByRole("textbox"),
       "¿Quién es el portador del Anillo?",
@@ -121,7 +123,7 @@ describe("GeneratePage", () => {
       run: mockRun,
     });
 
-    renderPage();
+    await renderPage();
     await userEvent.type(
       screen.getByRole("textbox"),
       "¿Quién es el portador del Anillo Único?",
@@ -131,19 +133,19 @@ describe("GeneratePage", () => {
     await waitFor(() => expect(mockRun).toHaveBeenCalled());
   });
 
-  it("muestra barra de carga y botón Cancelar mientras isLoading es true", () => {
+  it("muestra barra de carga y botón Cancelar mientras isLoading es true", async () => {
     mockUseGenerate.mockReturnValue({
       ...DEFAULT_GENERATE_HOOK,
       isLoading: true,
     });
-    renderPage();
+    await renderPage();
     expect(screen.getByText(/Analizando documentos/)).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Cancelar" }),
     ).toBeInTheDocument();
   });
 
-  it("muestra el resultado de la generación cuando data no es null", () => {
+  it("muestra el resultado de la generación cuando data no es null", async () => {
     mockUseGenerate.mockReturnValue({
       ...DEFAULT_GENERATE_HOOK,
       data: {
@@ -152,19 +154,19 @@ describe("GeneratePage", () => {
         sources_count: 4,
       },
     });
-    renderPage();
+    await renderPage();
     expect(
       screen.getByText("Frodo Bolsón es el portador del Anillo Único."),
     ).toBeInTheDocument();
     expect(screen.getByText("4 fuentes")).toBeInTheDocument();
   });
 
-  it("muestra alerta de cancelación cuando isCancelled es true", () => {
+  it("muestra alerta de cancelación cuando isCancelled es true", async () => {
     mockUseGenerate.mockReturnValue({
       ...DEFAULT_GENERATE_HOOK,
       isCancelled: true,
     });
-    renderPage();
+    await renderPage();
     expect(screen.getByText(/cancelada/)).toBeInTheDocument();
   });
 });
