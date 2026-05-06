@@ -22,16 +22,25 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
     setLoading(true);
     try {
-      const fn = tab === "login" ? login : register;
-      const { access_token } = await fn({ username, password });
-      setToken(access_token);
-      navigate("/", { replace: true });
+      if (tab === "login") {
+        const { access_token } = await login({ username, password });
+        setToken(access_token);
+        navigate("/", { replace: true });
+      } else {
+        await register({ username, password });
+        setSuccess("Usuario creado correctamente. Ya puedes iniciar sesión.");
+        setUsername("");
+        setPassword("");
+        setTab("login");
+      }
     } catch (err) {
       const { text } = parseApiError(err);
       setError(text);
@@ -66,6 +75,7 @@ export default function LoginPage() {
               onSelect={(k) => {
                 setTab(k ?? "login");
                 setError(null);
+                setSuccess(null);
               }}
               className="mb-3"
             >
@@ -73,6 +83,7 @@ export default function LoginPage() {
               <Tab eventKey="register" title="Registrarse" />
             </Tabs>
 
+            {success && <Alert variant="success">{success}</Alert>}
             {error && <Alert variant="warning">{error}</Alert>}
 
             <Form onSubmit={handleSubmit}>
