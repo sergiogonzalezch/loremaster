@@ -36,9 +36,7 @@ async def test_rag_query_uses_rag_context(
 
 
 @pytest.mark.anyio
-async def test_rag_query_empty_context_422(
-    client, sample_collection, sample_document
-):
+async def test_rag_query_empty_context_422(client, sample_collection, sample_document):
     """GEN-03: Si no hay documentos, responde 422 o 200 con warning."""
     response = await client.post(
         f"/api/v1/collections/{sample_collection.id}/query",

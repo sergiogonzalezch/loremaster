@@ -34,14 +34,20 @@ def get_jwks() -> dict:
 
 def decode_clerk_token(token: str) -> dict:
     try:
-        return jwt.decode(token, get_jwks(), algorithms=["RS256"], audience=settings.clerk_audience)
+        return jwt.decode(
+            token, get_jwks(), algorithms=["RS256"], audience=settings.clerk_audience
+        )
     except JWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido"
+        )
 
 
 @router.get("/verify")
 def verify(credentials: HTTPAuthorizationCredentials = Depends(security)):
     if not credentials:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No autorizado")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="No autorizado"
+        )
     payload = decode_clerk_token(credentials.credentials)
     return {"valid": True, "user_id": payload.get("sub")}

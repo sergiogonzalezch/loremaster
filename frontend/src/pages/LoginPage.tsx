@@ -1,7 +1,15 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { Container, Card, Form, Button, Alert, Tabs, Tab } from "react-bootstrap";
+import {
+  Container,
+  Card,
+  Form,
+  Button,
+  Alert,
+  Tabs,
+  Tab,
+} from "react-bootstrap";
 import { login, register } from "../api/auth";
 import { setToken } from "../utils/token";
 import { parseApiError } from "../utils/errors";
@@ -42,13 +50,25 @@ export default function LoginPage() {
         <Card style={{ width: "100%", maxWidth: 420 }}>
           <Card.Body className="p-4">
             <div className="text-center mb-4">
-              <span className="lm-brand-glyph" style={{ fontSize: "2rem" }}>✦</span>
-              <h1 className="h4 mt-2 mb-0" style={{ fontFamily: "var(--lm-font-head)" }}>
+              <span className="lm-brand-glyph" style={{ fontSize: "2rem" }}>
+                ✦
+              </span>
+              <h1
+                className="h4 mt-2 mb-0"
+                style={{ fontFamily: "var(--lm-font-head)" }}
+              >
                 <span style={{ color: "var(--lm-accent)" }}>Lore</span>Master
               </h1>
             </div>
 
-            <Tabs activeKey={tab} onSelect={(k) => { setTab(k ?? "login"); setError(null); }} className="mb-3">
+            <Tabs
+              activeKey={tab}
+              onSelect={(k) => {
+                setTab(k ?? "login");
+                setError(null);
+              }}
+              className="mb-3"
+            >
               <Tab eventKey="login" title="Iniciar sesión" />
               <Tab eventKey="register" title="Registrarse" />
             </Tabs>
@@ -77,7 +97,15 @@ export default function LoginPage() {
                   disabled={loading}
                 />
               </Form.Group>
-              <Button type="submit" className="w-100" disabled={loading}>
+              <Button
+                type="submit"
+                className="w-100"
+                disabled={loading}
+                style={{
+                  backgroundColor: "var(--lm-accent)",
+                  borderColor: "var(--lm-accent)",
+                }}
+              >
                 {loading
                   ? "Cargando..."
                   : tab === "login"

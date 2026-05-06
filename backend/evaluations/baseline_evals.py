@@ -729,25 +729,54 @@ def _run_image_generation(
                 if ok_c:
                     confirmed_content_id = cid_g
 
-    payload: dict = {}
+    content_id: Optional[str] = None
     if inp.get("use_confirmed_content_id") and confirmed_content_id:
-        payload["content_id"] = confirmed_content_id
+        content_id = confirmed_content_id
     elif inp.get("use_pending_content_id") and pending_content_id:
-        payload["content_id"] = pending_content_id
+        content_id = pending_content_id
     elif inp.get("content_id") is not None:
-        payload["content_id"] = inp["content_id"]
+        content_id = inp["content_id"]
 
-    resp = api.post(
-        f"/collections/{cid}/entities/{entity_id}/generate/image", json=payload
+    # Paso 1: build-prompt (valida content_id y genera auto_prompt via LLM)
+    build_payload: dict = {}
+    if content_id is not None:
+        build_payload["content_id"] = content_id
+
+    build_resp = api.post(
+        f"/collections/{cid}/entities/{entity_id}/image-generation/build-prompt",
+        json=build_payload,
     )
-    checks: list[Result] = [check_status(resp.status_code, exp["http_status"])]
 
-    if resp.status_code == 201:
-        body = resp.json()
+    # Si build-prompt falló, comparar su status con el esperado directamente
+    if build_resp.status_code != 200:
+        return check_status(build_resp.status_code, exp["http_status"])
+
+    auto_prompt = build_resp.json().get("auto_prompt", "")
+
+    # Paso 2: generate — envía content_id + prompts obtenidos del build
+    gen_resp = api.post(
+        f"/collections/{cid}/entities/{entity_id}/image-generation/generate",
+        json={
+            "content_id": content_id,
+            "auto_prompt": auto_prompt,
+            "final_prompt": auto_prompt,
+            "batch_size": 1,
+        },
+    )
+
+    checks: list[Result] = [check_status(gen_resp.status_code, exp["http_status"])]
+
+    if gen_resp.status_code == 201:
+        body = gen_resp.json()
+        images = body.get("images", [])
+
         if exp.get("has_image_url"):
-            checks.append((bool(body.get("image_url")), "falta 'image_url'"))
+            has_url = bool(images and images[0].get("image_url"))
+            checks.append((has_url, "falta 'image_url' en images[0]"))
+
         if exp.get("has_visual_prompt"):
-            checks.append((bool(body.get("visual_prompt")), "falta 'visual_prompt'"))
+            checks.append((bool(auto_prompt), "auto_prompt vacio"))
+
         if "backend" in exp:
             checks.append(
                 (
@@ -755,9 +784,11 @@ def _run_image_generation(
                     f"backend {body.get('backend')!r} != {exp['backend']!r}",
                 )
             )
+
         for kw in exp.get("visual_prompt_contains", []):
-            vp = body.get("visual_prompt", "").lower()
-            checks.append((kw.lower() in vp, f"visual_prompt sin '{kw}'"))
+            checks.append(
+                (kw.lower() in auto_prompt.lower(), f"auto_prompt sin '{kw}'")
+            )
 
     return check_all(checks)
 
@@ -850,17 +881,37 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
             last_content_id = target
 
         elif action == "generate_image":
-            payload: dict = {}
+            content_id_for_image: Optional[str] = None
             if step.get("use_confirmed_content"):
                 confirmed = get_contents_by_status(
                     api, cid, last_entity_id, "confirmed"
                 )
                 if confirmed:
-                    payload["content_id"] = confirmed[0]["id"]
-            image_resp = api.post(
-                f"/collections/{cid}/entities/{last_entity_id}/generate/image",
-                json=payload,
+                    content_id_for_image = confirmed[0]["id"]
+
+            # Paso 1: build-prompt
+            build_payload: dict = {}
+            if content_id_for_image:
+                build_payload["content_id"] = content_id_for_image
+
+            build_resp = api.post(
+                f"/collections/{cid}/entities/{last_entity_id}/image-generation/build-prompt",
+                json=build_payload,
             )
+
+            if build_resp.status_code == 200:
+                auto_prompt_flow = build_resp.json().get("auto_prompt", "")
+                image_resp = api.post(
+                    f"/collections/{cid}/entities/{last_entity_id}/image-generation/generate",
+                    json={
+                        "content_id": content_id_for_image,
+                        "auto_prompt": auto_prompt_flow,
+                        "final_prompt": auto_prompt_flow,
+                        "batch_size": 1,
+                    },
+                )
+            else:
+                image_resp = build_resp
 
     # ── Evaluar estado final ──────────────────────────────────────────────
     checks: list[Result] = []
@@ -1014,7 +1065,9 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
         if image_resp.status_code == 201:
             ibody = image_resp.json()
             if exp.get("image_has_url"):
-                checks.append((bool(ibody.get("image_url")), "falta image_url"))
+                flow_images = ibody.get("images", [])
+                has_url = bool(flow_images and flow_images[0].get("image_url"))
+                checks.append((has_url, "falta image_url en images[0]"))
             if "image_backend" in exp:
                 checks.append(
                     (

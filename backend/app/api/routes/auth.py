@@ -42,10 +42,14 @@ def register(request: LoginRequest, session: Session = Depends(get_session)):
             detail="El usuario ya existe",
         )
 
-    new_user = User(username=request.username, hashed_password=hash_password(request.password))
+    new_user = User(
+        username=request.username, hashed_password=hash_password(request.password)
+    )
     session.add(new_user)
     session.commit()
     session.refresh(new_user)
 
-    token = create_access_token(data={"sub": new_user.id, "username": new_user.username})
+    token = create_access_token(
+        data={"sub": new_user.id, "username": new_user.username}
+    )
     return {"access_token": token}
