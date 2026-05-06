@@ -1,3 +1,5 @@
+import { getToken, removeToken } from "../utils/token";
+
 const BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
 
@@ -42,6 +44,10 @@ export async function apiFetch<T>(
   if (!(options.body instanceof FormData)) {
     headers["Content-Type"] = "application/json";
   }
+  const token = getToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
 
   let response: Response;
   try {
@@ -51,6 +57,12 @@ export async function apiFetch<T>(
       throw new ApiAbortError();
     }
     throw err;
+  }
+
+  if (response.status === 401) {
+    removeToken();
+    window.location.href = "/login";
+    throw new ApiError(401, "Sesión expirada. Inicia sesión de nuevo.");
   }
 
   if (!response.ok) {
