@@ -54,6 +54,7 @@ El proxy de Vite redirige `/api/*` → `http://localhost:8000` en desarrollo, ev
 src/
 ├── api/
 │   ├── apiClient.ts        → apiFetch<T> con ApiError / ApiAbortError
+│   ├── auth.ts             → login() / register() — POST /auth/login y /auth/register
 │   ├── collections.ts      → CRUD de colecciones
 │   ├── documents.ts        → upload (FormData), listado y eliminación de documentos
 │   ├── entities.ts         → CRUD de entidades
@@ -68,6 +69,7 @@ src/
 │   ├── Layout.tsx          → Navbar + Outlet (React Router) + StarfieldCanvas
 │   ├── LoadingSpinner.tsx  → Spinner centrado con texto opcional
 │   ├── MarkdownContent.tsx → Renderizado markdown sanitizado
+│   ├── ProtectedRoute.tsx  → Guard: redirige a /login si no hay token válido
 │   ├── StarfieldCanvas.tsx → Fondo animado canvas: estrellas de fondo + estrellas de colecciones (evento lm:collections) + estrellas fugaces
 │   └── TokenCounter.tsx    → Estimación de tokens (aviso a los 400)
 ├── hooks/
@@ -76,6 +78,7 @@ src/
 │   ├── useEntityContents.ts            → Fetching/refresco de contenidos de una entidad
 │   └── useGenerate.ts                  → Wrapper cancellable para llamadas LLM (AbortSignal)
 ├── pages/
+│   ├── LoginPage.tsx             → Formulario login/registro con tabs; redirige a / tras autenticar
 │   ├── CollectionsPage.tsx       → Listado, creación y eliminación de colecciones
 │   ├── CollectionDetailPage.tsx  → Tabs: Documentos / Entidades / Generar texto
 │   ├── EntityDetailPage.tsx      → Detalle de entidad + generación de contenido por categoría
@@ -121,10 +124,20 @@ Los tests se encuentran en `src/test/`. Las llamadas a la API se mockean con `vi
 | Componentes | ConfirmModal, TokenCounter, ContentCard           | ~21          |
 | Hooks       | useGenerate, useEntityContents, useDebouncedValue | ~17          |
 
+## Autenticación
+
+Flujo JWT local. Al iniciar la app, `ProtectedRoute` comprueba si hay un token válido en `localStorage`; si no lo hay, redirige a `/login`.
+
+- **Login**: `POST /api/v1/auth/login` → guarda `access_token` en `localStorage`.
+- **Registro**: `POST /api/v1/auth/register` → crea cuenta y devuelve token directamente (login implícito).
+- El token se adjunta en todas las peticiones via cabecera `Authorization: Bearer <token>` dentro de `apiFetch`.
+- Utilidades en `src/utils/token.ts`: `getToken()`, `setToken()`, `removeToken()`, `isAuthenticated()`.
+
 ## Pantallas
 
 | Ruta                             | Página            | Descripción                                                                                                                                     |
 | -------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/login`                         | Login / Registro  | Formulario con tabs "Iniciar sesión" / "Registrarse"; redirige a `/` tras autenticar                                                           |
 | `/`                              | Colecciones       | Cards con todas las colecciones; crear (modal) o eliminar con confirmación                                                                      |
 | `/collections/:id`               | Detalle colección | **Documentos**: upload PDF/TXT, tabla con estado; **Entidades**: tabla con badges, navegación al detalle; **Generar texto**: consulta RAG libre |
 | `/collections/:id/entities/:eid` | Detalle entidad   | Card de entidad editable; formulario de generación con selector de categoría; lista de `ContentCard`; navegación a generación de imágenes       |

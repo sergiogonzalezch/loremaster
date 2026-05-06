@@ -43,6 +43,11 @@ cp .env.example .env
 | `ALLOWED_ORIGINS` | `["http://localhost:3000","http://localhost:5173"]` | Orígenes permitidos por CORS |
 | `REDIS_URL` | `redis://redis:6379/0` | Caché semántico (staged) |
 | `CACHE_TTL` | `3600` | TTL del caché en segundos (staged) |
+| `SECRET_KEY` | `your-secret-key` | Clave de firma para tokens JWT. **Cambiar en producción.** |
+| `ALGORITHM` | `HS256` | Algoritmo de firma JWT |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | `1440` | Duración del token JWT en minutos (24 h) |
+| `CLERK_JWKS_URL` | *(ver `.env.example`)* | URL JWKS de Clerk (solo entorno `production`) |
+| `CLERK_AUDIENCE` | *(ver `.env.example`)* | Audience de Clerk (solo entorno `production`) |
 
 > Las variables de S3/LocalStack y ComfyUI aparecen en `.env.example` pero los servicios no están integrados aún.
 
@@ -125,6 +130,21 @@ pytest -k "test_create"             # por nombre
 ## Endpoints
 
 Todos bajo `/api/v1/`.
+
+### Autenticación
+
+Autenticación local con JWT. En desarrollo (`ENVIRONMENT=local`) se usa `verify_token` (HS256). En producción (`ENVIRONMENT=production`) se delega en Clerk via `decode_clerk_token`.
+
+| Método | Ruta | Descripción | Status |
+|---|---|---|---|
+| `POST` | `/auth/register` | Registrar usuario nuevo y devolver token JWT | 200 |
+| `POST` | `/auth/login` | Autenticar usuario y devolver token JWT | 200 |
+
+**Request:** `{ username, password }` — **Response:** `{ access_token, token_type: "bearer" }`.
+
+El token se envía en cabecera `Authorization: Bearer <token>`. Todos los endpoints de la API requieren autenticación salvo `/health` y `/`.
+
+> **Dependencias:** el hashing de contraseñas usa `bcrypt` directamente (sin `passlib`), lo que lo hace compatible con `bcrypt >= 4.x`.
 
 ### Colecciones
 
