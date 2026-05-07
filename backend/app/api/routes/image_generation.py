@@ -79,6 +79,7 @@ def generate_images(
             request.auto_prompt,
             request.final_prompt,
             request.batch_size,
+            request.seed_base,
         )
     except NoContextAvailableError:
         raise HTTPException(

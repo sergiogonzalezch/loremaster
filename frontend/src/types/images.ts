@@ -50,6 +50,7 @@ export interface GenerateImageRequest {
   auto_prompt: string;
   final_prompt: string;
   batch_size: number;
+  seed_base?: number;
 }
 
 export interface GenerateImagesResponse {

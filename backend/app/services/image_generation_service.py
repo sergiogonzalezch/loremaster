@@ -63,17 +63,18 @@ def _build_url(storage_path: str | None) -> str | None:
 def _generate_mock_images(
     entity: Entity,
     batch_size: int,
-) -> list[tuple[str, str]]:
+    seed_base: int,
+) -> list[tuple[str, str, int]]:
     """Genera URLs placeholder para el backend mock."""
     images = []
     for i in range(batch_size):
         image_id = str(_uuid.uuid4())
-        seed = settings.image_seed_base + i
+        seed = seed_base + i
         placeholder_url = (
             f"https://placehold.co/{settings.image_width}x{settings.image_height}/1a1a2e/9d6fe8"
             f"?text={entity.name.replace(' ', '+')}+{i+1}"
         )
-        images.append((image_id, placeholder_url))
+        images.append((image_id, placeholder_url, seed))
     return images
 
 
@@ -90,7 +91,9 @@ def _save_comfyui_image(
         storage_path relativo (sin media_root) para guardar en DB
     """
     relative_path = f"{entity.collection_id}/{entity.id}/{generation_id}/{filename}"
-    abs_dir = Path(settings.media_root) / entity.collection_id / entity.id / generation_id
+    abs_dir = (
+        Path(settings.media_root) / entity.collection_id / entity.id / generation_id
+    )
     abs_dir.mkdir(parents=True, exist_ok=True)
 
     with open(abs_dir / filename, "wb") as f:
@@ -107,6 +110,7 @@ def _generate_comfyui_images(
     final_prompt: str,
     batch_size: int,
     category: str,
+    seed_base: int,
 ) -> tuple[str, list[ImageResult]]:
     """
     Genera imágenes usando ComfyUI.
@@ -153,7 +157,7 @@ def _generate_comfyui_images(
 
     # ComfyUI genera 1 imagen por ejecución → llamar batch_size veces con seed distinto
     for i in range(batch_size):
-        seed = settings.image_seed_base + i
+        seed = seed_base + i
         workflow = inject_seed(workflow_base, seed)
 
         try:
@@ -161,7 +165,9 @@ def _generate_comfyui_images(
             result = client.get_history_until_complete(prompt_id)
             output_images = client.get_output_images(result)
         except Exception as exc:
-            logger.warning("ComfyUI falló en iteración %d/%d: %s", i + 1, batch_size, exc)
+            logger.warning(
+                "ComfyUI falló en iteración %d/%d: %s", i + 1, batch_size, exc
+            )
             continue
 
         for img_info in output_images[:1]:
@@ -265,6 +271,7 @@ def generate_images_service(
     auto_prompt: str,
     final_prompt: str,
     batch_size: int,
+    seed_base: int | None = None,
 ) -> GenerateImagesResponse:
     """
     Genera un batch de imágenes.
@@ -280,10 +287,13 @@ def generate_images_service(
     check_user_input(auto_prompt)
     check_user_input(final_prompt)
 
+    effective_seed_base = (
+        seed_base if seed_base is not None else settings.image_seed_base
+    )
     images_result: list[ImageResult] = []
 
     if settings.image_backend == "mock":
-        mock_images = _generate_mock_images(entity, batch_size)
+        mock_images = _generate_mock_images(entity, batch_size, effective_seed_base)
         generation_id = str(_uuid.uuid4())
 
         generation = ImageGeneration(
@@ -302,13 +312,13 @@ def generate_images_service(
         )
         session.add(generation)
 
-        for i, (image_id, image_url) in enumerate(mock_images):
+        for image_id, image_url, seed in mock_images:
             record = ImageRecord(
                 id=image_id,
                 generation_id=generation_id,
                 entity_id=entity.id,
                 collection_id=entity.collection_id,
-                seed=settings.image_seed_base + i,
+                seed=seed,
                 storage_path=None,
                 image_url=image_url,
                 filename=f"{image_id}.png",
@@ -323,7 +333,7 @@ def generate_images_service(
                 ImageResult(
                     id=image_id,
                     image_url=image_url,
-                    seed=settings.image_seed_base + i,
+                    seed=seed,
                     width=settings.image_width,
                     height=settings.image_height,
                     generation_ms=0,
@@ -339,6 +349,7 @@ def generate_images_service(
             final_prompt=final_prompt,
             batch_size=batch_size,
             category=content.category.value,
+            seed_base=effective_seed_base,
         )
 
     else:
@@ -361,6 +372,7 @@ def generate_images_service(
         backend=settings.image_backend,
         images=images_result,
     )
+
 
 def delete_image_service(
     session: Session,

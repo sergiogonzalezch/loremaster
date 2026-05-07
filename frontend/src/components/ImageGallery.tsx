@@ -22,7 +22,9 @@ export default function ImageGallery({
   const [error, setError] = useState<string | null>(null);
   const [selectedGeneration, setSelectedGeneration] =
     useState<ImageGenerationItem | null>(null);
-  const [selectedImage, setSelectedImage] = useState<ImageRecordData | null>(null);
+  const [selectedImage, setSelectedImage] = useState<ImageRecordData | null>(
+    null,
+  );
   const [deleting, setDeleting] = useState(false);
 
   const fetchGenerations = useCallback(async () => {
@@ -220,17 +222,14 @@ export default function ImageGallery({
                         <strong>Resolución:</strong>
                       </td>
                       <td>
-                        {selectedGeneration.width} x{" "}
-                        {selectedGeneration.height}
+                        {selectedGeneration.width} x {selectedGeneration.height}
                       </td>
                     </tr>
                     <tr>
                       <td className="text-muted">
                         <strong>Creada:</strong>
                       </td>
-                      <td>
-                        {formatDate(selectedImage.created_at)}
-                      </td>
+                      <td>{formatDate(selectedImage.created_at)}</td>
                     </tr>
                     <tr>
                       <td className="text-muted">
@@ -281,10 +280,7 @@ export default function ImageGallery({
             >
               Descargar imagen
             </Button>
-            <Button
-              variant="secondary"
-              onClick={() => setSelectedImage(null)}
-            >
+            <Button variant="secondary" onClick={() => setSelectedImage(null)}>
               Cerrar
             </Button>
           </div>

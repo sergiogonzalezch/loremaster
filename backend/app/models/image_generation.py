@@ -153,6 +153,10 @@ class GenerateImagesRequest(BaseModel):
         le=4,
         description="Cantidad de imágenes a generar (1-4).",
     )
+    seed_base: Optional[int] = Field(
+        default=None,
+        description="Semilla base. None usa el valor de configuración.",
+    )
 
 
 class DeleteImageRequest(BaseModel):

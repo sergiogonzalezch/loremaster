@@ -16,19 +16,20 @@ from pathlib import Path
 
 import httpx
 
-class ComfyUIClient: 
 
-    def __init__(self, base_url:str):
+class ComfyUIClient:
+
+    def __init__(self, base_url: str):
         self.base_url = base_url.rstrip("/")
-    
-    def _request(self, method:str, path:str, **kwargs)->httpx.Response:
+
+    def _request(self, method: str, path: str, **kwargs) -> httpx.Response:
         url = f"{self.base_url}/{path.lstrip('/')}"
         with httpx.Client(timeout=30.0) as client:
             response = client.request(method, url, **kwargs)
             response.raise_for_status()
             return response
-    
-    def queue_prompt(self, workflow:dict)->str:
+
+    def queue_prompt(self, workflow: dict) -> str:
         """
         Envía un workflow en formato API para ejecución.
 
@@ -41,23 +42,23 @@ class ComfyUIClient:
         Raises:
             httpx.HTTPStatusError: Si el workflow es inválido o ComfyUI rechaza la petición
         """
-            
+
         response = self._request(
             "POST",
             "prompt",
-            json={"prompt":workflow},
+            json={"prompt": workflow},
         )
         data = response.json()
 
-        if "prompt_id" in data: 
+        if "prompt_id" in data:
             return data["prompt_id"]
-        
+
         if "node_errors" in data:
             raise RuntimeError(f"Errores en nodos:{data['node_errors']}")
-        
+
         raise RuntimeError(f"Respuesta inesperada de ComfyUI: {data}")
-    
-    def get_history(self, prompt_id:str)->dict:
+
+    def get_history(self, prompt_id: str) -> dict:
         """
         Obtiene el estado y resultados de una ejecución.
 
@@ -67,14 +68,14 @@ class ComfyUIClient:
         - error: mensaje de error si falló
         """
 
-        response = self._request("GET",f"history/{prompt_id}")
+        response = self._request("GET", f"history/{prompt_id}")
         data = response.json()
 
         if prompt_id not in data:
-            return {"status":"queued", "outputs":{}}
-        
+            return {"status": "queued", "outputs": {}}
+
         entry = data[prompt_id]
-        status_str = entry.get("status",{}).get("status_str","")
+        status_str = entry.get("status", {}).get("status_str", "")
 
         if status_str == "success":
             return {"status": "completed", "outputs": entry.get("outputs", {})}
@@ -84,8 +85,10 @@ class ComfyUIClient:
             return {"status": "failed", "error": str(messages)}
 
         return {"status": "running", "outputs": {}}
-    
-    def get_history_until_complete(self, prompt_id, timeout:int = 300, poll_interval:float = 2.0)->dict:
+
+    def get_history_until_complete(
+        self, prompt_id, timeout: int = 300, poll_interval: float = 2.0
+    ) -> dict:
         """
         Espera hasta que la ejecución complete (polling).
 
@@ -100,7 +103,7 @@ class ComfyUIClient:
         Raises:
             TimeoutError: Si excede el timeout
             RuntimeError: Si la ejecución falla
-        """        
+        """
         start_time = time.time()
 
         while True:
@@ -110,16 +113,20 @@ class ComfyUIClient:
                     f"Timeout después de {timeout}s esperando generación ComfyUI"
                 )
             result = self.get_history(prompt_id)
-            status = result.get("status","queued")
+            status = result.get("status", "queued")
 
             if status == "completed":
                 return result
-            
+
             if status == "failed":
-                raise RuntimeError(f"Generación falló: {result.get('error','Unknown error')}")
+                raise RuntimeError(
+                    f"Generación falló: {result.get('error','Unknown error')}"
+                )
             time.sleep(poll_interval)
 
-    def download_image(self, filename:str, subfolder:str="",folder_type:str="output")->bytes:
+    def download_image(
+        self, filename: str, subfolder: str = "", folder_type: str = "output"
+    ) -> bytes:
         """
         Descarga una imagen generada.
 
@@ -131,13 +138,13 @@ class ComfyUIClient:
         Returns:
             Bytes de la imagen
         """
-        params = {"filename":filename, "type":folder_type}
+        params = {"filename": filename, "type": folder_type}
         if subfolder:
             params["subfolder"] = subfolder
-        
-        response = self._request("GET","view", params=params)
+
+        response = self._request("GET", "view", params=params)
         return response.content
-    
+
     def get_output_images(self, history_result: dict) -> list[dict]:
         """
         Extrae las imágenes generadas del resultado del history.
@@ -154,15 +161,17 @@ class ComfyUIClient:
         for node_id, node_output in outputs.items():
             if "images" in node_output:
                 for img in node_output["images"]:
-                    images.append({
-                        "filename": img.get("filename"),
-                        "subfolder": img.get("subfolder", ""),
-                        "type": img.get("type", "output"),
-                        "node_id": node_id,
-                    })
+                    images.append(
+                        {
+                            "filename": img.get("filename"),
+                            "subfolder": img.get("subfolder", ""),
+                            "type": img.get("type", "output"),
+                            "node_id": node_id,
+                        }
+                    )
 
         return images
-    
+
     # ── Funciones auxiliares para el template ───────────────────────────────────────────────
 
 

@@ -54,11 +54,16 @@ function ImageGrid({
 
   const getGridClass = () => {
     switch (count) {
-      case 1: return "grid-1";
-      case 2: return "grid-2";
-      case 3: return "grid-3";
-      case 4: return "grid-4";
-      default: return "grid-1";
+      case 1:
+        return "grid-1";
+      case 2:
+        return "grid-2";
+      case 3:
+        return "grid-3";
+      case 4:
+        return "grid-4";
+      default:
+        return "grid-1";
     }
   };
 
@@ -73,7 +78,12 @@ function ImageGrid({
                 src={url}
                 alt=""
                 className="img-fluid rounded"
-                style={{ width: "100%", height: "100%", objectFit: "cover", cursor: "pointer" }}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  cursor: "pointer",
+                }}
                 onClick={() => onSelect(gen, img)}
               />
             ) : (
@@ -123,9 +133,13 @@ export default function ImagePanel({
   const [error, setError] = useState<string | null>(null);
   const [generations, setGenerations] = useState<ImageGenerationItem[]>([]);
   const [loadingGenerations, setLoadingGenerations] = useState(false);
+  const [seedBase, setSeedBase] = useState(
+    () => Math.floor(Math.random() * 999983) + 1,
+  );
   const [showModal, setShowModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<ImageItem | null>(null);
-  const [selectedGenForModal, setSelectedGenForModal] = useState<ImageGenerationItem | null>(null);
+  const [selectedGenForModal, setSelectedGenForModal] =
+    useState<ImageGenerationItem | null>(null);
 
   useEffect(() => {
     if (show) {
@@ -192,6 +206,25 @@ export default function ImagePanel({
     [],
   );
 
+  const randomizeSeedBase = useCallback(
+    () => setSeedBase(Math.floor(Math.random() * 999983) + 1),
+    [],
+  );
+
+  const handleRegenFromHistory = useCallback(
+    (gen: ImageGenerationItem) => {
+      setFinalPrompt(gen.final_prompt);
+      setPromptData({
+        auto_prompt: gen.auto_prompt,
+        token_count: Math.ceil(gen.final_prompt.length / 4),
+      });
+      setSeedBase(Math.floor(Math.random() * 999983) + 1);
+      closeModal();
+      setActiveTab("generar");
+    },
+    [closeModal],
+  );
+
   const handleDownload = useCallback(async (img: ImageItem) => {
     const fetchUrl = img.storage_path
       ? `/media/${img.storage_path}`
@@ -242,11 +275,13 @@ export default function ImagePanel({
         auto_prompt: promptData?.auto_prompt || finalPrompt,
         final_prompt: finalPrompt.trim(),
         batch_size: batchSize,
+        seed_base: seedBase,
       });
       onGenerated();
       const genRes = await listImageGenerations(collectionId, entityId);
       setGenerations(genRes.generations);
       setActiveTab("historial");
+      setSeedBase(Math.floor(Math.random() * 999983) + 1);
     } catch (e) {
       setError(getErrorMessage(e, "Error al generar imágenes"));
     } finally {
@@ -257,6 +292,7 @@ export default function ImagePanel({
     entityId,
     finalPrompt,
     batchSize,
+    seedBase,
     confirmedContent,
     onGenerated,
     promptData,
@@ -336,10 +372,9 @@ export default function ImagePanel({
               variant="outline-secondary"
               onClick={handleRegenerate}
               disabled={building || generating}
-              title="Regenerar prompt"
               size="sm"
             >
-              ↻
+              ↻ Nuevo auto-prompt
             </Button>
           )}
         </div>
@@ -363,24 +398,46 @@ export default function ImagePanel({
               />
             </Form.Group>
 
-            <div className="d-flex align-items-center gap-3">
-              <Form.Label className="mb-0 small text-muted">
-                Imagenes:
-              </Form.Label>
-              <Form.Select
-                value={batchSize}
-                onChange={(e) => setBatchSize(Number(e.target.value))}
-                disabled={generating}
-                className="lm-select"
-                style={{ width: "auto" }}
-                size="sm"
-              >
-                {[1, 2, 3, 4].map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </Form.Select>
+            <div className="d-flex flex-wrap align-items-center gap-3">
+              <div className="d-flex align-items-center gap-2">
+                <Form.Label className="mb-0 small text-muted">
+                  Imágenes:
+                </Form.Label>
+                <Form.Select
+                  value={batchSize}
+                  onChange={(e) => setBatchSize(Number(e.target.value))}
+                  disabled={generating}
+                  className="lm-select"
+                  style={{ width: "auto" }}
+                  size="sm"
+                >
+                  {[1, 2, 3, 4].map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </Form.Select>
+              </div>
+              <div className="d-flex align-items-center gap-2">
+                <Form.Label className="mb-0 small text-muted">Seed:</Form.Label>
+                <Form.Control
+                  type="number"
+                  value={seedBase}
+                  onChange={(e) => setSeedBase(Number(e.target.value))}
+                  disabled={generating}
+                  size="sm"
+                  style={{ width: 120 }}
+                />
+                <Button
+                  variant="outline-secondary"
+                  size="sm"
+                  onClick={randomizeSeedBase}
+                  disabled={generating}
+                  title="Seed aleatorio"
+                >
+                  🎲
+                </Button>
+              </div>
             </div>
 
             <Button
@@ -456,7 +513,11 @@ export default function ImagePanel({
                 </small>
               </div>
             </div>
-            <ImageGrid gen={gen} onDelete={handleDeleteImage} onSelect={handleSelectImage} />
+            <ImageGrid
+              gen={gen}
+              onDelete={handleDeleteImage}
+              onSelect={handleSelectImage}
+            />
           </div>
         ))}
       </div>
@@ -503,7 +564,10 @@ export default function ImagePanel({
       <Modal
         show={showModal}
         onHide={closeModal}
-        onExited={() => { setSelectedImage(null); setSelectedGenForModal(null); }}
+        onExited={() => {
+          setSelectedImage(null);
+          setSelectedGenForModal(null);
+        }}
         size="xl"
         centered
       >
@@ -512,18 +576,27 @@ export default function ImagePanel({
             Seed: {selectedImage?.seed}
           </Modal.Title>
         </Modal.Header>
-        <Modal.Body className="p-2 text-center">
+        <Modal.Body className="p-2">
           {selectedImage && selectedGenForModal && (
-            <img
-              src={
-                selectedImage.storage_path
-                  ? `http://localhost:8000/media/${selectedImage.storage_path}`
-                  : selectedImage.image_url || ""
-              }
-              alt={`Imagen seed ${selectedImage.seed}`}
-              className="img-fluid rounded"
-              style={{ maxHeight: "70vh", objectFit: "contain" }}
-            />
+            <>
+              <div className="text-center">
+                <img
+                  src={
+                    selectedImage.storage_path
+                      ? `http://localhost:8000/media/${selectedImage.storage_path}`
+                      : selectedImage.image_url || ""
+                  }
+                  alt={`Imagen seed ${selectedImage.seed}`}
+                  className="img-fluid rounded"
+                  style={{ maxHeight: "65vh", objectFit: "contain" }}
+                />
+              </div>
+              <div className="mt-3 px-1">
+                <small className="text-muted">
+                  <strong>Prompt:</strong> {selectedGenForModal.final_prompt}
+                </small>
+              </div>
+            </>
           )}
         </Modal.Body>
         <Modal.Footer className="d-flex justify-content-between">
@@ -539,6 +612,16 @@ export default function ImagePanel({
             Eliminar
           </Button>
           <div className="d-flex gap-2">
+            {selectedGenForModal && (
+              <Button
+                variant="outline-primary"
+                size="sm"
+                onClick={() => handleRegenFromHistory(selectedGenForModal)}
+                title="Reutilizar prompt en el tab de generar"
+              >
+                ↻ Regenerar
+              </Button>
+            )}
             {selectedImage && (
               <Button
                 variant="primary"
