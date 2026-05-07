@@ -123,6 +123,7 @@ export default function ImagePanel({
   const [error, setError] = useState<string | null>(null);
   const [generations, setGenerations] = useState<ImageGenerationItem[]>([]);
   const [loadingGenerations, setLoadingGenerations] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<ImageItem | null>(null);
   const [selectedGenForModal, setSelectedGenForModal] = useState<ImageGenerationItem | null>(null);
 
@@ -167,23 +168,26 @@ export default function ImagePanel({
     }
   }, [show, fetchData]);
 
+  const closeModal = useCallback(() => setShowModal(false), []);
+
   const handleDeleteImage = useCallback(
     async (generationId: string, imageId: string) => {
       try {
         await deleteImage(collectionId, entityId, generationId, imageId);
-        setSelectedImage(null);
+        closeModal();
         await fetchData();
       } catch (e) {
         setError(getErrorMessage(e, "Error al eliminar imagen"));
       }
     },
-    [collectionId, entityId, fetchData],
+    [collectionId, entityId, fetchData, closeModal],
   );
 
   const handleSelectImage = useCallback(
     (gen: ImageGenerationItem, img: ImageItem) => {
       setSelectedGenForModal(gen);
       setSelectedImage(img);
+      setShowModal(true);
     },
     [],
   );
@@ -497,8 +501,9 @@ export default function ImagePanel({
       </Offcanvas.Body>
 
       <Modal
-        show={selectedImage !== null}
-        onHide={() => { setSelectedImage(null); setSelectedGenForModal(null); }}
+        show={showModal}
+        onHide={closeModal}
+        onExited={() => { setSelectedImage(null); setSelectedGenForModal(null); }}
         size="xl"
         centered
       >
@@ -543,7 +548,7 @@ export default function ImagePanel({
                 Descargar
               </Button>
             )}
-            <Button variant="secondary" onClick={() => { setSelectedImage(null); setSelectedGenForModal(null); }}>
+            <Button variant="secondary" onClick={closeModal}>
               Cerrar
             </Button>
           </div>
