@@ -47,6 +47,7 @@ from app.main import app
 from app.models.collections import Collection
 from app.models.documents import Document, DocumentStatus
 from app.models.entities import Entity, EntityType
+from app.models.users import User
 
 
 @pytest.fixture(params=["asyncio"])
@@ -76,6 +77,15 @@ async def client(db_session: Session) -> AsyncGenerator[AsyncClient, None]:
 
     def _get_test_session():
         yield db_session
+
+    test_user = User(
+        id="test-user-id",
+        username="testuser",
+        hashed_password="hashed_not_for_tests",
+        is_admin=False,
+    )
+    db_session.add(test_user)
+    db_session.commit()
 
     def _stub_user():
         return {"sub": "test-user-id", "username": "testuser"}
@@ -211,7 +221,7 @@ def mock_image_backend(monkeypatch: pytest.MonkeyPatch):
 @pytest.fixture
 def sample_collection(db_session: Session) -> Collection:
     """FX-05: Persisted sample collection."""
-    collection = Collection(name="Test World", description="A test world")
+    collection = Collection(name="Test World", description="A test world", owner_id="test-user-id")
     db_session.add(collection)
     db_session.commit()
     db_session.refresh(collection)

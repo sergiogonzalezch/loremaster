@@ -1,13 +1,14 @@
 import { Navbar, Container, Button } from "react-bootstrap";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import StarfieldCanvas from "./StarfieldCanvas";
-import { removeToken } from "../utils/token";
+import { useAuth } from "../hooks/useAuth";
 
 export default function Layout() {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   function handleLogout() {
-    removeToken();
+    logout();
     navigate("/login", { replace: true });
   }
 
@@ -21,6 +22,7 @@ export default function Layout() {
             <span className="lore">Lore</span>
             <span>Master</span>
           </Navbar.Brand>
+          <Navbar.Text className="me-3">{user?.username}</Navbar.Text>
           <Button variant="outline-secondary" size="sm" onClick={handleLogout}>
             Cerrar sesión
           </Button>

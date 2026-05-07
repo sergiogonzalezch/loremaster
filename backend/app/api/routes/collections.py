@@ -7,7 +7,11 @@ from sqlmodel import Session
 logger = logging.getLogger(__name__)
 
 from app.core.query_params import DateRangeParams, PaginationParams
-from app.core.deps import get_collection_or_404
+from app.core.deps import (
+    get_collection_or_404,
+    get_collection_or_404_owned,
+    get_collection_or_404_public_or_owned,
+)
 from app.core.auth_deps import get_current_user
 from app.core.exceptions import DatabaseError, DuplicateCollectionNameError
 from app.database import get_session
@@ -22,6 +26,7 @@ from app.services.collection_service import (
     create_collection_service,
     get_collection_with_counts_service,
     list_collections_service,
+    list_public_collections_service,
     update_collection_service,
     delete_collection_service,
 )
@@ -32,11 +37,11 @@ router = APIRouter(prefix="/collections", tags=["collections"])
 @router.post("/", response_model=CollectionResponse, status_code=201)
 def create_collection(
     request: CreateCollectionRequest,
-    _: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     try:
-        return create_collection_service(session, request.name, request.description)
+        return create_collection_service(session, current_user["sub"], request.name, request.description)
     except DuplicateCollectionNameError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
@@ -46,11 +51,12 @@ def get_collections(
     pagination: Annotated[PaginationParams, Depends()],
     dates: Annotated[DateRangeParams, Depends()],
     name: Optional[str] = Query(default=None),
-    _: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     items, total = list_collections_service(
         session,
+        current_user["sub"],
         pagination.page,
         pagination.page_size,
         name=name,
@@ -61,9 +67,20 @@ def get_collections(
     return PaginatedResponse.build(items, total, pagination.page, pagination.page_size)
 
 
+@router.get("/public", response_model=PaginatedResponse[CollectionResponse])
+def list_public_collections(
+    pagination: Annotated[PaginationParams, Depends()],
+    session: Session = Depends(get_session),
+):
+    items, total = list_public_collections_service(
+        session, pagination.page, pagination.page_size
+    )
+    return PaginatedResponse.build(items, total, pagination.page, pagination.page_size)
+
+
 @router.get("/{collection_id}", response_model=CollectionResponse)
 def get_collection(
-    collection: Collection = Depends(get_collection_or_404),
+    collection: Collection = Depends(get_collection_or_404_public_or_owned),
     session: Session = Depends(get_session),
 ):
     return get_collection_with_counts_service(session, collection)
@@ -72,8 +89,7 @@ def get_collection(
 @router.patch("/{collection_id}", response_model=CollectionResponse)
 def update_collection(
     request: UpdateCollectionRequest,
-    collection: Collection = Depends(get_collection_or_404),
-    _: dict = Depends(get_current_user),
+    collection: Collection = Depends(get_collection_or_404_owned),
     session: Session = Depends(get_session),
 ):
     try:
@@ -84,8 +100,7 @@ def update_collection(
 
 @router.delete("/{collection_id}", status_code=204)
 def delete_collection(
-    collection: Collection = Depends(get_collection_or_404),
-    _: dict = Depends(get_current_user),
+    collection: Collection = Depends(get_collection_or_404_owned),
     session: Session = Depends(get_session),
 ):
     try:

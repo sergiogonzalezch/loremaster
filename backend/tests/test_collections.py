@@ -274,3 +274,41 @@ async def test_update_collection_not_found(client):
         json={"name": "Ghost"},
     )
     assert response.status_code == 404
+
+
+@pytest.mark.anyio
+async def test_same_name_different_owners_both_201(client, db_session):
+    """COL-17: Colecciones con mismo nombre pero diferente owner coexisten en la DB."""
+    from app.models.collections import Collection
+
+    payload = {"name": "Mundo de Tolkien", "description": "Tolkien world"}
+    assert (await client.post("/api/v1/collections/", json=payload)).status_code == 201
+
+    other_collection = Collection(
+        name="Mundo de Tolkien", description="Tolkien world", owner_id="other-user-id"
+    )
+    db_session.add(other_collection)
+    db_session.commit()
+
+    response = await client.get("/api/v1/collections/")
+    names = [item["name"] for item in response.json()["data"]]
+    assert names.count("Mundo de Tolkien") == 1
+
+
+@pytest.mark.anyio
+async def test_patch_collection_another_user_403(client, db_session):
+    """COL-18: PATCH colección ajena retorna 403."""
+    from app.models.collections import Collection
+
+    other_collection = Collection(
+        name="Other World", description="other", owner_id="other-user-id"
+    )
+    db_session.add(other_collection)
+    db_session.commit()
+    db_session.refresh(other_collection)
+
+    response = await client.patch(
+        f"/api/v1/collections/{other_collection.id}",
+        json={"name": "Hijacked"},
+    )
+    assert response.status_code == 403

@@ -54,20 +54,21 @@ def get_collection_with_counts_service(
 
 
 def create_collection_service(
-    session: Session, name: str, description: str = ""
+    session: Session, owner_id: str, name: str, description: str = ""
 ) -> Collection:
     name = name.strip()
     description = description.strip()
     existing = session.exec(
         select(Collection).where(
             Collection.name == name,
+            Collection.owner_id == owner_id,
             Collection.is_deleted == False,
         )
     ).first()
     if existing:
         raise DuplicateCollectionNameError(name)
 
-    collection = Collection(name=name, description=description)
+    collection = Collection(name=name, description=description, owner_id=owner_id)
     session.add(collection)
     try:
         session.commit()
@@ -75,12 +76,13 @@ def create_collection_service(
         session.rollback()
         raise DuplicateCollectionNameError(name)
     session.refresh(collection)
-    logger.info("Collection '%s' created with id %s", name, collection.id)
+    logger.info("Collection '%s' created with id %s (owner: %s)", name, collection.id, owner_id)
     return collection
 
 
 def list_collections_service(
     session: Session,
+    owner_id: str,
     page: int = 1,
     page_size: int = 20,
     name: Optional[str] = None,
@@ -88,7 +90,7 @@ def list_collections_service(
     created_before: Optional[datetime] = None,
     order: Literal["asc", "desc"] = "desc",
 ) -> tuple[list[Collection], int]:
-    conditions = [Collection.is_deleted == False]
+    conditions = [Collection.is_deleted == False, Collection.owner_id == owner_id]
     if name:
         conditions.append(Collection.name.ilike(f"%{name}%"))
     if created_after:
@@ -125,6 +127,39 @@ def list_collections_service(
     return enriched, total
 
 
+def list_public_collections_service(
+    session: Session,
+    page: int = 1,
+    page_size: int = 20,
+) -> tuple[list[Collection], int]:
+    conditions = [Collection.is_deleted == False, Collection.is_public == True]
+
+    total = session.exec(
+        select(func.count()).select_from(
+            select(Collection).where(*conditions).subquery()
+        )
+    ).one()
+    skip = (page - 1) * page_size
+    items = session.exec(
+        select(Collection)
+        .where(*conditions)
+        .order_by(Collection.created_at.desc())
+        .offset(skip)
+        .limit(page_size)
+    ).all()
+    collection_ids = [c.id for c in items]
+    doc_counts, entity_counts = _fetch_counts(session, collection_ids)
+    enriched = [
+        {
+            **c.model_dump(),
+            "document_count": doc_counts.get(c.id, 0),
+            "entity_count": entity_counts.get(c.id, 0),
+        }
+        for c in items
+    ]
+    return enriched, total
+
+
 def update_collection_service(
     session: Session, collection: Collection, request: UpdateCollectionRequest
 ) -> Collection:
@@ -133,7 +168,9 @@ def update_collection_service(
         existing = session.exec(
             select(Collection).where(
                 Collection.name == new_name,
+                Collection.owner_id == collection.owner_id,
                 Collection.is_deleted == False,
+                Collection.id != collection.id,
             )
         ).first()
         if existing:
@@ -143,6 +180,8 @@ def update_collection_service(
         collection.name = request.name.strip()
     if request.description is not None:
         collection.description = request.description.strip()
+    if request.is_public is not None:
+        collection.is_public = request.is_public
 
     collection.updated_at = datetime.now(timezone.utc)
     session.add(collection)

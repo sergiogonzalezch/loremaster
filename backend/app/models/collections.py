@@ -2,7 +2,7 @@ from typing import Optional
 from datetime import datetime, timezone
 
 from pydantic import BaseModel, ConfigDict, Field
-from sqlmodel import SQLModel, Field as SQLField
+from sqlmodel import SQLModel, Field as SQLField, Column, String, ForeignKey, UniqueConstraint, Boolean
 import uuid
 
 # ── Tabla DB ──────────────────────────────────────────────────────────────────
@@ -10,12 +10,24 @@ import uuid
 
 class Collection(SQLModel, table=True):
     __tablename__ = "collections"
+    __table_args__ = (
+        UniqueConstraint("name", "owner_id", name="uq_collection_name_owner"),
+    )
 
     id: str = SQLField(
         default_factory=lambda: str(uuid.uuid4()), primary_key=True, max_length=36
     )
-    name: str = SQLField(index=True, unique=True, max_length=255)
+    name: str = SQLField(index=True, max_length=255)
     description: str = SQLField(default="", max_length=2000)
+    owner_id: Optional[str] = SQLField(
+        sa_column=Column(
+            String(36),
+            ForeignKey("users.id"),
+            nullable=True,
+            index=True,
+        )
+    )
+    is_public: bool = SQLField(default=False)
     created_at: datetime = SQLField(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: Optional[datetime] = SQLField(default=None)
     is_deleted: bool = SQLField(default=False)
@@ -33,6 +45,7 @@ class CreateCollectionRequest(BaseModel):
 class UpdateCollectionRequest(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=2000)
+    is_public: bool | None = Field(default=None)
 
 
 class CollectionResponse(BaseModel):
@@ -41,6 +54,8 @@ class CollectionResponse(BaseModel):
     id: str
     name: str
     description: str
+    owner_id: Optional[str] = None
+    is_public: bool = False
     created_at: datetime
     updated_at: Optional[datetime] = None
     document_count: int = 0
