@@ -154,12 +154,11 @@
   },
   "3": {
     "inputs": {
-      "images": ["99", 0],
-      "filename_prefix": "Flux2-Klein"
+      "images": ["99", 0]
     },
-    "class_type": "SaveImage",
+    "class_type": "PreviewImage",
     "_meta": {
-      "title": "SaveImage"
+      "title": "PreviewImage"
     }
   }
 }

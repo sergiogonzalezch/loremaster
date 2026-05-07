@@ -778,10 +778,11 @@ def _run_image_generation(
             checks.append((bool(auto_prompt), "auto_prompt vacio"))
 
         if "backend" in exp:
+            allowed = exp["backend"] if isinstance(exp["backend"], list) else [exp["backend"]]
             checks.append(
                 (
-                    body.get("backend") == exp["backend"],
-                    f"backend {body.get('backend')!r} != {exp['backend']!r}",
+                    body.get("backend") in allowed,
+                    f"backend {body.get('backend')!r} no está en {allowed!r}",
                 )
             )
 
@@ -1069,10 +1070,11 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
                 has_url = bool(flow_images and flow_images[0].get("image_url"))
                 checks.append((has_url, "falta image_url en images[0]"))
             if "image_backend" in exp:
+                allowed = exp["image_backend"] if isinstance(exp["image_backend"], list) else [exp["image_backend"]]
                 checks.append(
                     (
-                        ibody.get("backend") == exp["image_backend"],
-                        f"backend {ibody.get('backend')!r} != {exp['image_backend']!r}",
+                        ibody.get("backend") in allowed,
+                        f"backend {ibody.get('backend')!r} no está en {allowed!r}",
                     )
                 )
         if "content_status" in exp and last_entity_id:

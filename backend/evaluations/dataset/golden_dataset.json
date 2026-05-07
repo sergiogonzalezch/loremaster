@@ -1116,7 +1116,7 @@
         "http_status": 201,
         "has_image_url": true,
         "has_visual_prompt": true,
-        "backend": "comfyui",
+        "backend": ["comfyui", "mock"],
         "visual_prompt_contains": ["high quality", "masterpiece"]
       }
     },
@@ -1285,7 +1285,7 @@
         "content_status": "confirmed",
         "image_http_status": 201,
         "image_has_url": true,
-        "image_backend": "comfyui"
+        "image_backend": ["comfyui", "mock"]
       }
     }
   ],
