@@ -7,6 +7,7 @@ import {
   Alert,
   Spinner,
   Badge,
+  Modal,
 } from "react-bootstrap";
 import {
   buildPrompt,
@@ -29,37 +30,34 @@ interface Props {
   initialContent?: EntityContent | null;
 }
 
+type ImageItem = ImageGenerationItem["images"][0];
+
 function ImageGrid({
-  images,
+  gen,
   onDelete,
+  onSelect,
 }: {
-  images: ImageGenerationItem["images"];
-  onDelete: (imageId: string) => void;
+  gen: ImageGenerationItem;
+  onDelete: (generationId: string, imageId: string) => void;
+  onSelect: (gen: ImageGenerationItem, img: ImageItem) => void;
 }) {
+  const images = gen.images;
   const count = images.length;
 
-  const getImageUrl = (img: ImageGenerationItem["images"][0]) => {
+  const getImageUrl = (img: ImageItem) => {
     if (img.storage_path) {
       return `http://localhost:8000/media/${img.storage_path}`;
     }
-    if (img.image_url) {
-      return img.image_url;
-    }
-    return "";
+    return img.image_url || "";
   };
 
   const getGridClass = () => {
     switch (count) {
-      case 1:
-        return "grid-1";
-      case 2:
-        return "grid-2";
-      case 3:
-        return "grid-3";
-      case 4:
-        return "grid-4";
-      default:
-        return "grid-1";
+      case 1: return "grid-1";
+      case 2: return "grid-2";
+      case 3: return "grid-3";
+      case 4: return "grid-4";
+      default: return "grid-1";
     }
   };
 
@@ -74,7 +72,8 @@ function ImageGrid({
                 src={url}
                 alt=""
                 className="img-fluid rounded"
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                style={{ width: "100%", height: "100%", objectFit: "cover", cursor: "pointer" }}
+                onClick={() => onSelect(gen, img)}
               />
             ) : (
               <div className="image-placeholder">
@@ -83,7 +82,7 @@ function ImageGrid({
             )}
             <button
               className="image-delete-btn"
-              onClick={() => onDelete(img.id)}
+              onClick={() => onDelete(gen.id, img.id)}
               title="Eliminar"
             >
               ×
@@ -123,6 +122,8 @@ export default function ImagePanel({
   const [error, setError] = useState<string | null>(null);
   const [generations, setGenerations] = useState<ImageGenerationItem[]>([]);
   const [loadingGenerations, setLoadingGenerations] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<ImageItem | null>(null);
+  const [selectedGenForModal, setSelectedGenForModal] = useState<ImageGenerationItem | null>(null);
 
   useEffect(() => {
     if (show) {
@@ -166,17 +167,24 @@ export default function ImagePanel({
   }, [show, fetchData]);
 
   const handleDeleteImage = useCallback(
-    async (imageId: string) => {
-      const gen = generations[0];
-      if (!gen) return;
+    async (generationId: string, imageId: string) => {
       try {
-        await deleteImage(collectionId, entityId, gen.id, imageId);
+        await deleteImage(collectionId, entityId, generationId, imageId);
+        setSelectedImage(null);
         await fetchData();
       } catch (e) {
         setError(getErrorMessage(e, "Error al eliminar imagen"));
       }
     },
-    [collectionId, entityId, generations, fetchData],
+    [collectionId, entityId, fetchData],
+  );
+
+  const handleSelectImage = useCallback(
+    (gen: ImageGenerationItem, img: ImageItem) => {
+      setSelectedGenForModal(gen);
+      setSelectedImage(img);
+    },
+    [],
   );
 
   const handleBuildPrompt = useCallback(async () => {
@@ -426,7 +434,7 @@ export default function ImagePanel({
                 </small>
               </div>
             </div>
-            <ImageGrid images={gen.images} onDelete={handleDeleteImage} />
+            <ImageGrid gen={gen} onDelete={handleDeleteImage} onSelect={handleSelectImage} />
           </div>
         ))}
       </div>
@@ -469,6 +477,70 @@ export default function ImagePanel({
 
         {activeTab === "generar" ? renderGenerarTab() : renderHistorialTab()}
       </Offcanvas.Body>
+
+      <Modal
+        show={selectedImage !== null}
+        onHide={() => setSelectedImage(null)}
+        size="xl"
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title className="small text-muted">
+            Seed: {selectedImage?.seed}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="p-2 text-center">
+          {selectedImage && selectedGenForModal && (
+            <img
+              src={
+                selectedImage.storage_path
+                  ? `http://localhost:8000/media/${selectedImage.storage_path}`
+                  : selectedImage.image_url || ""
+              }
+              alt={`Imagen seed ${selectedImage.seed}`}
+              className="img-fluid rounded"
+              style={{ maxHeight: "70vh", objectFit: "contain" }}
+            />
+          )}
+        </Modal.Body>
+        <Modal.Footer className="d-flex justify-content-between">
+          <Button
+            variant="outline-danger"
+            size="sm"
+            onClick={() =>
+              selectedGenForModal &&
+              selectedImage &&
+              handleDeleteImage(selectedGenForModal.id, selectedImage.id)
+            }
+          >
+            Eliminar
+          </Button>
+          <div className="d-flex gap-2">
+            {selectedImage && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  const url = selectedImage.storage_path
+                    ? `http://localhost:8000/media/${selectedImage.storage_path}`
+                    : selectedImage.image_url || "";
+                  const link = document.createElement("a");
+                  link.href = url;
+                  link.download = `${selectedImage.id}.png`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
+              >
+                Descargar
+              </Button>
+            )}
+            <Button variant="secondary" onClick={() => setSelectedImage(null)}>
+              Cerrar
+            </Button>
+          </div>
+        </Modal.Footer>
+      </Modal>
     </Offcanvas>
   );
 }

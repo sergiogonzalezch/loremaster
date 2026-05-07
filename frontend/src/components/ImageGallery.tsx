@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Alert, Button, Card, Badge, Modal } from "react-bootstrap";
 import LoadingSpinner from "./LoadingSpinner";
 import { listImageGenerations, deleteImage } from "../api/images";
-import type { ImageGenerationItem } from "../types";
+import type { ImageGenerationItem, ImageRecordData } from "../types";
 import { formatDate } from "../utils/formatters";
 import { CATEGORY_LABELS } from "../utils/constants";
 
@@ -22,6 +22,7 @@ export default function ImageGallery({
   const [error, setError] = useState<string | null>(null);
   const [selectedGeneration, setSelectedGeneration] =
     useState<ImageGenerationItem | null>(null);
+  const [selectedImage, setSelectedImage] = useState<ImageRecordData | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const fetchGenerations = useCallback(async () => {
@@ -42,6 +43,23 @@ export default function ImageGallery({
     fetchGenerations().catch(() => {});
     return () => controller.abort();
   }, [fetchGenerations, refreshTrigger]);
+
+  const getImageUrl = (img: ImageRecordData): string => {
+    if (img.storage_path) {
+      return `http://localhost:8000/media/${img.storage_path}`;
+    }
+    return img.image_url || "";
+  };
+
+  const handleDownload = useCallback((img: ImageRecordData) => {
+    const url = getImageUrl(img);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${img.id}.${img.extension || "png"}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, []);
 
   const handleDeleteImage = useCallback(
     async (generationId: string, imageId: string) => {
@@ -129,14 +147,14 @@ export default function ImageGallery({
                   <div
                     key={img.id}
                     className="lm-image-thumbnail"
-                    style={{ minWidth: 120 }}
+                    style={{ minWidth: 120, cursor: "pointer" }}
+                    onClick={() => {
+                      setSelectedGeneration(gen);
+                      setSelectedImage(img);
+                    }}
                   >
                     <img
-                      src={
-                        img.storage_path
-                          ? `http://localhost:8000/media/${img.storage_path}`
-                          : img.storage_path || ""
-                      }
+                      src={getImageUrl(img)}
                       alt={`Imagen ${img.seed}`}
                       className="img-fluid rounded"
                       style={{ width: 120, height: 120, objectFit: "cover" }}
@@ -153,7 +171,121 @@ export default function ImageGallery({
       </div>
 
       <Modal
-        show={selectedGeneration !== null}
+        show={selectedImage !== null}
+        onHide={() => setSelectedImage(null)}
+        size="xl"
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Imagen generadata</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedImage && selectedGeneration && (
+            <div className="text-center">
+              <img
+                src={getImageUrl(selectedImage)}
+                alt={`Imagen seed ${selectedImage.seed}`}
+                className="img-fluid rounded"
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "60vh",
+                  objectFit: "contain",
+                }}
+              />
+              <div className="mt-4 text-start">
+                <h5>Metadata</h5>
+                <table className="table table-sm table-borderless">
+                  <tbody>
+                    <tr>
+                      <td className="text-muted" style={{ width: 150 }}>
+                        <strong>Seed:</strong>
+                      </td>
+                      <td>{selectedImage.seed}</td>
+                    </tr>
+                    <tr>
+                      <td className="text-muted">
+                        <strong>Backend:</strong>
+                      </td>
+                      <td>{selectedGeneration.backend}</td>
+                    </tr>
+                    <tr>
+                      <td className="text-muted">
+                        <strong>Resolución:</strong>
+                      </td>
+                      <td>
+                        {selectedGeneration.width} x{" "}
+                        {selectedGeneration.height}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="text-muted">
+                        <strong>Creada:</strong>
+                      </td>
+                      <td>
+                        {formatDate(selectedImage.created_at)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="text-muted">
+                        <strong>Prompt (auto):</strong>
+                      </td>
+                      <td>
+                        <small className="text-muted">
+                          {selectedGeneration.auto_prompt || "-"}
+                        </small>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="text-muted">
+                        <strong>Prompt final:</strong>
+                      </td>
+                      <td>
+                        <small className="text-muted">
+                          {selectedGeneration.final_prompt}
+                        </small>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer className="d-flex justify-content-between">
+          <div>
+            {selectedImage && (
+              <Button
+                variant="outline-danger"
+                size="sm"
+                onClick={() =>
+                  handleDeleteImage(selectedGeneration!.id, selectedImage!.id)
+                }
+                disabled={deleting}
+              >
+                Eliminar
+              </Button>
+            )}
+          </div>
+          <div className="d-flex gap-2">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => selectedImage && handleDownload(selectedImage)}
+            >
+              Descargar imagen
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setSelectedImage(null)}
+            >
+              Cerrar
+            </Button>
+          </div>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal
+        show={selectedGeneration !== null && selectedImage === null}
         onHide={() => setSelectedGeneration(null)}
         size="lg"
         centered
@@ -189,13 +321,14 @@ export default function ImageGallery({
               </div>
               <div className="d-flex flex-wrap gap-3">
                 {selectedGeneration.images.map((img) => (
-                  <div key={img.id} className="text-center">
+                  <div
+                    key={img.id}
+                    className="text-center"
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setSelectedImage(img)}
+                  >
                     <img
-                      src={
-                        img.storage_path
-                          ? `http://localhost:8000/media/${img.storage_path}`
-                          : img.storage_path || ""
-                      }
+                      src={getImageUrl(img)}
                       alt={`Imagen ${img.seed}`}
                       className="img-fluid rounded"
                       style={{
@@ -208,16 +341,6 @@ export default function ImageGallery({
                       <small className="text-muted d-block">
                         Seed: {img.seed}
                       </small>
-                      <Button
-                        variant="outline-danger"
-                        size="sm"
-                        onClick={() =>
-                          handleDeleteImage(selectedGeneration.id, img.id)
-                        }
-                        disabled={deleting}
-                      >
-                        Eliminar
-                      </Button>
                     </div>
                   </div>
                 ))}

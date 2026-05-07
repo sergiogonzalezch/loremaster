@@ -1,7 +1,7 @@
 // frontend/src/types/image.ts
 
 export type ImageStatus = "pending" | "confirmed" | "discarded";
-export type ImageBackend = "mock" | "local" | "runpod";
+export type ImageBackend = "mock" | "comfyui" | "local" | "runpod";
 
 export interface ImageRecord {
   id: string;
@@ -20,6 +20,8 @@ export interface ImageRecord {
   is_deleted: boolean;
   deleted_at: string | null;
 }
+
+export type ImageRecordData = ImageRecord;
 
 export interface ImageGenerationItem {
   id: string;
