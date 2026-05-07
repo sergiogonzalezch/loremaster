@@ -3,6 +3,7 @@
 import pytest
 from sqlalchemy.orm import Session
 from sqlmodel import select
+from unittest.mock import MagicMock, patch
 
 from app.core.exceptions import NoContextAvailableError
 from app.models.entities import Entity, EntityType
@@ -100,6 +101,7 @@ def test_ig_04_build_prompt_fails_for_unsupported_category(
 
 
 def test_ig_05_generate_batch_returns_images(
+    mock_image_backend,
     db_session: Session,
     sample_entity: Entity,
     sample_entity_content_confirmed: EntityContent,
@@ -123,6 +125,7 @@ def test_ig_05_generate_batch_returns_images(
 
 
 def test_ig_06_generate_batch_size_limits(
+    mock_image_backend,
     db_session: Session,
     sample_entity: Entity,
     sample_entity_content_confirmed: EntityContent,
@@ -150,6 +153,7 @@ def test_ig_06_generate_batch_size_limits(
 
 
 def test_ig_07_generate_persists_generation_record(
+    mock_image_backend,
     db_session: Session,
     sample_entity: Entity,
     sample_entity_content_confirmed: EntityContent,
@@ -178,6 +182,7 @@ def test_ig_07_generate_persists_generation_record(
 
 
 def test_ig_08_delete_image_works_in_mock(
+    mock_image_backend,
     db_session: Session,
     sample_entity: Entity,
     sample_entity_content_confirmed: EntityContent,
@@ -206,6 +211,7 @@ def test_ig_08_delete_image_works_in_mock(
 
 
 def test_ig_09_delete_image_fails_for_wrong_entity(
+    mock_image_backend,
     db_session: Session,
     sample_entity: Entity,
     sample_entity_content_confirmed: EntityContent,
@@ -239,6 +245,7 @@ def test_ig_09_delete_image_fails_for_wrong_entity(
 
 
 def test_ig_10_get_generation_returns_generation_record(
+    mock_image_backend,
     db_session: Session,
     sample_entity: Entity,
     sample_entity_content_confirmed: EntityContent,
@@ -272,6 +279,7 @@ def test_ig_11_get_generation_fails_for_nonexistent(
 
 
 def test_ig_12_get_generation_validates_entity_ownership(
+    mock_image_backend,
     db_session: Session,
     sample_entity: Entity,
     sample_entity_content_confirmed: EntityContent,
@@ -297,3 +305,58 @@ def test_ig_12_get_generation_validates_entity_ownership(
 
     with pytest.raises(NoContextAvailableError):
         get_generation_service(db_session, other_entity, result.generation_id)
+
+
+def test_ig_13_generate_batch_comfyui(
+    db_session: Session,
+    sample_entity: Entity,
+    sample_entity_content_confirmed: EntityContent,
+):
+    """IG-13: generate_images con backend comfyui guarda registros en DB."""
+
+    fake_image_bytes = b"fake-png-bytes"
+
+    mock_client = MagicMock()
+    mock_client.queue_prompt.return_value = "prompt-uuid-123"
+    mock_client.get_history_until_complete.return_value = {
+        "status": "completed",
+        "outputs": {
+            "3": {
+                "images": [
+                    {"filename": "img_001.png", "subfolder": "", "type": "output"}
+                ]
+            }
+        },
+    }
+    mock_client.get_output_images.return_value = [
+        {"filename": "img_001.png", "subfolder": "", "type": "output", "node_id": "3"}
+    ]
+    mock_client.download_image.return_value = fake_image_bytes
+
+    with (
+        patch("app.services.image_generation_service.settings") as mock_settings,
+        patch("app.engine.comfyui_client.ComfyUIClient", return_value=mock_client),
+        patch("app.engine.comfyui_client.load_template", return_value={"12": {"inputs": {"value": ""}}}),
+        patch("app.engine.comfyui_client.inject_prompt", side_effect=lambda w, p: w),
+        patch("app.services.image_generation_service._save_comfyui_image", return_value="col/ent/gen/img.png"),
+    ):
+        mock_settings.image_backend = "comfyui"
+        mock_settings.comfyui_url = "http://localhost:8188"
+        mock_settings.image_width = 1024
+        mock_settings.image_height = 1024
+        mock_settings.image_seed_base = 42
+        mock_settings.storage_base_url = "http://localhost:8000/media"
+
+        result = generate_images_service(
+            db_session,
+            sample_entity,
+            sample_entity_content_confirmed.id,
+            auto_prompt="a warrior in blue armor",
+            final_prompt="a warrior in blue armor, high quality",
+            batch_size=1,
+        )
+
+    assert result.generation_id
+    assert result.backend == "comfyui"
+    assert len(result.images) == 1
+    assert result.images[0].image_url is not None

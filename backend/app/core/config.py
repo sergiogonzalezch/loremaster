@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     image_height: int = 1024
     image_seed_base: int = 42
 
+    # ComfyUI
+    comfyui_url: str = "http://localhost:8188"
+
     # Storage
     media_root: str = "./media"
     storage_backend: str = "local"  # local | s3 | r2

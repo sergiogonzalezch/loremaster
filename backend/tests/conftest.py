@@ -201,6 +201,13 @@ def mock_text_extractor(monkeypatch: pytest.MonkeyPatch):
 
 
 @pytest.fixture
+def mock_image_backend(monkeypatch: pytest.MonkeyPatch):
+    """FX-09: Forces image_backend='mock' regardless of .env for tests that verify mock behavior."""
+    import app.services.image_generation_service as svc
+    monkeypatch.setattr(svc.settings, "image_backend", "mock")
+
+
+@pytest.fixture
 def sample_collection(db_session: Session) -> Collection:
     """FX-05: Persisted sample collection."""
     collection = Collection(name="Test World", description="A test world")

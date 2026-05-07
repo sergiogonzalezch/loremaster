@@ -1,9 +1,13 @@
 # app/services/image_generation_service.py
 
+import logging
 import uuid as _uuid
 import os
 
+logger = logging.getLogger(__name__)
+
 from datetime import datetime, timezone
+from pathlib import Path
 from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Session, select
 
@@ -73,6 +77,147 @@ def _generate_mock_images(
     return images
 
 
+def _save_comfyui_image(
+    image_data: bytes,
+    entity: Entity,
+    generation_id: str,
+    filename: str,
+) -> str:
+    """
+    Guarda una imagen descargada de ComfyUI en el storage local.
+
+    Returns:
+        storage_path relativo (sin media_root) para guardar en DB
+    """
+    relative_path = f"{entity.collection_id}/{entity.id}/{generation_id}/{filename}"
+    abs_dir = Path(settings.media_root) / entity.collection_id / entity.id / generation_id
+    abs_dir.mkdir(parents=True, exist_ok=True)
+
+    with open(abs_dir / filename, "wb") as f:
+        f.write(image_data)
+
+    return relative_path
+
+
+def _generate_comfyui_images(
+    session: Session,
+    entity: Entity,
+    content_id: str,
+    auto_prompt: str,
+    final_prompt: str,
+    batch_size: int,
+    category: str,
+) -> tuple[str, list[ImageResult]]:
+    """
+    Genera imágenes usando ComfyUI.
+
+    Returns:
+        (generation_id, list[ImageResult])
+
+    Raises:
+        RuntimeError: Si la generación falla o no produce imágenes
+    """
+    from app.engine.comfyui_client import (
+        ComfyUIClient,
+        inject_prompt,
+        inject_seed,
+        load_template,
+    )
+
+    generation_id = str(_uuid.uuid4())
+
+    # Crear ImageGeneration ANTES del loop de ImageRecord para satisfacer FK
+    generation = ImageGeneration(
+        id=generation_id,
+        entity_id=entity.id,
+        collection_id=entity.collection_id,
+        content_id=content_id,
+        category=category,
+        auto_prompt=auto_prompt,
+        final_prompt=final_prompt,
+        prompt_token_count=len(final_prompt) // 4,
+        batch_size=batch_size,
+        backend="comfyui",
+        width=settings.image_width,
+        height=settings.image_height,
+    )
+    session.add(generation)
+
+    client = ComfyUIClient(base_url=settings.comfyui_url)
+
+    # El template debe estar en formato API (ver Sección 0 del doc de integración)
+    workflow_base = load_template("flux2-klein-4b-api.json")
+    workflow_base = inject_prompt(workflow_base, final_prompt)
+
+    images_result: list[ImageResult] = []
+
+    # ComfyUI genera 1 imagen por ejecución → llamar batch_size veces con seed distinto
+    for i in range(batch_size):
+        seed = settings.image_seed_base + i
+        workflow = inject_seed(workflow_base, seed)
+
+        try:
+            prompt_id = client.queue_prompt(workflow)
+            result = client.get_history_until_complete(prompt_id)
+            output_images = client.get_output_images(result)
+        except Exception as exc:
+            logger.warning("ComfyUI falló en iteración %d/%d: %s", i + 1, batch_size, exc)
+            continue
+
+        for img_info in output_images[:1]:
+            try:
+                image_data = client.download_image(
+                    filename=img_info["filename"],
+                    subfolder=img_info["subfolder"],
+                    folder_type=img_info["type"],
+                )
+            except Exception as exc:
+                logger.warning("Descarga falló en iteración %d: %s", i + 1, exc)
+                continue
+
+            image_id = str(_uuid.uuid4())
+            filename = f"{image_id}.png"
+
+            storage_path = _save_comfyui_image(
+                image_data=image_data,
+                entity=entity,
+                generation_id=generation_id,
+                filename=filename,
+            )
+
+            record = ImageRecord(
+                id=image_id,
+                generation_id=generation_id,
+                entity_id=entity.id,
+                collection_id=entity.collection_id,
+                seed=seed,
+                storage_path=storage_path,
+                image_url=_build_url(storage_path),
+                filename=filename,
+                extension="png",
+                width=settings.image_width,
+                height=settings.image_height,
+                generation_ms=0,
+            )
+            session.add(record)
+
+            images_result.append(
+                ImageResult(
+                    id=image_id,
+                    image_url=_build_url(storage_path),
+                    seed=seed,
+                    width=settings.image_width,
+                    height=settings.image_height,
+                    generation_ms=0,
+                )
+            )
+
+    if not images_result:
+        raise RuntimeError("No se generaron imágenes desde ComfyUI")
+
+    return generation_id, images_result
+
+
 def build_prompt_service(
     session: Session,
     entity: Entity,
@@ -124,15 +269,9 @@ def generate_images_service(
     """
     Genera un batch de imágenes.
 
-    Flujo:
-    1. Validar content_id confirmado
-    2. Validar prompts con content_guard
-    3. Si backend == "mock": generar placeholders (sin persistencia)
-    4. Si backend != "mock": generar imágenes reales + persistir
-    5. Retornar respuesta
-
     Raises:
         NoContextAvailableError: Si el contenido no existe o no está confirmado
+        ValueError: Si image_backend no es "mock" ni "comfyui"
     """
     content = _get_confirmed_content(session, entity, content_id)
     if not content:
@@ -141,28 +280,28 @@ def generate_images_service(
     check_user_input(auto_prompt)
     check_user_input(final_prompt)
 
-    generation_id = str(_uuid.uuid4())
-    generation = ImageGeneration(
-        id=generation_id,
-        entity_id=entity.id,
-        collection_id=entity.collection_id,
-        content_id=content_id,
-        category=content.category.value,
-        auto_prompt=auto_prompt,
-        final_prompt=final_prompt,
-        prompt_token_count=len(auto_prompt) // 4,
-        batch_size=batch_size,
-        backend=settings.image_backend,
-        width=settings.image_width,
-        height=settings.image_height,
-    )
-
-    session.add(generation)
-
     images_result: list[ImageResult] = []
 
     if settings.image_backend == "mock":
         mock_images = _generate_mock_images(entity, batch_size)
+        generation_id = str(_uuid.uuid4())
+
+        generation = ImageGeneration(
+            id=generation_id,
+            entity_id=entity.id,
+            collection_id=entity.collection_id,
+            content_id=content_id,
+            category=content.category.value,
+            auto_prompt=auto_prompt,
+            final_prompt=final_prompt,
+            prompt_token_count=len(auto_prompt) // 4,
+            batch_size=batch_size,
+            backend="mock",
+            width=settings.image_width,
+            height=settings.image_height,
+        )
+        session.add(generation)
+
         for i, (image_id, image_url) in enumerate(mock_images):
             record = ImageRecord(
                 id=image_id,
@@ -190,39 +329,23 @@ def generate_images_service(
                     generation_ms=0,
                 )
             )
+
+    elif settings.image_backend == "comfyui":
+        generation_id, images_result = _generate_comfyui_images(
+            session=session,
+            entity=entity,
+            content_id=content_id,
+            auto_prompt=auto_prompt,
+            final_prompt=final_prompt,
+            batch_size=batch_size,
+            category=content.category.value,
+        )
+
     else:
-        for i in range(batch_size):
-            image_id = str(_uuid.uuid4())
-            seed = settings.image_seed_base + i
-            storage_path = (
-                f"{entity.collection_id}/{entity.id}/{generation_id}/{image_id}.png"
-            )
-
-            record = ImageRecord(
-                id=image_id,
-                generation_id=generation_id,
-                entity_id=entity.id,
-                collection_id=entity.collection_id,
-                seed=seed,
-                storage_path=storage_path,
-                filename=f"{image_id}.png",
-                extension="png",
-                width=settings.image_width,
-                height=settings.image_height,
-                generation_ms=0,
-            )
-            session.add(record)
-
-            images_result.append(
-                ImageResult(
-                    id=image_id,
-                    image_url=_build_url(storage_path),
-                    seed=seed,
-                    width=settings.image_width,
-                    height=settings.image_height,
-                    generation_ms=0,
-                )
-            )
+        raise ValueError(
+            f"Backend '{settings.image_backend}' no soportado. "
+            "Usar: 'mock' o 'comfyui'"
+        )
 
     try:
         session.commit()
@@ -238,7 +361,6 @@ def generate_images_service(
         backend=settings.image_backend,
         images=images_result,
     )
-
 
 def delete_image_service(
     session: Session,
@@ -267,7 +389,8 @@ def delete_image_service(
     record.is_deleted = True
     record.deleted_at = datetime.now(timezone.utc)
 
-    if settings.image_backend != "mock":
+    # Bugfix: storage_path puede ser None en imágenes mock aunque el backend cambie
+    if settings.image_backend != "mock" and record.storage_path:
         full_path = os.path.join(settings.media_root, record.storage_path)
         if full_path and os.path.exists(full_path):
             try:

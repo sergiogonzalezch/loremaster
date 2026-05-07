@@ -114,6 +114,11 @@ db.sqlite3-journal
 qdrant_data/
 
 # ========================
+# Media / generated images
+# ========================
+media/
+
+# ========================
 # Temp files
 # ========================
 temp_uploads/

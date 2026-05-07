@@ -1,8 +1,10 @@
 import logging
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
 from app.core.lifespan import lifespan
@@ -61,6 +63,10 @@ def read_root():
 def health_check():
     return {"status": "healthy"}
 
+
+_media_dir = Path(settings.media_root)
+_media_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/media", StaticFiles(directory=str(_media_dir)), name="media")
 
 app.include_router(collections.router, prefix="/api/v1")
 app.include_router(documents.router, prefix="/api/v1")
