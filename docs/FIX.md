@@ -256,8 +256,34 @@ Aspectos que deben resolverse antes de cualquier despliegue fuera de entorno loc
 | P7 | Sin operaciones bulk — no se puede eliminar múltiples colecciones o entidades a la vez | Bajo |
 | P8 | Modelo LLM y embeddings no cambiables en runtime desde la UI | Bajo |
 | P9 | ~~Sin auditoría de contenido moderado — rechazos de guardrail no persisten (ver ítem 19)~~ | ✅ Resuelto |
+| P10 | `/media/**` sirve imágenes sin autenticación — cualquier URL es accesible sin token | Medio |
 
 **Notas sobre gaps cerrados:**
+
+### P10 — `/media/**` sin autenticación
+
+**Capa:** Backend  
+**Archivo:** `backend/app/main.py` líneas 67-69  
+**Impacto:** Medio — cualquier URL de imagen es accesible sin token JWT desde un navegador o cliente externo.
+
+`StaticFiles` se monta como sub-aplicación de ASGI. Al ser un sub-app independiente, **no hereda el `CORSMiddleware` ni ninguna otra dependencia** del `app` padre. Esto significa que el middleware de autenticación nunca se ejecuta sobre `/media/**`.
+
+La protección actual es únicamente por oscuridad: la ruta incluye cuatro UUIDs anidados (`{collection_id}/{entity_id}/{generation_id}/{image_id}.png`), lo que hace estadísticamente imposible adivinar una URL. No obstante, quien posea un enlace (p. ej. via historial del navegador, logs de red, o un usuario que comparte una URL) puede acceder a la imagen sin autenticar.
+
+**Solución sugerida:** Reemplazar el mount estático por un endpoint autenticado:
+
+```python
+@router.get("/images/{image_id}/file")
+def serve_image(image_id: str, _: dict = Depends(get_current_user), session: Session = Depends(get_session)):
+    record = session.get(ImageRecord, image_id)
+    if not record or record.is_deleted:
+        raise HTTPException(404)
+    return FileResponse(Path(settings.media_root) / record.storage_path)
+```
+
+No urgente mientras el proyecto sea de uso interno local. Abordar antes de cualquier despliegue donde las imágenes puedan ser datos sensibles.
+
+---
 
 - **P1:** Auth JWT implementado (ver ítem 1). Todos los endpoints protegidos excepto `/health` y `/`.
 - **P3:** `main.py` lee `settings.allowed_origins` dinámicamente desde `config.py`. Configurable vía variable de entorno `ALLOWED_ORIGINS` en `.env` — no requiere cambio de código para producción, solo configurar los dominios del deploy.
@@ -404,4 +430,5 @@ Actualizado el 2026-04-30 (ítem 7 resuelto — retry endpoint + processing_erro
 Actualizado el 2026-04-30 (ítem 19 resuelto — tabla moderation_log + log_moderation_event en los tres routes de moderación). 
 Actualizado el 2026-05-01 (cobertura de tests backend en deletion_service, content_management_service e image_generation/tests de cascade). 
 Actualizado el 2026-05-06 (ítem 1 resuelto — auth JWT implementado; gaps P1 y P9 cerrados; ítems 26-30 añadidos — análisis bug-search completo). 
-Actualizado el 2026-05-06 (ítems 26-28 resueltos — info leak, max_length, JWKS lock). Actualizado el 2026-05-06 (gap P3 cerrado — CORS configurable vía ALLOWED_ORIGINS env var; revisión completa del estado de gaps P2–P8). Ver historial de correcciones aplicadas en los commits del branch `main`.*
+Actualizado el 2026-05-06 (ítems 26-28 resueltos — info leak, max_length, JWKS lock). 
+Actualizado el 2026-05-06 (gap P3 cerrado — CORS configurable vía ALLOWED_ORIGINS env var; revisión completa del estado de gaps P2–P8). Actualizado el 2026-05-06 (gap P10 añadido — `/media/**` sin autenticación). Ver historial de correcciones aplicadas en los commits del branch `main`.*
