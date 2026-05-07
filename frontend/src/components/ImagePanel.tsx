@@ -41,6 +41,7 @@ function ImageGrid({
   onDelete: (generationId: string, imageId: string) => void;
   onSelect: (gen: ImageGenerationItem, img: ImageItem) => void;
 }) {
+  if (!gen) return null;
   const images = gen.images;
   const count = images.length;
 
@@ -152,7 +153,7 @@ export default function ImagePanel({
         setConfirmedContent(contents[0]);
       }
       setGenerations(generationsRes.generations);
-    } catch (e) {
+    } catch {
       setError("Error al cargar datos");
     } finally {
       setLoading(false);
@@ -186,6 +187,23 @@ export default function ImagePanel({
     },
     [],
   );
+
+  const handleDownload = useCallback(async (img: ImageItem) => {
+    const fetchUrl = img.storage_path
+      ? `/media/${img.storage_path}`
+      : img.image_url || "";
+    if (!fetchUrl) return;
+    const response = await fetch(fetchUrl);
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = `${img.id}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(blobUrl);
+  }, []);
 
   const handleBuildPrompt = useCallback(async () => {
     if (!confirmedContent) return;
@@ -480,7 +498,7 @@ export default function ImagePanel({
 
       <Modal
         show={selectedImage !== null}
-        onHide={() => setSelectedImage(null)}
+        onHide={() => { setSelectedImage(null); setSelectedGenForModal(null); }}
         size="xl"
         centered
       >
@@ -520,22 +538,12 @@ export default function ImagePanel({
               <Button
                 variant="primary"
                 size="sm"
-                onClick={() => {
-                  const url = selectedImage.storage_path
-                    ? `http://localhost:8000/media/${selectedImage.storage_path}`
-                    : selectedImage.image_url || "";
-                  const link = document.createElement("a");
-                  link.href = url;
-                  link.download = `${selectedImage.id}.png`;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                }}
+                onClick={() => handleDownload(selectedImage)}
               >
                 Descargar
               </Button>
             )}
-            <Button variant="secondary" onClick={() => setSelectedImage(null)}>
+            <Button variant="secondary" onClick={() => { setSelectedImage(null); setSelectedGenForModal(null); }}>
               Cerrar
             </Button>
           </div>

@@ -31,7 +31,7 @@ export default function ImageGallery({
     try {
       const data = await listImageGenerations(collectionId, entityId);
       setGenerations(data.generations);
-    } catch (e) {
+    } catch {
       setError("Error al cargar las imágenes generadas");
     } finally {
       setLoading(false);
@@ -51,14 +51,21 @@ export default function ImageGallery({
     return img.image_url || "";
   };
 
-  const handleDownload = useCallback((img: ImageRecordData) => {
-    const url = getImageUrl(img);
+  const handleDownload = useCallback(async (img: ImageRecordData) => {
+    const fetchUrl = img.storage_path
+      ? `/media/${img.storage_path}`
+      : img.image_url || "";
+    if (!fetchUrl) return;
+    const response = await fetch(fetchUrl);
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.href = url;
+    link.href = blobUrl;
     link.download = `${img.id}.${img.extension || "png"}`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(blobUrl);
   }, []);
 
   const handleDeleteImage = useCallback(
@@ -76,7 +83,7 @@ export default function ImageGallery({
             setSelectedGeneration(null);
           }
         }
-      } catch (e) {
+      } catch {
         setError("Error al eliminar la imagen");
       } finally {
         setDeleting(false);
