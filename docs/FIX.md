@@ -38,6 +38,12 @@ Lista de tech debt identificado y aún no corregido. Ordenado por impacto estima
 | 28 | Cache JWKS sin lock en `auth_clerk.py` | Backend | ✅ Resuelto | — |
 | 29 | Log "Auto-discarded" emitido antes de commit | Backend | 🟢 Cubierto | Impacto muy bajo; confunde en caso de rollback |
 | 30 | `delete_image_service` no valida `collection_id` directamente | Backend | 🟢 Cubierto | Protegido indirectamente vía `get_entity_or_404` |
+| 31 | Paginación hardcodeada en `GET /admin/users` | Backend | ✅ Resuelto | — |
+| 32 | `get_admin_user` no verifica `is_deleted` | Backend | ✅ Resuelto | — |
+| 33 | `User.email` sin `unique=True` en modelo SQLModel | Backend | ✅ Resuelto | — |
+| 34 | FK constraint faltante en migración `add_owner_id_to_collections` | Backend | 🟢 Cubierto | Sin FK en SQL; integridad referencial solo a nivel de aplicación |
+| 35 | Constraint `(name, owner_id)` no protege colecciones con `owner_id=NULL` | Backend | 🟢 Cubierto | SQL `NULL != NULL` en UNIQUE; solo afecta datos migrados sin backfill |
+| 36 | `get_collection_or_404_public_or_owned` bypassa Clerk tokens | Backend | 🟢 Cubierto | Llama `verify_token` directo; Clerk solo activo en producción con config explícita |
 
 **Leyenda:** 🔴 Pendiente urgente · 🟡 Pendiente no urgente · 🟢 Cubierto (mitigado, sin acción inmediata) · ✅ Cerrado
 
@@ -431,4 +437,131 @@ Actualizado el 2026-04-30 (ítem 19 resuelto — tabla moderation_log + log_mode
 Actualizado el 2026-05-01 (cobertura de tests backend en deletion_service, content_management_service e image_generation/tests de cascade). 
 Actualizado el 2026-05-06 (ítem 1 resuelto — auth JWT implementado; gaps P1 y P9 cerrados; ítems 26-30 añadidos — análisis bug-search completo). 
 Actualizado el 2026-05-06 (ítems 26-28 resueltos — info leak, max_length, JWKS lock). 
-Actualizado el 2026-05-06 (gap P3 cerrado — CORS configurable vía ALLOWED_ORIGINS env var; revisión completa del estado de gaps P2–P8). Actualizado el 2026-05-06 (gap P10 añadido — `/media/**` sin autenticación). Ver historial de correcciones aplicadas en los commits del branch `main`.*
+Actualizado el 2026-05-06 (gap P3 cerrado — CORS configurable vía ALLOWED_ORIGINS env var; revisión completa del estado de gaps P2–P8). Actualizado el 2026-05-06 (gap P10 añadido — `/media/**` sin autenticación). Ver historial de correcciones aplicadas en los commits del branch `main`.
+Actualizado el 2026-05-07 (ítems 31-36 añadidos — revisión del commit `b704c24` Users refactor first stage).*
+
+---
+
+## ~~31. Paginación hardcodeada en `GET /admin/users`~~ ✅ Resuelto
+
+**Capa:** Backend  
+**Archivo:** `backend/app/api/routes/admin.py:21`  
+**Impacto:** Alto funcional — los query params `?page=X&page_size=Y` son ignorados silenciosamente.  
+**Clasificación:** Error no resuelto.
+
+El parámetro de paginación se declara con una lambda que no acepta argumentos:
+
+```python
+pagination: Annotated[dict, Depends(lambda: {"page": 1, "page_size": 20})],
+```
+
+Siempre devuelve los valores por defecto. La paginación del endpoint admin es funcionalidad rota desde el commit inicial.
+
+**Solución sugerida:** Usar `PaginationParams` como el resto de routes:
+
+```python
+pagination: Annotated[PaginationParams, Depends()],
+```
+
+---
+
+## ~~32. `get_admin_user` no verifica `is_deleted`~~ ✅ Resuelto
+
+**Capa:** Backend  
+**Archivo:** `backend/app/core/auth_deps.py:30`  
+**Impacto:** Bajo-Medio — un admin soft-deleted con token JWT aún válido puede ejecutar operaciones de administración.  
+**Clasificación:** Error no resuelto.
+
+```python
+if not user or not user.is_admin:   # falta: or user.is_deleted
+    raise HTTPException(status_code=403, detail="Acceso denegado.")
+```
+
+**Solución sugerida:**
+
+```python
+if not user or user.is_deleted or not user.is_admin:
+    raise HTTPException(status_code=403, detail="Acceso denegado.")
+```
+
+---
+
+## ~~33. `User.email` sin `unique=True` en el modelo SQLModel~~ ✅ Resuelto
+
+**Capa:** Backend  
+**Archivos:** `backend/app/models/users.py:12`, `backend/alembic/versions/add_user_profile_fields.py:27`  
+**Impacto:** Bajo en runtime, Medio en mantenimiento — riesgo de drift entre modelo y schema de DB.  
+**Clasificación:** Error no resuelto.
+
+La migración crea el índice como único (`unique=True`), pero el campo del modelo no:
+
+```python
+# models/users.py
+email: Optional[str] = SQLField(default=None, max_length=255)  # falta unique=True
+
+# migración — crea índice único
+batch_op.create_index("ix_users_email", ["email"], unique=True)
+```
+
+`alembic revision --autogenerate` detectará el índice único como ausente en el modelo y generará una migration que lo elimina.
+
+**Solución sugerida:**
+
+```python
+email: Optional[str] = SQLField(default=None, max_length=255, unique=True)
+```
+
+---
+
+## 34. FK constraint faltante en migración `add_owner_id_to_collections`
+
+**Capa:** Backend  
+**Archivo:** `backend/alembic/versions/add_owner_id_to_collections.py:22`  
+**Impacto:** Bajo en SQLite (FK no enforzados por defecto), Medio en PostgreSQL (sin integridad referencial a nivel DB).  
+**Clasificación:** Parcialmente mitigado.
+
+La migración añade la columna sin FK:
+
+```python
+batch_op.add_column(sa.Column("owner_id", sa.String(36), nullable=True))
+# falta: sa.ForeignKey("users.id")
+```
+
+El modelo SQLAlchemy sí declara `ForeignKey("users.id")`, pero ese metadato no se propaga a una migration que usa `add_column` explícito.
+
+**Mitigación:** La lógica de ownership en `get_collection_or_404_owned` y `create_collection_service` enforza la relación a nivel de aplicación. En entorno SQLite de desarrollo, los FK no se enforzan por defecto.
+
+---
+
+## 35. Constraint `(name, owner_id)` no protege colecciones con `owner_id=NULL`
+
+**Capa:** Backend  
+**Archivo:** `backend/alembic/versions/add_owner_id_to_collections.py:26`  
+**Impacto:** Bajo — solo afecta datos pre-refactor sin backfill de `owner_id`.  
+**Clasificación:** Parcialmente mitigado.
+
+En SQL, `NULL != NULL` en constraints UNIQUE. Dos filas con el mismo `name` y `owner_id=NULL` no violan el constraint. Las colecciones antiguas sin owner asignado quedan sin protección de nombre.
+
+**Mitigación:** Todas las colecciones creadas tras el refactor reciben `owner_id` del usuario autenticado. El camino `NULL` es inalcanzable desde las rutas actuales. El riesgo se limita a instancias pre-refactor hasta que se ejecute un backfill (documentado en `USERS-PROFILE.md`, pendiente).
+
+---
+
+## 36. `get_collection_or_404_public_or_owned` bypassa Clerk tokens en producción
+
+**Capa:** Backend  
+**Archivo:** `backend/app/core/deps.py:47`  
+**Impacto:** Medio — usuarios autenticados con Clerk en producción reciben 403 al acceder a sus propias colecciones privadas.  
+**Clasificación:** Parcialmente mitigado.
+
+La dependencia llama `verify_token()` directamente (JWT local HS256) en vez de reutilizar `get_current_user`, que en producción enruta a `decode_clerk_token` (RS256 vía JWKS):
+
+```python
+if credentials:
+    payload = verify_token(credentials.credentials)  # solo JWT local — falla con Clerk
+    if collection.owner_id == payload.get("sub"):
+        return collection
+```
+
+**Mitigación:** Clerk solo se activa con `settings.environment == "production"`. En desarrollo, el entorno actual, la dependencia funciona correctamente.
+
+**Solución sugerida:** Añadir `get_optional_current_user` a `auth_deps.py` que retorne `None` en lugar de lanzar 401 cuando no hay credenciales, y usarlo en esta dependencia en vez de llamar `verify_token` directamente.

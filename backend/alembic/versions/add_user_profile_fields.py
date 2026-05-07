@@ -5,6 +5,7 @@ Revises: add_owner_id_to_collections
 Create Date: 2026-05-07 00:00:00.000000
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op

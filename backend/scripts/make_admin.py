@@ -3,6 +3,7 @@
 
 Usage: python scripts/make_admin.py <username>
 """
+
 import sys
 import os
 

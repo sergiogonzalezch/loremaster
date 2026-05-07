@@ -76,7 +76,9 @@ def create_collection_service(
         session.rollback()
         raise DuplicateCollectionNameError(name)
     session.refresh(collection)
-    logger.info("Collection '%s' created with id %s (owner: %s)", name, collection.id, owner_id)
+    logger.info(
+        "Collection '%s' created with id %s (owner: %s)", name, collection.id, owner_id
+    )
     return collection
 
 

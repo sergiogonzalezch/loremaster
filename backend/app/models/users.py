@@ -13,7 +13,7 @@ class User(SQLModel, table=True):
     )
     username: str = SQLField(index=True, unique=True, max_length=255)
     hashed_password: str = SQLField(max_length=255)
-    email: Optional[str] = SQLField(default=None, max_length=255)
+    email: Optional[str] = SQLField(default=None, max_length=255, unique=True)
     display_name: Optional[str] = SQLField(default=None, max_length=100)
     bio: Optional[str] = SQLField(default=None, max_length=500)
     avatar_url: Optional[str] = SQLField(default=None, max_length=500)

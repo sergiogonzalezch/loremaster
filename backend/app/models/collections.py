@@ -2,7 +2,15 @@ from typing import Optional
 from datetime import datetime, timezone
 
 from pydantic import BaseModel, ConfigDict, Field
-from sqlmodel import SQLModel, Field as SQLField, Column, String, ForeignKey, UniqueConstraint, Boolean
+from sqlmodel import (
+    SQLModel,
+    Field as SQLField,
+    Column,
+    String,
+    ForeignKey,
+    UniqueConstraint,
+    Boolean,
+)
 import uuid
 
 # ── Tabla DB ──────────────────────────────────────────────────────────────────

@@ -8,7 +8,7 @@ export async function getMyProfile(): Promise<UserProfile> {
 }
 
 export async function updateMyProfile(
-  data: UpdateProfileRequest
+  data: UpdateProfileRequest,
 ): Promise<UserProfile> {
   const res = await apiClient("/users/me", {
     method: "PATCH",

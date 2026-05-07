@@ -221,7 +221,9 @@ def mock_image_backend(monkeypatch: pytest.MonkeyPatch):
 @pytest.fixture
 def sample_collection(db_session: Session) -> Collection:
     """FX-05: Persisted sample collection."""
-    collection = Collection(name="Test World", description="A test world", owner_id="test-user-id")
+    collection = Collection(
+        name="Test World", description="A test world", owner_id="test-user-id"
+    )
     db_session.add(collection)
     db_session.commit()
     db_session.refresh(collection)

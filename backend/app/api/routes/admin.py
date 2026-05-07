@@ -1,10 +1,11 @@
+from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Response
-from pydantic import BaseModel
 from sqlmodel import Session, select, func
 
 from app.core.auth_deps import get_admin_user
+from app.core.query_params import PaginationParams
 from app.database import get_session
 from app.models.users import User, UserAdminResponse
 from app.models.collections import Collection
@@ -13,23 +14,20 @@ from app.models.shared import PaginatedResponse
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
-class UserAdminListResponse(PaginatedResponse):
-    pass
-
-
 @router.get("/users")
 def list_all_users(
-    pagination: Annotated[dict, Depends(lambda: {"page": 1, "page_size": 20})],
+    pagination: Annotated[PaginationParams, Depends()],
     _: dict = Depends(get_admin_user),
     session: Session = Depends(get_session),
 ):
-    page = pagination.get("page", 1)
-    page_size = pagination.get("page_size", 20)
-    skip = (page - 1) * page_size
+    skip = (pagination.page - 1) * pagination.page_size
 
     total = session.exec(select(func.count()).select_from(User)).one()
     users = session.exec(
-        select(User).order_by(User.created_at.desc()).offset(skip).limit(page_size)
+        select(User)
+        .order_by(User.created_at.desc())
+        .offset(skip)
+        .limit(pagination.page_size)
     ).all()
 
     data = [
@@ -46,7 +44,14 @@ def list_all_users(
         ).model_dump()
         for u in users
     ]
-    return {"data": data, "meta": {"page": page, "page_size": page_size, "total": total}}
+    return {
+        "data": data,
+        "meta": {
+            "page": pagination.page,
+            "page_size": pagination.page_size,
+            "total": total,
+        },
+    }
 
 
 @router.delete("/collections/{collection_id}", status_code=204)
@@ -59,8 +64,6 @@ def admin_delete_collection(
     if not collection:
         return Response(status_code=204)
     collection.is_deleted = True
-    from datetime import datetime, timezone
-
     collection.deleted_at = datetime.now(timezone.utc)
     session.add(collection)
     session.commit()
@@ -77,8 +80,6 @@ def admin_delete_user(
     if not user:
         return Response(status_code=204)
     user.is_deleted = True
-    from datetime import datetime, timezone
-
     user.deleted_at = datetime.now(timezone.utc)
     session.add(user)
     session.commit()

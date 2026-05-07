@@ -27,6 +27,6 @@ def get_admin_user(
     session: Session = Depends(get_session),
 ) -> dict:
     user = session.get(User, current_user["sub"])
-    if not user or not user.is_admin:
+    if not user or user.is_deleted or not user.is_admin:
         raise HTTPException(status_code=403, detail="Acceso denegado.")
     return current_user

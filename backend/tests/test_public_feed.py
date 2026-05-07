@@ -24,7 +24,9 @@ async def test_list_public_collections_without_auth(client, db_session):
 
 
 @pytest.mark.anyio
-async def test_private_collection_not_in_public_list(client, db_session, sample_collection):
+async def test_private_collection_not_in_public_list(
+    client, db_session, sample_collection
+):
     """PUB-02: Colección privada no aparece en /public."""
     from app.models.collections import Collection
 
@@ -82,7 +84,9 @@ async def test_get_profile_nonexistent_user(client):
 
 
 @pytest.mark.anyio
-async def test_get_private_collection_without_token(client, db_session, sample_collection):
+async def test_get_private_collection_without_token(
+    client, db_session, sample_collection
+):
     """PUB-05: GET /collections/{id_privada} sin token retorna 403."""
     response = await client.get(f"/api/v1/collections/{sample_collection.id}")
     assert response.status_code == 403

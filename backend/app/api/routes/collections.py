@@ -41,7 +41,9 @@ def create_collection(
     session: Session = Depends(get_session),
 ):
     try:
-        return create_collection_service(session, current_user["sub"], request.name, request.description)
+        return create_collection_service(
+            session, current_user["sub"], request.name, request.description
+        )
     except DuplicateCollectionNameError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 

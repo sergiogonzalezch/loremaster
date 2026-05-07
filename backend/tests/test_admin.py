@@ -3,26 +3,43 @@ import pytest
 
 @pytest.mark.anyio
 async def test_list_all_users_as_admin(client, db_session):
-    """ADM-01: GET /admin/users como admin retorna 200."""
+    """ADM-01: GET /admin/users como admin retorna 200 y respeta paginación."""
     from app.models.users import User
 
     admin = db_session.get(User, "test-user-id")
     admin.is_admin = True
-    normal_user = User(
-        id="normal-user-id", username="normaluser", hashed_password="hash"
-    )
-    db_session.add(normal_user)
+    for i in range(3):
+        db_session.add(
+            User(id=f"user-{i}", username=f"user{i}", hashed_password="hash")
+        )
     db_session.commit()
 
-    response = await client.get("/api/v1/admin/users")
+    response = await client.get("/api/v1/admin/users?page=1&page_size=2")
     assert response.status_code == 200
     body = response.json()
-    assert body["meta"]["total"] == 2
+    assert body["meta"]["total"] == 4
+    assert body["meta"]["page"] == 1
+    assert body["meta"]["page_size"] == 2
+    assert len(body["data"]) == 2
 
 
 @pytest.mark.anyio
 async def test_list_all_users_as_normal_user(client, db_session):
     """ADM-02: GET /admin/users como user normal retorna 403."""
+    response = await client.get("/api/v1/admin/users")
+    assert response.status_code == 403
+
+
+@pytest.mark.anyio
+async def test_list_all_users_as_deleted_admin(client, db_session):
+    """ADM-05: GET /admin/users como admin soft-deleted retorna 403."""
+    from app.models.users import User
+
+    admin = db_session.get(User, "test-user-id")
+    admin.is_admin = True
+    admin.is_deleted = True
+    db_session.commit()
+
     response = await client.get("/api/v1/admin/users")
     assert response.status_code == 403
 
@@ -55,9 +72,7 @@ async def test_admin_delete_user(client, db_session):
     admin.is_admin = True
     db_session.commit()
 
-    target = User(
-        id="target-user-id", username="targetuser", hashed_password="hash"
-    )
+    target = User(id="target-user-id", username="targetuser", hashed_password="hash")
     db_session.add(target)
     db_session.commit()
 

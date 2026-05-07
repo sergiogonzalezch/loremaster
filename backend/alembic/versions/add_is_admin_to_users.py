@@ -5,6 +5,7 @@ Revises: add_is_public_to_collections
 Create Date: 2026-05-07 00:00:00.000000
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
