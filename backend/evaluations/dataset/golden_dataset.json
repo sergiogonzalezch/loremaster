@@ -1100,7 +1100,7 @@
     {
       "id": "IMG-001",
       "category": "image_generation",
-      "description": "Generacion mock con contenido confirmed retorna 201 con imagen y prompt visual",
+      "description": "Generacion comfyui con contenido confirmed retorna 201 con imagen y prompt visual",
       "setup": {
         "entity_type": "character",
         "entity_name": "Arion el Plateado",
@@ -1116,7 +1116,7 @@
         "http_status": 201,
         "has_image_url": true,
         "has_visual_prompt": true,
-        "backend": "mock",
+        "backend": "comfyui",
         "visual_prompt_contains": ["high quality", "masterpiece"]
       }
     },
@@ -1285,7 +1285,7 @@
         "content_status": "confirmed",
         "image_http_status": 201,
         "image_has_url": true,
-        "image_backend": "mock"
+        "image_backend": "comfyui"
       }
     }
   ],
