@@ -4,6 +4,7 @@
 > - El flujo de generación de imágenes ha cambiado (build-prompt → generate, sin regeneración en backend)
 > - La estructura del engine ahora incluye `image_prompt_builder.py` (consolidado)
 > - Los modelos de datos han evolucionado (eliminados campos como `truncated`, `prompt_source`)
+> - **Refactor de usuarios (2026-05-07):** `collections` ahora tiene `owner_id` (FK → `users`) e `is_public`. La tabla `users` es nueva con campos de perfil e `is_admin`. Los flujos HU-01 (crear colección) ahora incluyen autenticación y asignación de owner. El ERD está desactualizado.
 > **→ Los diagramas necesitan ser recreados para reflejar el estado actual.**
 
 ## ¿Qué es Lore Master?
@@ -77,7 +78,7 @@ Construir un prototipo funcional y escalable de Lore Master que demuestre la via
 - Generación de texto hasta 2 000 tokens por consulta, con streaming opcional.
 - Generación de imágenes 1024 × 1024 px con Flux.2 Klein 4B Distilled (FP8).
 - Cinco tipos de entidad: character, creature, location, faction, item.
-- Un usuario por instancia en el prototipo (multi-tenant fuera del alcance del MVP).
+- ~~Un usuario por instancia en el prototipo (multi-tenant fuera del alcance del MVP).~~ **Multi-tenancy implementado (2026-05-07):** cada colección pertenece a un usuario (`owner_id`); un usuario solo ve y edita sus propias colecciones.
 
 # 3. Características e Historias de Usuario
 
@@ -112,9 +113,13 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 - Diagrama de flujo — Creación de colección
 
+> ⚠️ **Desactualizado (2026-05-07):** el flujo no refleja la dependencia de autenticación (`get_current_user`) ni la asignación de `owner_id` al crear la colección. Necesita recrearse.
+
 ![Diagrama de flujo HU-01](./diagrams/Diagrama-Flujo-HU-01.png)
 
 - Diagrama de secuencia — Cliente → FastAPI → DB
+
+> ⚠️ **Desactualizado (2026-05-07):** la secuencia omite el paso de validación JWT y la escritura de `owner_id` en la colección. Necesita recrearse.
 
 ![Diagrama de secuencia HU-01](./diagrams/Diagrama-Secuencia-HU-01.png)
 
@@ -557,14 +562,18 @@ DATABASE_URL=postgresql://user:pass@postgres:5432/loremaster
 
 | **Tabla** | **Campos principales** | **Notas / Restricciones** |
 |---|---|---|
-| **collections** | id (UUID PK), name (unique), description, created_at, updated_at, is_deleted, deleted_at | Unidad principal del sistema (world). |
-| **documents** | id (UUID PK), collection_id (FK), filename, file_type, chunk_count, status, created_at, is_deleted, deleted_at | Sin campo `content` — el texto vive en Qdrant. Sin `updated_at` — los documentos no se editan. `status`: processing \| completed \| failed. |
-| **entities** | id (UUID PK), collection_id (FK), type (ENUM), name, description, created_at, updated_at, is_deleted, deleted_at | `type`: character \| creature \| location \| faction \| item. Nombre único por colección: constraint DB `uq_entity_collection_name` (collection_id, name) + validación en servicio. Los nombres de entidades eliminadas quedan reservados. |
+| **users** | id (UUID PK), username (unique), hashed_password, email (unique), display_name, bio, avatar_url, is_admin, created_at, is_deleted, deleted_at | Añadida en refactor 2026-05-07. Campos de perfil opcionales. `is_admin` designado via script `make_admin.py`, nunca por API pública. |
+| **collections** | id (UUID PK), name, description, owner_id (FK → users), is_public, created_at, updated_at, is_deleted, deleted_at | `name` ya **no** es unique global — constraint compuesto `UNIQUE(name, owner_id)`. `owner_id` nullable para datos migrados. `is_public=False` por defecto. |
+| **documents** | id (UUID PK), collection_id (FK), filename, file_type, chunk_count, status, created_at, is_deleted, deleted_at | Sin campo `content` — el texto vive en Qdrant. `status`: processing \| completed \| failed. |
+| **entities** | id (UUID PK), collection_id (FK), type (ENUM), name, description, created_at, updated_at, is_deleted, deleted_at | `type`: character \| creature \| location \| faction \| item. Nombre único por colección: constraint `uq_entity_collection_name`. Los nombres de entidades eliminadas quedan reservados. |
 | **entity_contents** | id (UUID PK), entity_id (FK), collection_id (FK), query, sources_count, category, content, status, created_at, updated_at, is_deleted, deleted_at | `status`: pending \| confirmed \| discarded. Máx. 5 `pending` por entidad **y por categoría**. El discard al confirmar es category-scoped. |
 | **generated_images** | id (UUID PK), collection_id (FK), entity_id (FK), content_id (FK), auto_prompt, final_prompt, batch_size, images (JSON), created_at | Implementado. |
+| **moderation_log** | id (UUID PK), layer, snippet, created_at | `layer`: input \| document \| output. Registra cada rechazo del guardrail con los primeros 200 chars del texto bloqueado. |
 | **entity_relations** | id (UUID PK), source_id (FK entities), target_id (FK entities), relation_type, created_at | Planificado. ENUM: belongs_to, contains, allied_with, enemy_of. |
 
 ### Diagrama ERD
+
+> ⚠️ **Desactualizado (2026-05-07):** el diagrama no incluye la tabla `users`, los campos `owner_id` e `is_public` en `collections`, ni la tabla `moderation_log`. Necesita recrearse.
 
 ![Diagrama ERD](./diagrams/Diagrama-ERD.png)
 
@@ -664,9 +673,11 @@ El sistema implementa control de contenido en el texto y en el pipeline visual (
 
 | **Función** | **Punto de aplicación** | **Error si activa** |
 | --- | --- | --- |
-| `check_user_input(text)` | Antes de llamar al LLM (`generation_service`, `rag_query_service`) | `ValueError` → HTTP 422 |
-| `check_document_content(text)` | Tras extraer texto del documento (`documents_service`) | `ValueError` → HTTP 422 |
-| `check_generated_output(text)` | Tras recibir la respuesta del LLM | `RuntimeError` → HTTP 500 |
+| `check_user_input(text)` | Antes de llamar al LLM (`generation_service`, `rag_query_service`) | `ContentNotAllowedError` → HTTP 422 |
+| `check_document_content(text)` | Tras extraer texto del documento (`documents_service`) | `ContentNotAllowedError` → HTTP 422 |
+| `check_generated_output(text)` | Tras recibir la respuesta del LLM | `GeneratedContentBlockedError` → HTTP 422 |
+
+Cada rechazo se persiste en `moderation_log` con `layer` (`input` \| `document` \| `output`) y `snippet` (primeros 200 chars del texto bloqueado).
 
 Patrones bloqueados: contenido sexual explícito, discurso de odio / supremacismo, instrucciones de armas o explosivos, síntesis de drogas, y lenguaje de acoso.
 

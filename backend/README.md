@@ -148,12 +148,16 @@ El token se envía en cabecera `Authorization: Bearer <token>`. Todos los endpoi
 
 ### Colecciones
 
-| Método | Ruta | Descripción | Status |
-|---|---|---|---|
-| `POST` | `/collections/` | Crear colección | 201 |
-| `GET` | `/collections/` | Listar colecciones | 200 |
-| `GET` | `/collections/{id}` | Obtener colección | 200 |
-| `DELETE` | `/collections/{id}` | Eliminar colección (cascade soft-delete) | 204 |
+Las colecciones pertenecen al usuario que las crea (`owner_id`). El listado autenticado (`GET /collections/`) solo devuelve las del usuario actual. El nombre de colección es único por usuario (`UNIQUE(name, owner_id)`).
+
+| Método | Ruta | Auth | Descripción | Status |
+|---|---|---|---|---|
+| `POST` | `/collections/` | Requerida | Crear colección (owner = usuario actual) | 201 |
+| `GET` | `/collections/` | Requerida | Listar colecciones propias | 200 |
+| `GET` | `/collections/public` | No requerida | Listar colecciones públicas de todos los usuarios | 200 |
+| `GET` | `/collections/{id}` | Opcional | Obtener colección (pública: sin auth; privada: requiere ser owner) | 200 |
+| `PATCH` | `/collections/{id}` | Requerida | Actualizar nombre, descripción o `is_public` (solo owner) | 200 |
+| `DELETE` | `/collections/{id}` | Requerida | Eliminar colección (cascade soft-delete, solo owner) | 204 |
 
 ### Documentos
 
@@ -195,6 +199,16 @@ Estados posibles: `pending` → `confirmed` | `discarded`. Máximo 5 contenidos 
 | `PATCH` | `/collections/{id}/entities/{entity_id}/contents/{content_id}/discard` | Cambiar estado a descartado | 200 |
 | `DELETE` | `/collections/{id}/entities/{entity_id}/contents/{content_id}` | Soft-delete del contenido | 204 |
 
+### Perfiles de usuario
+
+| Método | Ruta | Auth | Descripción | Status |
+|---|---|---|---|---|
+| `GET` | `/users/me` | Requerida | Perfil del usuario autenticado | 200 |
+| `PATCH` | `/users/me` | Requerida | Actualizar `display_name`, `bio`, `avatar_url`, `email` | 200 |
+| `GET` | `/users/{username}/profile` | No requerida | Perfil público de un usuario con sus colecciones públicas | 200 |
+
+**Response de `/users/me`:** `{ id, username, email, display_name, bio, avatar_url, created_at }`.
+
 ### Consulta RAG libre
 
 | Método | Ruta | Descripción | Status |
@@ -222,6 +236,28 @@ El módulo `app/engine/image_prompt_builder.py` consolida la lógica de construc
 
 **Request (generate):** `{ content_id, auto_prompt, final_prompt, batch_size }` — donde `auto_prompt` viene del frontend (previamente generado en `build-prompt`).
 
+### Administración
+
+Los endpoints de administración requieren que el usuario tenga `is_admin=True`. Un usuario soft-deleted no puede acceder aunque sea admin.
+
+| Método | Ruta | Descripción | Status |
+|---|---|---|---|
+| `GET` | `/admin/users` | Listar todos los usuarios (paginado con `?page=` y `?page_size=`) | 200 |
+| `DELETE` | `/admin/collections/{id}` | Soft-delete de cualquier colección | 204 |
+| `DELETE` | `/admin/users/{id}` | Soft-delete de cualquier usuario | 204 |
+
+#### Crear un usuario admin
+
+No existe endpoint público para asignar el rol de admin. Se hace desde el servidor con el script `scripts/make_admin.py`:
+
+```bash
+# Desde backend/ con el virtualenv activo:
+python scripts/make_admin.py <username>
+# → User '<username>' is now an admin.
+```
+
+El script busca el usuario activo (no soft-deleted) por username y establece `is_admin=True`. El cambio es permanente hasta que se revierta manualmente.
+
 ## Moderación de contenido
 
 `app/domain/content_guard.py` aplica filtros de seguridad basados en expresiones regulares en tres puntos del pipeline:
@@ -232,7 +268,7 @@ El módulo `app/engine/image_prompt_builder.py` consolida la lógica de construc
 | `check_document_content(text)` | Tras extraer el texto del documento (`documents_service`) | Mismo conjunto de patrones |
 | `check_generated_output(text)` | Tras recibir la respuesta del LLM | Mismo conjunto de patrones |
 
-Las violaciones de entrada elevan `ValueError` (→ HTTP 422); las de salida elevan `RuntimeError` (→ HTTP 500).
+Las violaciones de entrada elevan `ContentNotAllowedError` (→ HTTP 422); las de salida elevan `GeneratedContentBlockedError` (→ HTTP 422). Cada rechazo se persiste en la tabla `moderation_log` (`layer`, `snippet`, `created_at`).
 
 ## Migraciones
 

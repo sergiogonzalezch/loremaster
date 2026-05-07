@@ -61,35 +61,40 @@ src/
 │   ├── contents.ts         → generate / list / edit / confirm / discard / delete EntityContent
 │   ├── generate.ts         → consulta RAG libre (POST /collections/{id}/query)
 │   ├── imageGeneration.ts  → buildPrompt / generate / list / get / deleteImage
+│   ├── users.ts            → getMyProfile() / updateMyProfile() — GET/PATCH /users/me
 │   ├── query.ts            → buildQuery() — utilidad para construir query strings de URL
 │   └── index.ts            → barrel export (no incluye query.ts — uso interno)
 ├── components/
 │   ├── ContentCard.tsx     → Card de EntityContent con acciones según estado
 │   ├── ConfirmModal.tsx    → Modal de confirmación reutilizable
-│   ├── Layout.tsx          → Navbar + Outlet (React Router) + StarfieldCanvas
+│   ├── Layout.tsx          → Navbar con username del usuario autenticado + Outlet + StarfieldCanvas
 │   ├── LoadingSpinner.tsx  → Spinner centrado con texto opcional
 │   ├── MarkdownContent.tsx → Renderizado markdown sanitizado
-│   ├── ProtectedRoute.tsx  → Guard: redirige a /login si no hay token válido
+│   ├── ProtectedRoute.tsx  → Guard: redirige a /login si useAuth().user es null
 │   ├── StarfieldCanvas.tsx → Fondo animado canvas: estrellas de fondo + estrellas de colecciones (evento lm:collections) + estrellas fugaces
 │   └── TokenCounter.tsx    → Estimación de tokens (aviso a los 400)
+├── contexts/
+│   └── AuthContext.tsx     → AuthProvider + AuthContext: estado global del usuario decodificado del JWT
 ├── hooks/
+│   ├── useAuth.ts                      → Acceso al contexto de autenticación (lanza si se usa fuera de AuthProvider)
 │   ├── useCollectionDocumentsStatus.ts → Monitoriza estado de documentos; refresca automáticamente cada 3s si hay documentos procesando
 │   ├── useDebouncedValue.ts            → Debounce de un valor con delay configurable (default 300 ms)
 │   ├── useEntityContents.ts            → Fetching/refresco de contenidos de una entidad
 │   └── useGenerate.ts                  → Wrapper cancellable para llamadas LLM (AbortSignal)
 ├── pages/
 │   ├── LoginPage.tsx             → Formulario login/registro con tabs; redirige a / tras autenticar
-│   ├── CollectionsPage.tsx       → Listado, creación y eliminación de colecciones
+│   ├── CollectionsPage.tsx       → Listado, creación y eliminación de colecciones propias
 │   ├── CollectionDetailPage.tsx  → Tabs: Documentos / Entidades / Generar texto
 │   ├── EntityDetailPage.tsx      → Detalle de entidad + generación de contenido por categoría
 │   └── GeneratePage.tsx          → Consulta RAG libre contra una colección
 ├── types/
-│   ├── collection.ts     → Collection, CreateCollectionRequest, CollectionListResponse
+│   ├── collection.ts     → Collection (incluye owner_id, is_public), CreateCollectionRequest, CollectionListResponse
 │   ├── content.ts         → EntityContent, PaginatedResponse<T>, request types
 │   ├── document.ts        → Document, DocumentListResponse
 │   ├── entity.ts          → Entity, CreateEntityRequest, UpdateEntityRequest, EntityListResponse
 │   ├── generate.ts        → GenerateTextRequest, GenerateTextResponse
 │   ├── imageGeneration.ts → BuildPromptRequest/Response, GenerateImagesRequest/Response, ImageGeneration
+│   ├── user.ts            → UserProfile, UpdateProfileRequest
 │   └── index.ts           → barrel export
 ├── test/
 │   ├── setup.ts                  → Configura @testing-library/jest-dom globalmente
@@ -116,22 +121,27 @@ src/
 
 **Stack:** Vitest 3 + @testing-library/react 16 + happy-dom 15.
 
-Los tests se encuentran en `src/test/`. Las llamadas a la API se mockean con `vi.mock()`, sin MSW. No se testean páginas completas (demasiado acoplamiento con el router en esta etapa).
+Los tests se encuentran en `src/test/`. Las llamadas a la API se mockean con `vi.mock()`, sin MSW.
 
-| Categoría   | Archivos                                          | Tests aprox. |
-| ----------- | ------------------------------------------------- | ------------ |
-| Utilidades  | errors, tokens, formatters, constants             | ~22          |
-| Componentes | ConfirmModal, TokenCounter, ContentCard           | ~21          |
-| Hooks       | useGenerate, useEntityContents, useDebouncedValue | ~17          |
+| Categoría   | Archivos                                                              | Tests |
+| ----------- | --------------------------------------------------------------------- | ----- |
+| Utilidades  | errors, tokens, formatters, constants                                 | 26    |
+| Componentes | ConfirmModal, TokenCounter, ContentCard                               | 25    |
+| Hooks       | useGenerate, useEntityContents, useDebouncedValue                     | 17    |
+| Páginas     | CollectionsPage, CollectionDetailPage, EntityDetailPage, GeneratePage | 35    |
+
+**Total: 103 tests.**
 
 ## Autenticación
 
-Flujo JWT local. Al iniciar la app, `ProtectedRoute` comprueba si hay un token válido en `localStorage`; si no lo hay, redirige a `/login`.
+Flujo JWT local. Al iniciar la app, `AuthProvider` decodifica el token almacenado en `localStorage` y expone el usuario vía contexto. `ProtectedRoute` usa `useAuth().user` para redirigir a `/login` si no hay sesión activa.
 
 - **Login**: `POST /api/v1/auth/login` → guarda `access_token` en `localStorage`.
 - **Registro**: `POST /api/v1/auth/register` → crea cuenta y devuelve token directamente (login implícito).
 - El token se adjunta en todas las peticiones via cabecera `Authorization: Bearer <token>` dentro de `apiFetch`.
-- Utilidades en `src/utils/token.ts`: `getToken()`, `setToken()`, `removeToken()`, `isAuthenticated()`.
+- **`AuthContext` / `useAuth`**: estado global del usuario (`{ id, username }`). `AuthProvider` envuelve toda la app en `App.tsx`. `useAuth()` lanza si se llama fuera del provider.
+- **`logout()`**: expuesto por `useAuth()`; elimina el token de `localStorage` y limpia el estado del contexto.
+- Utilidades de bajo nivel en `src/utils/token.ts`: `getToken()`, `setToken()`, `removeToken()` — usadas por `AuthProvider` y `apiFetch`, no directamente por componentes.
 
 ## Pantallas
 
