@@ -1,5 +1,4 @@
 import { apiFetch } from "./apiClient";
-import { buildQuery } from "./query";
 import type { UserAdminRecord } from "../types/user";
 
 export interface AdminMeta {

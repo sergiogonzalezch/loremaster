@@ -4,3 +4,4 @@ export * from "./entity";
 export * from "./content";
 export * from "./generate";
 export * from "./images";
+export type { PaginatedMeta } from "./content";

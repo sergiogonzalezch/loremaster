@@ -1,6 +1,5 @@
 import { apiFetch } from "./apiClient";
 import { buildQuery } from "./query";
-import { trimStringValues } from "../utils/strings";
 import type {
   Entity,
   EntityListResponse,

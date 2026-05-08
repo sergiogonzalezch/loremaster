@@ -1,5 +1,5 @@
 import { apiFetch } from "./apiClient";
-import type { ContentCategory, EntityType } from "../utils/enums";
+import type { EntityType } from "../utils/enums";
 
 export function getEntityCategories(): Promise<
   Record<EntityType, ContentCategory[]>
