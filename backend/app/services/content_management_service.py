@@ -152,6 +152,7 @@ def discard_content(
     if not content:
         return None
     content.status = ContentStatus.discarded
+    content.updated_at = datetime.now(timezone.utc)
     session.add(content)
     try:
         session.commit()

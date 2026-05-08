@@ -8,7 +8,6 @@ from sqlmodel import Session
 logger = logging.getLogger(__name__)
 
 from app.core.deps import get_entity_or_404, get_entity_or_404_owned
-from app.core.auth_deps import get_current_user
 from app.core.exceptions import (
     DatabaseError,
     NoContextAvailableError,
@@ -155,8 +154,7 @@ def delete_image(
 )
 def get_generation(
     generation_id: str,
-    entity: Entity = Depends(get_entity_or_404),
-    _: dict = Depends(get_current_user),
+    entity: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
     """Obtiene una generación existente con sus imágenes."""
@@ -177,8 +175,7 @@ def get_generation(
     response_model=ImageGenerationListResponse,
 )
 def list_generations(
-    entity: Entity = Depends(get_entity_or_404),
-    _: dict = Depends(get_current_user),
+    entity: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
     """Lista todas las generaciones de imágenes de una entidad."""

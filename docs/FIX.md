@@ -50,6 +50,11 @@ Lista de tech debt identificado y aún no corregido. Ordenado por impacto estima
 | 40 | URLs hardcodeadas `localhost:8000` en ImagePanel e ImageGallery | Frontend | ✅ Resuelto | — |
 | 41 | `CollectionsPage.fetchCollections` sin AbortSignal | Frontend | ✅ Resuelto | — |
 | 42 | `AuthContext.decodeUser` no verifica expiración del token | Frontend | 🟢 Cubierto | API interceptor detecta 401 y redirige; solo hay lag de UX |
+| 43 | Race condition en límite de pending contents | Backend | ✅ Resuelto | Post-flush recount en `generation_service.py` — rollback si se supera el límite |
+| 44 | `list_contents` y `list/get_generation` sin ownership check | Backend | ✅ Resuelto | Cambiado a `get_entity_or_404_owned` en `entity_content.py` e `image_generation.py` |
+| 45 | `discard_content` no actualiza `updated_at` | Backend | ✅ Resuelto | `content.updated_at` asignado en `discard_content` igual que en `confirm_content` |
+| 46 | Feed público sin tie-breaker en ordenamiento | Backend | ✅ Resuelto | `EntityContent.id.asc()` y `ImageRecord.id.asc()` añadidos como segundo criterio |
+| 47 | Admin delete de usuario no es transaccional | Backend | ✅ Resuelto | `cascade_delete_collection` (sin commit) + `session.commit()` único al final |
 
 **Leyenda:** 🔴 Pendiente urgente · 🟡 Pendiente no urgente · 🟢 Cubierto (mitigado, sin acción inmediata) · ✅ Cerrado
 
@@ -720,7 +725,199 @@ Actualizado el 2026-05-06 (gap P3 cerrado — CORS configurable vía ALLOWED_ORI
 Actualizado el 2026-05-07 (ítems 31-36 añadidos — revisión del commit `b704c24` Users refactor first stage).
 Actualizado el 2026-05-07 (ítems 37-42 añadidos — bug-search completo backend + frontend; 3 confirmados backend, 2 confirmados frontend, 1 parcialmente mitigado en cada capa).
 Actualizado el 2026-05-08 (ítems 37, 38, 40, 41 resueltos — admin cascade delete, RAG ownership, ImagePanel/Gallery MEDIA_BASE, CollectionsPage AbortSignal).
-Actualizado el 2026-05-08 (cobertura de tests revisada: useGenerate cancelación marcada cubierta; rag_pipeline Qdrant test identificado como débil; resto de tests frontend pendientes confirmados).*
+Actualizado el 2026-05-08 (cobertura de tests revisada: useGenerate cancelación marcada cubierta; rag_pipeline Qdrant test identificado como débil; resto de tests frontend pendientes confirmados).
+Actualizado el 2026-05-08 (ítems 43-47 añadidos — bug-search completo backend + frontend; 5 errores confirmados, 6 falsos positivos descartados).
+Actualizado el 2026-05-08 (ítems 43-47 resueltos — ownership check, race condition, updated_at, tie-breaker, admin atomicity).*
+
+---
+
+## 43. Race condition en límite de pending contents ✅
+
+**Capa:** Backend  
+**Archivo:** `backend/app/services/generation_service.py:37-48`  
+**Impacto:** Alto (en concurrencia) — Bajo (en uso single-user/SQLite local)  
+**Clasificación:** Resuelto. Post-flush recount con rollback cierra la ventana de race condition.  
+**Fix aplicado:** `generation_service.py` — `session.flush()` + recount post-insert; si `recount > max_pending_contents`, `session.rollback()` y excepción.
+
+El check del límite es un patrón check-then-act no atómico:
+
+```python
+# generation_service.py:37-48
+pending_count = session.exec(select(func.count())...).one()   # paso 1: leer
+if pending_count >= settings.max_pending_contents:             # paso 2: chequear
+    raise PendingLimitExceededError(...)
+# … invoke_generation_pipeline(...) — puede tardar varios segundos (LLM call)
+session.commit()                                               # paso 3: escribir
+```
+
+Dos requests simultáneos con `pending_count = 4` superan el check simultáneamente, llaman al LLM, y ambos hacen commit. Resultado: 6 contenidos pending en lugar de 5. La ventana de race es amplia porque `invoke_generation_pipeline` puede tardar segundos.
+
+**Solución sugerida:**
+
+```python
+# Opción A — verificación post-insert (mínima invasión):
+session.add(content)
+session.flush()  # asigna ID pero no commitea
+recount = session.exec(select(func.count())...).one()
+if recount > settings.max_pending_contents:
+    session.rollback()
+    raise PendingLimitExceededError(...)
+session.commit()
+
+# Opción B — constraint de DB (más robusto):
+# Añadir un unique partial index en PostgreSQL:
+# CREATE UNIQUE INDEX ... WHERE status = 'pending' (solo viable con límite fijo en DB)
+```
+
+---
+
+## 44. `list_contents`, `list_generations` y `get_generation` sin ownership check ✅
+
+**Capa:** Backend  
+**Archivos:** `backend/app/api/routes/entity_content.py:80`, `backend/app/api/routes/image_generation.py:158,180`  
+**Impacto:** Medio — cualquier usuario autenticado que conozca los IDs puede leer contenidos e imágenes privadas de otro usuario.  
+**Clasificación:** Resuelto.  
+**Fix aplicado:** `get_entity_or_404` reemplazado por `get_entity_or_404_owned` en los tres endpoints de lectura afectados; import `get_current_user` eliminado donde ya no se usa.
+
+Los tres endpoints de lectura usan `get_entity_or_404` (que solo verifica existencia) en lugar de `get_entity_or_404_owned` (que verifica ownership):
+
+```python
+# entity_content.py:80 — GET /{collection_id}/entities/{entity_id}/contents
+_: Entity = Depends(get_entity_or_404),   # ← sin ownership
+__: dict = Depends(get_current_user),     # ← solo autenticación
+
+# image_generation.py:158 — GET .../image-generation/{generation_id}
+entity: Entity = Depends(get_entity_or_404),   # ← sin ownership
+
+# image_generation.py:180 — GET .../image-generation
+entity: Entity = Depends(get_entity_or_404),   # ← sin ownership
+```
+
+Contraste: todos los endpoints de escritura (generate, confirm, discard, share, delete) sí usan `get_entity_or_404_owned`. Solo los endpoints GET de lectura de contenidos e imágenes no verifican ownership.
+
+**Riesgo en práctica:** Los IDs son UUIDs v4 (no adivinables), por lo que la explotación requiere conocer los IDs. Sin embargo, el `content_id` se expone en el feed público (`PublicFeedItem.content_id`), lo que permite a un atacante obtener un content_id válido y luego usarlo para leer el contenido completo de otras entidades de la misma colección.
+
+**Solución sugerida:** Reemplazar `get_entity_or_404` por `get_entity_or_404_owned` en los tres endpoints afectados:
+
+```python
+# entity_content.py:80
+_: Entity = Depends(get_entity_or_404_owned),
+# eliminar: __: dict = Depends(get_current_user) — ya está incluido en _owned
+
+# image_generation.py:158 y 180
+entity: Entity = Depends(get_entity_or_404_owned),
+# eliminar: _: dict = Depends(get_current_user)
+```
+
+---
+
+## 45. `discard_content` no actualiza `updated_at` ✅
+
+**Capa:** Backend  
+**Archivo:** `backend/app/services/content_management_service.py:145-164`  
+**Impacto:** Bajo — inconsistencia en el audit trail; `updated_at` queda a `NULL` para contenidos descartados, aunque el campo existe y se actualiza en otras operaciones.  
+**Clasificación:** Resuelto.  
+**Fix aplicado:** `content.updated_at = datetime.now(timezone.utc)` añadido en `discard_content`, igual que en `confirm_content`.
+
+`confirm_content` actualiza `updated_at` al confirmar (línea 116):
+```python
+content.updated_at = now   # ✓ en confirm_content
+```
+
+`discard_content` no lo hace (línea 154):
+```python
+content.status = ContentStatus.discarded
+# falta: content.updated_at = datetime.now(timezone.utc)
+session.add(content)
+```
+
+Como resultado, `EntityContentResponse.updated_at` retorna `None` para contenidos descartados incluso si fueron previamente editados y luego descartados.
+
+**Solución sugerida:**
+```python
+def discard_content(...):
+    content = _get_pending_content(...)
+    if not content:
+        return None
+    now = datetime.now(timezone.utc)   # añadir
+    content.status = ContentStatus.discarded
+    content.updated_at = now           # añadir
+    session.add(content)
+    ...
+```
+
+---
+
+## 46. Feed público sin tie-breaker en ordenamiento ✅
+
+**Capa:** Backend  
+**Archivos:** `backend/app/api/routes/users.py:134`, `backend/app/api/routes/users.py:179`  
+**Impacto:** Bajo — paginación no determinista cuando dos ítems comparten el mismo `confirmed_at`; puede causar que un ítem aparezca en dos páginas o no aparezca en ninguna durante la navegación.  
+**Clasificación:** Resuelto.  
+**Fix aplicado:** `.order_by(EntityContent.confirmed_at.desc(), EntityContent.id.asc())` en `get_public_feed`; `.order_by(ImageRecord.created_at.desc(), ImageRecord.id.asc())` en `get_public_images`.
+
+```python
+# users.py:134 — get_public_feed
+.order_by(EntityContent.confirmed_at.desc())   # sin tie-breaker
+
+# users.py:179 — get_public_images
+.order_by(ImageRecord.created_at.desc())       # sin tie-breaker
+```
+
+En tests de carga o en uso multi-usuario, varios contenidos pueden tener el mismo timestamp de confirmación (resolución de un segundo en la mayoría de DBs). Sin un desempate secundario (p. ej., `id` como campo único), el orden entre páginas es no determinista.
+
+**Solución sugerida:** Añadir un campo único como segundo criterio de ordenamiento:
+
+```python
+.order_by(EntityContent.confirmed_at.desc(), EntityContent.id.asc())
+# y para imágenes:
+.order_by(ImageRecord.created_at.desc(), ImageRecord.id.asc())
+```
+
+---
+
+## 47. Admin delete de usuario no es transaccional ✅
+
+**Capa:** Backend  
+**Archivo:** `backend/app/api/routes/admin.py:85-97`  
+**Impacto:** Bajo-Medio — si el proceso falla entre la eliminación de colecciones y la del usuario, el estado queda inconsistente: colecciones eliminadas pero usuario activo.  
+**Clasificación:** Resuelto.  
+**Fix aplicado:** Bucle cambiado a `cascade_delete_collection` (sin commit interno) + `user.is_deleted = True` + `session.commit()` único al final del handler.
+
+```python
+# admin.py:85-97
+for collection in collections:
+    delete_collection_service(session, collection)  # commit interno por colección
+# ↑ si hay 5 colecciones y falla en la 3ª, las primeras 2 están commiteadas
+user.is_deleted = True
+user.deleted_at = datetime.now(timezone.utc)
+session.add(user)
+session.commit()   # commit separado
+```
+
+`delete_collection_service` llama `session.commit()` internamente para cada colección. Si ocurre un error de BD entre colecciones o antes del commit del usuario, el resultado es un estado parcial: algunas colecciones eliminadas, el usuario todavía activo, sin forma de reintentar de forma segura.
+
+**Causa raíz:** `delete_collection_service` fue diseñado para ser autónomo (también lo usa el route normal de usuario). El admin debería poder ejecutar todas las operaciones en una sola transacción.
+
+**Solución sugerida:** Crear una función `delete_user_service` en `deletion_service.py` que coordine todo en una sola unidad de trabajo:
+
+```python
+def delete_user_service(session: Session, user: User) -> None:
+    collections = session.exec(
+        select(Collection).where(
+            Collection.owner_id == user.id,
+            Collection.is_deleted == False,
+        )
+    ).all()
+    for collection in collections:
+        cascade_delete_collection(session, collection)  # flush, sin commit
+    user.is_deleted = True
+    user.deleted_at = datetime.now(timezone.utc)
+    session.add(user)
+    session.commit()  # un único commit al final
+```
+
+Nota: requiere que `cascade_delete_collection` use `session.flush()` en lugar de `session.commit()` cuando se llama desde dentro de una transacción mayor, o que se separe el `commit` a nivel del caller.
 
 ---
 

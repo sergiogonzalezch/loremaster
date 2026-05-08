@@ -1,6 +1,6 @@
 # Lore Master
 
-Plataforma RAG para escritores y narradores de rol. Carga documentos de lore, gestiona entidades de tu mundo y genera texto narrativo coherente con tu contexto. Cada usuario tiene sus propias colecciones; las colecciones públicas son visibles para cualquiera sin autenticación.
+Plataforma RAG para escritores y narradores de rol. Carga documentos de lore, gestiona entidades de tu mundo y genera texto narrativo e imágenes coherentes con tu contexto. Cada usuario tiene sus propias colecciones privadas; el contenido individual (textos e imágenes) se puede compartir selectivamente en el feed público y en perfiles de usuario accesibles sin autenticación.
 
 ## Stack
 
@@ -51,6 +51,15 @@ python scripts/make_admin.py <username>
 ```
 
 Los admins tienen acceso a los endpoints `/api/v1/admin/*` (listar todos los usuarios, eliminar cualquier colección o usuario).
+
+## Contenido público
+
+El contenido compartido se expone en dos superficies sin autenticación:
+
+- **`/feed`** — Feed global paginado: galería de imágenes + cards de textos compartidos.
+- **`/users/:username`** — Perfil público de cualquier usuario: imágenes y textos compartidos, botón de compartir URL.
+
+Los propietarios del perfil ven además un acceso directo a su configuración.
 
 ## Documentación
 

@@ -90,6 +90,25 @@ def generate(
     )
     try:
         session.add(content)
+        session.flush()
+        # Re-check after flush to catch concurrent inserts that passed the pre-LLM check
+        recount = session.exec(
+            select(func.count())
+            .select_from(EntityContent)
+            .where(
+                EntityContent.entity_id == entity.id,
+                EntityContent.collection_id == entity.collection_id,
+                EntityContent.category == category,
+                EntityContent.status == ContentStatus.pending,
+                EntityContent.is_deleted == False,
+            )
+        ).one()
+        if recount > settings.max_pending_contents:
+            session.rollback()
+            raise PendingLimitExceededError(
+                f"La entidad ya tiene {recount - 1} contenidos pendientes en la categoría '{category}' "
+                f"(máximo {settings.max_pending_contents}). Confirma o descarta alguno antes de generar uno nuevo."
+            )
         session.commit()
         session.refresh(content)
         session.refresh(generated_text)

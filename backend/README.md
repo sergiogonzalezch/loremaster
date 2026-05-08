@@ -135,16 +135,17 @@ pytest -k "test_create"             # por nombre
 | `test_documents.py` | 16 | Upload PDF/TXT, background ingest, Qdrant failure, malformed PDF |
 | `test_image_generation_service.py` | 13 | Build-prompt, generación por batch, guardrails de imagen |
 | `test_entities.py` | 13 | CRUD de entidades, nombre reservado tras soft-delete |
+| `test_auth.py` | 10 | Registro, login, JWT válido/expirado/inválido, errores de autenticación |
+| `test_public_feed.py` | 9 | Feed público `/public/feed` e `/public/images`, perfiles públicos, ownership 403 |
 | `test_rag_query.py` | 9 | Consulta RAG, Qdrant caído → 503, LLM failure → semáforo liberado |
 | `test_generation_service.py` | 8 | Generación por categoría, prompt templates, moderación |
-| `test_public_feed.py` | 9 | Feed público `/public/feed` e `/public/images`, perfiles públicos, ownership 403 |
 | `test_prompt_builder.py` | 7 | Estrategias de contexto, flag `truncated`, ranking de fuentes |
-| `test_admin.py` | 5 | Listado usuarios, cascade delete de colección y usuario |
+| `test_admin.py` | 6 | Listado usuarios, cascade delete de colección y usuario, guardrail auto-eliminación |
 | `test_users.py` | 4 | Perfil `/users/me` GET/PATCH |
 | `test_deletion_service.py` | 2 | Cascade soft-delete: documentos, entidades, contenidos, vectores Qdrant |
 | `test_content_management_service.py` | 1 | `_discard_sibling_contents` no afecta otras categorías |
 
-**Total: 162 tests.**
+**Total: 173 tests.**
 
 ## Endpoints
 
@@ -223,10 +224,15 @@ Estados posibles: `pending` → `confirmed` | `discarded`. Máximo 5 contenidos 
 | Método | Ruta | Auth | Descripción | Status |
 |---|---|---|---|---|
 | `GET` | `/users/me` | Requerida | Perfil del usuario autenticado | 200 |
-| `PATCH` | `/users/me` | Requerida | Actualizar `display_name`, `bio`, `avatar_url`, `email` | 200 |
+| `PATCH` | `/users/me` | Requerida | Actualizar `display_name`, `bio`, `email` | 200 |
+| `GET` | `/users/me/avatar` | Requerida | Obtener URL del avatar e indicador `has_avatar` | 200 |
+| `POST` | `/users/me/avatar` | Requerida | Subir imagen de avatar (multipart/form-data) | 200 |
+| `DELETE` | `/users/me/avatar` | Requerida | Eliminar avatar actual | 204 |
 | `GET` | `/users/{username}/profile` | No requerida | Perfil público: datos del usuario + `shared_contents` + `shared_images` | 200 |
 
 **Response de `/users/me`:** `{ id, username, email, display_name, bio, avatar_url, created_at }`.
+
+**Response de `/users/me/avatar`:** `{ avatar_url: string | null, has_avatar: bool }`.
 
 **Response de `/users/{username}/profile`:** `{ username, display_name, bio, avatar_url, shared_contents[], shared_images[] }`. Cada `shared_contents` incluye `content` completo, categoría, nombre y tipo de entidad. Cada `shared_images` incluye `image_url`, `storage_path`, `seed`, `auto_prompt`, `final_prompt`, nombre y tipo de entidad.
 
@@ -278,9 +284,9 @@ Los endpoints de administración requieren que el usuario tenga `is_admin=True`.
 
 | Método | Ruta | Descripción | Status |
 |---|---|---|---|
-| `GET` | `/admin/users` | Listar todos los usuarios (paginado con `?page=` y `?page_size=`) | 200 |
+| `GET` | `/admin/users` | Listar todos los usuarios paginado (`?page=`, `?page_size=`); incluye `avatar_url` por usuario | 200 |
 | `DELETE` | `/admin/collections/{id}` | Cascade soft-delete de cualquier colección (incluye documentos, entidades, contenidos y vectores Qdrant) | 204 |
-| `DELETE` | `/admin/users/{id}` | Cascade soft-delete del usuario y de todas sus colecciones | 204 |
+| `DELETE` | `/admin/users/{id}` | Cascade soft-delete del usuario y de todas sus colecciones. Devuelve **403** si el admin intenta eliminarse a sí mismo | 204 / 403 |
 
 #### Crear un usuario admin
 

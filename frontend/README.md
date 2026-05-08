@@ -61,13 +61,14 @@ src/
 │   ├── contents.ts         → generate / list / edit / confirm / discard / share / delete EntityContent
 │   ├── generate.ts         → consulta RAG libre (POST /collections/{id}/query)
 │   ├── imageGeneration.ts  → buildPrompt / generate / list / get / shareImage / deleteImage
-│   ├── users.ts            → getMyProfile() / updateMyProfile() / getPublicProfile() / getPublicFeed() / getPublicImages()
+│   ├── users.ts            → getMyProfile() / updateMyProfile() / getPublicProfile() / getPublicFeed() / getPublicImages() / getMyAvatar() / uploadMyAvatar() / deleteMyAvatar()
 │   ├── query.ts            → buildQuery() — utilidad para construir query strings de URL
 │   └── index.ts            → barrel export (no incluye query.ts — uso interno)
 ├── components/
+│   ├── AppNavbar.tsx          → Navbar: logo, link Colecciones, dropdown de usuario (avatar/iniciales + username → perfil público, admin, cerrar sesión)
 │   ├── ContentCard.tsx        → Card de EntityContent con acciones según estado
 │   ├── ConfirmModal.tsx       → Modal de confirmación reutilizable
-│   ├── Layout.tsx             → Navbar con username del usuario autenticado + Outlet + StarfieldCanvas
+│   ├── Layout.tsx             → AppNavbar + Outlet + StarfieldCanvas
 │   ├── LoadingSpinner.tsx     → Spinner centrado con texto opcional
 │   ├── MarkdownContent.tsx    → Renderizado markdown sanitizado
 │   ├── ProtectedRoute.tsx     → Guard: redirige a /login si useAuth().user es null
@@ -89,9 +90,10 @@ src/
 │   ├── CollectionDetailPage.tsx  → Tabs: Documentos / Entidades / Generar texto
 │   ├── EntityDetailPage.tsx      → Detalle de entidad + generación de contenido por categoría
 │   ├── GeneratePage.tsx          → Consulta RAG libre contra una colección
-│   ├── ProfilePage.tsx           → Perfil propio editable: display_name, bio, avatar_url, email
+│   ├── ProfilePage.tsx           → Perfil propio editable: display_name, bio, avatar, email; botón ← Volver
+│   ├── AdminPage.tsx             → Panel de administración: tabla de usuarios con avatar, email, rol, estado; link al perfil público; eliminar usuario (sin auto-eliminación)
 │   ├── PublicFeedPage.tsx        → Feed público: galería de imágenes compartidas + cards de contenido paginadas (abre modales al hacer clic)
-│   └── PublicProfilePage.tsx     → Perfil público de un usuario: galería de imágenes + cards de contenido compartido (abre modales al hacer clic)
+│   └── PublicProfilePage.tsx     → Perfil público de un usuario: galería de imágenes + cards de contenido compartido; botón Compartir (copia URL) + engranaje (→ /profile, solo owner)
 ├── types/
 │   ├── collection.ts       → Collection (incluye owner_id), CreateCollectionRequest, CollectionListResponse
 │   ├── content.ts           → EntityContent, PaginatedResponse<T>, request types
@@ -99,7 +101,7 @@ src/
 │   ├── entity.ts            → Entity, CreateEntityRequest, UpdateEntityRequest, EntityListResponse
 │   ├── generate.ts          → GenerateTextRequest, GenerateTextResponse
 │   ├── imageGeneration.ts   → BuildPromptRequest/Response, GenerateImagesRequest/Response, ImageGenerationItem, ImageRecordData
-│   ├── user.ts              → UserProfile, UpdateProfileRequest, SharedContentItem, PublicFeedItem, SharedImageItem, PublicImageItem, PublicProfile
+│   ├── user.ts              → UserProfile, UpdateProfileRequest, SharedContentItem, PublicFeedItem, SharedImageItem, PublicImageItem, PublicProfile, AvatarResponse, UserAdminRecord (con avatar_url)
 │   └── index.ts             → barrel export
 ├── test/
 │   ├── setup.ts                              → Configura @testing-library/jest-dom globalmente
@@ -137,15 +139,15 @@ Los tests se encuentran en `src/test/`. Las llamadas a la API se mockean con `vi
 | Categoría   | Archivos                                                                        | Tests |
 | ----------- | ------------------------------------------------------------------------------- | ----- |
 | Utilidades  | errors, tokens, formatters, constants                                           | 26    |
-| Componentes | ConfirmModal, TokenCounter, ContentCard, MarkdownContent                        | 28    |
+| Componentes | ConfirmModal, TokenCounter, ContentCard, MarkdownContent                        | 32    |
 | Hooks       | useGenerate, useEntityContents, useDebouncedValue, useCollectionDocumentsStatus | 23    |
-| Páginas     | CollectionsPage, CollectionDetailPage, EntityDetailPage, GeneratePage           | 41    |
+| Páginas     | CollectionsPage, CollectionDetailPage, EntityDetailPage, GeneratePage           | 37    |
 
 **Total: 118 tests.**
 
 Aspectos destacados de cobertura:
 
-- **`ContentCard`**: estados pending/confirmed/discarded, busy-lock (doble clic bloqueado), rollback optimista en fallo de API, badge de auditoría `✎ editado`.
+- **`ContentCard`**: estados pending/confirmed/discarded, busy-lock (doble clic bloqueado), rollback optimista en fallo de API, badges de auditoría `✎ editado` (presencia/ausencia y sección colapsable del output original).
 - **`MarkdownContent`**: sanitización XSS — `<script>`, `onerror`, `javascript:` href bloqueados; markdown estándar y `https://` permitidos.
 - **`useCollectionDocumentsStatus`**: polling activo cuando hay documentos `processing`; polling detenido automáticamente cuando todos salen de ese estado; `ApiAbortError` no actualiza estado.
 - **`CollectionsPage`**: paginación auto-back cuando la página actual queda vacía tras eliminación.
@@ -158,22 +160,23 @@ Flujo JWT local. Al iniciar la app, `AuthProvider` decodifica el token almacenad
 - **Login**: `POST /api/v1/auth/login` → guarda `access_token` en `localStorage`.
 - **Registro**: `POST /api/v1/auth/register` → crea cuenta y devuelve token directamente (login implícito).
 - El token se adjunta en todas las peticiones via cabecera `Authorization: Bearer <token>` dentro de `apiFetch`.
-- **`AuthContext` / `useAuth`**: estado global del usuario (`{ id, username }`). `AuthProvider` envuelve toda la app en `App.tsx`. `useAuth()` lanza si se llama fuera del provider.
+- **`AuthContext` / `useAuth`**: estado global del usuario (`{ id, username, is_admin }`). `AuthProvider` envuelve toda la app en `App.tsx`. `useAuth()` lanza si se llama fuera del provider.
 - **`logout()`**: expuesto por `useAuth()`; elimina el token de `localStorage` y limpia el estado del contexto.
 - Utilidades de bajo nivel en `src/utils/token.ts`: `getToken()`, `setToken()`, `removeToken()` — usadas por `AuthProvider` y `apiFetch`, no directamente por componentes.
 
 ## Pantallas
 
-| Ruta                             | Página            | Auth | Descripción                                                                                                                                     |
-| -------------------------------- | ----------------- | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/login`                         | Login / Registro  | No   | Formulario con tabs "Iniciar sesión" / "Registrarse"; redirige a `/` tras autenticar                                                            |
-| `/`                              | Colecciones       | Sí   | Cards con todas las colecciones; crear (modal) o eliminar con confirmación                                                                      |
-| `/collections/:id`               | Detalle colección | Sí   | **Documentos**: upload PDF/TXT, tabla con estado; **Entidades**: tabla con badges, navegación al detalle; **Generar texto**: consulta RAG libre |
-| `/collections/:id/entities/:eid` | Detalle entidad   | Sí   | Card de entidad editable; formulario de generación; lista de `ContentCard`; generación de imágenes                                              |
-| `/collections/:id/generate`      | Generar texto     | Sí   | Consulta RAG libre con manejo de errores 422/503                                                                                                |
-| `/profile`                       | Mi perfil         | Sí   | Formulario para editar display_name, bio, avatar_url y email del usuario autenticado                                                            |
-| `/public`                        | Feed público      | No   | Galería de imágenes compartidas + cards de contenido paginadas; clic abre modal de lectura completa                                             |
-| `/users/:username`               | Perfil público    | No   | Perfil de cualquier usuario: galería de imágenes + contenidos compartidos con modal                                                             |
+| Ruta                             | Página            | Auth       | Descripción                                                                                                                                      |
+| -------------------------------- | ----------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `/login`                         | Login / Registro  | No         | Formulario con tabs "Iniciar sesión" / "Registrarse"; redirige a `/` tras autenticar                                                             |
+| `/`                              | Colecciones       | Sí         | Cards con todas las colecciones; crear (modal) o eliminar con confirmación                                                                       |
+| `/collections/:id`               | Detalle colección | Sí         | **Documentos**: upload PDF/TXT, tabla con estado; **Entidades**: tabla con badges, navegación al detalle; **Generar texto**: consulta RAG libre  |
+| `/collections/:id/entities/:eid` | Detalle entidad   | Sí         | Card de entidad editable; formulario de generación; lista de `ContentCard`; generación de imágenes                                               |
+| `/collections/:id/generate`      | Generar texto     | Sí         | Consulta RAG libre con manejo de errores 422/503                                                                                                 |
+| `/profile`                       | Mi perfil         | Sí         | Formulario para editar display_name, bio, avatar y email; botón ← Volver                                                                         |
+| `/admin`                         | Administración    | Sí (admin) | Tabla de usuarios con avatar, email, rol y estado; link al perfil público; eliminar usuario (bloqueado para cuenta propia)                       |
+| `/feed`                          | Feed público      | No         | Galería de imágenes compartidas + cards de contenido paginadas; clic abre modal de lectura completa                                              |
+| `/users/:username`               | Perfil público    | No         | Perfil de cualquier usuario: galería de imágenes + contenidos compartidos; botón Compartir (copia URL) + engranaje hacia `/profile` (solo owner) |
 
 ## Contenido público y perfiles
 

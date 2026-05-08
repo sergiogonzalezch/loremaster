@@ -12,6 +12,7 @@ from app.models.collections import Collection
 from app.services.user_image import get_avatar_info
 from app.models.shared import PaginatedResponse
 from app.services.collection_service import delete_collection_service
+from app.services.deletion_service import cascade_delete_collection
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -89,7 +90,7 @@ def admin_delete_user(
         )
     ).all()
     for collection in collections:
-        delete_collection_service(session, collection)
+        cascade_delete_collection(session, collection)
     user.is_deleted = True
     user.deleted_at = datetime.now(timezone.utc)
     session.add(user)
