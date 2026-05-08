@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { Container, Row, Col, Card, Alert, Spinner } from "react-bootstrap";
 import { getPublicProfile } from "../api/users";
 import StarfieldCanvas from "../components/StarfieldCanvas";
+import AppNavbar from "../components/AppNavbar";
 import { useAuth } from "../hooks/useAuth";
 import { parseApiError } from "../utils/errors";
 import type { PublicProfile } from "../types/user";
@@ -40,50 +41,7 @@ export default function PublicProfilePage() {
     <>
       <StarfieldCanvas />
       <div style={{ position: "relative", zIndex: 1, minHeight: "100vh" }}>
-        <nav
-          style={{
-            borderBottom: "1px solid rgba(255,255,255,0.08)",
-            backdropFilter: "blur(8px)",
-            backgroundColor: "rgba(10,10,18,0.7)",
-          }}
-          className="py-3"
-        >
-          <Container
-            fluid="lg"
-            className="d-flex align-items-center justify-content-between"
-          >
-            <Link to="/feed" style={{ textDecoration: "none" }}>
-              <span className="lm-brand-glyph" style={{ fontSize: "1.1rem" }}>
-                ✦
-              </span>{" "}
-              <span
-                style={{
-                  fontFamily: "var(--lm-font-head)",
-                  fontSize: "1.1rem",
-                }}
-              >
-                <span style={{ color: "var(--lm-accent)" }}>Lore</span>Master
-              </span>
-            </Link>
-            {user ? (
-              <Link
-                to="/"
-                className="btn btn-sm btn-warning"
-                style={{ fontFamily: "var(--lm-font-head)" }}
-              >
-                Mis colecciones
-              </Link>
-            ) : (
-              <Link
-                to="/login"
-                className="btn btn-sm btn-warning"
-                style={{ fontFamily: "var(--lm-font-head)" }}
-              >
-                Iniciar sesión
-              </Link>
-            )}
-          </Container>
-        </nav>
+        <AppNavbar />
 
         <Container fluid="lg" className="py-5">
           {loading ? (

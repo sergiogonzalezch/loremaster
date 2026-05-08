@@ -18,7 +18,7 @@ import StarfieldCanvas from "../components/StarfieldCanvas";
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: string })?.from ?? "/";
+  const from = (location.state as { from?: string })?.from ?? "/feed";
   const { login } = useAuth();
   const [tab, setTab] = useState<string>("login");
   const [username, setUsername] = useState("");

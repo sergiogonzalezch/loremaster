@@ -29,7 +29,9 @@ def login(request: LoginRequest, session: Session = Depends(get_session)):
             detail="Credenciales incorrectas",
         )
 
-    token = create_access_token(data={"sub": user.id, "username": user.username})
+    token = create_access_token(
+        data={"sub": user.id, "username": user.username, "is_admin": user.is_admin}
+    )
     return {"access_token": token}
 
 
@@ -50,6 +52,6 @@ def register(request: LoginRequest, session: Session = Depends(get_session)):
     session.refresh(new_user)
 
     token = create_access_token(
-        data={"sub": new_user.id, "username": new_user.username}
+        data={"sub": new_user.id, "username": new_user.username, "is_admin": False}
     )
     return {"access_token": token}
