@@ -6,7 +6,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Session, select
 
-from app.core.common import soft_delete
+from app.core.common import soft_delete, paginate_with_sort
 from app.core.exceptions import (
     ContentDiscardedError,
     ContentNotShareableError,
@@ -50,26 +50,14 @@ def list_contents(
     if category is not None:
         conditions.append(EntityContent.category == category)
 
-    total = session.exec(
-        select(func.count()).select_from(
-            select(EntityContent).where(*conditions).subquery()
-        )
-    ).one()
-
-    sort_col = (
-        EntityContent.created_at.asc()
-        if order == "asc"
-        else EntityContent.created_at.desc()
-    )
-    skip = (page - 1) * page_size
-    items = list(
-        session.exec(
-            select(EntityContent)
-            .where(*conditions)
-            .order_by(sort_col)
-            .offset(skip)
-            .limit(page_size)
-        ).all()
+    items, total = paginate_with_sort(
+        session,
+        EntityContent,
+        conditions,
+        page=page,
+        page_size=page_size,
+        order_col=EntityContent.created_at,
+        order=order,
     )
     return [_to_response(session, item) for item in items], total
 

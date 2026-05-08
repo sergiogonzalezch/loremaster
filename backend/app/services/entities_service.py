@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlmodel import Session, select
 
 from app.core.exceptions import DatabaseError, DuplicateEntityNameError
+from app.core.common import paginate_with_sort
 from app.models.entities import (
     Entity,
     EntityType,
@@ -76,19 +77,15 @@ def list_entities_service(
     if created_before:
         conditions.append(Entity.created_at <= created_before)
 
-    total = session.exec(
-        select(func.count()).select_from(select(Entity).where(*conditions).subquery())
-    ).one()
-    sort_col = Entity.created_at.asc() if order == "asc" else Entity.created_at.desc()
-    skip = (page - 1) * page_size
-    items = session.exec(
-        select(Entity)
-        .where(*conditions)
-        .order_by(sort_col)
-        .offset(skip)
-        .limit(page_size)
-    ).all()
-    return list(items), total
+    return paginate_with_sort(
+        session,
+        Entity,
+        conditions,
+        page=page,
+        page_size=page_size,
+        order_col=Entity.created_at,
+        order=order,
+    )
 
 
 def update_entity_service(

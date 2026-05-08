@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy import func
 from sqlmodel import Session, select
 
+from app.core.common import paginate
 from app.models.collections import Collection
 from app.models.entities import Entity
 from app.models.entity_content import EntityContent
@@ -40,24 +41,14 @@ def get_public_feed_page(
     session: Session, page: int, page_size: int
 ) -> tuple[list[PublicFeedItem], int]:
     base = (
-        select(EntityContent)
-        .join(Entity, EntityContent.entity_id == Entity.id)
-        .join(Collection, EntityContent.collection_id == Collection.id)
-        .join(User, Collection.owner_id == User.id)
-        .where(*_CONTENT_CONDITIONS)
-    )
-    total = session.exec(select(func.count()).select_from(base.subquery())).one()
-    skip = (page - 1) * page_size
-    rows = session.exec(
         select(EntityContent, Entity, User)
         .join(Entity, EntityContent.entity_id == Entity.id)
         .join(Collection, EntityContent.collection_id == Collection.id)
         .join(User, Collection.owner_id == User.id)
         .where(*_CONTENT_CONDITIONS)
         .order_by(EntityContent.confirmed_at.desc(), EntityContent.id.asc())
-        .offset(skip)
-        .limit(page_size)
-    ).all()
+    )
+    rows, total = paginate(session, base, page, page_size)
     items = [
         PublicFeedItem(
             content_id=ec.id,
@@ -80,16 +71,6 @@ def get_public_images_page(
     session: Session, page: int, page_size: int
 ) -> tuple[list[PublicImageItem], int]:
     base = (
-        select(ImageRecord)
-        .join(ImageGeneration, ImageRecord.generation_id == ImageGeneration.id)
-        .join(Entity, ImageRecord.entity_id == Entity.id)
-        .join(Collection, ImageRecord.collection_id == Collection.id)
-        .join(User, Collection.owner_id == User.id)
-        .where(*_IMAGE_CONDITIONS)
-    )
-    total = session.exec(select(func.count()).select_from(base.subquery())).one()
-    skip = (page - 1) * page_size
-    rows = session.exec(
         select(ImageRecord, ImageGeneration, Entity, User)
         .join(ImageGeneration, ImageRecord.generation_id == ImageGeneration.id)
         .join(Entity, ImageRecord.entity_id == Entity.id)
@@ -97,9 +78,8 @@ def get_public_images_page(
         .join(User, Collection.owner_id == User.id)
         .where(*_IMAGE_CONDITIONS)
         .order_by(ImageRecord.created_at.desc(), ImageRecord.id.asc())
-        .offset(skip)
-        .limit(page_size)
-    ).all()
+    )
+    rows, total = paginate(session, base, page, page_size)
     items = [
         PublicImageItem(
             image_id=img.id,

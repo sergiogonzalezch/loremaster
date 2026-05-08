@@ -17,7 +17,7 @@ from app.core.exceptions import (
     VectorStoreError,
 )
 from app.models.documents import Document, DocumentStatus
-from app.core.common import soft_delete
+from app.core.common import soft_delete, paginate_with_sort
 from app.domain.content_guard import check_document_content
 from app.engine.extractor import extract_text
 from app.engine.rag import ingest_chunks, delete_document_chunks
@@ -132,21 +132,15 @@ def list_documents_service(
     if created_before:
         conditions.append(Document.created_at <= created_before)
 
-    total = session.exec(
-        select(func.count()).select_from(select(Document).where(*conditions).subquery())
-    ).one()
-    sort_col = (
-        Document.created_at.asc() if order == "asc" else Document.created_at.desc()
+    return paginate_with_sort(
+        session,
+        Document,
+        conditions,
+        page=page,
+        page_size=page_size,
+        order_col=Document.created_at,
+        order=order,
     )
-    skip = (page - 1) * page_size
-    items = session.exec(
-        select(Document)
-        .where(*conditions)
-        .order_by(sort_col)
-        .offset(skip)
-        .limit(page_size)
-    ).all()
-    return list(items), total
 
 
 def retry_document_service(

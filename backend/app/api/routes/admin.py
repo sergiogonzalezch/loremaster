@@ -2,9 +2,10 @@ from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response
-from sqlmodel import Session, select, func
+from sqlmodel import Session, select
 
 from app.core.auth_deps import get_admin_user
+from app.core.common import paginate_with_sort
 from app.core.query_params import PaginationParams
 from app.database import get_session
 from app.models.users import User, UserAdminResponse
@@ -23,15 +24,15 @@ def list_all_users(
     _: dict = Depends(get_admin_user),
     session: Session = Depends(get_session),
 ):
-    skip = (pagination.page - 1) * pagination.page_size
-
-    total = session.exec(select(func.count()).select_from(User)).one()
-    users = session.exec(
-        select(User)
-        .order_by(User.created_at.desc())
-        .offset(skip)
-        .limit(pagination.page_size)
-    ).all()
+    users, total = paginate_with_sort(
+        session,
+        User,
+        [],
+        page=pagination.page,
+        page_size=pagination.page_size,
+        order_col=User.created_at,
+        order="desc",
+    )
 
     data = [
         UserAdminResponse(

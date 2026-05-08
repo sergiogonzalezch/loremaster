@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlmodel import Session, select
 
 from app.core.exceptions import DatabaseError, DuplicateCollectionNameError
+from app.core.common import paginate_with_sort
 from app.models.collections import Collection, UpdateCollectionRequest
 from app.models.documents import Document
 from app.models.entities import Entity
@@ -91,7 +92,7 @@ def list_collections_service(
     created_after: Optional[datetime] = None,
     created_before: Optional[datetime] = None,
     order: Literal["asc", "desc"] = "desc",
-) -> tuple[list[Collection], int]:
+) -> tuple[list[dict], int]:
     conditions = [Collection.is_deleted == False, Collection.owner_id == owner_id]
     if name:
         conditions.append(Collection.name.ilike(f"%{name}%"))
@@ -100,22 +101,15 @@ def list_collections_service(
     if created_before:
         conditions.append(Collection.created_at <= created_before)
 
-    total = session.exec(
-        select(func.count()).select_from(
-            select(Collection).where(*conditions).subquery()
-        )
-    ).one()
-    sort_col = (
-        Collection.created_at.asc() if order == "asc" else Collection.created_at.desc()
+    items, total = paginate_with_sort(
+        session,
+        Collection,
+        conditions,
+        page=page,
+        page_size=page_size,
+        order_col=Collection.created_at,
+        order=order,
     )
-    skip = (page - 1) * page_size
-    items = session.exec(
-        select(Collection)
-        .where(*conditions)
-        .order_by(sort_col)
-        .offset(skip)
-        .limit(page_size)
-    ).all()
     collection_ids = [c.id for c in items]
     doc_counts, entity_counts = _fetch_counts(session, collection_ids)
     enriched = [
