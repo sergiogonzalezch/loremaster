@@ -117,25 +117,28 @@ def cascade_delete_collection(session: Session, collection: Collection) -> bool:
     return _delete_vectors_with_retry(collection.id)
 
 
-def _cascade_delete_images_by_entity(session: Session, entity_id: str) -> int:
+def _cascade_delete_images(
+    session: Session,
+    entity_id: str | None = None,
+    collection_id: str | None = None,
+) -> int:
+    conditions = [ImageRecord.is_deleted == False]
+    if entity_id is not None:
+        conditions.append(ImageRecord.entity_id == entity_id)
+    if collection_id is not None:
+        conditions.append(ImageRecord.collection_id == collection_id)
+
     images = session.exec(
-        select(ImageRecord).where(
-            ImageRecord.entity_id == entity_id,
-            ImageRecord.is_deleted == False,
-        )
+        select(ImageRecord).where(*conditions)
     ).all()
     for img in images:
         soft_delete(session, img)
     return len(images)
+
+
+def _cascade_delete_images_by_entity(session: Session, entity_id: str) -> int:
+    return _cascade_delete_images(session, entity_id=entity_id)
 
 
 def _cascade_delete_images_by_collection(session: Session, collection_id: str) -> int:
-    images = session.exec(
-        select(ImageRecord).where(
-            ImageRecord.collection_id == collection_id,
-            ImageRecord.is_deleted == False,
-        )
-    ).all()
-    for img in images:
-        soft_delete(session, img)
-    return len(images)
+    return _cascade_delete_images(session, collection_id=collection_id)
