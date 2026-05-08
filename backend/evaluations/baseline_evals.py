@@ -1374,6 +1374,11 @@ def main() -> None:
         help="Usuario para login/registro (default: eval_runner)",
     )
     parser.add_argument(
+        "--email",
+        default="eval_runner@eval.local",
+        help="Email para registro (default: eval_runner@eval.local)",
+    )
+    parser.add_argument(
         "--password",
         default="eval_password_123",
         help="Contraseña para login/registro (default: eval_password_123)",
@@ -1439,15 +1444,22 @@ def main() -> None:
     # ── Obtener token JWT ───────────────────────────────────────────────────
     token = args.token
     if not token:
-        creds = {"username": args.username, "password": args.password}
+        login_creds = {"username_or_email": args.username, "password": args.password}
+        register_creds = {
+            "username": args.username,
+            "email": args.email,
+            "password": args.password,
+        }
         auth_client = httpx.Client(base_url=args.base_url, timeout=10)
         try:
-            resp = auth_client.post(f"{API_PREFIX}/auth/login", json=creds)
+            resp = auth_client.post(f"{API_PREFIX}/auth/login", json=login_creds)
             if resp.status_code == 200:
                 token = resp.json()["access_token"]
                 _ok(f"Login OK como '{args.username}'")
-            elif resp.status_code in (401, 404):
-                resp = auth_client.post(f"{API_PREFIX}/auth/register", json=creds)
+            elif resp.status_code in (401, 422):
+                resp = auth_client.post(
+                    f"{API_PREFIX}/auth/register", json=register_creds
+                )
                 if resp.status_code == 200:
                     token = resp.json()["access_token"]
                     _ok(f"Usuario '{args.username}' registrado y autenticado")

@@ -18,6 +18,7 @@ class User(SQLModel, table=True):
     bio: Optional[str] = SQLField(default=None, max_length=500)
     avatar_path: Optional[str] = SQLField(default=None, max_length=500)
     is_admin: bool = SQLField(default=False)
+    token_version: int = SQLField(default=0)
     created_at: datetime = SQLField(default_factory=lambda: datetime.now(timezone.utc))
     is_deleted: bool = SQLField(default=False)
     deleted_at: Optional[datetime] = SQLField(default=None)

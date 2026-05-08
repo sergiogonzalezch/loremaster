@@ -1,4 +1,4 @@
-# Lore Master — Frontend
+﻿# Lore Master — Frontend
 
 SPA React para interactuar con la API de Lore Master. Permite gestionar colecciones de documentos, entidades narrativas y generar contenido con RAG por categoría.
 
@@ -54,7 +54,7 @@ El proxy de Vite redirige `/api/*` → `http://localhost:8000` en desarrollo, ev
 src/
 ├── api/
 │   ├── apiClient.ts        → apiFetch<T> con ApiError / ApiAbortError
-│   ├── auth.ts             → login() / register() — POST /auth/login y /auth/register
+│   ├── auth.ts             → login() / register() / logoutApi() — POST /auth/login, /auth/register, /auth/logout
 │   ├── collections.ts      → CRUD de colecciones
 │   ├── documents.ts        → upload (FormData), listado y eliminación de documentos
 │   ├── entities.ts         → CRUD de entidades
@@ -77,7 +77,7 @@ src/
 │   ├── StarfieldCanvas.tsx    → Fondo animado canvas: estrellas de fondo + estrellas de colecciones (evento lm:collections) + estrellas fugaces
 │   └── TokenCounter.tsx       → Estimación de tokens (aviso a los 400)
 ├── contexts/
-│   └── AuthContext.tsx     → AuthProvider + AuthContext: estado global del usuario decodificado del JWT
+│   └── AuthContext.tsx     → AuthProvider + AuthContext: valida exp al init, auto-logout timer, server logout al cerrar sesión
 ├── hooks/
 │   ├── useAuth.ts                      → Acceso al contexto de autenticación (lanza si se usa fuera de AuthProvider)
 │   ├── useCollectionDocumentsStatus.ts → Monitoriza estado de documentos; refresca automáticamente cada 3s si hay documentos procesando
@@ -155,13 +155,15 @@ Aspectos destacados de cobertura:
 
 ## Autenticación
 
-Flujo JWT local. Al iniciar la app, `AuthProvider` decodifica el token almacenado en `localStorage` y expone el usuario vía contexto. `ProtectedRoute` usa `useAuth().user` para redirigir a `/login` si no hay sesión activa.
+Flujo JWT local. Al iniciar la app, `AuthProvider` decodifica el token almacenado en `localStorage`, valida el campo `exp` y expone el usuario vía contexto. Si el token ya está expirado al cargar, se elimina inmediatamente. `ProtectedRoute` usa `useAuth().user` para redirigir a `/login` si no hay sesión activa.
 
 - **Login**: `POST /api/v1/auth/login` → guarda `access_token` en `localStorage`.
 - **Registro**: `POST /api/v1/auth/register` → crea cuenta y devuelve token directamente (login implícito).
+- **Logout**: `POST /api/v1/auth/logout` → invalida la sesión en servidor (incrementa `token_version`), luego limpia `localStorage` y el estado del contexto.
 - El token se adjunta en todas las peticiones via cabecera `Authorization: Bearer <token>` dentro de `apiFetch`.
 - **`AuthContext` / `useAuth`**: estado global del usuario (`{ id, username, is_admin }`). `AuthProvider` envuelve toda la app en `App.tsx`. `useAuth()` lanza si se llama fuera del provider.
-- **`logout()`**: expuesto por `useAuth()`; elimina el token de `localStorage` y limpia el estado del contexto.
+- **`logout()`**: expuesto por `useAuth()`; llama al servidor para invalidar la sesión, elimina el token de `localStorage` y limpia el estado del contexto.
+- **Auto-logout**: `AuthProvider` programa un `setTimeout` que cierra la sesión en el momento exacto de expiración del token (60 min), sin necesidad de una llamada API fallida.
 - Utilidades de bajo nivel en `src/utils/token.ts`: `getToken()`, `setToken()`, `removeToken()` — usadas por `AuthProvider` y `apiFetch`, no directamente por componentes.
 
 ## Pantallas

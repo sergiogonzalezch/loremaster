@@ -1,4 +1,4 @@
-# 1. Resumen Ejecutivo
+﻿# 1. Resumen Ejecutivo
 
 > ⚠️ **NOTA SOBRE DIAGRAMAS**: Los diagramas referenciados en este documento fueron creados en versiones anteriores del proyecto y no reflejan el estado actual. Pendiente de recrear:
 > - ERD (no incluye `users`, `image_generations`, `image_records`, `generated_texts`, `moderation_log`, campos `is_shared`, `owner_id`)
@@ -359,7 +359,7 @@ loremaster/
 │   │   ├── main.py                        # FastAPI app, CORS, lifespan, registro de routers
 │   │   ├── database.py                    # SQLModel engine + dependencia get_session
 │   │   ├── api/routes/
-│   │   │   ├── auth.py                    # Registro y login JWT local
+│   │   │   ├── auth.py                    # Registro, login y logout JWT local (POST /auth/logout incrementa token_version)
 │   │   │   ├── collections.py             # HU-01: CRUD colecciones (solo owner)
 │   │   │   ├── documents.py               # HU-02: ingestión PDF/TXT
 │   │   │   ├── rag_query.py               # HU-03: consulta RAG libre por colección
@@ -376,13 +376,13 @@ loremaster/
 │   │   │   ├── entity_content.py          # EntityContent (is_shared), EntityContentResponse
 │   │   │   ├── generated_texts.py         # GeneratedText: raw_content, query, sources_count, token_count
 │   │   │   ├── image_generation.py        # ImageGeneration + ImageRecord (is_shared) + schemas de request/response
-│   │   │   ├── users.py                   # User (is_admin, is_deleted), UserProfileResponse, UpdateProfileRequest
+│   │   │   ├── users.py                   # User (is_admin, token_version, is_deleted), UserProfileResponse, UpdateProfileRequest
 │   │   │   ├── rag_query.py               # RagQueryRequest, RagQueryResponse
 │   │   │   └── shared.py                  # PaginatedResponse[T] + PaginationMeta genéricos
 │   │   ├── core/
 │   │   │   ├── config.py                  # Pydantic Settings (lee .env)
 │   │   │   ├── lifespan.py                # Startup: migraciones Alembic (crítico) + health checks
-│   │   │   ├── auth_deps.py               # get_current_user / get_admin_user (JWT → sub, is_admin)
+│   │   │   ├── auth_deps.py               # get_current_user (verifica firma JWT + token_version en DB) / get_admin_user
 │   │   │   ├── deps.py                    # get_collection_or_404_owned, get_entity_or_404, get_entity_or_404_owned
 │   │   │   ├── query_params.py            # PaginationParams (page, page_size)
 │   │   │   └── common.py                  # Helpers DB: soft_delete, get_active_by_id
@@ -423,7 +423,7 @@ loremaster/
 │   │   ├── App.tsx                        # BrowserRouter + rutas + AuthProvider
 │   │   ├── api/                           # Capa de acceso al backend
 │   │   │   ├── apiClient.ts               # fetch wrapper: apiFetch<T>, ApiError, ApiAbortError
-│   │   │   ├── auth.ts                    # login() / register()
+│   │   │   ├── auth.ts                    # login() / register() / logoutApi()
 │   │   │   ├── collections.ts / documents.ts / entities.ts / contents.ts / generate.ts
 │   │   │   ├── imageGeneration.ts         # buildPrompt, generate, list, get, shareImage, deleteImage
 │   │   │   ├── users.ts                   # getMyProfile, updateMyProfile, getPublicProfile, getPublicFeed,
@@ -453,7 +453,7 @@ loremaster/
 │   │   │   ├── StarfieldCanvas.tsx        # Fondo canvas: estrellas + fugaces (evento lm:collections)
 │   │   │   └── TokenCounter.tsx           # Estimación de tokens (aviso a los 400)
 │   │   ├── contexts/
-│   │   │   └── AuthContext.tsx            # AuthProvider + AuthContext: { id, username, is_admin }
+│   │   │   └── AuthContext.tsx            # AuthProvider + AuthContext: { id, username, is_admin } -- valida exp al init, auto-logout timer, server logout al cerrar sesión
 │   │   ├── hooks/
 │   │   │   ├── useAuth.ts                       # Acceso al contexto de autenticación
 │   │   │   ├── useGenerate.ts                   # Peticiones LLM cancelables con AbortSignal
@@ -604,7 +604,7 @@ DATABASE_URL=postgresql://user:pass@postgres:5432/loremaster
 
 | **Tabla** | **Campos principales** | **Notas / Restricciones** |
 |---|---|---|
-| **users** | id (UUID PK), username (unique), hashed_password, email (unique), display_name, bio, avatar_url, is_admin, created_at, is_deleted, deleted_at | Campos de perfil opcionales. `is_admin` designado vía `scripts/make_admin.py`, nunca por API pública. Un admin soft-deleted no puede autenticarse. |
+| **users** | id (UUID PK), username (unique), hashed_password, email (unique), display_name, bio, avatar_url, is_admin, token_version, created_at, is_deleted, deleted_at | Campos de perfil opcionales. `is_admin` designado vía `scripts/make_admin.py`, nunca por API pública. Un admin soft-deleted no puede autenticarse. `token_version` se incrementa en cada logout para invalidar tokens previos. |
 | **collections** | id (UUID PK), name, description, owner_id (FK → users), is_public, created_at, updated_at, is_deleted, deleted_at | `UNIQUE(name, owner_id)`. `owner_id` nullable para datos migrados. `is_public=False` por defecto; el contenido se comparte de forma selectiva a nivel de ítem. |
 | **documents** | id (UUID PK), collection_id (FK), filename, file_type, chunk_count, status, created_at, is_deleted, deleted_at | El texto vive en Qdrant, no en esta tabla. `status`: processing \| completed \| failed. |
 | **entities** | id (UUID PK), collection_id (FK), type (ENUM), name, description, created_at, updated_at, is_deleted, deleted_at | `type`: character \| creature \| location \| faction \| item. Nombre único por colección: `uq_entity_collection_name`. Los nombres de entidades eliminadas quedan reservados. |

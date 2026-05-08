@@ -1,6 +1,10 @@
 import pytest
-from sqlmodel import select
-from app.core.auth import hash_password
+from typing import AsyncGenerator
+from httpx import ASGITransport, AsyncClient
+from sqlmodel import Session, select
+from app.core.auth import create_access_token, hash_password
+from app.database import get_session
+from app.main import app
 from app.models.users import User
 
 
@@ -176,3 +180,98 @@ async def test_register_missing_email_422(client):
         },
     )
     assert response.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# Fixtures for real-auth tests (no get_current_user stub)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+async def auth_client(db_session: Session) -> AsyncGenerator[AsyncClient, None]:
+    """FX-AUTH: Client without get_current_user stub — uses real auth flow."""
+
+    def _get_test_session():
+        yield db_session
+
+    app.dependency_overrides[get_session] = _get_test_session
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as async_client:
+        yield async_client
+
+    app.dependency_overrides.clear()
+
+
+# ---------------------------------------------------------------------------
+# AUTH-11 / AUTH-12
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_logout_invalidates_token(auth_client, db_session):
+    """AUTH-11: POST /auth/logout incrementa token_version; el token previo retorna 401."""
+    # Register
+    reg = await auth_client.post(
+        "/api/v1/auth/register",
+        json={
+            "username": "logoutuser",
+            "email": "logoutuser@example.com",
+            "password": "password123",
+        },
+    )
+    assert reg.status_code == 200
+    token = reg.json()["access_token"]
+
+    # Protected endpoint with valid token → 200
+    me = await auth_client.get(
+        "/api/v1/users/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert me.status_code == 200
+
+    # Logout
+    lo = await auth_client.post(
+        "/api/v1/auth/logout",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert lo.status_code == 204
+
+    # Same token now rejected
+    me_after = await auth_client.get(
+        "/api/v1/users/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert me_after.status_code == 401
+
+
+@pytest.mark.anyio
+async def test_token_version_mismatch_returns_401(auth_client, db_session):
+    """AUTH-12: Token con version desactualizada retorna 401."""
+    user = User(
+        id="version-test-id",
+        username="versionuser",
+        email="version@example.com",
+        hashed_password=hash_password("password123"),
+        token_version=5,
+    )
+    db_session.add(user)
+    db_session.commit()
+
+    # Token with stale version
+    stale_token = create_access_token(
+        data={
+            "sub": "version-test-id",
+            "username": "versionuser",
+            "is_admin": False,
+            "version": 3,
+        }
+    )
+
+    response = await auth_client.get(
+        "/api/v1/users/me",
+        headers={"Authorization": f"Bearer {stale_token}"},
+    )
+    assert response.status_code == 401

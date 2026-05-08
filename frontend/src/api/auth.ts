@@ -31,3 +31,7 @@ export function register(
     body: JSON.stringify(credentials),
   });
 }
+
+export function logoutApi(): Promise<void> {
+  return apiFetch<void>("/auth/logout", { method: "POST" });
+}

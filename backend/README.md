@@ -43,9 +43,9 @@ cp .env.example .env
 | `ALLOWED_ORIGINS` | `["http://localhost:3000","http://localhost:5173"]` | Orígenes permitidos por CORS |
 | `REDIS_URL` | `redis://redis:6379/0` | Caché semántico (staged) |
 | `CACHE_TTL` | `3600` | TTL del caché en segundos (staged) |
-| `SECRET_KEY` | `your-secret-key` | Clave de firma para tokens JWT. **Cambiar en producción.** |
+| `SECRET_KEY` | `your-secret-key` | Clave de firma para tokens JWT. **Obligatorio cambiar en producción** (el servidor rechaza el valor por defecto si `ENVIRONMENT != local`). |
 | `ALGORITHM` | `HS256` | Algoritmo de firma JWT |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | `1440` | Duración del token JWT en minutos (24 h) |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | `60` | Duración del token JWT en minutos (1 h) |
 | `CLERK_JWKS_URL` | *(ver `.env.example`)* | URL JWKS de Clerk (solo entorno `production`) |
 | `CLERK_AUDIENCE` | *(ver `.env.example`)* | Audience de Clerk (solo entorno `production`) |
 
@@ -135,7 +135,7 @@ pytest -k "test_create"             # por nombre
 | `test_documents.py` | 16 | Upload PDF/TXT, background ingest, Qdrant failure, malformed PDF |
 | `test_image_generation_service.py` | 13 | Build-prompt, generación por batch, guardrails de imagen |
 | `test_entities.py` | 13 | CRUD de entidades, nombre reservado tras soft-delete |
-| `test_auth.py` | 10 | Registro, login, JWT válido/expirado/inválido, errores de autenticación |
+| `test_auth.py` | 12 | Registro, login, logout (invalida token), versión desfasada → 401, errores de autenticación |
 | `test_public_feed.py` | 9 | Feed público `/public/feed` e `/public/images`, perfiles públicos, ownership 403 |
 | `test_rag_query.py` | 9 | Consulta RAG, Qdrant caído → 503, LLM failure → semáforo liberado |
 | `test_generation_service.py` | 8 | Generación por categoría, prompt templates, moderación |
@@ -145,7 +145,7 @@ pytest -k "test_create"             # por nombre
 | `test_deletion_service.py` | 2 | Cascade soft-delete: documentos, entidades, contenidos, vectores Qdrant |
 | `test_content_management_service.py` | 1 | `_discard_sibling_contents` no afecta otras categorías |
 
-**Total: 173 tests.**
+**Total: 175 tests.**
 
 ## Endpoints
 
@@ -153,18 +153,21 @@ Todos bajo `/api/v1/`.
 
 ### Autenticación
 
-Autenticación local con JWT. En desarrollo (`ENVIRONMENT=local`) se usa `verify_token` (HS256). En producción (`ENVIRONMENT=production`) se delega en Clerk via `decode_clerk_token`.
+Autenticación local con JWT (HS256). En producción (`ENVIRONMENT=production`) se delega en Clerk via `decode_clerk_token`.
 
-| Método | Ruta | Descripción | Status |
-|---|---|---|---|
-| `POST` | `/auth/register` | Registrar usuario nuevo y devolver token JWT | 200 |
-| `POST` | `/auth/login` | Autenticar usuario y devolver token JWT | 200 |
+| Método | Ruta | Auth | Descripción | Status |
+|---|---|---|---|---|
+| `POST` | `/auth/register` | No | Registrar usuario nuevo y devolver token JWT | 200 |
+| `POST` | `/auth/login` | No | Autenticar usuario y devolver token JWT | 200 |
+| `POST` | `/auth/logout` | Requerida | Invalidar la sesión activa incrementando `token_version` | 204 |
 
-**Request:** `{ username, password }` — **Response:** `{ access_token, token_type: "bearer" }`.
+**Login/Register request:** `{ username_or_email, password }` / `{ username, email, password }` — **Response:** `{ access_token, token_type: "bearer" }`.
 
-El token se envía en cabecera `Authorization: Bearer <token>`. Todos los endpoints de la API requieren autenticación salvo `/health` y `/`.
+El token se envía en cabecera `Authorization: Bearer <token>`. Todos los endpoints de la API requieren autenticación salvo `/health`, `/` y los endpoints públicos (`/public/*`, `/users/{username}/profile`).
 
-> **Dependencias:** el hashing de contraseñas usa `bcrypt` directamente (sin `passlib`), lo que lo hace compatible con `bcrypt >= 4.x`.
+**Gestión de sesiones:** cada token incluye un claim `version` que se compara contra `token_version` del usuario en DB en cada request autenticado. El logout incrementa `token_version`, invalidando todos los tokens previos del usuario. Los tokens tienen una vida útil de **60 minutos**.
+
+> **Dependencias:** el hashing de contraseñas usa `bcrypt` directamente (sin `passlib`), compatible con `bcrypt >= 4.x`.
 
 ### Colecciones
 

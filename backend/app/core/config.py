@@ -49,7 +49,7 @@ class Settings(BaseSettings):
 
     secret_key: str = "your-secret-key"
     algorithm: str = "HS256"
-    access_token_expire_minutes: int = 1440
+    access_token_expire_minutes: int = 60
 
     clerk_jwks_url: str = "https://your-org.clerk.accounts.dev/.well-known/jwks.json"
     clerk_audience: str = "your-audience-id"
@@ -63,6 +63,11 @@ class Settings(BaseSettings):
             raise ValueError(
                 "ALLOWED_ORIGINS no puede contener '*' cuando allow_credentials=True. "
                 "Especifica los orígenes concretos en .env"
+            )
+        if self.secret_key == "your-secret-key" and self.environment != "local":
+            raise ValueError(
+                "SECRET_KEY no puede ser el valor por defecto en entornos no locales. "
+                "Define SECRET_KEY en .env"
             )
         return self
 

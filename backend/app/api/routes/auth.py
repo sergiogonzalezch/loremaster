@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlmodel import Session, select
 from app.core.auth import create_access_token, hash_password, verify_password
+from app.core.auth_deps import get_current_user
 from app.database import get_session
 from app.models.users import User
 
@@ -40,7 +41,12 @@ def login(request: LoginRequest, session: Session = Depends(get_session)):
         )
 
     token = create_access_token(
-        data={"sub": user.id, "username": user.username, "is_admin": user.is_admin}
+        data={
+            "sub": user.id,
+            "username": user.username,
+            "is_admin": user.is_admin,
+            "version": user.token_version,
+        }
     )
     return {"access_token": token}
 
@@ -75,6 +81,23 @@ def register(request: RegisterRequest, session: Session = Depends(get_session)):
     session.refresh(new_user)
 
     token = create_access_token(
-        data={"sub": new_user.id, "username": new_user.username, "is_admin": False}
+        data={
+            "sub": new_user.id,
+            "username": new_user.username,
+            "is_admin": False,
+            "version": new_user.token_version,
+        }
     )
     return {"access_token": token}
+
+
+@router.post("/logout", status_code=204)
+def logout(
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> None:
+    user = session.get(User, current_user["sub"])
+    if user and not user.is_deleted:
+        user.token_version += 1
+        session.add(user)
+        session.commit()

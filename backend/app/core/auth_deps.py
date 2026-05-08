@@ -12,6 +12,7 @@ security = HTTPBearer(auto_error=False)
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
+    session: Session = Depends(get_session),
 ) -> dict:
     if not credentials:
         raise HTTPException(status_code=401, detail="No autorizado")
@@ -19,7 +20,16 @@ def get_current_user(
         from app.api.routes.auth_clerk import decode_clerk_token
 
         return decode_clerk_token(credentials.credentials)
-    return verify_token(credentials.credentials)
+
+    payload = verify_token(credentials.credentials)
+
+    user = session.get(User, payload["sub"])
+    if not user or user.is_deleted:
+        raise HTTPException(status_code=401, detail="No autorizado")
+    if user.token_version != payload.get("version", 0):
+        raise HTTPException(status_code=401, detail="Sesión inválida")
+
+    return payload
 
 
 def get_admin_user(
