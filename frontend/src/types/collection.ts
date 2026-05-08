@@ -18,6 +18,7 @@ export interface CreateCollectionRequest {
 export interface UpdateCollectionRequest {
   name?: string;
   description?: string;
+  is_public?: boolean;
 }
 
 import type { PaginatedMeta } from "./content";

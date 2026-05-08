@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import CollectionsPage from "../pages/CollectionsPage";
+import { AuthProvider } from "../contexts/AuthContext";
 import type { Collection } from "../types";
 
 vi.mock("../api", () => ({
@@ -21,6 +22,8 @@ const SAMPLE: Collection = {
   id: "col-1",
   name: "Middle Earth",
   description: "A fantasy world",
+  owner_id: null,
+  is_public: false,
   created_at: "2024-01-01T00:00:00Z",
   updated_at: null,
   document_count: 2,
@@ -35,7 +38,9 @@ const EMPTY_PAGE = {
 function renderPage() {
   return render(
     <MemoryRouter>
-      <CollectionsPage />
+      <AuthProvider>
+        <CollectionsPage />
+      </AuthProvider>
     </MemoryRouter>,
   );
 }

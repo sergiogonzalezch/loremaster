@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Container,
   Card,
@@ -10,13 +10,16 @@ import {
   Tabs,
   Tab,
 } from "react-bootstrap";
-import { login, register } from "../api/auth";
-import { setToken } from "../utils/token";
+import { login as apiLogin, register } from "../api/auth";
+import { useAuth } from "../hooks/useAuth";
 import { parseApiError } from "../utils/errors";
 import StarfieldCanvas from "../components/StarfieldCanvas";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: string })?.from ?? "/";
+  const { login } = useAuth();
   const [tab, setTab] = useState<string>("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -31,9 +34,9 @@ export default function LoginPage() {
     setLoading(true);
     try {
       if (tab === "login") {
-        const { access_token } = await login({ username, password });
-        setToken(access_token);
-        navigate("/", { replace: true });
+        const { access_token } = await apiLogin({ username, password });
+        login(access_token);
+        navigate(from, { replace: true });
       } else {
         await register({ username, password });
         setSuccess("Usuario creado correctamente. Ya puedes iniciar sesión.");

@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import type { FormEvent } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 import {
   Row,
   Col,
@@ -28,7 +29,9 @@ import { useDeleteConfirm } from "../hooks/useDeleteConfirm";
 
 export default function CollectionsPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [copiedProfile, setCopiedProfile] = useState(false);
 
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,6 +58,7 @@ export default function CollectionsPage() {
   const [editTarget, setEditTarget] = useState<Collection | null>(null);
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editIsPublic, setEditIsPublic] = useState(false);
   const [editing, setEditing] = useState(false);
 
   const [name, setName] = useState(searchParams.get("name") ?? "");
@@ -128,6 +132,7 @@ export default function CollectionsPage() {
     setEditTarget(col);
     setEditName(col.name);
     setEditDescription(col.description);
+    setEditIsPublic(col.is_public);
   }
 
   async function handleSaveEdit(e: FormEvent) {
@@ -138,6 +143,7 @@ export default function CollectionsPage() {
       await updateCollection(editTarget.id, {
         name: editName.trim(),
         description: editDescription.trim(),
+        is_public: editIsPublic,
       });
       setEditTarget(null);
       await fetchCollections();
@@ -169,13 +175,40 @@ export default function CollectionsPage() {
 
   const paginationItems = usePagination(page, totalPages);
 
+  function handleCopyProfileLink() {
+    const url = `${window.location.origin}/users/${user?.username}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedProfile(true);
+      setTimeout(() => setCopiedProfile(false), 2000);
+    });
+  }
+
   return (
     <div className="lm-page">
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h2 className="mb-0">Colecciones</h2>
-        <Button variant="warning" onClick={() => setShowCreate(true)}>
-          + Nueva colección
-        </Button>
+        <div className="d-flex gap-2 align-items-center">
+          <Link
+            to={`/users/${user?.username}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-sm btn-outline-secondary"
+            title="Ver mi perfil público"
+          >
+            Mi perfil público ↗
+          </Link>
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            onClick={handleCopyProfileLink}
+            title="Copiar enlace de perfil"
+          >
+            {copiedProfile ? "¡Copiado! ✓" : "Copiar enlace"}
+          </Button>
+          <Button variant="warning" onClick={() => setShowCreate(true)}>
+            + Nueva colección
+          </Button>
+        </div>
       </div>
 
       <Card className="mb-3">
@@ -303,7 +336,22 @@ export default function CollectionsPage() {
                   onClick={() => navigate(`/collections/${col.id}`)}
                 >
                   <Card.Body>
-                    <Card.Title>{col.name}</Card.Title>
+                    <div className="d-flex align-items-start justify-content-between gap-2 mb-1">
+                      <Card.Title className="mb-0">{col.name}</Card.Title>
+                      {col.is_public && (
+                        <span
+                          className="badge"
+                          style={{
+                            backgroundColor: "var(--lm-accent)",
+                            color: "#000",
+                            fontSize: "0.7rem",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          Pública
+                        </span>
+                      )}
+                    </div>
                     <Card.Text
                       className="text-muted"
                       style={{
@@ -415,7 +463,7 @@ export default function CollectionsPage() {
                 autoFocus
               />
             </Form.Group>
-            <Form.Group>
+            <Form.Group className="mb-3">
               <Form.Label>Descripción</Form.Label>
               <Form.Control
                 as="textarea"
@@ -424,6 +472,13 @@ export default function CollectionsPage() {
                 onChange={(e) => setEditDescription(e.target.value)}
               />
             </Form.Group>
+            <Form.Check
+              type="switch"
+              id="edit-is-public"
+              label="Colección pública"
+              checked={editIsPublic}
+              onChange={(e) => setEditIsPublic(e.target.checked)}
+            />
           </Modal.Body>
           <Modal.Footer>
             <Button

@@ -1,19 +1,25 @@
-import { apiClient } from "./client";
-import type { UserProfile, UpdateProfileRequest } from "../types/user";
+import { apiFetch } from "./apiClient";
+import type {
+  UserProfile,
+  UpdateProfileRequest,
+  PublicProfile,
+} from "../types/user";
 
-export async function getMyProfile(): Promise<UserProfile> {
-  const res = await apiClient("/users/me");
-  if (!res.ok) throw await res.json();
-  return res.json();
+export function getMyProfile(): Promise<UserProfile> {
+  return apiFetch<UserProfile>("/users/me");
 }
 
-export async function updateMyProfile(
+export function updateMyProfile(
   data: UpdateProfileRequest,
 ): Promise<UserProfile> {
-  const res = await apiClient("/users/me", {
+  return apiFetch<UserProfile>("/users/me", {
     method: "PATCH",
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw await res.json();
-  return res.json();
+}
+
+export function getPublicProfile(username: string): Promise<PublicProfile> {
+  return apiFetch<PublicProfile>(
+    `/users/${encodeURIComponent(username)}/profile`,
+  );
 }
