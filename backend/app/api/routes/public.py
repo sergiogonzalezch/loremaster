@@ -8,7 +8,8 @@ from app.core.common import paginate
 from app.core.public_filters import _CONTENT_CONDITIONS, _IMAGE_CONDITIONS
 from app.database import get_session
 from app.models.shared import PaginatedResponse
-from app.models.users import PublicFeedItem, PublicImageItem, User
+from app.models.public import PublicFeedItem, PublicImageItem
+from app.models.users import User
 from app.models.collections import Collection
 from app.models.entities import Entity
 from app.models.entity_content import EntityContent

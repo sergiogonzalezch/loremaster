@@ -3,15 +3,17 @@ from sqlmodel import Session, select
 
 from app.core.deps import get_current_db_user
 from app.core.public_filters import _CONTENT_CONDITIONS, _IMAGE_CONDITIONS
-from app.models.users import (
+from app.models.user_schemas import (
     AvatarResponse,
+    UpdateProfileRequest,
+    UserProfileResponse,
+)
+from app.models.public import (
     PublicProfileResponse,
     SharedContentSummary,
     SharedImageSummary,
-    UpdateProfileRequest,
-    User,
-    UserProfileResponse,
 )
+from app.models.users import User
 from app.services.user_image import (
     delete_profile_image,
     get_avatar_info,
