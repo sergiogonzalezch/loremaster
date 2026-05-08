@@ -16,6 +16,7 @@ export interface ImageRecord {
   width: number;
   height: number;
   generation_ms: number;
+  is_shared: boolean;
   created_at: string;
   is_deleted: boolean;
   deleted_at: string | null;

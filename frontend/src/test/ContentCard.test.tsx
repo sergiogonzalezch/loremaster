@@ -34,6 +34,7 @@ function makeContent(overrides: Partial<EntityContent> = {}): EntityContent {
     raw_content: "Texto del contenido generado.",
     was_edited: false,
     status: "pending",
+    is_shared: false,
     created_at: "2024-06-01T10:00:00Z",
     confirmed_at: null,
     updated_at: null,

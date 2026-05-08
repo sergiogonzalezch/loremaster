@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Literal, Optional
 
-from sqlalchemy import func
+from sqlalchemy import exists, func, or_
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlmodel import Session, select
 
@@ -10,6 +10,8 @@ from app.core.exceptions import DatabaseError, DuplicateCollectionNameError
 from app.models.collections import Collection, UpdateCollectionRequest
 from app.models.documents import Document
 from app.models.entities import Entity
+from app.models.entity_content import EntityContent
+from app.models.image_generation import ImageRecord
 from app.services.deletion_service import cascade_delete_collection
 
 logger = logging.getLogger(__name__)
@@ -134,7 +136,20 @@ def list_public_collections_service(
     page: int = 1,
     page_size: int = 20,
 ) -> tuple[list[Collection], int]:
-    conditions = [Collection.is_deleted == False, Collection.is_public == True]
+    has_shared_content = exists().where(
+        EntityContent.collection_id == Collection.id,
+        EntityContent.is_shared == True,
+        EntityContent.is_deleted == False,
+    )
+    has_shared_image = exists().where(
+        ImageRecord.collection_id == Collection.id,
+        ImageRecord.is_shared == True,
+        ImageRecord.is_deleted == False,
+    )
+    conditions = [
+        Collection.is_deleted == False,
+        or_(has_shared_content, has_shared_image),
+    ]
 
     total = session.exec(
         select(func.count()).select_from(
@@ -182,8 +197,6 @@ def update_collection_service(
         collection.name = request.name.strip()
     if request.description is not None:
         collection.description = request.description.strip()
-    if request.is_public is not None:
-        collection.is_public = request.is_public
 
     collection.updated_at = datetime.now(timezone.utc)
     session.add(collection)

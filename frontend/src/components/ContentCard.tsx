@@ -15,6 +15,7 @@ import {
   discardContent,
   deleteContent,
   updateContent,
+  shareContent,
 } from "../api/contents";
 import ConfirmModal from "./ConfirmModal";
 import { useDeleteConfirm } from "../hooks/useDeleteConfirm";
@@ -103,6 +104,22 @@ export default function ContentCard({
       setError(parseApiError(e, "Error al guardar"));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleShare() {
+    setBusy(true);
+    setError(null);
+    const next = !content.is_shared;
+    onOptimisticUpdate?.(content.id, { is_shared: next });
+    try {
+      await shareContent(collectionId, entityId, content.id, { shared: next });
+      onAction();
+    } catch (e) {
+      onOptimisticUpdate?.(content.id, content);
+      setError(parseApiError(e, "Error al cambiar visibilidad"));
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -326,6 +343,19 @@ export default function ContentCard({
                   disabled={busy || deleteConfirm.deleting}
                 >
                   Editar
+                </Button>
+                <Button
+                  variant={content.is_shared ? "success" : "outline-secondary"}
+                  size="sm"
+                  onClick={handleShare}
+                  disabled={busy || deleteConfirm.deleting}
+                  title={
+                    content.is_shared
+                      ? "Este contenido es visible en el feed público"
+                      : "Compartir en el feed público"
+                  }
+                >
+                  {content.is_shared ? "✦ Compartido" : "Compartir"}
                 </Button>
                 {onOpenImagePanel && (
                   <Button

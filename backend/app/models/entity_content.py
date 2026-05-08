@@ -42,6 +42,7 @@ class EntityContent(SQLModel, table=True):
     category: ContentCategory = Field(max_length=50)
     content: str = Field(max_length=10000)
     status: ContentStatus = Field(default=ContentStatus.pending, max_length=50)
+    is_shared: bool = Field(default=False)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     confirmed_at: Optional[datetime] = Field(default=None)
     updated_at: Optional[datetime] = Field(default=None)
@@ -67,6 +68,7 @@ class EntityContentResponse(BaseModel):
     sources_count: int = 0
     token_count: int = 0
     status: ContentStatus
+    is_shared: bool = False
     created_at: datetime
     confirmed_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
@@ -84,3 +86,7 @@ class GenerateContentRequest(BaseModel):
 
 class UpdateContentRequest(BaseModel):
     content: str = Field(..., min_length=1, max_length=10000)
+
+
+class ShareContentRequest(BaseModel):
+    shared: bool

@@ -119,6 +119,7 @@ class ImageRecord(SQLModel, table=True):
     generation_ms: int = SQLField(default=0)
 
     # Ciclo de vida
+    is_shared: bool = SQLField(default=False)
     created_at: datetime = SQLField(default_factory=lambda: datetime.now(timezone.utc))
     is_deleted: bool = SQLField(default=False)
     deleted_at: Optional[datetime] = SQLField(default=None)
@@ -228,6 +229,7 @@ class ImageRecordResponse(BaseModel):
     height: int
     generation_ms: int
 
+    is_shared: bool = False
     created_at: datetime
     is_deleted: bool
     deleted_at: Optional[datetime] = None
@@ -255,4 +257,8 @@ class ImageGenerationListResponse(BaseModel):
     """Lista de generaciones de imágenes de una entidad."""
 
     generations: list[ImageGenerationListItem]
+
+
+class ShareImageRequest(BaseModel):
+    shared: bool
     total: int

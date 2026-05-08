@@ -29,6 +29,7 @@ const SAMPLE_CONTENT: EntityContent = {
   raw_content: null,
   was_edited: false,
   status: "pending",
+  is_shared: false,
   created_at: "2024-01-01T00:00:00Z",
   confirmed_at: null,
   updated_at: null,

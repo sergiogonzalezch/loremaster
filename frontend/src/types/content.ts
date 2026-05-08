@@ -13,6 +13,7 @@ export interface EntityContent {
   sources_count: number;
   token_count: number;
   status: ContentStatus;
+  is_shared: boolean;
   created_at: string;
   confirmed_at: string | null;
   updated_at: string | null;

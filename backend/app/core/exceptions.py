@@ -71,6 +71,11 @@ class ContentDiscardedError(Exception):
         super().__init__("El contenido está descartado y no puede editarse.")
 
 
+class ContentNotShareableError(Exception):
+    def __init__(self) -> None:
+        super().__init__("Solo se puede compartir contenido confirmado.")
+
+
 class GeneratedContentBlockedError(Exception):
     def __init__(self, snippet: str = "") -> None:
         self.snippet = snippet[:200]

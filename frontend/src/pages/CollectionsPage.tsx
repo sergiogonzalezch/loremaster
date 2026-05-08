@@ -58,7 +58,6 @@ export default function CollectionsPage() {
   const [editTarget, setEditTarget] = useState<Collection | null>(null);
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
-  const [editIsPublic, setEditIsPublic] = useState(false);
   const [editing, setEditing] = useState(false);
 
   const [name, setName] = useState(searchParams.get("name") ?? "");
@@ -132,7 +131,6 @@ export default function CollectionsPage() {
     setEditTarget(col);
     setEditName(col.name);
     setEditDescription(col.description);
-    setEditIsPublic(col.is_public);
   }
 
   async function handleSaveEdit(e: FormEvent) {
@@ -143,7 +141,6 @@ export default function CollectionsPage() {
       await updateCollection(editTarget.id, {
         name: editName.trim(),
         description: editDescription.trim(),
-        is_public: editIsPublic,
       });
       setEditTarget(null);
       await fetchCollections();
@@ -338,19 +335,6 @@ export default function CollectionsPage() {
                   <Card.Body>
                     <div className="d-flex align-items-start justify-content-between gap-2 mb-1">
                       <Card.Title className="mb-0">{col.name}</Card.Title>
-                      {col.is_public && (
-                        <span
-                          className="badge"
-                          style={{
-                            backgroundColor: "var(--lm-accent)",
-                            color: "#000",
-                            fontSize: "0.7rem",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          Pública
-                        </span>
-                      )}
                     </div>
                     <Card.Text
                       className="text-muted"
@@ -472,13 +456,6 @@ export default function CollectionsPage() {
                 onChange={(e) => setEditDescription(e.target.value)}
               />
             </Form.Group>
-            <Form.Check
-              type="switch"
-              id="edit-is-public"
-              label="Colección pública"
-              checked={editIsPublic}
-              onChange={(e) => setEditIsPublic(e.target.checked)}
-            />
           </Modal.Body>
           <Modal.Footer>
             <Button

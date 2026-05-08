@@ -5,6 +5,7 @@ import type {
   GenerateImageRequest,
   GenerateImagesResponse,
   ImageGenerationListResponse,
+  ImageRecord,
 } from "../types";
 
 export function buildPrompt(
@@ -63,5 +64,21 @@ export function deleteImage(
   return apiFetch(
     `/collections/${collectionId}/entities/${entityId}/image-generation/${generationId}/images/${imageId}`,
     { method: "DELETE", signal },
+  );
+}
+
+export function shareImage(
+  collectionId: string,
+  entityId: string,
+  generationId: string,
+  imageId: string,
+  data: { shared: boolean },
+): Promise<ImageRecord> {
+  return apiFetch<ImageRecord>(
+    `/collections/${collectionId}/entities/${entityId}/image-generation/${generationId}/images/${imageId}/share`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    },
   );
 }

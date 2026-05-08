@@ -9,6 +9,7 @@ from app.core.auth_deps import get_current_user
 from app.core.exceptions import (
     ContentDiscardedError,
     ContentNotAllowedError,
+    ContentNotShareableError,
     DatabaseError,
     GeneratedContentBlockedError,
     InvalidCategoryError,
@@ -20,6 +21,7 @@ from app.models.entities import Entity, EntityResponse
 from app.models.entity_content import (
     EntityContentResponse,
     GenerateContentRequest,
+    ShareContentRequest,
     UpdateContentRequest,
 )
 from app.models.enums import ContentCategory
@@ -155,6 +157,32 @@ def discard_content(
         result = content_management_service.discard_content(
             session, content_id, entity_id, collection_id
         )
+    except DatabaseError:
+        raise HTTPException(status_code=500, detail="Error interno del servidor.")
+    if not result:
+        raise HTTPException(status_code=404, detail="Contenido no encontrado.")
+    return result
+
+
+@router.patch(
+    "/{collection_id}/entities/{entity_id}/contents/{content_id}/share",
+    response_model=EntityContentResponse,
+)
+def share_content(
+    entity_id: str,
+    collection_id: str,
+    content_id: str,
+    request: ShareContentRequest,
+    _: Entity = Depends(get_entity_or_404),
+    __: dict = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    try:
+        result = content_management_service.share_content(
+            session, content_id, entity_id, collection_id, request.shared
+        )
+    except ContentNotShareableError as e:
+        raise HTTPException(status_code=409, detail=str(e))
     except DatabaseError:
         raise HTTPException(status_code=500, detail="Error interno del servidor.")
     if not result:

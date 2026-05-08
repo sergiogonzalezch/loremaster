@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Alert, Button, Card, Badge, Modal } from "react-bootstrap";
 import LoadingSpinner from "./LoadingSpinner";
-import { listImageGenerations, deleteImage } from "../api/images";
+import { listImageGenerations, deleteImage, shareImage } from "../api/images";
 import type { ImageGenerationItem, ImageRecordData } from "../types";
 import { formatDate } from "../utils/formatters";
 import { CATEGORY_LABELS } from "../utils/constants";
@@ -26,6 +26,7 @@ export default function ImageGallery({
     null,
   );
   const [deleting, setDeleting] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   const fetchGenerations = useCallback(async () => {
     setLoading(true);
@@ -69,6 +70,28 @@ export default function ImageGallery({
     document.body.removeChild(link);
     URL.revokeObjectURL(blobUrl);
   }, []);
+
+  const handleShareImage = useCallback(
+    async (generationId: string, imageId: string, currentShared: boolean) => {
+      setSharing(true);
+      try {
+        const updated = await shareImage(
+          collectionId,
+          entityId,
+          generationId,
+          imageId,
+          { shared: !currentShared },
+        );
+        setSelectedImage(updated);
+        await fetchGenerations();
+      } catch {
+        setError("Error al cambiar la visibilidad de la imagen");
+      } finally {
+        setSharing(false);
+      }
+    },
+    [collectionId, entityId, fetchGenerations],
+  );
 
   const handleDeleteImage = useCallback(
     async (generationId: string, imageId: string) => {
@@ -258,18 +281,36 @@ export default function ImageGallery({
           )}
         </Modal.Body>
         <Modal.Footer className="d-flex justify-content-between">
-          <div>
+          <div className="d-flex gap-2">
             {selectedImage && (
-              <Button
-                variant="outline-danger"
-                size="sm"
-                onClick={() =>
-                  handleDeleteImage(selectedGeneration!.id, selectedImage!.id)
-                }
-                disabled={deleting}
-              >
-                Eliminar
-              </Button>
+              <>
+                <Button
+                  variant={
+                    selectedImage.is_shared ? "success" : "outline-secondary"
+                  }
+                  size="sm"
+                  onClick={() =>
+                    handleShareImage(
+                      selectedGeneration!.id,
+                      selectedImage!.id,
+                      selectedImage!.is_shared,
+                    )
+                  }
+                  disabled={sharing || deleting}
+                >
+                  {selectedImage.is_shared ? "✦ Compartida" : "Compartir"}
+                </Button>
+                <Button
+                  variant="outline-danger"
+                  size="sm"
+                  onClick={() =>
+                    handleDeleteImage(selectedGeneration!.id, selectedImage!.id)
+                  }
+                  disabled={deleting || sharing}
+                >
+                  Eliminar
+                </Button>
+              </>
             )}
           </div>
           <div className="d-flex gap-2">

@@ -107,3 +107,18 @@ export function deleteContent(
     },
   );
 }
+
+export function shareContent(
+  collectionId: string,
+  entityId: string,
+  contentId: string,
+  data: { shared: boolean },
+): Promise<EntityContent> {
+  return apiFetch<EntityContent>(
+    `${base(collectionId, entityId)}/contents/${contentId}/share`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    },
+  );
+}

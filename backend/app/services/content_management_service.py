@@ -7,7 +7,11 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Session, select
 
 from app.core.common import soft_delete
-from app.core.exceptions import ContentDiscardedError, DatabaseError
+from app.core.exceptions import (
+    ContentDiscardedError,
+    ContentNotShareableError,
+    DatabaseError,
+)
 from app.models.entities import Entity
 from app.models.entity_content import EntityContent, EntityContentResponse
 from app.models.generated_texts import GeneratedText
@@ -160,6 +164,31 @@ def discard_content(
     return _to_response(session, content)
 
 
+def share_content(
+    session: Session,
+    content_id: str,
+    entity_id: str,
+    collection_id: str,
+    shared: bool,
+) -> EntityContentResponse | None:
+    content = _get_active_content(session, content_id, entity_id, collection_id)
+    if not content:
+        return None
+    if content.status != ContentStatus.confirmed:
+        raise ContentNotShareableError()
+    content.is_shared = shared
+    session.add(content)
+    try:
+        session.commit()
+        session.refresh(content)
+    except SQLAlchemyError as e:
+        session.rollback()
+        logger.error("DB commit failed sharing content %s: %s", content_id, e)
+        raise DatabaseError() from e
+    logger.info("EntityContent %s is_shared=%s", content_id, shared)
+    return _to_response(session, content)
+
+
 def soft_delete_content(
     session: Session,
     content_id: str,
@@ -169,6 +198,7 @@ def soft_delete_content(
     content = _get_active_content(session, content_id, entity_id, collection_id)
     if not content:
         return False
+    content.is_shared = False
     soft_delete(session, content)
     try:
         session.commit()
@@ -237,6 +267,7 @@ def _to_response(session: Session, content: EntityContent) -> EntityContentRespo
         sources_count=gt.sources_count if gt else 0,
         token_count=gt.token_count if gt else 0,
         status=content.status,
+        is_shared=content.is_shared,
         created_at=content.created_at,
         confirmed_at=content.confirmed_at,
         updated_at=content.updated_at,

@@ -66,7 +66,6 @@ beforeEach(() => {
     name: "Middle Earth",
     description: "",
     owner_id: null,
-    is_public: false,
     created_at: "2024-01-01T00:00:00Z",
     updated_at: null,
     document_count: 3,

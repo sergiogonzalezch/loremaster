@@ -9,7 +9,6 @@ from sqlmodel import (
     String,
     ForeignKey,
     UniqueConstraint,
-    Boolean,
 )
 import uuid
 
@@ -35,7 +34,6 @@ class Collection(SQLModel, table=True):
             index=True,
         )
     )
-    is_public: bool = SQLField(default=False)
     created_at: datetime = SQLField(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: Optional[datetime] = SQLField(default=None)
     is_deleted: bool = SQLField(default=False)
@@ -53,7 +51,6 @@ class CreateCollectionRequest(BaseModel):
 class UpdateCollectionRequest(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=2000)
-    is_public: bool | None = Field(default=None)
 
 
 class CollectionResponse(BaseModel):
@@ -63,7 +60,6 @@ class CollectionResponse(BaseModel):
     name: str
     description: str
     owner_id: Optional[str] = None
-    is_public: bool = False
     created_at: datetime
     updated_at: Optional[datetime] = None
     document_count: int = 0

@@ -21,6 +21,8 @@ from app.models.image_generation import (
     GenerateImagesRequest,
     GenerateImagesResponse,
     ImageGenerationListResponse,
+    ImageRecordResponse,
+    ShareImageRequest,
 )
 from app.services.image_generation_service import (
     build_prompt_service,
@@ -28,6 +30,7 @@ from app.services.image_generation_service import (
     delete_image_service,
     get_generation_service,
     list_generations_service,
+    share_image_service,
 )
 
 router = APIRouter(prefix="/collections", tags=["image-generation"])
@@ -98,6 +101,29 @@ def generate_images(
         raise HTTPException(status_code=500, detail="Error interno del servidor.")
     except Exception:
         logger.exception("Error inesperado en generate_images")
+        raise HTTPException(status_code=500, detail="Error interno del servidor.")
+
+
+@router.patch(
+    "/{collection_id}/entities/{entity_id}/image-generation/{generation_id}/images/{image_id}/share",
+    response_model=ImageRecordResponse,
+)
+def share_image(
+    generation_id: str,
+    image_id: str,
+    request: ShareImageRequest,
+    entity: Entity = Depends(get_entity_or_404),
+    _: dict = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Marca o desmarca una imagen como compartida públicamente."""
+    try:
+        return share_image_service(
+            session, entity, generation_id, image_id, request.shared
+        )
+    except NoContextAvailableError:
+        raise HTTPException(status_code=404, detail="Imagen no encontrada.")
+    except DatabaseError:
         raise HTTPException(status_code=500, detail="Error interno del servidor.")
 
 

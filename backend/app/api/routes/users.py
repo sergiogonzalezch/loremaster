@@ -1,11 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy import exists, or_
 from sqlmodel import Session, select
 
 from app.core.auth_deps import get_current_user
 from app.database import get_session
 from app.models.users import User, UpdateProfileRequest, UserProfileResponse
 from app.models.collections import Collection
+from app.models.entity_content import EntityContent
+from app.models.image_generation import ImageRecord
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -71,11 +74,21 @@ def get_public_profile(
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
 
+    has_shared_content = exists().where(
+        EntityContent.collection_id == Collection.id,
+        EntityContent.is_shared == True,
+        EntityContent.is_deleted == False,
+    )
+    has_shared_image = exists().where(
+        ImageRecord.collection_id == Collection.id,
+        ImageRecord.is_shared == True,
+        ImageRecord.is_deleted == False,
+    )
     collections = session.exec(
         select(Collection).where(
             Collection.owner_id == user.id,
             Collection.is_deleted == False,
-            Collection.is_public == True,
+            or_(has_shared_content, has_shared_image),
         )
     ).all()
 

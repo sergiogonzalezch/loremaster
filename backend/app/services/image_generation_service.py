@@ -374,6 +374,59 @@ def generate_images_service(
     )
 
 
+def share_image_service(
+    session: Session,
+    entity: Entity,
+    generation_id: str,
+    image_id: str,
+    shared: bool,
+) -> ImageRecordResponse:
+    """
+    Marca o desmarca una imagen como compartida públicamente.
+
+    Raises:
+        NoContextAvailableError: Si la imagen no existe o no pertenece a la entidad
+    """
+    record = session.exec(
+        select(ImageRecord).where(
+            ImageRecord.id == image_id,
+            ImageRecord.generation_id == generation_id,
+            ImageRecord.entity_id == entity.id,
+            ImageRecord.is_deleted == False,
+        )
+    ).first()
+
+    if not record:
+        raise NoContextAvailableError()
+
+    record.is_shared = shared
+    try:
+        session.commit()
+        session.refresh(record)
+    except SQLAlchemyError as e:
+        session.rollback()
+        raise DatabaseError() from e
+
+    return ImageRecordResponse(
+        id=record.id,
+        generation_id=record.generation_id,
+        entity_id=record.entity_id,
+        collection_id=record.collection_id,
+        seed=record.seed,
+        storage_path=record.storage_path,
+        image_url=record.image_url,
+        filename=record.filename,
+        extension=record.extension,
+        width=record.width,
+        height=record.height,
+        generation_ms=record.generation_ms,
+        is_shared=record.is_shared,
+        created_at=record.created_at,
+        is_deleted=record.is_deleted,
+        deleted_at=record.deleted_at,
+    )
+
+
 def delete_image_service(
     session: Session,
     entity: Entity,
@@ -398,6 +451,7 @@ def delete_image_service(
     if not record:
         raise NoContextAvailableError()
 
+    record.is_shared = False
     record.is_deleted = True
     record.deleted_at = datetime.now(timezone.utc)
 
@@ -513,6 +567,7 @@ def list_generations_service(
                 width=r.width,
                 height=r.height,
                 generation_ms=r.generation_ms,
+                is_shared=r.is_shared,
                 created_at=r.created_at,
                 is_deleted=r.is_deleted,
                 deleted_at=r.deleted_at,

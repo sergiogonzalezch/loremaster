@@ -3,7 +3,6 @@ export interface Collection {
   name: string;
   description: string;
   owner_id: string | null;
-  is_public: boolean;
   created_at: string;
   updated_at: string | null;
   document_count: number;
@@ -18,7 +17,6 @@ export interface CreateCollectionRequest {
 export interface UpdateCollectionRequest {
   name?: string;
   description?: string;
-  is_public?: boolean;
 }
 
 import type { PaginatedMeta } from "./content";
