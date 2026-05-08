@@ -1,19 +1,39 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { Container, Row, Col, Card, Alert, Spinner } from "react-bootstrap";
+import { useParams } from "react-router-dom";
+import {
+  Container,
+  Row,
+  Col,
+  Card,
+  Alert,
+  Spinner,
+  Badge,
+} from "react-bootstrap";
 import { getPublicProfile } from "../api/users";
 import StarfieldCanvas from "../components/StarfieldCanvas";
 import AppNavbar from "../components/AppNavbar";
-import { useAuth } from "../hooks/useAuth";
+import MarkdownContent from "../components/MarkdownContent";
+import PublicContentModal from "../components/PublicContentModal";
+import PublicImageModal from "../components/PublicImageModal";
 import { parseApiError } from "../utils/errors";
-import type { PublicProfile } from "../types/user";
+import { formatDate } from "../utils/formatters";
+import { CATEGORY_LABELS, ENTITY_TYPE_LABELS } from "../utils/constants";
+import type {
+  PublicProfile,
+  SharedContentItem,
+  SharedImageItem,
+} from "../types/user";
 
 export default function PublicProfilePage() {
   const { username } = useParams<{ username: string }>();
-  const { user } = useAuth();
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedContent, setSelectedContent] =
+    useState<SharedContentItem | null>(null);
+  const [selectedImage, setSelectedImage] = useState<SharedImageItem | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!username) return;
@@ -28,14 +48,6 @@ export default function PublicProfilePage() {
   const initials = (profile?.display_name ?? profile?.username ?? "?")
     .slice(0, 2)
     .toUpperCase();
-
-  function collectionHref(id: string) {
-    return user ? `/collections/${id}` : "/login";
-  }
-
-  function collectionState(id: string) {
-    return user ? undefined : { from: `/collections/${id}` };
-  }
 
   return (
     <>
@@ -101,6 +113,88 @@ export default function PublicProfilePage() {
                 </div>
               </div>
 
+              {profile.shared_images.length > 0 && (
+                <section className="mb-5">
+                  <h2
+                    style={{
+                      fontFamily: "var(--lm-font-head)",
+                      fontSize: "1.1rem",
+                      color: "var(--lm-accent)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.12em",
+                      marginBottom: "1.2rem",
+                    }}
+                  >
+                    Imágenes ({profile.shared_images.length})
+                  </h2>
+                  <Row className="g-3">
+                    {profile.shared_images.map((img) => (
+                      <Col key={img.id} xs={6} sm={4} md={3}>
+                        <div
+                          style={{
+                            position: "relative",
+                            borderRadius: 8,
+                            overflow: "hidden",
+                            border: "1px solid var(--lm-border)",
+                            aspectRatio: "1",
+                            cursor: "pointer",
+                          }}
+                          onClick={() => setSelectedImage(img)}
+                        >
+                          {img.image_url ? (
+                            <img
+                              src={img.image_url}
+                              alt={img.entity_name}
+                              style={{
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "cover",
+                              }}
+                            />
+                          ) : (
+                            <div
+                              style={{
+                                width: "100%",
+                                height: "100%",
+                                background: "var(--lm-surface)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "var(--lm-muted)",
+                                fontSize: "0.75rem",
+                              }}
+                            >
+                              Sin imagen
+                            </div>
+                          )}
+                          <div
+                            style={{
+                              position: "absolute",
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              padding: "4px 6px",
+                              background: "rgba(0,0,0,0.65)",
+                              fontSize: "0.65rem",
+                              color: "#fff",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            {img.entity_name}
+                            {" · "}
+                            {ENTITY_TYPE_LABELS[
+                              img.entity_type as keyof typeof ENTITY_TYPE_LABELS
+                            ] ?? img.entity_type}
+                          </div>
+                        </div>
+                      </Col>
+                    ))}
+                  </Row>
+                </section>
+              )}
+
               <h2
                 style={{
                   fontFamily: "var(--lm-font-head)",
@@ -111,47 +205,76 @@ export default function PublicProfilePage() {
                   marginBottom: "1.5rem",
                 }}
               >
-                Colecciones públicas ({profile.public_collections.length})
+                Lore compartido ({profile.shared_contents.length})
               </h2>
 
-              {profile.public_collections.length === 0 ? (
+              {profile.shared_contents.length === 0 ? (
                 <p className="text-muted">
-                  Este usuario no tiene colecciones públicas.
+                  Este usuario no ha compartido contenido aún.
                 </p>
               ) : (
                 <Row className="g-4">
-                  {profile.public_collections.map((col) => (
-                    <Col key={col.id} sm={6} lg={4}>
-                      <Card className="h-100 lm-collection-card">
+                  {profile.shared_contents.map((item) => (
+                    <Col key={item.id} md={6} lg={4}>
+                      <Card
+                        className="h-100 lm-collection-card"
+                        style={{ cursor: "pointer" }}
+                        onClick={() => setSelectedContent(item)}
+                      >
                         <Card.Body>
-                          <Card.Title style={{ fontSize: "1rem" }}>
-                            {col.name}
+                          <div className="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                            <Badge bg="dark" style={{ fontSize: "0.65rem" }}>
+                              {CATEGORY_LABELS[
+                                item.category as keyof typeof CATEGORY_LABELS
+                              ] ?? item.category}
+                            </Badge>
+                            <Badge
+                              style={{
+                                background: "var(--lm-accent-glow)",
+                                color: "var(--lm-accent)",
+                                border: "1px solid var(--lm-border-accent)",
+                                fontSize: "0.6rem",
+                              }}
+                            >
+                              {ENTITY_TYPE_LABELS[
+                                item.entity_type as keyof typeof ENTITY_TYPE_LABELS
+                              ] ?? item.entity_type}
+                            </Badge>
+                          </div>
+                          <Card.Title
+                            style={{
+                              fontSize: "0.95rem",
+                              marginBottom: "0.75rem",
+                            }}
+                          >
+                            {item.entity_name}
                           </Card.Title>
-                          <Card.Text
-                            className="text-muted"
+                          <div
                             style={{
-                              fontSize: "0.85rem",
+                              maxHeight: 200,
                               overflow: "hidden",
-                              display: "-webkit-box",
-                              WebkitLineClamp: 3,
-                              WebkitBoxOrient: "vertical",
+                              maskImage:
+                                "linear-gradient(to bottom, black 60%, transparent 100%)",
+                              WebkitMaskImage:
+                                "linear-gradient(to bottom, black 60%, transparent 100%)",
+                              fontSize: "0.85rem",
                             }}
                           >
-                            {col.description || "Sin descripción"}
-                          </Card.Text>
+                            <MarkdownContent>{item.content}</MarkdownContent>
+                          </div>
                         </Card.Body>
-                        <Card.Footer>
-                          <Link
-                            to={collectionHref(col.id)}
-                            state={collectionState(col.id)}
-                            className="btn btn-sm w-100"
-                            style={{
-                              borderColor: "var(--lm-accent)",
-                              color: "var(--lm-accent)",
-                            }}
+                        <Card.Footer className="d-flex align-items-center justify-content-between">
+                          <small className="text-muted">
+                            {item.confirmed_at
+                              ? formatDate(item.confirmed_at)
+                              : formatDate(item.created_at)}
+                          </small>
+                          <small
+                            className="text-muted"
+                            style={{ fontSize: "0.7rem" }}
                           >
-                            Explorar →
-                          </Link>
+                            Leer más →
+                          </small>
                         </Card.Footer>
                       </Card>
                     </Col>
@@ -162,6 +285,38 @@ export default function PublicProfilePage() {
           ) : null}
         </Container>
       </div>
+
+      {selectedContent && (
+        <PublicContentModal
+          show={!!selectedContent}
+          onHide={() => setSelectedContent(null)}
+          content={selectedContent.content}
+          category={selectedContent.category}
+          entityName={selectedContent.entity_name}
+          entityType={selectedContent.entity_type}
+          ownerUsername={profile?.username ?? ""}
+          ownerDisplayName={profile?.display_name ?? null}
+          confirmedAt={selectedContent.confirmed_at}
+          createdAt={selectedContent.created_at}
+        />
+      )}
+
+      {selectedImage && profile && (
+        <PublicImageModal
+          show={!!selectedImage}
+          onHide={() => setSelectedImage(null)}
+          imageUrl={selectedImage.image_url}
+          storagePath={selectedImage.storage_path}
+          seed={selectedImage.seed}
+          autoPrompt={selectedImage.auto_prompt}
+          finalPrompt={selectedImage.final_prompt}
+          entityName={selectedImage.entity_name}
+          entityType={selectedImage.entity_type}
+          ownerUsername={profile.username}
+          ownerDisplayName={profile.display_name}
+          createdAt={selectedImage.created_at}
+        />
+      )}
     </>
   );
 }

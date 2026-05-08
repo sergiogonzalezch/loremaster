@@ -14,10 +14,55 @@ export interface UpdateProfileRequest {
   email?: string | null;
 }
 
-export interface PublicCollectionSummary {
+export interface SharedContentItem {
   id: string;
-  name: string;
-  description: string;
+  content: string;
+  category: string;
+  entity_name: string;
+  entity_type: string;
+  confirmed_at: string | null;
+  created_at: string;
+}
+
+export interface PublicFeedItem {
+  content_id: string;
+  content: string;
+  content_preview: string;
+  category: string;
+  entity_name: string;
+  entity_type: string;
+  owner_username: string;
+  owner_display_name: string | null;
+  confirmed_at: string | null;
+  created_at: string;
+}
+
+export interface SharedImageItem {
+  id: string;
+  generation_id: string;
+  image_url: string | null;
+  storage_path: string | null;
+  seed: number;
+  auto_prompt: string;
+  final_prompt: string;
+  entity_name: string;
+  entity_type: string;
+  created_at: string;
+}
+
+export interface PublicImageItem {
+  image_id: string;
+  generation_id: string;
+  image_url: string | null;
+  storage_path: string | null;
+  seed: number;
+  auto_prompt: string;
+  final_prompt: string;
+  entity_name: string;
+  entity_type: string;
+  owner_username: string;
+  owner_display_name: string | null;
+  created_at: string;
 }
 
 export interface PublicProfile {
@@ -25,7 +70,8 @@ export interface PublicProfile {
   display_name: string | null;
   bio: string | null;
   avatar_url: string | null;
-  public_collections: PublicCollectionSummary[];
+  shared_contents: SharedContentItem[];
+  shared_images: SharedImageItem[];
 }
 
 export interface UserAdminRecord {

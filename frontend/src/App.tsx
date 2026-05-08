@@ -9,6 +9,7 @@ import EntityDetailPage from "./pages/EntityDetailPage";
 import GeneratePage from "./pages/GeneratePage";
 import PublicFeedPage from "./pages/PublicFeedPage";
 import PublicProfilePage from "./pages/PublicProfilePage";
+import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
 
 export default function App() {
@@ -35,6 +36,7 @@ export default function App() {
                 path="/collections/:collectionId/generate"
                 element={<GeneratePage />}
               />
+              <Route path="/profile" element={<ProfilePage />} />
               <Route path="/admin" element={<AdminPage />} />
             </Route>
           </Route>

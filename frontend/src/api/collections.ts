@@ -56,13 +56,3 @@ export function updateCollection(
 export function deleteCollection(id: string): Promise<void> {
   return apiFetch<void>(`/collections/${id}`, { method: "DELETE" });
 }
-
-export function getPublicCollections(
-  params: { page?: number; page_size?: number } = {},
-  signal?: AbortSignal,
-): Promise<CollectionListResponse> {
-  return apiFetch<CollectionListResponse>(
-    `/collections/public${buildQuery(params)}`,
-    { signal },
-  );
-}

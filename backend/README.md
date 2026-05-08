@@ -137,14 +137,14 @@ pytest -k "test_create"             # por nombre
 | `test_entities.py` | 13 | CRUD de entidades, nombre reservado tras soft-delete |
 | `test_rag_query.py` | 9 | Consulta RAG, Qdrant caído → 503, LLM failure → semáforo liberado |
 | `test_generation_service.py` | 8 | Generación por categoría, prompt templates, moderación |
-| `test_public_feed.py` | 7 | Endpoint público `/collections/public` y perfiles públicos |
+| `test_public_feed.py` | 9 | Feed público `/public/feed` e `/public/images`, perfiles públicos, ownership 403 |
 | `test_prompt_builder.py` | 7 | Estrategias de contexto, flag `truncated`, ranking de fuentes |
 | `test_admin.py` | 5 | Listado usuarios, cascade delete de colección y usuario |
 | `test_users.py` | 4 | Perfil `/users/me` GET/PATCH |
 | `test_deletion_service.py` | 2 | Cascade soft-delete: documentos, entidades, contenidos, vectores Qdrant |
 | `test_content_management_service.py` | 1 | `_discard_sibling_contents` no afecta otras categorías |
 
-**Total: 160 tests.**
+**Total: 162 tests.**
 
 ## Endpoints
 
@@ -167,15 +167,14 @@ El token se envía en cabecera `Authorization: Bearer <token>`. Todos los endpoi
 
 ### Colecciones
 
-Las colecciones pertenecen al usuario que las crea (`owner_id`). El listado autenticado (`GET /collections/`) solo devuelve las del usuario actual. El nombre de colección es único por usuario (`UNIQUE(name, owner_id)`).
+Las colecciones son siempre **privadas**: solo el owner puede leerlas o modificarlas. El listado autenticado (`GET /collections/`) devuelve únicamente las del usuario actual. El nombre de colección es único por usuario (`UNIQUE(name, owner_id)`). El contenido compartido de una colección se expone via `/public/feed` e `/public/images`, no exponiendo la colección completa.
 
 | Método | Ruta | Auth | Descripción | Status |
 |---|---|---|---|---|
 | `POST` | `/collections/` | Requerida | Crear colección (owner = usuario actual) | 201 |
 | `GET` | `/collections/` | Requerida | Listar colecciones propias | 200 |
-| `GET` | `/collections/public` | No requerida | Listar colecciones públicas de todos los usuarios | 200 |
-| `GET` | `/collections/{id}` | Opcional | Obtener colección (pública: sin auth; privada: requiere ser owner) | 200 |
-| `PATCH` | `/collections/{id}` | Requerida | Actualizar nombre, descripción o `is_public` (solo owner) | 200 |
+| `GET` | `/collections/{id}` | Requerida | Obtener colección (solo owner) | 200 |
+| `PATCH` | `/collections/{id}` | Requerida | Actualizar nombre o descripción (solo owner) | 200 |
 | `DELETE` | `/collections/{id}` | Requerida | Eliminar colección (cascade soft-delete, solo owner) | 204 |
 
 ### Documentos
@@ -216,6 +215,7 @@ Estados posibles: `pending` → `confirmed` | `discarded`. Máximo 5 contenidos 
 | `PATCH` | `/collections/{id}/entities/{entity_id}/contents/{content_id}` | Editar contenido (`pending` o `confirmed`) | 200 |
 | `POST` | `/collections/{id}/entities/{entity_id}/contents/{content_id}/confirm` | Confirmar contenido | 200 |
 | `PATCH` | `/collections/{id}/entities/{entity_id}/contents/{content_id}/discard` | Cambiar estado a descartado | 200 |
+| `PATCH` | `/collections/{id}/entities/{entity_id}/contents/{content_id}/share` | Compartir/descompartir contenido confirmado (toggle `is_shared`) | 200 |
 | `DELETE` | `/collections/{id}/entities/{entity_id}/contents/{content_id}` | Soft-delete del contenido | 204 |
 
 ### Perfiles de usuario
@@ -224,9 +224,22 @@ Estados posibles: `pending` → `confirmed` | `discarded`. Máximo 5 contenidos 
 |---|---|---|---|---|
 | `GET` | `/users/me` | Requerida | Perfil del usuario autenticado | 200 |
 | `PATCH` | `/users/me` | Requerida | Actualizar `display_name`, `bio`, `avatar_url`, `email` | 200 |
-| `GET` | `/users/{username}/profile` | No requerida | Perfil público de un usuario con sus colecciones públicas | 200 |
+| `GET` | `/users/{username}/profile` | No requerida | Perfil público: datos del usuario + `shared_contents` + `shared_images` | 200 |
 
 **Response de `/users/me`:** `{ id, username, email, display_name, bio, avatar_url, created_at }`.
+
+**Response de `/users/{username}/profile`:** `{ username, display_name, bio, avatar_url, shared_contents[], shared_images[] }`. Cada `shared_contents` incluye `content` completo, categoría, nombre y tipo de entidad. Cada `shared_images` incluye `image_url`, `storage_path`, `seed`, `auto_prompt`, `final_prompt`, nombre y tipo de entidad.
+
+### Feed público
+
+Endpoints sin autenticación que exponen únicamente contenido con `is_shared=True`.
+
+| Método | Ruta | Auth | Descripción | Status |
+|---|---|---|---|---|
+| `GET` | `/public/feed` | No requerida | Listado paginado de `EntityContent` compartidos (con `content` completo y `content_preview` de 300 chars) | 200 |
+| `GET` | `/public/images` | No requerida | Listado paginado de imágenes compartidas (con `seed`, `auto_prompt`, `final_prompt`) | 200 |
+
+Ambos endpoints soportan `?page=` y `?page_size=`. Respuesta: `PaginatedResponse<T>` con `data` y `meta.{ total, page, page_size, total_pages }`.
 
 ### Consulta RAG libre
 
@@ -254,6 +267,7 @@ El módulo `app/engine/image_prompt_builder.py` consolida la lógica de construc
 | `POST` | `/collections/{id}/entities/{entity_id}/image-generation/generate` | Genera batch de imágenes (1-4) | 201 |
 | `GET` | `/collections/{id}/entities/{entity_id}/image-generation` | Lista todas las generaciones de una entidad | 200 |
 | `GET` | `/collections/{id}/entities/{entity_id}/image-generation/{generation_id}` | Obtiene una generación con sus imágenes | 200 |
+| `PATCH` | `/collections/{id}/entities/{entity_id}/image-generation/{generation_id}/images/{image_id}/share` | Compartir/descompartir imagen (toggle `is_shared`) | 200 |
 | `DELETE` | `/collections/{id}/entities/{entity_id}/image-generation/{generation_id}/images/{image_id}` | Elimina una imagen del batch | 204 |
 
 **Request (generate):** `{ content_id, auto_prompt, final_prompt, batch_size }` — donde `auto_prompt` viene del frontend (previamente generado en `build-prompt`).

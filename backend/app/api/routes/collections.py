@@ -10,7 +10,6 @@ from app.core.query_params import DateRangeParams, PaginationParams
 from app.core.deps import (
     get_collection_or_404,
     get_collection_or_404_owned,
-    get_collection_or_404_public_or_owned,
 )
 from app.core.auth_deps import get_current_user
 from app.core.exceptions import DatabaseError, DuplicateCollectionNameError
@@ -26,7 +25,6 @@ from app.services.collection_service import (
     create_collection_service,
     get_collection_with_counts_service,
     list_collections_service,
-    list_public_collections_service,
     update_collection_service,
     delete_collection_service,
 )
@@ -69,20 +67,9 @@ def get_collections(
     return PaginatedResponse.build(items, total, pagination.page, pagination.page_size)
 
 
-@router.get("/public", response_model=PaginatedResponse[CollectionResponse])
-def list_public_collections(
-    pagination: Annotated[PaginationParams, Depends()],
-    session: Session = Depends(get_session),
-):
-    items, total = list_public_collections_service(
-        session, pagination.page, pagination.page_size
-    )
-    return PaginatedResponse.build(items, total, pagination.page, pagination.page_size)
-
-
 @router.get("/{collection_id}", response_model=CollectionResponse)
 def get_collection(
-    collection: Collection = Depends(get_collection_or_404_public_or_owned),
+    collection: Collection = Depends(get_collection_or_404_owned),
     session: Session = Depends(get_session),
 ):
     return get_collection_with_counts_service(session, collection)

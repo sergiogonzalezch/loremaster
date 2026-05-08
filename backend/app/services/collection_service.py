@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Literal, Optional
 
-from sqlalchemy import exists, func, or_
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlmodel import Session, select
 
@@ -10,8 +10,6 @@ from app.core.exceptions import DatabaseError, DuplicateCollectionNameError
 from app.models.collections import Collection, UpdateCollectionRequest
 from app.models.documents import Document
 from app.models.entities import Entity
-from app.models.entity_content import EntityContent
-from app.models.image_generation import ImageRecord
 from app.services.deletion_service import cascade_delete_collection
 
 logger = logging.getLogger(__name__)
@@ -115,52 +113,6 @@ def list_collections_service(
         select(Collection)
         .where(*conditions)
         .order_by(sort_col)
-        .offset(skip)
-        .limit(page_size)
-    ).all()
-    collection_ids = [c.id for c in items]
-    doc_counts, entity_counts = _fetch_counts(session, collection_ids)
-    enriched = [
-        {
-            **c.model_dump(),
-            "document_count": doc_counts.get(c.id, 0),
-            "entity_count": entity_counts.get(c.id, 0),
-        }
-        for c in items
-    ]
-    return enriched, total
-
-
-def list_public_collections_service(
-    session: Session,
-    page: int = 1,
-    page_size: int = 20,
-) -> tuple[list[Collection], int]:
-    has_shared_content = exists().where(
-        EntityContent.collection_id == Collection.id,
-        EntityContent.is_shared == True,
-        EntityContent.is_deleted == False,
-    )
-    has_shared_image = exists().where(
-        ImageRecord.collection_id == Collection.id,
-        ImageRecord.is_shared == True,
-        ImageRecord.is_deleted == False,
-    )
-    conditions = [
-        Collection.is_deleted == False,
-        or_(has_shared_content, has_shared_image),
-    ]
-
-    total = session.exec(
-        select(func.count()).select_from(
-            select(Collection).where(*conditions).subquery()
-        )
-    ).one()
-    skip = (page - 1) * page_size
-    items = session.exec(
-        select(Collection)
-        .where(*conditions)
-        .order_by(Collection.created_at.desc())
         .offset(skip)
         .limit(page_size)
     ).all()

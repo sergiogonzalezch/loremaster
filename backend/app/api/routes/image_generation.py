@@ -7,7 +7,7 @@ from sqlmodel import Session
 
 logger = logging.getLogger(__name__)
 
-from app.core.deps import get_entity_or_404
+from app.core.deps import get_entity_or_404, get_entity_or_404_owned
 from app.core.auth_deps import get_current_user
 from app.core.exceptions import (
     DatabaseError,
@@ -42,8 +42,7 @@ router = APIRouter(prefix="/collections", tags=["image-generation"])
 )
 def build_prompt(
     request: BuildPromptRequest,
-    entity: Entity = Depends(get_entity_or_404),
-    _: dict = Depends(get_current_user),
+    entity: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
     """Construye el prompt automático sin guardar nada."""
@@ -69,8 +68,7 @@ def build_prompt(
 )
 def generate_images(
     request: GenerateImagesRequest,
-    entity: Entity = Depends(get_entity_or_404),
-    _: dict = Depends(get_current_user),
+    entity: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
     """Genera el batch de imágenes."""
@@ -112,8 +110,7 @@ def share_image(
     generation_id: str,
     image_id: str,
     request: ShareImageRequest,
-    entity: Entity = Depends(get_entity_or_404),
-    _: dict = Depends(get_current_user),
+    entity: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
     """Marca o desmarca una imagen como compartida públicamente."""
@@ -134,8 +131,7 @@ def share_image(
 def delete_image(
     generation_id: str,
     image_id: str,
-    entity: Entity = Depends(get_entity_or_404),
-    _: dict = Depends(get_current_user),
+    entity: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
     """Elimina una imagen individual del batch."""

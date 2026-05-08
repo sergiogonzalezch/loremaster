@@ -58,21 +58,23 @@ src/
 │   ├── collections.ts      → CRUD de colecciones
 │   ├── documents.ts        → upload (FormData), listado y eliminación de documentos
 │   ├── entities.ts         → CRUD de entidades
-│   ├── contents.ts         → generate / list / edit / confirm / discard / delete EntityContent
+│   ├── contents.ts         → generate / list / edit / confirm / discard / share / delete EntityContent
 │   ├── generate.ts         → consulta RAG libre (POST /collections/{id}/query)
-│   ├── imageGeneration.ts  → buildPrompt / generate / list / get / deleteImage
-│   ├── users.ts            → getMyProfile() / updateMyProfile() — GET/PATCH /users/me
+│   ├── imageGeneration.ts  → buildPrompt / generate / list / get / shareImage / deleteImage
+│   ├── users.ts            → getMyProfile() / updateMyProfile() / getPublicProfile() / getPublicFeed() / getPublicImages()
 │   ├── query.ts            → buildQuery() — utilidad para construir query strings de URL
 │   └── index.ts            → barrel export (no incluye query.ts — uso interno)
 ├── components/
-│   ├── ContentCard.tsx     → Card de EntityContent con acciones según estado
-│   ├── ConfirmModal.tsx    → Modal de confirmación reutilizable
-│   ├── Layout.tsx          → Navbar con username del usuario autenticado + Outlet + StarfieldCanvas
-│   ├── LoadingSpinner.tsx  → Spinner centrado con texto opcional
-│   ├── MarkdownContent.tsx → Renderizado markdown sanitizado
-│   ├── ProtectedRoute.tsx  → Guard: redirige a /login si useAuth().user es null
-│   ├── StarfieldCanvas.tsx → Fondo animado canvas: estrellas de fondo + estrellas de colecciones (evento lm:collections) + estrellas fugaces
-│   └── TokenCounter.tsx    → Estimación de tokens (aviso a los 400)
+│   ├── ContentCard.tsx        → Card de EntityContent con acciones según estado
+│   ├── ConfirmModal.tsx       → Modal de confirmación reutilizable
+│   ├── Layout.tsx             → Navbar con username del usuario autenticado + Outlet + StarfieldCanvas
+│   ├── LoadingSpinner.tsx     → Spinner centrado con texto opcional
+│   ├── MarkdownContent.tsx    → Renderizado markdown sanitizado
+│   ├── ProtectedRoute.tsx     → Guard: redirige a /login si useAuth().user es null
+│   ├── PublicContentModal.tsx → Modal de lectura completa de EntityContent compartido (markdown, badges, owner link)
+│   ├── PublicImageModal.tsx   → Modal de imagen compartida: imagen, seed, prompts, descarga
+│   ├── StarfieldCanvas.tsx    → Fondo animado canvas: estrellas de fondo + estrellas de colecciones (evento lm:collections) + estrellas fugaces
+│   └── TokenCounter.tsx       → Estimación de tokens (aviso a los 400)
 ├── contexts/
 │   └── AuthContext.tsx     → AuthProvider + AuthContext: estado global del usuario decodificado del JWT
 ├── hooks/
@@ -86,16 +88,19 @@ src/
 │   ├── CollectionsPage.tsx       → Listado, creación y eliminación de colecciones propias
 │   ├── CollectionDetailPage.tsx  → Tabs: Documentos / Entidades / Generar texto
 │   ├── EntityDetailPage.tsx      → Detalle de entidad + generación de contenido por categoría
-│   └── GeneratePage.tsx          → Consulta RAG libre contra una colección
+│   ├── GeneratePage.tsx          → Consulta RAG libre contra una colección
+│   ├── ProfilePage.tsx           → Perfil propio editable: display_name, bio, avatar_url, email
+│   ├── PublicFeedPage.tsx        → Feed público: galería de imágenes compartidas + cards de contenido paginadas (abre modales al hacer clic)
+│   └── PublicProfilePage.tsx     → Perfil público de un usuario: galería de imágenes + cards de contenido compartido (abre modales al hacer clic)
 ├── types/
-│   ├── collection.ts     → Collection (incluye owner_id, is_public), CreateCollectionRequest, CollectionListResponse
-│   ├── content.ts         → EntityContent, PaginatedResponse<T>, request types
-│   ├── document.ts        → Document, DocumentListResponse
-│   ├── entity.ts          → Entity, CreateEntityRequest, UpdateEntityRequest, EntityListResponse
-│   ├── generate.ts        → GenerateTextRequest, GenerateTextResponse
-│   ├── imageGeneration.ts → BuildPromptRequest/Response, GenerateImagesRequest/Response, ImageGeneration
-│   ├── user.ts            → UserProfile, UpdateProfileRequest
-│   └── index.ts           → barrel export
+│   ├── collection.ts       → Collection (incluye owner_id), CreateCollectionRequest, CollectionListResponse
+│   ├── content.ts           → EntityContent, PaginatedResponse<T>, request types
+│   ├── document.ts          → Document, DocumentListResponse
+│   ├── entity.ts            → Entity, CreateEntityRequest, UpdateEntityRequest, EntityListResponse
+│   ├── generate.ts          → GenerateTextRequest, GenerateTextResponse
+│   ├── imageGeneration.ts   → BuildPromptRequest/Response, GenerateImagesRequest/Response, ImageGenerationItem, ImageRecordData
+│   ├── user.ts              → UserProfile, UpdateProfileRequest, SharedContentItem, PublicFeedItem, SharedImageItem, PublicImageItem, PublicProfile
+│   └── index.ts             → barrel export
 ├── test/
 │   ├── setup.ts                              → Configura @testing-library/jest-dom globalmente
 │   ├── errors.test.ts                        → getErrorMessage + parseApiError
@@ -159,13 +164,25 @@ Flujo JWT local. Al iniciar la app, `AuthProvider` decodifica el token almacenad
 
 ## Pantallas
 
-| Ruta                             | Página            | Descripción                                                                                                                                     |
-| -------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/login`                         | Login / Registro  | Formulario con tabs "Iniciar sesión" / "Registrarse"; redirige a `/` tras autenticar                                                            |
-| `/`                              | Colecciones       | Cards con todas las colecciones; crear (modal) o eliminar con confirmación                                                                      |
-| `/collections/:id`               | Detalle colección | **Documentos**: upload PDF/TXT, tabla con estado; **Entidades**: tabla con badges, navegación al detalle; **Generar texto**: consulta RAG libre |
-| `/collections/:id/entities/:eid` | Detalle entidad   | Card de entidad editable; formulario de generación con selector de categoría; lista de `ContentCard`; navegación a generación de imágenes       |
-| `/collections/:id/generate`      | Generar texto     | Consulta RAG libre con manejo de errores 422/503                                                                                                |
+| Ruta                             | Página            | Auth | Descripción                                                                                                                                     |
+| -------------------------------- | ----------------- | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/login`                         | Login / Registro  | No   | Formulario con tabs "Iniciar sesión" / "Registrarse"; redirige a `/` tras autenticar                                                            |
+| `/`                              | Colecciones       | Sí   | Cards con todas las colecciones; crear (modal) o eliminar con confirmación                                                                      |
+| `/collections/:id`               | Detalle colección | Sí   | **Documentos**: upload PDF/TXT, tabla con estado; **Entidades**: tabla con badges, navegación al detalle; **Generar texto**: consulta RAG libre |
+| `/collections/:id/entities/:eid` | Detalle entidad   | Sí   | Card de entidad editable; formulario de generación; lista de `ContentCard`; generación de imágenes                                              |
+| `/collections/:id/generate`      | Generar texto     | Sí   | Consulta RAG libre con manejo de errores 422/503                                                                                                |
+| `/profile`                       | Mi perfil         | Sí   | Formulario para editar display_name, bio, avatar_url y email del usuario autenticado                                                            |
+| `/public`                        | Feed público      | No   | Galería de imágenes compartidas + cards de contenido paginadas; clic abre modal de lectura completa                                             |
+| `/users/:username`               | Perfil público    | No   | Perfil de cualquier usuario: galería de imágenes + contenidos compartidos con modal                                                             |
+
+## Contenido público y perfiles
+
+Las colecciones son siempre privadas. El contenido individual (textos narrativos e imágenes) se puede compartir de forma selectiva mediante un toggle `is_shared`. El contenido compartido aparece en dos superficies públicas sin autenticación:
+
+- **`/public`** — Feed global paginado: sección de imágenes (thumbnails clicables) + cards de textos con preview. Clic abre modal de lectura completa (`PublicContentModal`) o modal de imagen (`PublicImageModal`).
+- **`/users/:username`** — Perfil público de un usuario: galería de imágenes compartidas + cards de contenidos. Mismo comportamiento de modales.
+
+`PublicImageModal` muestra la imagen a tamaño completo, seed, fecha, `auto_prompt`, `final_prompt` y botón de descarga. `PublicContentModal` muestra el texto completo en Markdown con badges de categoría/tipo y link al perfil del autor.
 
 ## Generación de imágenes
 
@@ -174,7 +191,7 @@ Flujo de dos pasos para generar imágenes de entidades:
 1. **build-prompt** → `POST .../image-generation/build-prompt`: Genera el `auto_prompt` (prompt visual LLM) a partir de un contenido confirmado de la entidad.
 2. **generate** → `POST .../image-generation/generate`: Genera imágenes usando el `auto_prompt` del frontend + `final_prompt` del usuario. No hay regeneración en backend.
 
-El componente `ImageGenerator.tsx` orquesta este flujo: construye el prompt visual, permite editar `final_prompt`, y genera batches de 1-4 imágenes.
+El componente `ImageGenerator.tsx` orquesta este flujo: construye el prompt visual, permite editar `final_prompt`, y genera batches de 1-4 imágenes. Cada imagen individual se puede compartir/descompartir desde la galería (`ImageGallery.tsx`) o desde `ImagePanel.tsx`.
 
 ## Ciclo de vida de EntityContent
 

@@ -5,6 +5,7 @@
 > - La estructura del engine ahora incluye `image_prompt_builder.py` (consolidado)
 > - Los modelos de datos han evolucionado (eliminados campos como `truncated`, `prompt_source`)
 > - **Refactor de usuarios (2026-05-07):** `collections` ahora tiene `owner_id` (FK → `users`) e `is_public`. La tabla `users` es nueva con campos de perfil e `is_admin`. Los flujos HU-01 (crear colección) ahora incluyen autenticación y asignación de owner. El ERD está desactualizado.
+> - **Compartir contenido e imágenes (2026-05-08):** `entity_contents` tiene nuevo campo `is_shared`. La tabla `generated_images` está separada en `image_generations` + `image_records` (con `is_shared`). Nuevos endpoints públicos sin auth: `GET /public/feed`, `GET /public/images`, `GET /users/{username}/profile`. El ERD, los diagramas de secuencia de HU-06 y cualquier diagrama de arquitectura de flujos públicos necesitan actualizarse.
 > **→ Los diagramas necesitan ser recreados para reflejar el estado actual.**
 
 ## ¿Qué es Lore Master?
@@ -573,7 +574,7 @@ DATABASE_URL=postgresql://user:pass@postgres:5432/loremaster
 
 ### Diagrama ERD
 
-> ⚠️ **Desactualizado (2026-05-07):** el diagrama no incluye la tabla `users`, los campos `owner_id` e `is_public` en `collections`, ni la tabla `moderation_log`. Necesita recrearse.
+> ⚠️ **Desactualizado (2026-05-07, ampliado 2026-05-08):** el diagrama no incluye la tabla `users`, los campos `owner_id` e `is_public` en `collections`, ni la tabla `moderation_log`. Tampoco refleja la separación de `generated_images` en `image_generations` + `image_records`, ni los campos `is_shared` en `entity_contents` e `image_records`. Necesita recrearse.
 
 ![Diagrama ERD](./diagrams/Diagrama-ERD.png)
 

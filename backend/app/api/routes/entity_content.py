@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlmodel import Session
 
 from app.core.query_params import PaginationParams
-from app.core.deps import get_entity_or_404
+from app.core.deps import get_entity_or_404, get_entity_or_404_owned
 from app.core.auth_deps import get_current_user
 from app.core.exceptions import (
     ContentDiscardedError,
@@ -40,8 +40,7 @@ router = APIRouter(prefix="/collections", tags=["entity-content"])
 def generate_content(
     category: ContentCategory,
     request: GenerateContentRequest,
-    entity: Entity = Depends(get_entity_or_404),
-    _: dict = Depends(get_current_user),
+    entity: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
     try:
@@ -104,8 +103,7 @@ def edit_content(
     collection_id: str,
     content_id: str,
     request: UpdateContentRequest,
-    _: Entity = Depends(get_entity_or_404),
-    __: dict = Depends(get_current_user),
+    _: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
     try:
@@ -127,8 +125,7 @@ def edit_content(
 )
 def confirm_content(
     content_id: str,
-    entity: Entity = Depends(get_entity_or_404),
-    _: dict = Depends(get_current_user),
+    entity: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
     try:
@@ -149,8 +146,7 @@ def discard_content(
     entity_id: str,
     collection_id: str,
     content_id: str,
-    _: Entity = Depends(get_entity_or_404),
-    __: dict = Depends(get_current_user),
+    _: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
     try:
@@ -173,8 +169,7 @@ def share_content(
     collection_id: str,
     content_id: str,
     request: ShareContentRequest,
-    _: Entity = Depends(get_entity_or_404),
-    __: dict = Depends(get_current_user),
+    _: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
     try:
@@ -198,8 +193,7 @@ def delete_content(
     entity_id: str,
     collection_id: str,
     content_id: str,
-    _: Entity = Depends(get_entity_or_404),
-    __: dict = Depends(get_current_user),
+    _: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
     try:

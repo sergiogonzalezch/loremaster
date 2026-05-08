@@ -43,7 +43,7 @@ Lista de tech debt identificado y aún no corregido. Ordenado por impacto estima
 | 33 | `User.email` sin `unique=True` en modelo SQLModel | Backend | ✅ Resuelto | — |
 | 34 | FK constraint faltante en migración `add_owner_id_to_collections` | Backend | 🟢 Cubierto | Sin FK en SQL; integridad referencial solo a nivel de aplicación |
 | 35 | Constraint `(name, owner_id)` no protege colecciones con `owner_id=NULL` | Backend | 🟢 Cubierto | SQL `NULL != NULL` en UNIQUE; solo afecta datos migrados sin backfill |
-| 36 | `get_collection_or_404_public_or_owned` bypassa Clerk tokens | Backend | 🟢 Cubierto | Llama `verify_token` directo; Clerk solo activo en producción con config explícita |
+| 36 | `get_collection_or_404_public_or_owned` bypassa Clerk tokens | Backend | ✅ Eliminado | Función borrada como código muerto en 2026-05-08 (endpoint `GET /collections/public` eliminado previamente) |
 | 37 | Admin delete sin cascade — vectores Qdrant y registros hijos huérfanos | Backend | ✅ Resuelto | — |
 | 38 | RAG query sin ownership check | Backend | ✅ Resuelto | — |
 | 39 | ComfyUI partial batch failure silencioso | Backend | 🟢 Cubierto | Solo afecta OPTION_B (en desarrollo); mock siempre completa |
@@ -700,25 +700,10 @@ if (payload.exp && payload.exp < now) return null;
 
 ---
 
-## 36. `get_collection_or_404_public_or_owned` bypassa Clerk tokens en producción
+## ~~36. `get_collection_or_404_public_or_owned` bypassa Clerk tokens en producción~~ ✅ Eliminado
 
 **Capa:** Backend  
-**Archivo:** `backend/app/core/deps.py:47`  
-**Impacto:** Medio — usuarios autenticados con Clerk en producción reciben 403 al acceder a sus propias colecciones privadas.  
-**Clasificación:** Parcialmente mitigado.
-
-La dependencia llama `verify_token()` directamente (JWT local HS256) en vez de reutilizar `get_current_user`, que en producción enruta a `decode_clerk_token` (RS256 vía JWKS):
-
-```python
-if credentials:
-    payload = verify_token(credentials.credentials)  # solo JWT local — falla con Clerk
-    if collection.owner_id == payload.get("sub"):
-        return collection
-```
-
-**Mitigación:** Clerk solo se activa con `settings.environment == "production"`. En desarrollo, el entorno actual, la dependencia funciona correctamente.
-
-**Solución sugerida:** Añadir `get_optional_current_user` a `auth_deps.py` que retorne `None` en lugar de lanzar 401 cuando no hay credenciales, y usarlo en esta dependencia en vez de llamar `verify_token` directamente.
+**Resolución (2026-05-08):** La función `get_collection_or_404_public_or_owned` fue eliminada de `backend/app/core/deps.py` como código muerto. El endpoint `GET /collections/public` que la utilizaba había sido removido previamente, dejando esta dependencia sin ningún caller. Al eliminarla se limpiaron también los imports huérfanos (`HTTPBearer`, `HTTPAuthorizationCredentials`, `select`, `EntityContent`, `ImageRecord`, `security`, `verify_token`) que arrastraba. El problema descrito nunca llegó a afectar producción.
 
 ---
 

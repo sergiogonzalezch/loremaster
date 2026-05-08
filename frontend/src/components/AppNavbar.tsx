@@ -57,11 +57,9 @@ export default function AppNavbar() {
                 Admin
               </NavLink>
             )}
-            <span
-              style={{ color: "rgba(255,255,255,0.45)", fontSize: "0.85rem" }}
-            >
+            <NavLink to="/profile" style={navLinkStyle}>
               {user.username}
-            </span>
+            </NavLink>
             <button
               onClick={handleLogout}
               className="btn btn-sm btn-outline-secondary"

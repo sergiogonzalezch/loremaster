@@ -2,7 +2,7 @@
   "version": "1.1.0",
   "description": "Golden dataset de Lore Master — cobertura completa: RAG, CRUD de entidades (5 tipos x 10 casos), todas las combinaciones de categoria valida e invalida, guardrails, generacion de imagen y flujos de ciclo de vida.",
   "created_at": "2026-04-29",
-  "updated_at": "2026-05-08",
+  "updated_at": "2026-05-09",
   "collection": {
     "name": "Mundo de Valdorath",
     "description": "Coleccion de referencia para evaluacion automatica del pipeline RAG",
@@ -1278,7 +1278,7 @@
     {
       "id": "PUBLIC-001",
       "category": "full_flow",
-      "description": "Coleccion con contenido compartido aparece en el feed publico",
+      "description": "Contenido confirmado y compartido aparece en GET /public/feed",
       "steps": [
         { "action": "create_entity", "type": "character", "name": "Personaje Feed Publico", "description": "Personaje para test del feed publico." },
         { "action": "generate", "category": "backstory", "query": "Historia del personaje para el feed publico" },
@@ -1287,7 +1287,7 @@
         { "action": "check_public_feed" }
       ],
       "expected": {
-        "collection_in_public_feed": true
+        "content_in_public_feed": true
       }
     },
     {

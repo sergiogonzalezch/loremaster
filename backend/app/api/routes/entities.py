@@ -4,7 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlmodel import Session
 
 from app.core.query_params import DateRangeParams, PaginationParams
-from app.core.deps import get_collection_or_404, get_entity_or_404
+from app.core.deps import (
+    get_collection_or_404,
+    get_collection_or_404_owned,
+    get_entity_or_404,
+    get_entity_or_404_owned,
+)
 from app.core.auth_deps import get_current_user
 from app.core.exceptions import DatabaseError, DuplicateEntityNameError
 from app.database import get_session
@@ -33,8 +38,7 @@ router = APIRouter(prefix="/collections", tags=["entities"])
 def create_entity(
     collection_id: str,
     request: CreateEntityRequest,
-    _: Collection = Depends(get_collection_or_404),
-    __: dict = Depends(get_current_user),
+    _: Collection = Depends(get_collection_or_404_owned),
     session: Session = Depends(get_session),
 ):
     try:
@@ -83,8 +87,7 @@ def get_entity(
 @router.patch("/{collection_id}/entities/{entity_id}", response_model=EntityResponse)
 def update_entity(
     request: UpdateEntityRequest,
-    entity: Entity = Depends(get_entity_or_404),
-    _: dict = Depends(get_current_user),
+    entity: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
     try:
@@ -95,8 +98,7 @@ def update_entity(
 
 @router.delete("/{collection_id}/entities/{entity_id}", status_code=204)
 def delete_entity(
-    entity: Entity = Depends(get_entity_or_404),
-    _: dict = Depends(get_current_user),
+    entity: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
     try:

@@ -951,6 +951,7 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
     # Tracking de contenidos por categoria: category -> [content_id, ...]
     contents_by_cat: dict[str, list[str]] = {}
     last_content_id: Optional[str] = None
+    last_entity_name: Optional[str] = None
     image_resp: Optional[httpx.Response] = None
     public_feed_visible: Optional[bool] = None
 
@@ -965,6 +966,7 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
                 return fail(f"step {i} create_entity: {err}")
             entity_cache[step["name"]] = eid
             last_entity_id = eid
+            last_entity_name = step["name"]
             entity_created = True
 
         elif action == "generate":
@@ -1062,11 +1064,15 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
                 return fail(f"step {i} share_content HTTP {resp.status_code}")
 
         elif action == "check_public_feed":
-            pub_resp = api.get("/collections/public")
+            pub_resp = api.get("/public/feed", params={"page_size": 50})
             if pub_resp.status_code != 200:
                 return fail(f"step {i} check_public_feed HTTP {pub_resp.status_code}")
-            pub_ids = [c.get("id") for c in pub_resp.json().get("data", [])]
-            public_feed_visible = cid in pub_ids
+            feed_names = [
+                item.get("entity_name") for item in pub_resp.json().get("data", [])
+            ]
+            public_feed_visible = (
+                last_entity_name in feed_names if last_entity_name else False
+            )
 
     # ── Evaluar estado final ──────────────────────────────────────────────
     checks: list[Result] = []
@@ -1245,11 +1251,11 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
                 )
             )
 
-    if "collection_in_public_feed" in exp and public_feed_visible is not None:
+    if "content_in_public_feed" in exp and public_feed_visible is not None:
         checks.append(
             (
-                public_feed_visible == exp["collection_in_public_feed"],
-                f"collection_in_public_feed: visible={public_feed_visible}, expected={exp['collection_in_public_feed']}",
+                public_feed_visible == exp["content_in_public_feed"],
+                f"content_in_public_feed: visible={public_feed_visible}, expected={exp['content_in_public_feed']}",
             )
         )
 

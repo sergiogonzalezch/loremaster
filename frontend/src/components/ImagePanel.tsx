@@ -14,6 +14,7 @@ import {
   generateImages,
   listImageGenerations,
   deleteImage,
+  shareImage,
 } from "../api/images";
 import { getContents } from "../api/contents";
 import type { EntityContent, ImageGenerationItem } from "../types";
@@ -144,6 +145,7 @@ export default function ImagePanel({
   const [selectedImage, setSelectedImage] = useState<ImageItem | null>(null);
   const [selectedGenForModal, setSelectedGenForModal] =
     useState<ImageGenerationItem | null>(null);
+  const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
     if (show) {
@@ -227,6 +229,30 @@ export default function ImagePanel({
       setActiveTab("generar");
     },
     [closeModal],
+  );
+
+  const handleShareImage = useCallback(
+    async (gen: ImageGenerationItem, img: ImageItem) => {
+      setSharing(true);
+      try {
+        const updated = await shareImage(
+          collectionId,
+          entityId,
+          gen.id,
+          img.id,
+          {
+            shared: !img.is_shared,
+          },
+        );
+        setSelectedImage(updated);
+        await fetchData();
+      } catch (e) {
+        setError(getErrorMessage(e, "Error al cambiar la visibilidad"));
+      } finally {
+        setSharing(false);
+      }
+    },
+    [collectionId, entityId, fetchData],
   );
 
   const handleDownload = useCallback(async (img: ImageItem) => {
@@ -612,15 +638,40 @@ export default function ImagePanel({
               selectedImage &&
               handleDeleteImage(selectedGenForModal.id, selectedImage.id)
             }
+            disabled={sharing}
           >
             Eliminar
           </Button>
           <div className="d-flex gap-2">
+            {selectedGenForModal && selectedImage && (
+              <Button
+                variant={
+                  selectedImage.is_shared ? "success" : "outline-secondary"
+                }
+                size="sm"
+                onClick={() =>
+                  handleShareImage(selectedGenForModal, selectedImage)
+                }
+                disabled={sharing}
+                title={
+                  selectedImage.is_shared
+                    ? "Imagen visible en el feed público"
+                    : "Compartir en el feed público"
+                }
+              >
+                {sharing
+                  ? "..."
+                  : selectedImage.is_shared
+                    ? "✦ Compartida"
+                    : "Compartir"}
+              </Button>
+            )}
             {selectedGenForModal && (
               <Button
                 variant="outline-primary"
                 size="sm"
                 onClick={() => handleRegenFromHistory(selectedGenForModal)}
+                disabled={sharing}
                 title="Reutilizar prompt en el tab de generar"
               >
                 ↻ Regenerar
@@ -631,11 +682,12 @@ export default function ImagePanel({
                 variant="primary"
                 size="sm"
                 onClick={() => handleDownload(selectedImage)}
+                disabled={sharing}
               >
                 Descargar
               </Button>
             )}
-            <Button variant="secondary" onClick={closeModal}>
+            <Button variant="secondary" onClick={closeModal} disabled={sharing}>
               Cerrar
             </Button>
           </div>
