@@ -796,6 +796,137 @@ def _run_image_generation(
     return check_all(checks)
 
 
+def _run_share_content(
+    api: APIClient, cid: str, case: dict, entity_cache: dict
+) -> Result:
+    setup = case.get("setup", {})
+    inp = case.get("input", {})
+    exp = case.get("expected", {})
+
+    etype = setup.get("entity_type") or inp.get("entity_type")
+    ename = setup.get("entity_name") or inp.get("entity_name")
+    edesc = setup.get("entity_description", "")
+
+    if not ename:
+        return fail("no entity_name en input ni setup")
+
+    entity_id: Optional[str] = entity_cache.get(ename)
+    if not entity_id:
+        entity_id, err = create_entity(api, cid, etype, ename, edesc)
+        if err:
+            return fail(f"create entity: {err}")
+        entity_cache[ename] = entity_id
+
+    setup_content_id: Optional[str] = None
+    gen_cat = setup.get("generate_category")
+    gen_query = setup.get("generate_query", "Setup query baseline")
+    then = setup.get("then")
+
+    if gen_cat:
+        setup_content_id, err = generate_content(
+            api, cid, entity_id, gen_cat, gen_query
+        )
+        if err:
+            return fail(f"setup generate: {err}")
+        if then == "confirm":
+            ok_c, err = confirm_content(api, cid, entity_id, setup_content_id)
+            if not ok_c:
+                return fail(f"setup confirm: {err}")
+
+    if not setup_content_id:
+        return fail("no content_id disponible para compartir")
+
+    shared = inp.get("shared", True)
+    resp = api.patch(
+        f"/collections/{cid}/entities/{entity_id}/contents/{setup_content_id}/share",
+        json={"shared": shared},
+    )
+
+    checks: list[Result] = [check_status(resp.status_code, exp["http_status"])]
+    if resp.status_code == 200 and "fields" in exp:
+        checks += check_fields(resp.json(), exp["fields"])
+    return check_all(checks)
+
+
+def _run_share_image(
+    api: APIClient, cid: str, case: dict, entity_cache: dict
+) -> Result:
+    inp = case.get("input", {})
+    setup = case.get("setup", {})
+    exp = case.get("expected", {})
+
+    etype = inp.get("entity_type") or setup.get("entity_type")
+    ename = inp.get("entity_name") or setup.get("entity_name")
+    edesc = inp.get("entity_description") or setup.get("entity_description", "")
+
+    if not ename:
+        return fail("no entity_name")
+
+    entity_id: Optional[str] = entity_cache.get(ename)
+    if not entity_id:
+        entity_id, err = create_entity(api, cid, etype, ename, edesc)
+        if err:
+            return fail(f"create entity: {err}")
+        entity_cache[ename] = entity_id
+
+    confirmed_content_id: Optional[str] = None
+    if setup:
+        gen_cat = setup.get("generate_category")
+        gen_query = setup.get("generate_query", "Setup image share")
+        then = setup.get("then")
+        if gen_cat:
+            cid_g, err = generate_content(api, cid, entity_id, gen_cat, gen_query)
+            if err:
+                return fail(f"setup generate: {err}")
+            if then == "confirm":
+                ok_c, err = confirm_content(api, cid, entity_id, cid_g)
+                if ok_c:
+                    confirmed_content_id = cid_g
+
+    build_payload: dict = {}
+    if inp.get("use_confirmed_content_id") and confirmed_content_id:
+        build_payload["content_id"] = confirmed_content_id
+
+    build_resp = api.post(
+        f"/collections/{cid}/entities/{entity_id}/image-generation/build-prompt",
+        json=build_payload,
+    )
+    if build_resp.status_code != 200:
+        return fail(f"build-prompt HTTP {build_resp.status_code}")
+
+    auto_prompt = build_resp.json().get("auto_prompt", "")
+
+    gen_resp = api.post(
+        f"/collections/{cid}/entities/{entity_id}/image-generation/generate",
+        json={
+            "content_id": confirmed_content_id,
+            "auto_prompt": auto_prompt,
+            "final_prompt": auto_prompt,
+            "batch_size": 1,
+        },
+    )
+    if gen_resp.status_code != 201:
+        return fail(f"generate image HTTP {gen_resp.status_code}")
+
+    body = gen_resp.json()
+    generation_id = body.get("generation_id")
+    images = body.get("images", [])
+    if not images:
+        return fail("no images en la respuesta de generacion")
+    image_id = images[0].get("id")
+
+    shared = inp.get("shared", True)
+    resp = api.patch(
+        f"/collections/{cid}/entities/{entity_id}/image-generation/{generation_id}/images/{image_id}/share",
+        json={"shared": shared},
+    )
+
+    checks: list[Result] = [check_status(resp.status_code, exp["http_status"])]
+    if resp.status_code == 200 and "fields" in exp:
+        checks += check_fields(resp.json(), exp["fields"])
+    return check_all(checks)
+
+
 def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> Result:
     setup = case.get("setup", {})
     steps = case.get("steps", [])
@@ -821,6 +952,7 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
     contents_by_cat: dict[str, list[str]] = {}
     last_content_id: Optional[str] = None
     image_resp: Optional[httpx.Response] = None
+    public_feed_visible: Optional[bool] = None
 
     for i, step in enumerate(steps):
         action = step.get("action")
@@ -915,6 +1047,26 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
                 )
             else:
                 image_resp = build_resp
+
+        elif action == "share_content":
+            confirmed = get_contents_by_status(api, cid, last_entity_id, "confirmed")
+            target = confirmed[0]["id"] if confirmed else last_content_id
+            if not target:
+                return fail(f"step {i} share_content: sin contenido para compartir")
+            shared_val = step.get("shared", True)
+            resp = api.patch(
+                f"/collections/{cid}/entities/{last_entity_id}/contents/{target}/share",
+                json={"shared": shared_val},
+            )
+            if resp.status_code != 200:
+                return fail(f"step {i} share_content HTTP {resp.status_code}")
+
+        elif action == "check_public_feed":
+            pub_resp = api.get("/collections/public")
+            if pub_resp.status_code != 200:
+                return fail(f"step {i} check_public_feed HTTP {pub_resp.status_code}")
+            pub_ids = [c.get("id") for c in pub_resp.json().get("data", [])]
+            public_feed_visible = cid in pub_ids
 
     # ── Evaluar estado final ──────────────────────────────────────────────
     checks: list[Result] = []
@@ -1093,6 +1245,14 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
                 )
             )
 
+    if "collection_in_public_feed" in exp and public_feed_visible is not None:
+        checks.append(
+            (
+                public_feed_visible == exp["collection_in_public_feed"],
+                f"collection_in_public_feed: visible={public_feed_visible}, expected={exp['collection_in_public_feed']}",
+            )
+        )
+
     return check_all(checks) if checks else ok()
 
 
@@ -1114,6 +1274,10 @@ def run_case(api: APIClient, cid: str, case: dict, entity_cache: dict) -> Result
             return _run_guardrail(api, cid, case, entity_cache)
         if category == "image_generation":
             return _run_image_generation(api, cid, case, entity_cache)
+        if category == "share_content":
+            return _run_share_content(api, cid, case, entity_cache)
+        if category == "share_image":
+            return _run_share_image(api, cid, case, entity_cache)
         if category == "full_flow":
             return _run_full_flow(api, cid, case, entity_cache)
         return False, f"categoria desconocida: {category}"

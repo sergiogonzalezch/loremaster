@@ -1188,6 +1188,108 @@
       }
     },
     {
+      "id": "SHARE-001",
+      "category": "share_content",
+      "description": "Compartir contenido confirmed retorna 200 con is_shared=true",
+      "setup": {
+        "entity_type": "character",
+        "entity_name": "Personaje Compartido",
+        "entity_description": "Personaje para test de compartir contenido.",
+        "generate_category": "backstory",
+        "generate_query": "Historia del personaje compartido",
+        "then": "confirm"
+      },
+      "input": {
+        "shared": true
+      },
+      "expected": {
+        "http_status": 200,
+        "fields": {
+          "is_shared": true,
+          "status": "confirmed"
+        }
+      }
+    },
+    {
+      "id": "SHARE-002",
+      "category": "share_content",
+      "description": "Compartir contenido pending retorna 409 (solo confirmed puede compartirse)",
+      "setup": {
+        "entity_type": "character",
+        "entity_name": "Personaje Pending Share",
+        "entity_description": "Personaje para test de compartir contenido pending.",
+        "generate_category": "backstory",
+        "generate_query": "Historia del personaje pendiente"
+      },
+      "input": {
+        "shared": true
+      },
+      "expected": {
+        "http_status": 409
+      }
+    },
+    {
+      "id": "SHARE-003",
+      "category": "share_content",
+      "description": "Dejar de compartir contenido confirmed retorna 200 con is_shared=false",
+      "setup": {
+        "entity_type": "character",
+        "entity_name": "Personaje Descompartido",
+        "entity_description": "Personaje para test de unshare.",
+        "generate_category": "backstory",
+        "generate_query": "Historia del personaje descompartido",
+        "then": "confirm"
+      },
+      "input": {
+        "shared": false
+      },
+      "expected": {
+        "http_status": 200,
+        "fields": {
+          "is_shared": false,
+          "status": "confirmed"
+        }
+      }
+    },
+    {
+      "id": "SHARE-004",
+      "category": "share_image",
+      "description": "Compartir imagen generada retorna 200 con is_shared=true",
+      "setup": {
+        "entity_type": "character",
+        "entity_name": "Personaje con Imagen Compartida",
+        "entity_description": "Personaje para test de compartir imagen.",
+        "generate_category": "backstory",
+        "generate_query": "Historia del personaje con imagen",
+        "then": "confirm"
+      },
+      "input": {
+        "use_confirmed_content_id": true,
+        "shared": true
+      },
+      "expected": {
+        "http_status": 200,
+        "fields": {
+          "is_shared": true
+        }
+      }
+    },
+    {
+      "id": "PUBLIC-001",
+      "category": "full_flow",
+      "description": "Coleccion con contenido compartido aparece en el feed publico",
+      "steps": [
+        { "action": "create_entity", "type": "character", "name": "Personaje Feed Publico", "description": "Personaje para test del feed publico." },
+        { "action": "generate", "category": "backstory", "query": "Historia del personaje para el feed publico" },
+        { "action": "confirm", "target": "first" },
+        { "action": "share_content" },
+        { "action": "check_public_feed" }
+      ],
+      "expected": {
+        "collection_in_public_feed": true
+      }
+    },
+    {
       "id": "FLOW-001",
       "category": "full_flow",
       "description": "Confirmar un contenido descarta automaticamente todos los pending de la misma categoria",
@@ -1290,14 +1392,16 @@
     }
   ],
   "metadata": {
-    "total_cases": 76,
+    "total_cases": 81,
     "categories": {
       "rag_query": 10,
       "entity_crud": 18,
       "entity_content": 28,
       "guardrail": 6,
       "image_generation": 5,
-      "full_flow": 5
+      "share_content": 3,
+      "share_image": 1,
+      "full_flow": 6
     },
     "coverage": {
       "entity_types": ["character", "creature", "faction", "location", "item"],

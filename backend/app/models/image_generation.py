@@ -261,4 +261,3 @@ class ImageGenerationListResponse(BaseModel):
 
 class ShareImageRequest(BaseModel):
     shared: bool
-    total: int
