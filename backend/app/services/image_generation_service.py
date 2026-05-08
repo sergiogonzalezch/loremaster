@@ -47,7 +47,6 @@ def _get_confirmed_content(
     entity: Entity,
     content_id: str,
 ) -> EntityContent | None:
-    """Busca un EntityContent confirmado que pertenezca a la entidad."""
     return session.exec(
         select(EntityContent).where(
             EntityContent.id == content_id,
@@ -60,10 +59,81 @@ def _get_confirmed_content(
 
 
 def _build_url(storage_path: str | None) -> str | None:
-    """Construye la URL completa desde el storage_path."""
     if not storage_path:
         return None
     return f"{settings.storage_base_url}/{storage_path}"
+
+
+def _create_image_record(
+    session: Session,
+    entity: Entity,
+    generation_id: str,
+    image_id: str,
+    storage_path: str | None,
+    filename: str,
+    seed: int,
+    image_url: str | None,
+) -> ImageRecord:
+    record = ImageRecord(
+        id=image_id,
+        generation_id=generation_id,
+        entity_id=entity.id,
+        collection_id=entity.collection_id,
+        seed=seed,
+        storage_path=storage_path,
+        image_url=image_url,
+        filename=filename,
+        extension="png",
+        width=settings.image_width,
+        height=settings.image_height,
+        generation_ms=0,
+    )
+    session.add(record)
+    return record
+
+
+def _create_image_result(
+    image_id: str,
+    storage_path: str | None,
+    seed: int,
+) -> ImageResult:
+    return ImageResult(
+        id=image_id,
+        image_url=_build_url(storage_path),
+        seed=seed,
+        width=settings.image_width,
+        height=settings.image_height,
+        generation_ms=0,
+    )
+
+
+def _create_image_generation(
+    session: Session,
+    entity: Entity,
+    generation_id: str,
+    content_id: str,
+    category: str,
+    auto_prompt: str,
+    final_prompt: str,
+    batch_size: int,
+    backend: str,
+) -> ImageGeneration:
+    generation = ImageGeneration(
+        id=generation_id,
+        entity_id=entity.id,
+        collection_id=entity.collection_id,
+        content_id=content_id,
+        category=category,
+        auto_prompt=auto_prompt,
+        final_prompt=final_prompt,
+        prompt_token_count=len(auto_prompt) // 4,
+        batch_size=batch_size,
+        backend=backend,
+        width=settings.image_width,
+        height=settings.image_height,
+    )
+    session.add(generation)
+    return generation
 
 
 def _generate_mock_images(
@@ -71,7 +141,6 @@ def _generate_mock_images(
     batch_size: int,
     seed_base: int,
 ) -> list[tuple[str, str, int]]:
-    """Genera URLs placeholder para el backend mock."""
     images = []
     for i in range(batch_size):
         image_id = str(_uuid.uuid4())
@@ -90,12 +159,6 @@ def _save_comfyui_image(
     generation_id: str,
     filename: str,
 ) -> str:
-    """
-    Guarda una imagen descargada de ComfyUI en el storage local.
-
-    Returns:
-        storage_path relativo (sin media_root) para guardar en DB
-    """
     relative_path = f"{entity.collection_id}/{entity.id}/{generation_id}/{filename}"
     abs_dir = (
         Path(settings.media_root) / entity.collection_id / entity.id / generation_id
@@ -118,43 +181,26 @@ def _generate_comfyui_images(
     category: str,
     seed_base: int,
 ) -> tuple[str, list[ImageResult]]:
-    """
-    Genera imágenes usando ComfyUI.
-
-    Returns:
-        (generation_id, list[ImageResult])
-
-    Raises:
-        RuntimeError: Si la generación falla o no produce imágenes
-    """
     generation_id = str(_uuid.uuid4())
 
-    # Crear ImageGeneration ANTES del loop de ImageRecord para satisfacer FK
-    generation = ImageGeneration(
-        id=generation_id,
-        entity_id=entity.id,
-        collection_id=entity.collection_id,
+    _create_image_generation(
+        session=session,
+        entity=entity,
+        generation_id=generation_id,
         content_id=content_id,
         category=category,
         auto_prompt=auto_prompt,
         final_prompt=final_prompt,
-        prompt_token_count=len(final_prompt) // 4,
         batch_size=batch_size,
         backend="comfyui",
-        width=settings.image_width,
-        height=settings.image_height,
     )
-    session.add(generation)
 
     client = ComfyUIClient(base_url=settings.comfyui_url)
-
-    # El template debe estar en formato API (ver Sección 0 del doc de integración)
     workflow_base = load_template("flux2-klein-4b-api.json")
     workflow_base = inject_prompt(workflow_base, final_prompt)
 
     images_result: list[ImageResult] = []
 
-    # ComfyUI genera 1 imagen por ejecución → llamar batch_size veces con seed distinto
     for i in range(batch_size):
         seed = seed_base + i
         workflow = inject_seed(workflow_base, seed)
@@ -164,9 +210,7 @@ def _generate_comfyui_images(
             result = client.get_history_until_complete(prompt_id)
             output_images = client.get_output_images(result)
         except Exception as exc:
-            logger.warning(
-                "ComfyUI falló en iteración %d/%d: %s", i + 1, batch_size, exc
-            )
+            logger.warning("ComfyUI falló en iteración %d/%d: %s", i + 1, batch_size, exc)
             continue
 
         for img_info in output_images[:1]:
@@ -190,30 +234,22 @@ def _generate_comfyui_images(
                 filename=filename,
             )
 
-            record = ImageRecord(
-                id=image_id,
+            _create_image_record(
+                session=session,
+                entity=entity,
                 generation_id=generation_id,
-                entity_id=entity.id,
-                collection_id=entity.collection_id,
-                seed=seed,
+                image_id=image_id,
                 storage_path=storage_path,
-                image_url=_build_url(storage_path),
                 filename=filename,
-                extension="png",
-                width=settings.image_width,
-                height=settings.image_height,
-                generation_ms=0,
+                seed=seed,
+                image_url=_build_url(storage_path),
             )
-            session.add(record)
 
             images_result.append(
-                ImageResult(
-                    id=image_id,
-                    image_url=_build_url(storage_path),
+                _create_image_result(
+                    image_id=image_id,
+                    storage_path=storage_path,
                     seed=seed,
-                    width=settings.image_width,
-                    height=settings.image_height,
-                    generation_ms=0,
                 )
             )
 
@@ -295,38 +331,29 @@ def generate_images_service(
         mock_images = _generate_mock_images(entity, batch_size, effective_seed_base)
         generation_id = str(_uuid.uuid4())
 
-        generation = ImageGeneration(
-            id=generation_id,
-            entity_id=entity.id,
-            collection_id=entity.collection_id,
+        _create_image_generation(
+            session=session,
+            entity=entity,
+            generation_id=generation_id,
             content_id=content_id,
             category=content.category.value,
             auto_prompt=auto_prompt,
             final_prompt=final_prompt,
-            prompt_token_count=len(auto_prompt) // 4,
             batch_size=batch_size,
             backend="mock",
-            width=settings.image_width,
-            height=settings.image_height,
         )
-        session.add(generation)
 
         for image_id, image_url, seed in mock_images:
-            record = ImageRecord(
-                id=image_id,
+            _create_image_record(
+                session=session,
+                entity=entity,
                 generation_id=generation_id,
-                entity_id=entity.id,
-                collection_id=entity.collection_id,
-                seed=seed,
+                image_id=image_id,
                 storage_path=None,
-                image_url=image_url,
                 filename=f"{image_id}.png",
-                extension="png",
-                width=settings.image_width,
-                height=settings.image_height,
-                generation_ms=0,
+                seed=seed,
+                image_url=image_url,
             )
-            session.add(record)
 
             images_result.append(
                 ImageResult(
