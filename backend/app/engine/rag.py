@@ -14,6 +14,7 @@ from qdrant_client.models import (
 from sentence_transformers import SentenceTransformer
 
 from app.core.config import settings
+from app.core.exceptions import NoContextAvailableError
 
 logger = logging.getLogger(__name__)
 
@@ -152,8 +153,6 @@ def retrieve_context(
     Raises:
         NoContextAvailableError: If no context is found from any source.
     """
-    from app.core.exceptions import NoContextAvailableError
-
     try:
         context_chunks = search_context(
             collection_id=collection_id,

@@ -19,6 +19,7 @@ from app.api.routes import (
     auth,
     auth_clerk,
     users,
+    public,
     admin,
 )
 
@@ -80,5 +81,5 @@ app.include_router(metadata.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(auth_clerk.router, prefix="/api/v1")
 app.include_router(users.router, prefix="/api/v1")
-app.include_router(users.public_router, prefix="/api/v1")
+app.include_router(public.public_router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlmodel import Session
 
 from app.core.query_params import PaginationParams
-from app.core.deps import get_entity_or_404, get_entity_or_404_owned
+from app.core.deps import get_entity_or_404_owned
 from app.core.exceptions import (
     ContentDiscardedError,
     ContentNotAllowedError,

@@ -7,6 +7,7 @@ from app.database import get_session
 from app.models.collections import Collection
 from app.models.documents import Document
 from app.models.entities import Entity
+from app.models.users import User
 
 
 def get_collection_or_404(
@@ -63,3 +64,13 @@ def get_document_or_404(
     if not doc:
         raise HTTPException(status_code=404, detail="Documento no encontrado.")
     return doc
+
+
+def get_current_db_user(
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> User:
+    user = session.get(User, current_user["sub"])
+    if not user or user.is_deleted:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+    return user

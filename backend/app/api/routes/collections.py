@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__)
 
 from app.core.query_params import DateRangeParams, PaginationParams
 from app.core.deps import (
-    get_collection_or_404,
     get_collection_or_404_owned,
 )
 from app.core.auth_deps import get_current_user

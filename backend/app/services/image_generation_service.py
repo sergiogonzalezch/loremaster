@@ -14,6 +14,12 @@ from sqlmodel import Session, select
 from app.core.config import settings
 from app.core.exceptions import DatabaseError, NoContextAvailableError
 from app.domain.content_guard import check_user_input
+from app.engine.comfyui_client import (
+    ComfyUIClient,
+    inject_prompt,
+    inject_seed,
+    load_template,
+)
 from app.engine.image_prompt_builder import build_visual_prompt
 from app.models.entities import Entity
 from app.models.entity_content import EntityContent
@@ -121,13 +127,6 @@ def _generate_comfyui_images(
     Raises:
         RuntimeError: Si la generación falla o no produce imágenes
     """
-    from app.engine.comfyui_client import (
-        ComfyUIClient,
-        inject_prompt,
-        inject_seed,
-        load_template,
-    )
-
     generation_id = str(_uuid.uuid4())
 
     # Crear ImageGeneration ANTES del loop de ImageRecord para satisfacer FK

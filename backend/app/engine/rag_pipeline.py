@@ -4,7 +4,6 @@ import threading
 from langchain_core.output_parsers import StrOutputParser
 
 from app.core.config import settings
-from app.core.exceptions import NoContextAvailableError
 from app.domain.prompt_templates import render_prompt
 from app.engine.llm import chain, llm
 from app.engine.rag import retrieve_context
