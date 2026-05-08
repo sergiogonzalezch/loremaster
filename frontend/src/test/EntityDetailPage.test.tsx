@@ -216,6 +216,14 @@ describe("EntityDetailPage", () => {
     expect(screen.getByText(/No hay contenidos todavía/)).toBeInTheDocument();
   });
 
+  it("muestra alerta de error si la entidad no existe (404)", async () => {
+    mockGetEntity.mockRejectedValue(new Error("Entidad no encontrada"));
+    renderPage();
+    const alert = await screen.findByRole("alert");
+    expect(alert).toBeInTheDocument();
+    expect(alert.textContent).toMatch(/Entidad no encontrada|Error al cargar/);
+  });
+
   it("abre modal de edición de entidad con datos actuales", async () => {
     renderPage();
     await waitFor(() => screen.getByRole("heading", { name: "Gandalf" }));

@@ -66,14 +66,20 @@ async def test_rag_query_llm_unavailable_503(
 
 @pytest.mark.anyio
 async def test_rag_query_qdrant_unavailable_503(
-    client, sample_collection, sample_document
+    client, mock_llm, monkeypatch, sample_collection, sample_document
 ):
-    """GEN-05: Si Qdrant falla, retorna 503."""
+    """GEN-05: Si retrieve_context lanza excepción (Qdrant caído), retorna 503."""
+
+    def _qdrant_down(*args, **kwargs):
+        raise Exception("Qdrant connection refused")
+
+    monkeypatch.setattr("app.engine.rag_pipeline.retrieve_context", _qdrant_down)
+
     response = await client.post(
         f"/api/v1/collections/{sample_collection.id}/query",
         json={"query": "Describe el mundo"},
     )
-    assert response.status_code in (200, 503)
+    assert response.status_code == 503
 
 
 @pytest.mark.anyio

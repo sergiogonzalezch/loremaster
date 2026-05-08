@@ -188,7 +188,7 @@ def wait_for_docs(api: APIClient, cid: str) -> tuple[bool, str]:
         if resp.status_code != 200:
             return False, f"list docs HTTP {resp.status_code}"
         # The list endpoint excludes 'processing' docs, so if we get items it's done
-        items = resp.json().get("items", [])
+        items = resp.json().get("data", [])
         if items:
             return True, ""
         time.sleep(DOC_POLL_INTERVAL)

@@ -6,6 +6,10 @@ import type { ImageGenerationItem, ImageRecordData } from "../types";
 import { formatDate } from "../utils/formatters";
 import { CATEGORY_LABELS } from "../utils/constants";
 
+const MEDIA_BASE = (
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1"
+).replace("/api/v1", "");
+
 interface Props {
   collectionId: string;
   entityId: string;
@@ -49,7 +53,7 @@ export default function ImageGallery({
 
   const getImageUrl = (img: ImageRecordData): string => {
     if (img.storage_path) {
-      return `http://localhost:8000/media/${img.storage_path}`;
+      return `${MEDIA_BASE}/media/${img.storage_path}`;
     }
     return img.image_url || "";
   };

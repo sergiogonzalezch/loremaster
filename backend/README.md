@@ -127,6 +127,25 @@ pytest tests/test_entities.py       # fichero concreto
 pytest -k "test_create"             # por nombre
 ```
 
+| Archivo | Tests | Cobertura |
+|---|---|---|
+| `test_content_guard.py` | 32 | Patrones regex: inputs válidos/inválidos, Unicode, routing de excepciones |
+| `test_entity_content.py` | 25 | Ciclo de vida EntityContent: pending → confirmed/discarded, límite de borradores |
+| `test_collections.py` | 18 | CRUD de colecciones, ownership, unique constraint por usuario |
+| `test_documents.py` | 16 | Upload PDF/TXT, background ingest, Qdrant failure, malformed PDF |
+| `test_image_generation_service.py` | 13 | Build-prompt, generación por batch, guardrails de imagen |
+| `test_entities.py` | 13 | CRUD de entidades, nombre reservado tras soft-delete |
+| `test_rag_query.py` | 9 | Consulta RAG, Qdrant caído → 503, LLM failure → semáforo liberado |
+| `test_generation_service.py` | 8 | Generación por categoría, prompt templates, moderación |
+| `test_public_feed.py` | 7 | Endpoint público `/collections/public` y perfiles públicos |
+| `test_prompt_builder.py` | 7 | Estrategias de contexto, flag `truncated`, ranking de fuentes |
+| `test_admin.py` | 5 | Listado usuarios, cascade delete de colección y usuario |
+| `test_users.py` | 4 | Perfil `/users/me` GET/PATCH |
+| `test_deletion_service.py` | 2 | Cascade soft-delete: documentos, entidades, contenidos, vectores Qdrant |
+| `test_content_management_service.py` | 1 | `_discard_sibling_contents` no afecta otras categorías |
+
+**Total: 160 tests.**
+
 ## Endpoints
 
 Todos bajo `/api/v1/`.
@@ -213,9 +232,12 @@ Estados posibles: `pending` → `confirmed` | `discarded`. Máximo 5 contenidos 
 
 | Método | Ruta | Descripción | Status |
 |---|---|---|---|
-| `POST` | `/collections/{id}/query` | Consulta RAG libre contra el lore cargado | 200 |
+| `POST` | `/collections/{id}/query` | Consulta RAG libre contra el lore cargado (requiere ser owner) | 200 |
 
 Respuesta: `{ answer, query, sources_count }`.
+
+- Requiere autenticación y que el usuario sea owner de la colección (no se puede consultar el lore de otro usuario).
+- Si Qdrant no está disponible durante la consulta, devuelve **503 Service Unavailable**.
 
 ### Generación de imágenes
 
@@ -243,8 +265,8 @@ Los endpoints de administración requieren que el usuario tenga `is_admin=True`.
 | Método | Ruta | Descripción | Status |
 |---|---|---|---|
 | `GET` | `/admin/users` | Listar todos los usuarios (paginado con `?page=` y `?page_size=`) | 200 |
-| `DELETE` | `/admin/collections/{id}` | Soft-delete de cualquier colección | 204 |
-| `DELETE` | `/admin/users/{id}` | Soft-delete de cualquier usuario | 204 |
+| `DELETE` | `/admin/collections/{id}` | Cascade soft-delete de cualquier colección (incluye documentos, entidades, contenidos y vectores Qdrant) | 204 |
+| `DELETE` | `/admin/users/{id}` | Cascade soft-delete del usuario y de todas sus colecciones | 204 |
 
 #### Crear un usuario admin
 

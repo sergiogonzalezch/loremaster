@@ -21,6 +21,10 @@ import { CATEGORY_LABELS } from "../utils/constants";
 import { getErrorMessage } from "../utils/errors";
 import { formatDate } from "../utils/formatters";
 
+const MEDIA_BASE = (
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1"
+).replace("/api/v1", "");
+
 interface Props {
   collectionId: string;
   entityId: string;
@@ -47,7 +51,7 @@ function ImageGrid({
 
   const getImageUrl = (img: ImageItem) => {
     if (img.storage_path) {
-      return `http://localhost:8000/media/${img.storage_path}`;
+      return `${MEDIA_BASE}/media/${img.storage_path}`;
     }
     return img.image_url || "";
   };
@@ -583,7 +587,7 @@ export default function ImagePanel({
                 <img
                   src={
                     selectedImage.storage_path
-                      ? `http://localhost:8000/media/${selectedImage.storage_path}`
+                      ? `${MEDIA_BASE}/media/${selectedImage.storage_path}`
                       : selectedImage.image_url || ""
                   }
                   alt={`Imagen seed ${selectedImage.seed}`}

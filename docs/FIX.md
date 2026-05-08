@@ -44,6 +44,12 @@ Lista de tech debt identificado y aún no corregido. Ordenado por impacto estima
 | 34 | FK constraint faltante en migración `add_owner_id_to_collections` | Backend | 🟢 Cubierto | Sin FK en SQL; integridad referencial solo a nivel de aplicación |
 | 35 | Constraint `(name, owner_id)` no protege colecciones con `owner_id=NULL` | Backend | 🟢 Cubierto | SQL `NULL != NULL` en UNIQUE; solo afecta datos migrados sin backfill |
 | 36 | `get_collection_or_404_public_or_owned` bypassa Clerk tokens | Backend | 🟢 Cubierto | Llama `verify_token` directo; Clerk solo activo en producción con config explícita |
+| 37 | Admin delete sin cascade — vectores Qdrant y registros hijos huérfanos | Backend | ✅ Resuelto | — |
+| 38 | RAG query sin ownership check | Backend | ✅ Resuelto | — |
+| 39 | ComfyUI partial batch failure silencioso | Backend | 🟢 Cubierto | Solo afecta OPTION_B (en desarrollo); mock siempre completa |
+| 40 | URLs hardcodeadas `localhost:8000` en ImagePanel e ImageGallery | Frontend | ✅ Resuelto | — |
+| 41 | `CollectionsPage.fetchCollections` sin AbortSignal | Frontend | ✅ Resuelto | — |
+| 42 | `AuthContext.decodeUser` no verifica expiración del token | Frontend | 🟢 Cubierto | API interceptor detecta 401 y redirige; solo hay lag de UX |
 
 **Leyenda:** 🔴 Pendiente urgente · 🟡 Pendiente no urgente · 🟢 Cubierto (mitigado, sin acción inmediata) · ✅ Cerrado
 
@@ -321,7 +327,7 @@ No urgente mientras el proyecto sea de uso interno local. Abordar antes de cualq
 - ~~Timeout de Qdrant durante el background task: verificar manejo de error.~~ ✅ Cubierto en `tests/test_documents.py::test_ingest_qdrant_failure_sets_processing_error` (marca `failed` y persiste `processing_error`).
 
 **`rag_pipeline.py`**
-- Qdrant caído en tiempo de query: debe devolver error controlado, no 500 sin detalle.
+- ~~Qdrant caído en tiempo de query: `test_rag_query_qdrant_unavailable_503` existe pero acepta `status_code in (200, 503)` — no inyecta fallo de Qdrant explícitamente; el test no verifica el caso de error real. Pendiente test con mock de `VectorStoreError`.~~ ✅ Cubierto en `tests/test_rag_query.py::test_rag_query_qdrant_unavailable_503`: usa `monkeypatch` para hacer fallar `retrieve_context` y verifica `status_code == 503`.
 - ~~LLM timeout: verificar que el semáforo se libera correctamente aunque el request falle.~~ ✅ Cubierto en `tests/test_rag_query.py::test_rag_query_llm_failure_releases_semaphore`.
 
 **~~`content_guard.py`~~** ✅ Cubierto  
@@ -330,20 +336,20 @@ No urgente mientras el proyecto sea de uso interno local. Abordar antes de cualq
 ### Frontend — Tests faltantes
 
 **Páginas**
-- Paginación: al eliminar el último ítem de una página, debe retroceder a la página anterior.
-- Recuperación de error: si la API falla en el fetch inicial, debe mostrar el mensaje de error y ofrecer reintentar.
-- Navegación a entidad eliminada: si la entidad no existe (404), redirigir con mensaje claro.
+- ~~Paginación: al eliminar el último ítem de una página, debe retroceder a la página anterior.~~ ✅ Cubierto en `CollectionsPage.test.tsx`: "retrocede a la última página válida cuando la página actual queda vacía".
+- Recuperación de error: `CollectionsPage` verifica que el error se muestra (`muestra alerta de error si getCollections falla`), pero no cubre el botón de reintentar — pendiente.
+- ~~Navegación a entidad eliminada: si la entidad no existe (404), redirigir con mensaje claro.~~ ✅ Cubierto en `EntityDetailPage.test.tsx`: "muestra alerta de error si la entidad no existe (404)".
 
 **`ContentCard.tsx`**
-- Doble acción rápida: confirmar que la segunda acción no sobreescribe el estado de la primera.
-- Rollback tras fallo de API: el estado debe volver exactamente al valor anterior.
+- ~~Doble acción rápida: confirmar que la segunda acción no sobreescribe el estado de la primera.~~ ✅ Cubierto en `ContentCard.test.tsx`: "segundo clic mientras busy bloquea la acción (confirmContent llamado solo una vez)".
+- ~~Rollback tras fallo de API: el estado debe volver exactamente al valor anterior.~~ ✅ Cubierto en `ContentCard.test.tsx`: "fallo de API en confirm llama onOptimisticUpdate con el contenido original".
 
 **`MarkdownContent.tsx`**
-- Sanitización: inputs con `<script>`, atributos `onerror`, y links con `javascript:` deben renderizarse sin ejecutar código.
+- ~~Sanitización: inputs con `<script>`, atributos `onerror`, y links con `javascript:` deben renderizarse sin ejecutar código.~~ ✅ Cubierto en `MarkdownContent.test.tsx` (5 tests: script removal, onerror removal, javascript: href, standard markdown, https href).
 
 **Hooks**
-- `useGenerate`: cancelación en vuelo — al llamar a `abort()`, el estado no debe actualizarse tras la cancelación.
-- `useCollectionDocumentsStatus`: verificar que el polling se detiene cuando todos los documentos salen del estado `processing`.
+- ~~`useGenerate`: cancelación en vuelo — al llamar a `abort()`, el estado no debe actualizarse tras la cancelación.~~ ✅ Cubierto en `useGenerate.test.ts`: "cancel() dispara ApiAbortError → isCancelled=true, error=null" + "segunda llamada a run() aborta la primera".
+- ~~`useCollectionDocumentsStatus`: verificar que el polling se detiene cuando todos los documentos salen del estado `processing`.~~ ✅ Cubierto en `useCollectionDocumentsStatus.test.ts` (6 tests: sin collectionId, sin docs, con docs completados, polling activo, polling se detiene, ApiAbortError).
 
 ---
 
@@ -427,21 +433,6 @@ Ver solución aplicada en **ítem 6**.
 El riesgo real se materializa solo si se llama al servicio directamente (e.g., desde tests o futuras integraciones) sin pasar por el route. No requiere acción inmediata, pero documentar la invariante mejoraría la mantenibilidad.
 
 ---
-
-*Generado el 2026-04-25. Actualizado el 2026-04-28 (ítems 17, 18). 
-Actualizado el 2026-04-30 (ítems 6 revisado, 21-25 nuevos — análisis del módulo image generation). 
-Actualizado el 2026-04-30 (ítems 22-25 resueltos — correcciones en image generation service, route y models). 
-Actualizado el 2026-04-30 (ítems 6 y 21 resueltos — cascade soft-delete de ImageRecord en deletion_service.py). 
-Actualizado el 2026-04-30 (ítem 7 resuelto — retry endpoint + processing_error + raw_text en documents). 
-Actualizado el 2026-04-30 (ítem 19 resuelto — tabla moderation_log + log_moderation_event en los tres routes de moderación). 
-Actualizado el 2026-05-01 (cobertura de tests backend en deletion_service, content_management_service e image_generation/tests de cascade). 
-Actualizado el 2026-05-06 (ítem 1 resuelto — auth JWT implementado; gaps P1 y P9 cerrados; ítems 26-30 añadidos — análisis bug-search completo). 
-Actualizado el 2026-05-06 (ítems 26-28 resueltos — info leak, max_length, JWKS lock). 
-Actualizado el 2026-05-06 (gap P3 cerrado — CORS configurable vía ALLOWED_ORIGINS env var; revisión completa del estado de gaps P2–P8). Actualizado el 2026-05-06 (gap P10 añadido — `/media/**` sin autenticación). Ver historial de correcciones aplicadas en los commits del branch `main`.
-Actualizado el 2026-05-07 (ítems 31-36 añadidos — revisión del commit `b704c24` Users refactor first stage).*
-
----
-
 ## ~~31. Paginación hardcodeada en `GET /admin/users`~~ ✅ Resuelto
 
 **Capa:** Backend  
@@ -546,6 +537,169 @@ En SQL, `NULL != NULL` en constraints UNIQUE. Dos filas con el mismo `name` y `o
 
 ---
 
+## 37. Admin delete sin cascade — vectores Qdrant y registros hijos huérfanos
+
+**Capa:** Backend  
+**Archivo:** `backend/app/api/routes/admin.py:63-69, 79-85`  
+**Impacto:** Alto — eliminar una colección vía admin deja entidades, documentos, contenidos e imágenes como registros huérfanos en BD y vectores en Qdrant sin limpiar.  
+**Clasificación:** Error confirmado.
+
+`admin_delete_collection` y `admin_delete_user` hacen un soft-delete manual del nodo raíz sin delegar en los servicios de cascada:
+
+```python
+# admin.py:66-69 — solo soft-delete del root
+collection.is_deleted = True
+collection.deleted_at = datetime.now(timezone.utc)
+session.add(collection)
+session.commit()
+```
+
+Contraste con el route normal que llama `delete_collection_service(session, collection)`, que a su vez invoca `cascade_delete_collection()` en `deletion_service.py` (limpia entidades, documentos, contenidos, imágenes **y** vectores Qdrant).
+
+Consecuencias prácticas:
+- Los registros hijos no quedan en soft-delete — siguen con `is_deleted=False`, por lo que consultas directas a esas tablas los devuelven como activos.
+- Los vectores de Qdrant permanecen indefinidamente, consumiendo memoria.
+- Para `admin_delete_user`: las colecciones del usuario quedan con `owner_id` apuntando a un usuario eliminado, inaccesibles pero sin limpiar.
+
+**Solución sugerida:**
+```python
+# admin_delete_collection
+from app.services.collection_service import delete_collection_service
+delete_collection_service(session, collection)
+
+# admin_delete_user — añadir loop sobre sus colecciones activas
+collections = session.exec(select(Collection).where(Collection.owner_id == user_id, Collection.is_deleted == False)).all()
+for c in collections:
+    delete_collection_service(session, c)
+```
+
+---
+
+## 38. RAG query sin ownership check
+
+**Capa:** Backend  
+**Archivo:** `backend/app/api/routes/rag_query.py:24`  
+**Impacto:** Alto — cualquier usuario autenticado que conozca un `collection_id` ajeno puede ejecutar queries RAG y obtener contexto de documentos privados de otro usuario.  
+**Clasificación:** Error confirmado.
+
+```python
+@router.post("/{collection_id}/query", response_model=RagQueryResponse)
+def rag_query(
+    ...
+    _: Collection = Depends(get_collection_or_404),   # ← sin ownership
+    __: dict = Depends(get_current_user),              # ← solo autenticación
+    ...
+```
+
+`get_collection_or_404` solo verifica que la colección existe y no está eliminada. No compara `collection.owner_id` con el usuario del token. El endpoint requiere autenticación (no es accesible anónimamente), pero cualquier usuario registrado puede querier colecciones de otros usuarios.
+
+Todos los demás endpoints de escritura usan `get_collection_or_404_owned`. El endpoint de query es el único que no enforza ownership.
+
+**Solución sugerida:**
+```python
+_: Collection = Depends(get_collection_or_404_owned),
+# eliminar la dependencia redundante __: dict = Depends(get_current_user)
+```
+
+---
+
+## 39. ComfyUI partial batch failure silencioso
+
+**Capa:** Backend  
+**Archivo:** `backend/app/services/image_generation_service.py` — `_generate_comfyui_images`  
+**Impacto:** Bajo — solo afecta OPTION_B (backend ComfyUI), que está en desarrollo y no en producción.  
+**Clasificación:** Parcialmente mitigado.
+
+Si alguna iteración del loop de generación falla, el error se logea como warning y se continúa (`continue`). La respuesta devuelve `batch_size=N` original pero la lista `images` puede contener menos imágenes que lo solicitado. El cliente no tiene forma de distinguir un resultado parcial de uno completo.
+
+**Mitigación:** El backend `mock` siempre completa el batch. El backend ComfyUI no está en uso en producción. El route ya tiene un catch-all que devuelve 500 si `images_result` está vacío.
+
+**Solución sugerida (baja prioridad):** Añadir `actual_batch_size: int` al response, o documentar que `len(images)` puede ser menor que `batch_size` en caso de error parcial.
+
+---
+
+## 40. URLs hardcodeadas `http://localhost:8000` en ImagePanel e ImageGallery
+
+**Capa:** Frontend  
+**Archivos:** `frontend/src/components/ImagePanel.tsx:50, 586`, `frontend/src/components/ImageGallery.tsx:52`  
+**Impacto:** Medio — las URLs de imágenes servidas desde `/media/` apuntan a `localhost:8000` en lugar de usar `VITE_API_BASE_URL`. En cualquier entorno distinto del local (staging, producción, otro puerto) las imágenes no cargan.  
+**Clasificación:** Error confirmado.
+
+```typescript
+// ImagePanel.tsx:50 y ImageGallery.tsx:52
+return `http://localhost:8000/media/${img.storage_path}`;
+```
+
+El resto del proyecto ya usa la variable de entorno correctamente (`apiClient.ts:4`):
+```typescript
+import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1"
+```
+
+**Solución sugerida:**
+```typescript
+const BASE = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1")
+  .replace("/api/v1", "");
+return `${BASE}/media/${img.storage_path}`;
+```
+
+O centralizar en `apiClient.ts` una función `getMediaUrl(storagePath: string)`.
+
+---
+
+## 41. `CollectionsPage.fetchCollections` sin AbortSignal
+
+**Capa:** Frontend  
+**Archivo:** `frontend/src/pages/CollectionsPage.tsx:83`  
+**Impacto:** Bajo — si el usuario navega fuera mientras se carga la lista de colecciones, la petición continúa y actualiza el estado de un componente desmontado (warning de React 18).  
+**Clasificación:** Error confirmado.
+
+```typescript
+const fetchCollections = useCallback(async () => {
+  // ...
+  const res = await getCollections({ page, page_size: ... });  // sin signal
+  setCollections(res.data);  // setState en componente potencialmente desmontado
+```
+
+Contraste con otros hooks como `useEntityContents` que sí aceptan y propagan `AbortSignal`.
+
+**Solución sugerida:** Añadir `useEffect` con `AbortController` alrededor de `fetchCollections`:
+```typescript
+useEffect(() => {
+  const controller = new AbortController();
+  fetchCollections(controller.signal);
+  return () => controller.abort();
+}, [fetchCollections]);
+```
+Y propagar el signal a `getCollections`.
+
+---
+
+## 42. `AuthContext.decodeUser` no valida expiración del token
+
+**Capa:** Frontend  
+**Archivo:** `frontend/src/contexts/AuthContext.tsx`  
+**Impacto:** Bajo — un token expirado mantiene al usuario con sesión aparentemente activa en la UI hasta que el interceptor de la API detecta un 401 y redirige. Genera lag de UX.  
+**Clasificación:** Parcialmente mitigado.
+
+```typescript
+function decodeUser(token: string): AuthUser | null {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    // sin verificación de payload.exp
+```
+
+Si el token expira mientras el usuario tiene la app abierta (pestaña sin actividad durante 24 h), la UI mostrará al usuario como autenticado hasta la próxima acción que haga una petición.
+
+**Mitigación:** `apiClient.ts` detecta 401 y llama `removeToken()` + redirige a login. La ventana de inconsistencia es pequeña en uso normal.
+
+**Solución sugerida:**
+```typescript
+const now = Math.floor(Date.now() / 1000);
+if (payload.exp && payload.exp < now) return null;
+```
+
+---
+
 ## 36. `get_collection_or_404_public_or_owned` bypassa Clerk tokens en producción
 
 **Capa:** Backend  
@@ -565,3 +719,23 @@ if credentials:
 **Mitigación:** Clerk solo se activa con `settings.environment == "production"`. En desarrollo, el entorno actual, la dependencia funciona correctamente.
 
 **Solución sugerida:** Añadir `get_optional_current_user` a `auth_deps.py` que retorne `None` en lugar de lanzar 401 cuando no hay credenciales, y usarlo en esta dependencia en vez de llamar `verify_token` directamente.
+
+---
+
+*Generado el 2026-04-25. Actualizado el 2026-04-28 (ítems 17, 18). 
+Actualizado el 2026-04-30 (ítems 6 revisado, 21-25 nuevos — análisis del módulo image generation). 
+Actualizado el 2026-04-30 (ítems 22-25 resueltos — correcciones en image generation service, route y models). 
+Actualizado el 2026-04-30 (ítems 6 y 21 resueltos — cascade soft-delete de ImageRecord en deletion_service.py). 
+Actualizado el 2026-04-30 (ítem 7 resuelto — retry endpoint + processing_error + raw_text en documents). 
+Actualizado el 2026-04-30 (ítem 19 resuelto — tabla moderation_log + log_moderation_event en los tres routes de moderación). 
+Actualizado el 2026-05-01 (cobertura de tests backend en deletion_service, content_management_service e image_generation/tests de cascade). 
+Actualizado el 2026-05-06 (ítem 1 resuelto — auth JWT implementado; gaps P1 y P9 cerrados; ítems 26-30 añadidos — análisis bug-search completo). 
+Actualizado el 2026-05-06 (ítems 26-28 resueltos — info leak, max_length, JWKS lock). 
+Actualizado el 2026-05-06 (gap P3 cerrado — CORS configurable vía ALLOWED_ORIGINS env var; revisión completa del estado de gaps P2–P8). Actualizado el 2026-05-06 (gap P10 añadido — `/media/**` sin autenticación). Ver historial de correcciones aplicadas en los commits del branch `main`.
+Actualizado el 2026-05-07 (ítems 31-36 añadidos — revisión del commit `b704c24` Users refactor first stage).
+Actualizado el 2026-05-07 (ítems 37-42 añadidos — bug-search completo backend + frontend; 3 confirmados backend, 2 confirmados frontend, 1 parcialmente mitigado en cada capa).
+Actualizado el 2026-05-08 (ítems 37, 38, 40, 41 resueltos — admin cascade delete, RAG ownership, ImagePanel/Gallery MEDIA_BASE, CollectionsPage AbortSignal).
+Actualizado el 2026-05-08 (cobertura de tests revisada: useGenerate cancelación marcada cubierta; rag_pipeline Qdrant test identificado como débil; resto de tests frontend pendientes confirmados).*
+
+---
+

@@ -97,17 +97,23 @@ src/
 │   ├── user.ts            → UserProfile, UpdateProfileRequest
 │   └── index.ts           → barrel export
 ├── test/
-│   ├── setup.ts                  → Configura @testing-library/jest-dom globalmente
-│   ├── errors.test.ts            → getErrorMessage + parseApiError
-│   ├── tokens.test.ts            → estimateTokens + QUERY_TOKEN_WARN_AT
-│   ├── formatters.test.ts        → formatDate
-│   ├── constants.test.ts         → ENTITY_CATEGORY_MAP, badges, labels, límites
-│   ├── ConfirmModal.test.tsx     → Render, show/hide, callbacks, variante
-│   ├── TokenCounter.test.tsx     → Conteo, umbral de advertencia, warnAt custom
-│   ├── ContentCard.test.tsx      → Estados pending/confirmed/discarded, llamadas API
-│   ├── useGenerate.test.ts       → run, cancel, reset, AbortSignal, doble llamada
-│   ├── useEntityContents.test.ts → fetch, loading, error, filtros, setError
-│   └── useDebouncedValue.test.ts → valor inicial, delay no cumplido, delay cumplido
+│   ├── setup.ts                              → Configura @testing-library/jest-dom globalmente
+│   ├── errors.test.ts                        → getErrorMessage + parseApiError
+│   ├── tokens.test.ts                        → estimateTokens + QUERY_TOKEN_WARN_AT
+│   ├── formatters.test.ts                    → formatDate
+│   ├── constants.test.ts                     → ENTITY_CATEGORY_MAP, badges, labels, límites
+│   ├── ConfirmModal.test.tsx                 → Render, show/hide, callbacks, variante
+│   ├── TokenCounter.test.tsx                 → Conteo, umbral de advertencia, warnAt custom
+│   ├── MarkdownContent.test.tsx              → Sanitización XSS: script, onerror, javascript:, markdown estándar
+│   ├── ContentCard.test.tsx                  → Estados pending/confirmed/discarded, busy-lock, rollback optimista
+│   ├── CollectionsPage.test.tsx              → CRUD colecciones, modal, paginación auto-back
+│   ├── CollectionDetailPage.test.tsx         → Tabs documentos/entidades, estados de carga
+│   ├── EntityDetailPage.test.tsx             → Generación, límite borradores, error 404
+│   ├── GeneratePage.test.tsx                 → Consulta RAG libre, errores 422/503
+│   ├── useGenerate.test.ts                   → run, cancel, reset, AbortSignal, doble llamada
+│   ├── useEntityContents.test.ts             → fetch, loading, error, filtros, setError
+│   ├── useCollectionDocumentsStatus.test.ts  → Polling lifecycle: inicio, activo, se detiene, ApiAbortError
+│   └── useDebouncedValue.test.ts             → valor inicial, delay no cumplido, delay cumplido
 └── utils/
     ├── constants.ts   → ENTITY_TYPE_BADGE/LABELS, ENTITY_CATEGORY_MAP, CATEGORY_LABELS,
     │                    MAX_PENDING_CONTENTS, constantes de tokens
@@ -123,14 +129,22 @@ src/
 
 Los tests se encuentran en `src/test/`. Las llamadas a la API se mockean con `vi.mock()`, sin MSW.
 
-| Categoría   | Archivos                                                              | Tests |
-| ----------- | --------------------------------------------------------------------- | ----- |
-| Utilidades  | errors, tokens, formatters, constants                                 | 26    |
-| Componentes | ConfirmModal, TokenCounter, ContentCard                               | 25    |
-| Hooks       | useGenerate, useEntityContents, useDebouncedValue                     | 17    |
-| Páginas     | CollectionsPage, CollectionDetailPage, EntityDetailPage, GeneratePage | 35    |
+| Categoría   | Archivos                                                                        | Tests |
+| ----------- | ------------------------------------------------------------------------------- | ----- |
+| Utilidades  | errors, tokens, formatters, constants                                           | 26    |
+| Componentes | ConfirmModal, TokenCounter, ContentCard, MarkdownContent                        | 28    |
+| Hooks       | useGenerate, useEntityContents, useDebouncedValue, useCollectionDocumentsStatus | 23    |
+| Páginas     | CollectionsPage, CollectionDetailPage, EntityDetailPage, GeneratePage           | 41    |
 
-**Total: 103 tests.**
+**Total: 118 tests.**
+
+Aspectos destacados de cobertura:
+
+- **`ContentCard`**: estados pending/confirmed/discarded, busy-lock (doble clic bloqueado), rollback optimista en fallo de API, badge de auditoría `✎ editado`.
+- **`MarkdownContent`**: sanitización XSS — `<script>`, `onerror`, `javascript:` href bloqueados; markdown estándar y `https://` permitidos.
+- **`useCollectionDocumentsStatus`**: polling activo cuando hay documentos `processing`; polling detenido automáticamente cuando todos salen de ese estado; `ApiAbortError` no actualiza estado.
+- **`CollectionsPage`**: paginación auto-back cuando la página actual queda vacía tras eliminación.
+- **`EntityDetailPage`**: alerta de error en carga 404, formulario de generación, límite de borradores.
 
 ## Autenticación
 

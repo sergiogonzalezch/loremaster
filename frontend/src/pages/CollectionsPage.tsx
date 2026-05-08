@@ -18,6 +18,7 @@ import {
   updateCollection,
   deleteCollection,
 } from "../api";
+import { ApiAbortError } from "../api/apiClient";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ConfirmModal from "../components/ConfirmModal";
 import type { Collection } from "../types";
@@ -76,26 +77,36 @@ export default function CollectionsPage() {
 
   const debouncedName = useDebouncedValue(name);
 
-  const fetchCollections = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await getCollections({
-        page,
-        page_size: pageSize,
-        name: debouncedName || undefined,
-        created_after: createdAfter || undefined,
-        created_before: createdBefore || undefined,
-        order,
-      });
-      setCollections(res.data);
-      setTotalPages(res.meta.total_pages);
-    } catch (e) {
-      setError(parseApiError(e, "Error al cargar las colecciones"));
-    } finally {
-      setLoading(false);
-    }
-  }, [page, pageSize, debouncedName, createdAfter, createdBefore, order]);
+  const fetchCollections = useCallback(
+    async (signal?: AbortSignal) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await getCollections(
+          {
+            page,
+            page_size: pageSize,
+            name: debouncedName || undefined,
+            created_after: createdAfter || undefined,
+            created_before: createdBefore || undefined,
+            order,
+          },
+          signal,
+        );
+        setCollections(res.data);
+        setTotalPages(res.meta.total_pages);
+        if (res.meta.total_pages > 0 && page > res.meta.total_pages) {
+          setParam({ page: String(res.meta.total_pages) });
+        }
+      } catch (e) {
+        if (e instanceof ApiAbortError) return;
+        setError(parseApiError(e, "Error al cargar las colecciones"));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [page, pageSize, debouncedName, createdAfter, createdBefore, order],
+  );
 
   const setParam = useCallback(
     (updates: Record<string, string | null>) => {
@@ -113,7 +124,9 @@ export default function CollectionsPage() {
   );
 
   useEffect(() => {
-    fetchCollections();
+    const controller = new AbortController();
+    fetchCollections(controller.signal);
+    return () => controller.abort();
   }, [fetchCollections]);
 
   useEffect(() => {

@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
-from app.core.deps import get_collection_or_404
-from app.core.auth_deps import get_current_user
+from app.core.deps import get_collection_or_404_owned
 from app.core.exceptions import (
     ContentNotAllowedError,
     GeneratedContentBlockedError,
@@ -21,8 +20,7 @@ router = APIRouter(prefix="/collections", tags=["rag-query"])
 def rag_query(
     request: RagQueryRequest,
     collection_id: str,
-    _: Collection = Depends(get_collection_or_404),
-    __: dict = Depends(get_current_user),
+    _: Collection = Depends(get_collection_or_404_owned),
     session: Session = Depends(get_session),
 ):
     try:

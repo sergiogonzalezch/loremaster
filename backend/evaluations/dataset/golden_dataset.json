@@ -1,7 +1,8 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Golden dataset de Lore Master — cobertura completa: RAG, CRUD de entidades (5 tipos x 10 casos), todas las combinaciones de categoria valida e invalida, guardrails, generacion de imagen y flujos de ciclo de vida.",
   "created_at": "2026-04-29",
+  "updated_at": "2026-05-08",
   "collection": {
     "name": "Mundo de Valdorath",
     "description": "Coleccion de referencia para evaluacion automatica del pipeline RAG",
@@ -1395,8 +1396,8 @@
     "total_cases": 81,
     "categories": {
       "rag_query": 10,
-      "entity_crud": 18,
-      "entity_content": 28,
+      "entity_crud": 20,
+      "entity_content": 30,
       "guardrail": 6,
       "image_generation": 5,
       "share_content": 3,

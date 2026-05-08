@@ -191,6 +191,69 @@ describe("ContentCard — discarded", () => {
   });
 });
 
+// ── Busy lock ─────────────────────────────────────────────────────────────────
+
+describe("ContentCard — busy lock", () => {
+  it("segundo clic mientras busy bloquea la acción (confirmContent llamado solo una vez)", async () => {
+    let resolveFirst!: () => void;
+    mockConfirm.mockReturnValue(
+      new Promise<never>((res) => {
+        resolveFirst = () => res({} as never);
+      }),
+    );
+    renderCard(makeContent({ status: "pending" }));
+    const btn = screen.getByRole("button", { name: /confirmar/i });
+
+    await userEvent.click(btn);
+    // Botón deshabilitado mientras la primera llamada está en vuelo
+    expect(btn).toBeDisabled();
+    // Un segundo intento no dispara una llamada adicional
+    await userEvent.click(btn);
+    expect(mockConfirm).toHaveBeenCalledTimes(1);
+
+    resolveFirst();
+  });
+});
+
+// ── Rollback optimista ─────────────────────────────────────────────────────────
+
+describe("ContentCard — rollback optimista", () => {
+  it("fallo de API en confirm llama onOptimisticUpdate con el contenido original", async () => {
+    mockConfirm.mockRejectedValue(new Error("Error de red"));
+    const onOptimisticUpdate = vi.fn();
+    const content = makeContent({ status: "pending" });
+
+    render(
+      <MemoryRouter>
+        <ContentCard
+          content={content}
+          collectionId="col-1"
+          entityId="ent-1"
+          onAction={vi.fn()}
+          onOptimisticUpdate={onOptimisticUpdate}
+        />
+      </MemoryRouter>,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: /confirmar/i }));
+
+    await waitFor(() => expect(mockConfirm).toHaveBeenCalled());
+
+    // Primera llamada: optimistic patch
+    expect(onOptimisticUpdate).toHaveBeenNthCalledWith(1, content.id, {
+      status: "confirmed",
+    });
+    // Segunda llamada: rollback al estado original
+    await waitFor(() =>
+      expect(onOptimisticUpdate).toHaveBeenNthCalledWith(
+        2,
+        content.id,
+        content,
+      ),
+    );
+  });
+});
+
 // ── Auditoría (was_edited / raw_content) ──────────────────────────────────────
 
 describe("ContentCard — auditoría", () => {

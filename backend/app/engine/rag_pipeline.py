@@ -36,7 +36,11 @@ def invoke_rag_pipeline(
         query,
     )
 
-    context, num_chunks = retrieve_context(collection_id, query, extra_context)
+    try:
+        context, num_chunks = retrieve_context(collection_id, query, extra_context)
+    except Exception as e:
+        logger.error("Vector store unavailable for collection %s: %s", collection_id, e)
+        raise RuntimeError("Vector store unavailable") from e
 
     try:
         with _llm_semaphore:
@@ -77,7 +81,11 @@ def invoke_generation_pipeline(
         query,
     )
 
-    context, num_chunks = retrieve_context(collection_id, query, extra_context)
+    try:
+        context, num_chunks = retrieve_context(collection_id, query, extra_context)
+    except Exception as e:
+        logger.error("Vector store unavailable for collection %s: %s", collection_id, e)
+        raise RuntimeError("Vector store unavailable") from e
 
     rendered_prompt = render_prompt(
         category=category,

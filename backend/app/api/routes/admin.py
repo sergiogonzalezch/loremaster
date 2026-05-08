@@ -10,6 +10,7 @@ from app.database import get_session
 from app.models.users import User, UserAdminResponse
 from app.models.collections import Collection
 from app.models.shared import PaginatedResponse
+from app.services.collection_service import delete_collection_service
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -61,12 +62,9 @@ def admin_delete_collection(
     session: Session = Depends(get_session),
 ):
     collection = session.get(Collection, collection_id)
-    if not collection:
+    if not collection or collection.is_deleted:
         return Response(status_code=204)
-    collection.is_deleted = True
-    collection.deleted_at = datetime.now(timezone.utc)
-    session.add(collection)
-    session.commit()
+    delete_collection_service(session, collection)
     return Response(status_code=204)
 
 
@@ -77,8 +75,16 @@ def admin_delete_user(
     session: Session = Depends(get_session),
 ):
     user = session.get(User, user_id)
-    if not user:
+    if not user or user.is_deleted:
         return Response(status_code=204)
+    collections = session.exec(
+        select(Collection).where(
+            Collection.owner_id == user_id,
+            Collection.is_deleted == False,
+        )
+    ).all()
+    for collection in collections:
+        delete_collection_service(session, collection)
     user.is_deleted = True
     user.deleted_at = datetime.now(timezone.utc)
     session.add(user)

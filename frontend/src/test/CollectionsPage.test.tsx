@@ -151,6 +151,37 @@ describe("CollectionsPage", () => {
     );
   });
 
+  it("retrocede a la última página válida cuando la página actual queda vacía", async () => {
+    // Primera carga: página 2 vacía, pero total_pages=1 indica que hay datos en p.1
+    mockGetCollections
+      .mockResolvedValueOnce({
+        data: [],
+        meta: { total: 1, page: 2, page_size: 12, total_pages: 1 },
+      })
+      .mockResolvedValue({
+        data: [SAMPLE],
+        meta: { total: 1, page: 1, page_size: 12, total_pages: 1 },
+      });
+
+    render(
+      <MemoryRouter initialEntries={["/?page=2"]}>
+        <AuthProvider>
+          <CollectionsPage />
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+
+    // Tras la auto-navegación a page=1, el ítem debe aparecer
+    await waitFor(() =>
+      expect(screen.getByText("Middle Earth")).toBeInTheDocument(),
+    );
+    // La segunda llamada fue con page=1
+    expect(mockGetCollections).toHaveBeenCalledWith(
+      expect.objectContaining({ page: 1 }),
+      expect.anything(),
+    );
+  });
+
   it("abre modal de edición con datos actuales de la colección", async () => {
     mockGetCollections.mockResolvedValue({
       data: [SAMPLE],
