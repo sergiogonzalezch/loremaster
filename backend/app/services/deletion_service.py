@@ -9,7 +9,7 @@ from app.models.entities import Entity
 from app.models.image_generation import ImageRecord
 from app.core.common import soft_delete
 from app.engine.rag import delete_collection_vectors
-from app.services import content_management_service
+from app.services.content_cascade_service import cascade_delete_by_entity, cascade_delete_by_collection
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ def _delete_vectors_with_retry(collection_id: str) -> bool:
 
 
 def cascade_delete_entity(session: Session, entity: Entity) -> None:
-    deleted_contents = content_management_service.cascade_delete_by_entity(
+    deleted_contents = cascade_delete_by_entity(
         session, entity.id, entity.collection_id
     )
     logger.info(
@@ -93,7 +93,7 @@ def cascade_delete_collection(session: Session, collection: Collection) -> bool:
         "Soft-deleted %d entity(ies) for collection %s", len(entities), collection.id
     )
 
-    orphan_contents = content_management_service.cascade_delete_by_collection(
+    orphan_contents = cascade_delete_by_collection(
         session, collection.id
     )
     if orphan_contents > 0:
