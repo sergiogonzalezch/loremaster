@@ -1,8 +1,8 @@
 """Checkpoint
 
-Revision ID: b2e16316a3f3
+Revision ID: 7f85b1d6fd3d
 Revises:
-Create Date: 2026-05-07 22:13:39.863946
+Create Date: 2026-05-08 13:18:33.325900
 
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 import sqlmodel
 
 # revision identifiers, used by Alembic.
-revision: str = "b2e16316a3f3"
+revision: str = "7f85b1d6fd3d"
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -49,9 +49,10 @@ def upgrade() -> None:
         ),
         sa.Column("bio", sqlmodel.sql.sqltypes.AutoString(length=500), nullable=True),
         sa.Column(
-            "avatar_url", sqlmodel.sql.sqltypes.AutoString(length=500), nullable=True
+            "avatar_path", sqlmodel.sql.sqltypes.AutoString(length=500), nullable=True
         ),
         sa.Column("is_admin", sa.Boolean(), nullable=False),
+        sa.Column("token_version", sa.Integer(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("is_deleted", sa.Boolean(), nullable=False),
         sa.Column("deleted_at", sa.DateTime(), nullable=True),

@@ -1375,8 +1375,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--email",
-        default="eval_runner@eval.local",
-        help="Email para registro (default: eval_runner@eval.local)",
+        default="eval_runner@example.com",
+        help="Email para registro (default: eval_runner@example.com)",
     )
     parser.add_argument(
         "--password",
