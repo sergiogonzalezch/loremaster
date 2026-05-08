@@ -74,11 +74,17 @@ export interface PublicProfile {
   shared_images: SharedImageItem[];
 }
 
+export interface AvatarResponse {
+  avatar_url: string | null;
+  has_avatar: boolean;
+}
+
 export interface UserAdminRecord {
   id: string;
   username: string;
   email: string | null;
   display_name: string | null;
+  avatar_url: string | null;
   is_admin: boolean;
   is_deleted: boolean;
   created_at: string;

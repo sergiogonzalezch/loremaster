@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlmodel import Session, select, func
 
 from app.core.auth_deps import get_admin_user
@@ -9,6 +9,7 @@ from app.core.query_params import PaginationParams
 from app.database import get_session
 from app.models.users import User, UserAdminResponse
 from app.models.collections import Collection
+from app.services.user_image import get_avatar_info
 from app.models.shared import PaginatedResponse
 from app.services.collection_service import delete_collection_service
 
@@ -38,7 +39,7 @@ def list_all_users(
             email=u.email,
             display_name=u.display_name,
             bio=u.bio,
-            avatar_url=u.avatar_url,
+            avatar_url=get_avatar_info(u)["avatar_url"],
             is_admin=u.is_admin,
             is_deleted=u.is_deleted,
             created_at=u.created_at,
@@ -71,9 +72,13 @@ def admin_delete_collection(
 @router.delete("/users/{user_id}", status_code=204)
 def admin_delete_user(
     user_id: str,
-    _: dict = Depends(get_admin_user),
+    current_admin: dict = Depends(get_admin_user),
     session: Session = Depends(get_session),
 ):
+    if user_id == current_admin["sub"]:
+        raise HTTPException(
+            status_code=403, detail="No puedes eliminar tu propia cuenta"
+        )
     user = session.get(User, user_id)
     if not user or user.is_deleted:
         return Response(status_code=204)

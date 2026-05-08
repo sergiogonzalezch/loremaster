@@ -1,4 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
+import { Link } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 import {
   Table,
   Badge,
@@ -17,6 +19,7 @@ import type { UserAdminRecord } from "../types/user";
 const PAGE_SIZE = 20;
 
 export default function AdminPage() {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<UserAdminRecord[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -120,10 +123,78 @@ export default function AdminPage() {
                     }}
                   >
                     <td className="ps-4 py-3">
-                      <div style={{ fontWeight: 600 }}>{u.username}</div>
-                      {u.display_name && (
-                        <small className="text-muted">{u.display_name}</small>
-                      )}
+                      <div className="d-flex align-items-center gap-2">
+                        {u.avatar_url ? (
+                          <img
+                            src={u.avatar_url}
+                            alt={u.username}
+                            style={{
+                              width: 32,
+                              height: 32,
+                              borderRadius: "50%",
+                              objectFit: "cover",
+                              flexShrink: 0,
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: 32,
+                              height: 32,
+                              borderRadius: "50%",
+                              background:
+                                "linear-gradient(135deg, var(--lm-accent) 0%, rgba(157,111,232,0.3) 100%)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "0.65rem",
+                              fontWeight: 700,
+                              color: "#000",
+                              flexShrink: 0,
+                            }}
+                          >
+                            {u.username.slice(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                        <div>
+                          <div className="d-flex align-items-center gap-1">
+                            <Link
+                              to={`/users/${u.username}`}
+                              style={{
+                                fontWeight: 600,
+                                color: "var(--lm-text)",
+                                textDecoration: "none",
+                              }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.color =
+                                  "var(--lm-accent)")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.color = "var(--lm-text)")
+                              }
+                            >
+                              {u.username}
+                            </Link>
+                            {u.id === currentUser?.id && (
+                              <small
+                                style={{
+                                  color: "var(--lm-accent)",
+                                  fontSize: "0.7rem",
+                                }}
+                              >
+                                (tú)
+                              </small>
+                            )}
+                          </div>
+                          {u.display_name && (
+                            <div>
+                              <small className="text-muted">
+                                {u.display_name}
+                              </small>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </td>
                     <td className="py-3 text-muted">
                       {u.email ?? <span style={{ opacity: 0.4 }}>—</span>}
@@ -153,7 +224,7 @@ export default function AdminPage() {
                       {formatDate(u.created_at)}
                     </td>
                     <td className="pe-4 py-3 text-end">
-                      {!u.is_deleted && (
+                      {!u.is_deleted && u.id !== currentUser?.id && (
                         <Button
                           variant="outline-danger"
                           size="sm"

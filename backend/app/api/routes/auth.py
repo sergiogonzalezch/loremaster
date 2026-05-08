@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field
 from sqlmodel import Session, select
 from app.core.auth import create_access_token, hash_password, verify_password
 from app.database import get_session
@@ -9,8 +9,14 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 class LoginRequest(BaseModel):
-    username: str
+    username_or_email: str
     password: str
+
+
+class RegisterRequest(BaseModel):
+    username: str = Field(..., min_length=3, max_length=50)
+    email: EmailStr
+    password: str = Field(..., min_length=8)
 
 
 class TokenResponse(BaseModel):
@@ -20,7 +26,11 @@ class TokenResponse(BaseModel):
 
 @router.post("/login", response_model=TokenResponse)
 def login(request: LoginRequest, session: Session = Depends(get_session)):
-    statement = select(User).where(User.username == request.username)
+    statement = select(User).where(
+        (User.username == request.username_or_email)
+        | (User.email == request.username_or_email),
+        User.is_deleted == False,
+    )
     user = session.exec(statement).first()
 
     if not user or not verify_password(request.password, user.hashed_password):
@@ -36,16 +46,29 @@ def login(request: LoginRequest, session: Session = Depends(get_session)):
 
 
 @router.post("/register", response_model=TokenResponse)
-def register(request: LoginRequest, session: Session = Depends(get_session)):
-    statement = select(User).where(User.username == request.username)
-    if session.exec(statement).first():
+def register(request: RegisterRequest, session: Session = Depends(get_session)):
+    existing_username = session.exec(
+        select(User).where(User.username == request.username)
+    ).first()
+    if existing_username:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="El usuario ya existe",
         )
 
+    existing_email = session.exec(
+        select(User).where(User.email == request.email, User.is_deleted == False)
+    ).first()
+    if existing_email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El correo electrónico ya está registrado",
+        )
+
     new_user = User(
-        username=request.username, hashed_password=hash_password(request.password)
+        username=request.username,
+        email=request.email,
+        hashed_password=hash_password(request.password),
     )
     session.add(new_user)
     session.commit()

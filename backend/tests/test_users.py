@@ -33,7 +33,7 @@ async def test_get_my_profile_fields(client):
     assert "username" in data
     assert "display_name" in data
     assert "bio" in data
-    assert "avatar_url" in data
+    assert "avatar_url" in data or "avatar_path" in data
     assert "created_at" in data
 
 

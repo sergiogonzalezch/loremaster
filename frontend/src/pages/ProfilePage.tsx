@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Container,
   Row,
@@ -10,12 +11,19 @@ import {
   Alert,
   Spinner,
 } from "react-bootstrap";
-import { getMyProfile, updateMyProfile } from "../api/users";
+import {
+  getMyProfile,
+  updateMyProfile,
+  uploadMyAvatar,
+  deleteMyAvatar,
+  getMyAvatar,
+} from "../api/users";
 import { parseApiError } from "../utils/errors";
 import { formatDate } from "../utils/formatters";
 import type { UserProfile, UpdateProfileRequest } from "../types/user";
 
 export default function ProfilePage() {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -27,18 +35,61 @@ export default function ProfilePage() {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [email, setEmail] = useState("");
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
   useEffect(() => {
-    getMyProfile()
-      .then((p) => {
+    Promise.all([getMyProfile(), getMyAvatar()])
+      .then(([p, avatar]) => {
         setProfile(p);
         setDisplayName(p.display_name ?? "");
         setBio(p.bio ?? "");
-        setAvatarUrl(p.avatar_url ?? "");
+        setAvatarUrl(avatar.avatar_url ?? "");
         setEmail("");
       })
       .catch((e) => setError(parseApiError(e).text))
       .finally(() => setLoading(false));
   }, []);
+
+  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(file.type)) {
+      setError("Solo se permiten imágenes (JPEG, PNG, WebP, GIF).");
+      return;
+    }
+
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setError("La imagen excede el tamaño máximo de 5MB.");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    setError(null);
+
+    try {
+      const result = await uploadMyAvatar(file);
+      setAvatarUrl(result.avatar_url ?? "");
+    } catch (e) {
+      setError(parseApiError(e).text);
+    } finally {
+      setUploadingAvatar(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  async function handleDeleteAvatar() {
+    setError(null);
+    try {
+      await deleteMyAvatar();
+      setAvatarUrl("");
+    } catch (e) {
+      setError(parseApiError(e).text);
+    }
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -50,8 +101,6 @@ export default function ProfilePage() {
     if (displayName !== (profile?.display_name ?? ""))
       patch.display_name = displayName || null;
     if (bio !== (profile?.bio ?? "")) patch.bio = bio || null;
-    if (avatarUrl !== (profile?.avatar_url ?? ""))
-      patch.avatar_url = avatarUrl || null;
     if (email) patch.email = email;
 
     try {
@@ -59,7 +108,6 @@ export default function ProfilePage() {
       setProfile(updated);
       setDisplayName(updated.display_name ?? "");
       setBio(updated.bio ?? "");
-      setAvatarUrl(updated.avatar_url ?? "");
       setEmail("");
       setSuccess(true);
     } catch (e) {
@@ -80,6 +128,13 @@ export default function ProfilePage() {
   return (
     <Container fluid="lg" className="py-5">
       <div className="mb-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="btn btn-sm btn-outline-secondary mb-3"
+          style={{ fontSize: "0.8rem" }}
+        >
+          ← Volver
+        </button>
         <h1
           style={{
             fontFamily: "var(--lm-font-head)",
@@ -121,6 +176,83 @@ export default function ProfilePage() {
               <Form onSubmit={handleSubmit}>
                 <Form.Group className="mb-3">
                   <Form.Label className="small text-muted">
+                    Foto de perfil
+                  </Form.Label>
+                  <div className="d-flex align-items-center gap-3">
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt="Avatar"
+                        style={{
+                          width: "80px",
+                          height: "80px",
+                          borderRadius: "50%",
+                          objectFit: "cover",
+                          border: "2px solid var(--lm-accent)",
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: "80px",
+                          height: "80px",
+                          borderRadius: "50%",
+                          backgroundColor: "var(--lm-bg-secondary)",
+                          border: "2px dashed var(--lm-accent)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "var(--lm-accent)",
+                          fontSize: "1.5rem",
+                        }}
+                      >
+                        <i className="bi bi-person" />
+                      </div>
+                    )}
+                    <div className="d-flex flex-column gap-2">
+                      <div className="d-flex gap-2">
+                        <Button
+                          variant="outline-primary"
+                          size="sm"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploadingAvatar}
+                        >
+                          {uploadingAvatar ? (
+                            <Spinner animation="border" size="sm" />
+                          ) : (
+                            <>
+                              <i className="bi bi-upload me-1" />
+                              {avatarUrl ? "Cambiar" : "Subir"}
+                            </>
+                          )}
+                        </Button>
+                        {avatarUrl && (
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            onClick={handleDeleteAvatar}
+                          >
+                            <i className="bi bi-trash me-1" />
+                            Eliminar
+                          </Button>
+                        )}
+                      </div>
+                      <Form.Text className="text-muted mb-0">
+                        JPEG, PNG, WebP, GIF · Máx 5MB
+                      </Form.Text>
+                    </div>
+                  </div>
+                  <Form.Control
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={handleAvatarUpload}
+                    className="d-none"
+                  />
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label className="small text-muted">
                     Nombre para mostrar
                   </Form.Label>
                   <Form.Control
@@ -145,18 +277,6 @@ export default function ProfilePage() {
                     maxLength={500}
                   />
                   <Form.Text className="text-muted">{bio.length}/500</Form.Text>
-                </Form.Group>
-
-                <Form.Group className="mb-3">
-                  <Form.Label className="small text-muted">
-                    URL de avatar
-                  </Form.Label>
-                  <Form.Control
-                    type="url"
-                    value={avatarUrl}
-                    onChange={(e) => setAvatarUrl(e.target.value)}
-                    placeholder="https://..."
-                  />
                 </Form.Group>
 
                 <Form.Group className="mb-4">

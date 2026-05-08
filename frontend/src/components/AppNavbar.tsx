@@ -1,12 +1,50 @@
+import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Container } from "react-bootstrap";
+import { Container, Dropdown } from "react-bootstrap";
 import { useAuth } from "../hooks/useAuth";
+import { getMyAvatar } from "../api/users";
+
+function InitialsCircle({ username }: { username: string }) {
+  const initials = username.slice(0, 2).toUpperCase();
+  return (
+    <div
+      style={{
+        width: 32,
+        height: 32,
+        borderRadius: "50%",
+        background:
+          "linear-gradient(135deg, var(--lm-accent) 0%, rgba(255,200,50,0.3) 100%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "0.7rem",
+        fontFamily: "var(--lm-font-head)",
+        fontWeight: 700,
+        color: "#000",
+        flexShrink: 0,
+      }}
+    >
+      {initials}
+    </div>
+  );
+}
 
 export default function AppNavbar() {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const from = (location.state as { from?: string })?.from ?? location.pathname;
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      setAvatarUrl(null);
+      return;
+    }
+    getMyAvatar()
+      .then((r) => setAvatarUrl(r.avatar_url ?? null))
+      .catch(() => {});
+  }, [user]);
 
   function handleLogout() {
     logout();
@@ -52,20 +90,66 @@ export default function AppNavbar() {
             <NavLink to="/collections" style={navLinkStyle}>
               Colecciones
             </NavLink>
-            {user.is_admin && (
-              <NavLink to="/admin" style={navLinkStyle}>
-                Admin
-              </NavLink>
-            )}
-            <NavLink to="/profile" style={navLinkStyle}>
-              {user.username}
-            </NavLink>
-            <button
-              onClick={handleLogout}
-              className="btn btn-sm btn-outline-secondary"
-            >
-              Cerrar sesión
-            </button>
+
+            <Dropdown align="end">
+              <Dropdown.Toggle
+                as="div"
+                style={{ cursor: "pointer", listStyle: "none" }}
+                className="d-flex align-items-center gap-2"
+              >
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={user.username}
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                      border: "1px solid var(--lm-accent)",
+                      flexShrink: 0,
+                    }}
+                  />
+                ) : (
+                  <InitialsCircle username={user.username} />
+                )}
+                <span
+                  style={{
+                    color: "rgba(255,255,255,0.55)",
+                    fontSize: "0.82rem",
+                    fontFamily: "var(--lm-font-head)",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {user.username}
+                </span>
+              </Dropdown.Toggle>
+
+              <Dropdown.Menu
+                variant="dark"
+                style={{
+                  backgroundColor: "rgba(10,10,18,0.95)",
+                  border: "1px solid var(--lm-border)",
+                  backdropFilter: "blur(8px)",
+                }}
+              >
+                <Dropdown.Item as={Link} to={`/users/${user.username}`}>
+                  Mi perfil público
+                </Dropdown.Item>
+                {user.is_admin && (
+                  <Dropdown.Item as={Link} to="/admin">
+                    Admin
+                  </Dropdown.Item>
+                )}
+                <Dropdown.Divider
+                  style={{ borderColor: "rgba(255,255,255,0.2)" }}
+                />
+                <Dropdown.Item onClick={handleLogout}>
+                  Cerrar sesión
+                </Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown>
           </div>
         ) : (
           <Link

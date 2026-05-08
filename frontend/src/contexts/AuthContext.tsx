@@ -13,7 +13,9 @@ interface AuthContextValue {
   logout: () => void;
 }
 
+/* eslint-disable react-refresh/only-export-components */
 export const AuthContext = createContext<AuthContextValue | null>(null);
+/* eslint-enable react-refresh/only-export-components */
 
 function decodeUser(token: string): AuthUser | null {
   try {

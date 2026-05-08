@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     media_root: str = "./media"
     storage_backend: str = "local"  # local | s3 | r2
     storage_base_url: str = "http://localhost:8000/media"
+    profile_image_max_size_mb: float = 5.0
 
     # Vector DB (Qdrant)
     qdrant_url: str = "http://localhost:6333"

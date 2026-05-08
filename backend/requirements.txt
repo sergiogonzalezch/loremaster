@@ -17,5 +17,6 @@ pytest
 pytest-asyncio
 httpx
 pydantic-settings
+email-validator
 python-jose
 bcrypt

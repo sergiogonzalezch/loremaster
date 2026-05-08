@@ -82,6 +82,7 @@ export default function ImageGenerator({
     finalPrompt,
     batchSize,
     onGenerated,
+    promptData,
   ]);
 
   if (confirmedContents.length === 0) {

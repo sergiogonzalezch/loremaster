@@ -11,17 +11,37 @@ import { getDocuments } from "../api";
 const mockGetDocuments = vi.mocked(getDocuments);
 
 const EMPTY_PAGE = {
-  data: [] as { id: string; status: string }[],
+  data: [] as import("../types/document").Document[],
   meta: { total: 0, page: 1, page_size: 100, total_pages: 0 },
 };
 
 const PROCESSING_PAGE = {
-  data: [{ id: "doc-1", status: "processing" }],
+  data: [
+    {
+      id: "doc-1",
+      collection_id: "col-1",
+      filename: "test.txt",
+      file_type: "text/plain",
+      chunk_count: 5,
+      status: "processing" as const,
+      created_at: new Date().toISOString(),
+    },
+  ],
   meta: { total: 1, page: 1, page_size: 100, total_pages: 1 },
 };
 
 const COMPLETED_PAGE = {
-  data: [{ id: "doc-1", status: "completed" }],
+  data: [
+    {
+      id: "doc-1",
+      collection_id: "col-1",
+      filename: "test.txt",
+      file_type: "text/plain",
+      chunk_count: 5,
+      status: "completed" as const,
+      created_at: new Date().toISOString(),
+    },
+  ],
   meta: { total: 1, page: 1, page_size: 100, total_pages: 1 },
 };
 

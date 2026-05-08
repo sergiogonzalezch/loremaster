@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 import {
   Container,
   Row,
@@ -26,9 +27,12 @@ import type {
 
 export default function PublicProfilePage() {
   const { username } = useParams<{ username: string }>();
+  const navigate = useNavigate();
+  const { user: authUser } = useAuth();
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [selectedContent, setSelectedContent] =
     useState<SharedContentItem | null>(null);
   const [selectedImage, setSelectedImage] = useState<SharedImageItem | null>(
@@ -49,6 +53,12 @@ export default function PublicProfilePage() {
     .slice(0, 2)
     .toUpperCase();
 
+  function handleShare() {
+    navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
   return (
     <>
       <StarfieldCanvas />
@@ -67,26 +77,41 @@ export default function PublicProfilePage() {
             <Alert variant="warning">{error}</Alert>
           ) : profile ? (
             <>
-              <div className="d-flex align-items-center gap-4 mb-5">
-                <div
-                  style={{
-                    width: 72,
-                    height: 72,
-                    borderRadius: "50%",
-                    background:
-                      "linear-gradient(135deg, var(--lm-accent) 0%, rgba(255,200,50,0.3) 100%)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "1.5rem",
-                    fontFamily: "var(--lm-font-head)",
-                    fontWeight: 700,
-                    color: "#000",
-                    flexShrink: 0,
-                  }}
-                >
-                  {initials}
-                </div>
+              <div className="d-flex align-items-center gap-4 mb-5 flex-wrap">
+                {profile.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt={profile.display_name ?? profile.username}
+                    style={{
+                      width: 72,
+                      height: 72,
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                      border: "2px solid var(--lm-accent)",
+                      flexShrink: 0,
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: 72,
+                      height: 72,
+                      borderRadius: "50%",
+                      background:
+                        "linear-gradient(135deg, var(--lm-accent) 0%, rgba(255,200,50,0.3) 100%)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "1.5rem",
+                      fontFamily: "var(--lm-font-head)",
+                      fontWeight: 700,
+                      color: "#000",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {initials}
+                  </div>
+                )}
                 <div>
                   <h1
                     style={{
@@ -109,6 +134,26 @@ export default function PublicProfilePage() {
                     <p className="text-muted mb-0" style={{ maxWidth: 520 }}>
                       {profile.bio}
                     </p>
+                  )}
+                </div>
+                <div className="ms-auto d-flex align-items-center gap-2">
+                  <button
+                    onClick={handleShare}
+                    className="btn btn-outline-light"
+                    title="Compartir perfil"
+                    style={{ fontSize: "0.85rem" }}
+                  >
+                    ↗ {copied ? "¡Copiado!" : "Compartir"}
+                  </button>
+                  {authUser?.username === username && (
+                    <button
+                      onClick={() => navigate("/profile")}
+                      className="btn btn-outline-light"
+                      title="Editar perfil"
+                      style={{ fontSize: "1rem" }}
+                    >
+                      ⚙
+                    </button>
                   )}
                 </div>
               </div>

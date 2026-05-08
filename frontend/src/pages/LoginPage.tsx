@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Container,
   Card,
@@ -10,40 +10,65 @@ import {
   Tabs,
   Tab,
 } from "react-bootstrap";
-import { login as apiLogin, register } from "../api/auth";
+import { login, register } from "../api/auth";
 import { useAuth } from "../hooks/useAuth";
 import { parseApiError } from "../utils/errors";
 import StarfieldCanvas from "../components/StarfieldCanvas";
 
+interface LoginForm {
+  username_or_email: string;
+  password: string;
+}
+
+interface RegisterForm {
+  username: string;
+  email: string;
+  password: string;
+}
+
 export default function LoginPage() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const from = (location.state as { from?: string })?.from ?? "/feed";
-  const { login } = useAuth();
+  const { login: contextLogin } = useAuth();
   const [tab, setTab] = useState<string>("login");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [loginForm, setLoginForm] = useState<LoginForm>({
+    username_or_email: "",
+    password: "",
+  });
+  const [registerForm, setRegisterForm] = useState<RegisterForm>({
+    username: "",
+    email: "",
+    password: "",
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleLogin(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
     setLoading(true);
     try {
-      if (tab === "login") {
-        const { access_token } = await apiLogin({ username, password });
-        login(access_token);
-        navigate(from, { replace: true });
-      } else {
-        await register({ username, password });
-        setSuccess("Usuario creado correctamente. Ya puedes iniciar sesión.");
-        setUsername("");
-        setPassword("");
-        setTab("login");
-      }
+      const { access_token } = await login(loginForm);
+      contextLogin(access_token);
+      navigate("/", { replace: true });
+    } catch (err) {
+      const { text } = parseApiError(err);
+      setError(text);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRegister(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      await register(registerForm);
+      setSuccess("Usuario creado correctamente. Ya puedes iniciar sesión.");
+      setRegisterForm({ username: "", email: "", password: "" });
+      setTab("login");
+      setLoginForm({ username_or_email: registerForm.username, password: "" });
     } catch (err) {
       const { text } = parseApiError(err);
       setError(text);
@@ -89,28 +114,88 @@ export default function LoginPage() {
             {success && <Alert variant="success">{success}</Alert>}
             {error && <Alert variant="warning">{error}</Alert>}
 
-            <Form onSubmit={handleSubmit}>
-              <Form.Group className="mb-3">
-                <Form.Label>Usuario</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  autoFocus
-                  required
-                  disabled={loading}
-                />
-              </Form.Group>
-              <Form.Group className="mb-4">
-                <Form.Label>Contraseña</Form.Label>
-                <Form.Control
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={loading}
-                />
-              </Form.Group>
+            <Form onSubmit={tab === "login" ? handleLogin : handleRegister}>
+              {tab === "login" ? (
+                <>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Usuario o correo electrónico</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={loginForm.username_or_email}
+                      onChange={(e) =>
+                        setLoginForm({
+                          ...loginForm,
+                          username_or_email: e.target.value,
+                        })
+                      }
+                      autoFocus
+                      required
+                      disabled={loading}
+                    />
+                  </Form.Group>
+                  <Form.Group className="mb-4">
+                    <Form.Label>Contraseña</Form.Label>
+                    <Form.Control
+                      type="password"
+                      value={loginForm.password}
+                      onChange={(e) =>
+                        setLoginForm({ ...loginForm, password: e.target.value })
+                      }
+                      required
+                      disabled={loading}
+                    />
+                  </Form.Group>
+                </>
+              ) : (
+                <>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Usuario</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={registerForm.username}
+                      onChange={(e) =>
+                        setRegisterForm({
+                          ...registerForm,
+                          username: e.target.value,
+                        })
+                      }
+                      autoFocus
+                      required
+                      disabled={loading}
+                    />
+                  </Form.Group>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Correo electrónico</Form.Label>
+                    <Form.Control
+                      type="email"
+                      value={registerForm.email}
+                      onChange={(e) =>
+                        setRegisterForm({
+                          ...registerForm,
+                          email: e.target.value,
+                        })
+                      }
+                      required
+                      disabled={loading}
+                    />
+                  </Form.Group>
+                  <Form.Group className="mb-4">
+                    <Form.Label>Contraseña</Form.Label>
+                    <Form.Control
+                      type="password"
+                      value={registerForm.password}
+                      onChange={(e) =>
+                        setRegisterForm({
+                          ...registerForm,
+                          password: e.target.value,
+                        })
+                      }
+                      required
+                      disabled={loading}
+                    />
+                  </Form.Group>
+                </>
+              )}
               <Button
                 type="submit"
                 className="w-100"

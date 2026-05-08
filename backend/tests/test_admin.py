@@ -82,3 +82,20 @@ async def test_admin_delete_user(client, db_session):
     db_session.expire_all()
     deleted = db_session.get(User, "target-user-id")
     assert deleted.is_deleted is True
+
+
+@pytest.mark.anyio
+async def test_admin_cannot_delete_self(client, db_session):
+    """ADM-06: DELETE /admin/users/{id} retorna 403 cuando el admin intenta eliminarse a sí mismo."""
+    from app.models.users import User
+
+    admin = db_session.get(User, "test-user-id")
+    admin.is_admin = True
+    db_session.commit()
+
+    response = await client.delete("/api/v1/admin/users/test-user-id")
+    assert response.status_code == 403
+
+    db_session.expire_all()
+    admin_after = db_session.get(User, "test-user-id")
+    assert admin_after.is_deleted is False

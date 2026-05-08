@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import type { FormEvent } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
 import {
   Row,
   Col,
@@ -30,9 +29,7 @@ import { useDeleteConfirm } from "../hooks/useDeleteConfirm";
 
 export default function CollectionsPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [copiedProfile, setCopiedProfile] = useState(false);
 
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,6 +74,21 @@ export default function CollectionsPage() {
 
   const debouncedName = useDebouncedValue(name);
 
+  const setParam = useCallback(
+    (updates: Record<string, string | null>) => {
+      const next = new URLSearchParams(searchParams);
+      Object.entries(updates).forEach(([key, value]) => {
+        if (!value) {
+          next.delete(key);
+          return;
+        }
+        next.set(key, value);
+      });
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
   const fetchCollections = useCallback(
     async (signal?: AbortSignal) => {
       setLoading(true);
@@ -105,22 +117,15 @@ export default function CollectionsPage() {
         setLoading(false);
       }
     },
-    [page, pageSize, debouncedName, createdAfter, createdBefore, order],
-  );
-
-  const setParam = useCallback(
-    (updates: Record<string, string | null>) => {
-      const next = new URLSearchParams(searchParams);
-      Object.entries(updates).forEach(([key, value]) => {
-        if (!value) {
-          next.delete(key);
-          return;
-        }
-        next.set(key, value);
-      });
-      setSearchParams(next, { replace: true });
-    },
-    [searchParams, setSearchParams],
+    [
+      page,
+      pageSize,
+      debouncedName,
+      createdAfter,
+      createdBefore,
+      order,
+      setParam,
+    ],
   );
 
   useEffect(() => {
@@ -185,36 +190,11 @@ export default function CollectionsPage() {
 
   const paginationItems = usePagination(page, totalPages);
 
-  function handleCopyProfileLink() {
-    const url = `${window.location.origin}/users/${user?.username}`;
-    navigator.clipboard.writeText(url).then(() => {
-      setCopiedProfile(true);
-      setTimeout(() => setCopiedProfile(false), 2000);
-    });
-  }
-
   return (
     <div className="lm-page">
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h2 className="mb-0">Colecciones</h2>
         <div className="d-flex gap-2 align-items-center">
-          <Link
-            to={`/users/${user?.username}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-sm btn-outline-secondary"
-            title="Ver mi perfil público"
-          >
-            Mi perfil público ↗
-          </Link>
-          <Button
-            variant="outline-secondary"
-            size="sm"
-            onClick={handleCopyProfileLink}
-            title="Copiar enlace de perfil"
-          >
-            {copiedProfile ? "¡Copiado! ✓" : "Copiar enlace"}
-          </Button>
           <Button variant="warning" onClick={() => setShowCreate(true)}>
             + Nueva colección
           </Button>

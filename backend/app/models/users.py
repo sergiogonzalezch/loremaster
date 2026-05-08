@@ -16,7 +16,7 @@ class User(SQLModel, table=True):
     email: Optional[str] = SQLField(default=None, max_length=255, unique=True)
     display_name: Optional[str] = SQLField(default=None, max_length=100)
     bio: Optional[str] = SQLField(default=None, max_length=500)
-    avatar_url: Optional[str] = SQLField(default=None, max_length=500)
+    avatar_path: Optional[str] = SQLField(default=None, max_length=500)
     is_admin: bool = SQLField(default=False)
     created_at: datetime = SQLField(default_factory=lambda: datetime.now(timezone.utc))
     is_deleted: bool = SQLField(default=False)
@@ -60,5 +60,4 @@ class UserAdminResponse(BaseModel):
 class UpdateProfileRequest(BaseModel):
     display_name: Optional[str] = Field(default=None, max_length=100)
     bio: Optional[str] = Field(default=None, max_length=500)
-    avatar_url: Optional[str] = Field(default=None, max_length=500)
     email: Optional[str] = Field(default=None, max_length=255)

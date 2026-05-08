@@ -6,6 +6,7 @@ import type {
   PublicProfile,
   PublicFeedItem,
   PublicImageItem,
+  AvatarResponse,
 } from "../types/user";
 import type { PaginatedResponse } from "../types";
 
@@ -46,4 +47,21 @@ export function getPublicImages(
     `/public/images${buildQuery(params)}`,
     { signal },
   );
+}
+
+export function getMyAvatar(): Promise<AvatarResponse> {
+  return apiFetch<AvatarResponse>("/users/me/avatar");
+}
+
+export function uploadMyAvatar(file: File): Promise<AvatarResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  return apiFetch<AvatarResponse>("/users/me/avatar", {
+    method: "POST",
+    body: formData,
+  });
+}
+
+export function deleteMyAvatar(): Promise<void> {
+  return apiFetch<void>("/users/me/avatar", { method: "DELETE" });
 }

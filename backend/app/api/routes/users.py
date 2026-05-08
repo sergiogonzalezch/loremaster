@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 from pydantic import BaseModel
 from sqlalchemy import func
 from sqlmodel import Session, select
@@ -16,11 +16,18 @@ from app.models.enums import ContentStatus
 from app.models.image_generation import ImageGeneration, ImageRecord
 from app.models.shared import PaginatedResponse
 from app.models.users import User, UpdateProfileRequest, UserProfileResponse
+from app.services.user_image import (
+    delete_profile_image,
+    get_avatar_info,
+    upload_profile_image,
+)
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-# ── Schemas públicos ──────────────────────────────────────────────────────────
+class AvatarResponse(BaseModel):
+    avatar_url: str | None
+    has_avatar: bool
 
 
 class SharedContentSummary(BaseModel):
@@ -82,8 +89,6 @@ class PublicImageItem(BaseModel):
     owner_display_name: str | None
     created_at: datetime
 
-
-# ── Router público ────────────────────────────────────────────────────────────
 
 public_router = APIRouter(prefix="/public", tags=["public"])
 
@@ -194,9 +199,6 @@ def get_public_images(
     return PaginatedResponse.build(items, total, pagination.page, pagination.page_size)
 
 
-# ── Endpoints de usuario autenticado ─────────────────────────────────────────
-
-
 @router.get("/me", response_model=UserProfileResponse)
 def get_my_profile(
     current_user: dict = Depends(get_current_user),
@@ -222,8 +224,6 @@ def update_my_profile(
         user.display_name = request.display_name
     if request.bio is not None:
         user.bio = request.bio
-    if request.avatar_url is not None:
-        user.avatar_url = request.avatar_url
     if request.email is not None:
         user.email = request.email
 
@@ -231,6 +231,48 @@ def update_my_profile(
     session.commit()
     session.refresh(user)
     return user
+
+
+@router.get("/me/avatar", response_model=AvatarResponse)
+def get_my_avatar(
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    user = session.get(User, current_user["sub"])
+    if not user or user.is_deleted:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+    return get_avatar_info(user)
+
+
+@router.post("/me/avatar", response_model=AvatarResponse)
+async def upload_my_avatar(
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session),
+    file: UploadFile = File(...),
+):
+    user = session.get(User, current_user["sub"])
+    if not user or user.is_deleted:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+
+    try:
+        avatar_url = await upload_profile_image(session, user, file)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return AvatarResponse(avatar_url=avatar_url, has_avatar=True)
+
+
+@router.delete("/me/avatar", status_code=204)
+def delete_my_avatar(
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    user = session.get(User, current_user["sub"])
+    if not user or user.is_deleted:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+
+    delete_profile_image(session, user)
+    return Response(status_code=204)
 
 
 @router.get("/{username}/profile", response_model=PublicProfileResponse)
@@ -279,7 +321,7 @@ def get_public_profile(
         username=user.username,
         display_name=user.display_name,
         bio=user.bio,
-        avatar_url=user.avatar_url,
+        avatar_url=get_avatar_info(user)["avatar_url"],
         shared_contents=[
             SharedContentSummary(
                 id=ec.id,

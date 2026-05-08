@@ -5,19 +5,27 @@ interface TokenResponse {
   token_type: string;
 }
 
-interface Credentials {
-  username: string;
+interface LoginCredentials {
+  username_or_email: string;
   password: string;
 }
 
-export function login(credentials: Credentials): Promise<TokenResponse> {
+interface RegisterCredentials {
+  username: string;
+  email: string;
+  password: string;
+}
+
+export function login(credentials: LoginCredentials): Promise<TokenResponse> {
   return apiFetch<TokenResponse>("/auth/login", {
     method: "POST",
     body: JSON.stringify(credentials),
   });
 }
 
-export function register(credentials: Credentials): Promise<TokenResponse> {
+export function register(
+  credentials: RegisterCredentials,
+): Promise<TokenResponse> {
   return apiFetch<TokenResponse>("/auth/register", {
     method: "POST",
     body: JSON.stringify(credentials),
