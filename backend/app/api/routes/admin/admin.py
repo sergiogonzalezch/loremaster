@@ -12,7 +12,6 @@ from app.models.db.user import User
 from app.models.schemas.user_schemas import UserAdminResponse
 from app.models.db.collection import Collection
 from app.services.profile.profile_service import get_avatar_info
-
 from app.services.collection.collection_service import delete_collection_service
 from app.services.deletion_service import cascade_delete_collection
 

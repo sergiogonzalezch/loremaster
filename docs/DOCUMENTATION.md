@@ -359,15 +359,15 @@ loremaster/
 │   │   ├── main.py                        # FastAPI app, CORS, lifespan, registro de routers
 │   │   ├── database.py                    # SQLModel engine + dependencia get_session
 │   │   ├── api/routes/
-│   │   │   ├── auth.py                    # Registro, login y logout JWT local (POST /auth/logout incrementa token_version)
-│   │   │   ├── collections.py             # HU-01: CRUD colecciones (solo owner)
-│   │   │   ├── documents.py               # HU-02: ingestión PDF/TXT
-│   │   │   ├── rag_query.py               # HU-03: consulta RAG libre por colección
-│   │   │   ├── entities.py                # HU-05: CRUD entidades
-│   │   │   ├── entity_content.py          # HU-06: contenidos RAG por categoría
-│   │   │   ├── image_generation.py        # Generación de imágenes (build-prompt + generate + share + delete)
-│   │   │   ├── users.py                   # Perfil propio, avatar, perfil público + feed público
-│   │   │   └── admin.py                   # Admin: listar usuarios, eliminar colección/usuario
+│   │   │   ├── auth/                      # Registro, login y logout JWT local (POST /auth/logout incrementa token_version)
+│   │   │   ├── collections/                # HU-01: CRUD colecciones (solo owner) + HU-03: consulta RAG libre por colección
+│   │   │   ├── documents/                 # HU-02: ingestión PDF/TXT
+│   │   │   ├── entities/                   # HU-05: CRUD entidades + HU-06: contenidos RAG por categoría
+│   │   │   ├── images/                     # Generación de imágenes (build-prompt + generate + share + delete)
+│   │   │   ├── public/                     # Feed público e imágenes compartidas
+│   │   │   ├── users/                      # Perfil propio, avatar, perfil público
+│   │   │   ├── admin.py                    # Admin: listar usuarios, eliminar colección/usuario
+│   │   │   └── metadata.py
 │   │   ├── models/                        # SQLModel (tabla ORM) + Pydantic (schemas) co-localizados
 │   │   │   ├── collections.py             # Collection (owner_id FK → users), CreateCollectionRequest, CollectionResponse
 │   │   │   ├── documents.py               # Document, DocumentStatus (processing|completed|failed)

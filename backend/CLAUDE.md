@@ -30,12 +30,15 @@ alembic revision --autogenerate -m "message"
 ```
 app/
 ├── api/routes/          # Endpoints organizados por dominio
+│   ├── admin/           # admin.py
 │   ├── auth/            # auth.py, auth_clerk.py
-│   ├── collections/     # collections.py
+│   ├── collections/     # collections.py, rag_query.py
 │   ├── documents/       # documents.py
 │   ├── entities/        # entities.py, content.py
 │   ├── images/          # image_generation.py
-│   └── admin.py, metadata.py, public.py, rag_query.py, users.py
+│   ├── public/          # public.py
+│   ├── users/           # users.py
+│   └── metadata.py
 ├── core/                # Subpackages organizados por dominio
 │   ├── auth/           # JWT, password hashing, dependencies
 │   ├── config/          # Pydantic Settings
