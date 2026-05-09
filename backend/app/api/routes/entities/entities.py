@@ -77,8 +77,7 @@ def list_entities(
 
 @router.get("/{collection_id}/entities/{entity_id}", response_model=EntityResponse)
 def get_entity(
-    entity: Entity = Depends(get_entity_or_404),
-    _: dict = Depends(get_current_user),
+    entity: Entity = Depends(get_entity_or_404_owned),
 ):
     return entity
 

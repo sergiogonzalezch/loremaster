@@ -111,6 +111,7 @@ def get_documents(
 @router.get("/{collection_id}/documents/{doc_id}", response_model=DocumentResponse)
 def get_document(
     doc: Document = Depends(get_document_or_404),
+    _: dict = Depends(get_current_user),
 ):
     return doc
 

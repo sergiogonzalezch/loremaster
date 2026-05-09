@@ -55,8 +55,8 @@ Lista de tech debt identificado y aún no corregido. Ordenado por impacto estima
 | 45 | `discard_content` no actualiza `updated_at` | Backend | ✅ Resuelto | `content.updated_at` asignado en `discard_content` igual que en `confirm_content` |
 | 46 | Feed público sin tie-breaker en ordenamiento | Backend | ✅ Resuelto | `EntityContent.id.asc()` y `ImageRecord.id.asc()` añadidos como segundo criterio |
 | 47 | Admin delete de usuario no es transaccional | Backend | ✅ Resuelto | `cascade_delete_collection` (sin commit) + `session.commit()` único al final |
-| 48 | `GET /documents/{doc_id}` sin autenticación ni ownership | Backend | 🔴 Pendiente | Falta `Depends(get_current_user)` — accesible sin token JWT |
-| 49 | `GET /entities/{entity_id}` sin ownership check | Backend | 🟠 Pendiente | Usa `get_entity_or_404` en lugar de `get_entity_or_404_owned` |
+| 48 | `GET /documents/{doc_id}` sin autenticación ni ownership | Backend | ✅ Resuelto | Añadido `Depends(get_current_user)` en `documents.py:111` |
+| 49 | `GET /entities/{entity_id}` sin ownership check | Backend | ✅ Resuelto | `get_entity_or_404_owned` en `entities.py:78`; test actualizado |
 
 **Leyenda:** 🔴 Pendiente urgente · 🟠 Alto · 🟡 Pendiente no urgente · 🟢 Cubierto (mitigado, sin acción inmediata) · ✅ Cerrado
 
@@ -729,7 +729,8 @@ Actualizado el 2026-05-07 (ítems 37-42 añadidos — bug-search completo backen
 Actualizado el 2026-05-08 (ítems 37, 38, 40, 41 resueltos — admin cascade delete, RAG ownership, ImagePanel/Gallery MEDIA_BASE, CollectionsPage AbortSignal).
 Actualizado el 2026-05-08 (cobertura de tests revisada: useGenerate cancelación marcada cubierta; rag_pipeline Qdrant test identificado como débil; resto de tests frontend pendientes confirmados).
 Actualizado el 2026-05-08 (ítems 43-47 resueltos — ownership check, race condition, updated_at, tie-breaker, admin atomicity).
-Actualizado el 2026-05-08 (bug-search completo: verificados todos los ítems existentes ✅; añadidos ítems 48-49 — missing auth en GET documents, missing ownership en GET entity).*
+Actualizado el 2026-05-08 (bug-search completo: verificados todos los ítems existentes ✅; añadidos ítems 48-49 — missing auth en GET documents, missing ownership en GET entity).
+Actualizado el 2026-05-08 (ítems 48-49 resueltos — auth en GET documents, ownership en GET entity; test_entity_wrong_collection_404 actualizado a 403).*
 
 ---
 
@@ -813,82 +814,44 @@ entity: Entity = Depends(get_entity_or_404_owned),
 
 ---
 
-## 48. `GET /documents/{doc_id}` sin autenticación ni ownership 🔴
+## ~~48. `GET /documents/{doc_id}` sin autenticación ni ownership~~ ✅ Resuelto
 
 **Capa:** Backend  
 **Archivo:** `backend/app/api/routes/documents/documents.py:111-115`  
-**Impacto:** Crítico — el endpoint es accesible sin token JWT. Cualquier usuario (autenticado o no) que conozca un `collection_id` y `doc_id` puede leer el documento completo.  
-**Clasificación:** Error confirmado.
+**Impacto:** Crítico — el endpoint era accesible sin token JWT.  
+**Clasificación:** Resuelto.  
 
+**Fix aplicado:**
 ```python
-# documents.py:111-115
+# documents.py:111-116
 @router.get("/{collection_id}/documents/{doc_id}", response_model=DocumentResponse)
 def get_document(
     doc: Document = Depends(get_document_or_404),
-):
-    return doc
-```
-
-No hay `Depends(get_current_user)`. El endpoint es completamente público. Además, `get_document_or_404` usa `get_collection_or_404` (que solo verifica existencia, no ownership), por lo que tampoco se valida que el usuario autenticado sea el owner de la colección.
-
-**Contraste** con otros endpoints del mismo archivo:
-- `ingest` (POST): `get_collection_or_404` + `get_current_user` ✅
-- `get_documents` (GET list): `get_collection_or_404` + `get_current_user` ✅
-- `retry_ingest` (POST): `get_current_user` ✅
-- `delete_document` (DELETE): `get_current_user` ✅
-- `get_document` (GET): **sin auth** ❌
-
-**Solución sugerida:**
-```python
-@router.get("/{collection_id}/documents/{doc_id}", response_model=DocumentResponse)
-def get_document(
-    doc: Document = Depends(get_document_or_404),
-    _: dict = Depends(get_current_user),
+    _: dict = Depends(get_current_user),  # ✅ auth requerida
 ):
     return doc
 ```
 
 ---
 
-## 49. `GET /entities/{entity_id}` sin ownership check 🟠
+## ~~49. `GET /entities/{entity_id}` sin ownership check~~ ✅ Resuelto
 
 **Capa:** Backend  
 **Archivo:** `backend/app/api/routes/entities/entities.py:78-83`  
-**Impacto:** Alto — cualquier usuario autenticado que conozca un `collection_id` y `entity_id` ajenos puede leer los datos de esa entidad.  
-**Clasificación:** Error confirmado.
+**Impacto:** Alto — cualquier usuario autenticado podía leer entidades ajenas.  
+**Clasificación:** Resuelto.  
 
+**Fix aplicado:**
 ```python
-# entities.py:78-83
-@router.get("/{collection_id}/entities/{entity_id}", response_model=EntityResponse)
-def get_entity(
-    entity: Entity = Depends(get_entity_or_404),
-    _: dict = Depends(get_current_user),
-):
-    return entity
-```
-
-`get_entity_or_404` verifica que la entidad existe y pertenece a la colección (vía `get_active_by_id`), pero **no** verifica que el usuario actual sea owner de esa colección. Solo hay `get_current_user` para autenticación genérica (verificar que el token es válido), no autorización.
-
-**Mitigación parcial:** Los IDs son UUIDs v4 (no adivinables). Sin conocer los IDs, el ataque no es práctico.
-
-**Contraste** con el endpoint de escritura (PATCH):
-```python
-@router.patch("/{collection_id}/entities/{entity_id}", response_model=EntityResponse)
-def update_entity(
-    entity: Entity = Depends(get_entity_or_404_owned),  # ✅ owned
-    ...
-):
-```
-
-**Solución sugerida:**
-```python
+# entities.py:78-81
 @router.get("/{collection_id}/entities/{entity_id}", response_model=EntityResponse)
 def get_entity(
     entity: Entity = Depends(get_entity_or_404_owned),  # ✅ ownership check
 ):
     return entity
-# Eliminar: _: dict = Depends(get_current_user) — ya incluido en _owned
 ```
+
+Test actualizado: `test_entity_wrong_collection_404` ahora espera 403 (antes 404 — la entidad existe pero el usuario no tiene acceso).
 
 ---
 

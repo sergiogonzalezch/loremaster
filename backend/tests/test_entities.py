@@ -142,7 +142,7 @@ async def test_all_entity_types(client, sample_collection):
 
 @pytest.mark.anyio
 async def test_entity_wrong_collection_404(client, db_session, sample_entity):
-    """ENT-08: Obtener entidad desde colección incorrecta retorna 404."""
+    """ENT-08: Obtener entidad desde colección ajena retorna 403 (sin ownership)."""
     col_b = Collection(name="World B", description="B")
     db_session.add(col_b)
     db_session.commit()
@@ -151,7 +151,7 @@ async def test_entity_wrong_collection_404(client, db_session, sample_entity):
     response = await client.get(
         f"/api/v1/collections/{col_b.id}/entities/{sample_entity.id}"
     )
-    assert response.status_code == 404
+    assert response.status_code == 403
 
 
 @pytest.mark.anyio
