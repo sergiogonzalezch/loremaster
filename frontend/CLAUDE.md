@@ -24,13 +24,30 @@ npm run test:coverage    # Coverage report
 
 ```
 src/
-├── api/                  # apiClient, collections, documents, entities, contents, generate, imageGeneration
-├── components/           # Layout, ContentCard, ConfirmModal, StarfieldCanvas, etc.
-├── hooks/               # useGenerate, useEntityContents, useCollectionDocumentsStatus
-├── pages/                # Collections, CollectionDetail, EntityDetail, Generate
+├── api/
+│   ├── client.ts         # apiFetch, ApiError, ApiAbortError
+│   ├── factory.ts        # apiGet, apiPost, apiPatch, apiDelete helpers
+│   ├── query.ts          # buildQuery
+│   ├── index.ts          # Barrel exports
+│   └── endpoints/         # collections, documents, entities, contents, etc.
+├── components/
+│   ├── common/            # PaginationControls, FilterBar, ConfirmModal, LoadingSpinner
+│   ├── domain/            # ContentCard, EntityContentsPanel, ImagePanel
+│   └── layout/            # Layout, AppNavbar
+├── hooks/                # useGenerate, useEntityContents, useDeleteConfirm, usePagination, useApiError, useFormSubmit
+├── pages/
+│   └── CollectionDetailPage/  # Split into index, DocumentsTab, EntitiesTab, GenerateTab
 ├── types/                # TypeScript schemas (mirror backend)
 └── utils/                # enums, constants, errors (ES), formatters, tokens
 ```
+
+## Abstracciones DRY
+
+- **PaginationControls**: Componente reutilizable de paginación
+- **FilterBar** (`PageSizeSelect`, `OrderSelect`): Selectores de filtro
+- **useApiError**: Hook para manejo de errores de API
+- **useFormSubmit**: Hook para formularios con estado de guardado
+- **api/factory.ts**: Helpers CRUD tipados (apiGet, apiPost, apiPatch, apiDelete)
 
 ## Image Generation
 
