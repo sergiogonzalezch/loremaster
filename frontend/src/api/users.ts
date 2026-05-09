@@ -1,4 +1,5 @@
 import { apiFetch } from "./apiClient";
+import { buildQuery } from "./query";
 import type {
   UserProfile,
   UpdateProfileRequest,
