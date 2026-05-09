@@ -13,6 +13,7 @@ from sqlmodel import Session, select
 from app.core.config import settings
 from app.core.common import db_commit
 from app.core.exceptions import NoContextAvailableError
+from app.core.file_storage import build_generation_path, save_file
 from app.domain.content_guard import check_user_input
 from app.engine.comfyui_client import (
     ComfyUIClient,
@@ -154,24 +155,25 @@ def _generate_mock_images(
 
 def _save_comfyui_image(
     image_data: bytes,
+    username: str,
     entity: Entity,
     generation_id: str,
     filename: str,
 ) -> str:
-    relative_path = f"{entity.collection_id}/{entity.id}/{generation_id}/{filename}"
-    abs_dir = (
-        Path(settings.media_root) / entity.collection_id / entity.id / generation_id
+    relative_path = build_generation_path(
+        username,
+        entity.collection_id,
+        entity.id,
+        generation_id,
+        filename,
     )
-    abs_dir.mkdir(parents=True, exist_ok=True)
-
-    with open(abs_dir / filename, "wb") as f:
-        f.write(image_data)
-
+    save_file(image_data, relative_path)
     return relative_path
 
 
 def _generate_comfyui_images(
     session: Session,
+    username: str,
     entity: Entity,
     content_id: str,
     auto_prompt: str,
@@ -228,6 +230,7 @@ def _generate_comfyui_images(
 
             storage_path = _save_comfyui_image(
                 image_data=image_data,
+                username=username,
                 entity=entity,
                 generation_id=generation_id,
                 filename=filename,
@@ -300,6 +303,7 @@ def build_prompt_service(
 
 def generate_images_service(
     session: Session,
+    username: str,
     entity: Entity,
     content_id: str,
     auto_prompt: str,
@@ -368,6 +372,7 @@ def generate_images_service(
     elif settings.image_backend == "comfyui":
         generation_id, images_result = _generate_comfyui_images(
             session=session,
+            username=username,
             entity=entity,
             content_id=content_id,
             auto_prompt=auto_prompt,

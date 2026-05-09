@@ -32,3 +32,13 @@ def delete_directory(relative_path: str) -> None:
     path = Path(settings.media_root) / relative_path
     if path.exists():
         shutil.rmtree(path.parent)
+
+
+def build_generation_path(
+    username: str,
+    collection_id: str,
+    entity_id: str,
+    generation_id: str,
+    filename: str,
+) -> str:
+    return f"users/{username}/img/generation/{collection_id}/{entity_id}/{generation_id}/{filename}"

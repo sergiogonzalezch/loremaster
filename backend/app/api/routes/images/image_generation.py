@@ -7,6 +7,7 @@ from sqlmodel import Session
 
 logger = logging.getLogger(__name__)
 
+from app.core.auth_deps import get_current_user
 from app.core.deps import get_entity_or_404_owned
 from app.core.exceptions import (
     DatabaseError,
@@ -70,11 +71,13 @@ def generate_images(
     request: GenerateImagesRequest,
     entity: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
+    current_user: dict = Depends(get_current_user),
 ):
     """Genera el batch de imágenes."""
     try:
         return generate_images_service(
             session,
+            current_user["username"],
             entity,
             request.content_id,
             request.auto_prompt,

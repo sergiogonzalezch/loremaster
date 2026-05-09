@@ -109,6 +109,7 @@ def test_ig_05_generate_batch_returns_images(
     """IG-05: generate_images retorna batch de imágenes."""
     result = generate_images_service(
         db_session,
+        "testuser",
         sample_entity,
         sample_entity_content_confirmed.id,
         auto_prompt="test auto prompt",
@@ -133,6 +134,7 @@ def test_ig_06_generate_batch_size_limits(
     """IG-06: batch_size debe estar entre 1 y 4."""
     result_min = generate_images_service(
         db_session,
+        "testuser",
         sample_entity,
         sample_entity_content_confirmed.id,
         auto_prompt="test auto",
@@ -143,6 +145,7 @@ def test_ig_06_generate_batch_size_limits(
 
     result_max = generate_images_service(
         db_session,
+        "testuser",
         sample_entity,
         sample_entity_content_confirmed.id,
         auto_prompt="test auto",
@@ -161,6 +164,7 @@ def test_ig_07_generate_persists_generation_record(
     """IG-07: generate_images guarda ImageGeneration en DB."""
     result = generate_images_service(
         db_session,
+        "testuser",
         sample_entity,
         sample_entity_content_confirmed.id,
         auto_prompt="test auto prompt",
@@ -190,6 +194,7 @@ def test_ig_08_delete_image_works_in_mock(
     """IG-08: delete_image funciona en modo mock (soft delete)."""
     result = generate_images_service(
         db_session,
+        "testuser",
         sample_entity,
         sample_entity_content_confirmed.id,
         auto_prompt="test auto",
@@ -219,6 +224,7 @@ def test_ig_09_delete_image_fails_for_wrong_entity(
     """IG-09: delete_image verifica ownership."""
     result = generate_images_service(
         db_session,
+        "testuser",
         sample_entity,
         sample_entity_content_confirmed.id,
         auto_prompt="test auto",
@@ -253,6 +259,7 @@ def test_ig_10_get_generation_returns_generation_record(
     """IG-10: get_generation retorna la generación guardada."""
     result = generate_images_service(
         db_session,
+        "testuser",
         sample_entity,
         sample_entity_content_confirmed.id,
         auto_prompt="test auto prompt",
@@ -287,6 +294,7 @@ def test_ig_12_get_generation_validates_entity_ownership(
     """IG-12: get_generation verifica ownership."""
     result = generate_images_service(
         db_session,
+        "testuser",
         sample_entity,
         sample_entity_content_confirmed.id,
         auto_prompt="test auto",
@@ -355,10 +363,11 @@ def test_ig_13_generate_batch_comfyui(
 
         result = generate_images_service(
             db_session,
+            "testuser",
             sample_entity,
             sample_entity_content_confirmed.id,
-            auto_prompt="a warrior in blue armor",
-            final_prompt="a warrior in blue armor, high quality",
+            auto_prompt="test auto prompt",
+            final_prompt="test prompt",
             batch_size=1,
         )
 
