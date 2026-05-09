@@ -17,13 +17,13 @@ from app.core.exceptions import (
 )
 from app.models.db.document import Document, DocumentStatus
 from app.core.common import soft_delete, paginate_with_sort, db_commit
+from app.core.file_validator import FileValidator, DOCUMENT_MIME_TYPES
 from app.domain.content_guard import check_document_content
 from app.engine.extractor import extract_text
 from app.engine.rag import ingest_chunks, delete_document_chunks
 
 logger = logging.getLogger(__name__)
 
-ALLOWED_MIME_TYPES = ["text/plain", "application/pdf"]
 MAX_BYTES = 50 * 1024 * 1024
 _EXTRACTION_TIMEOUT_SECONDS = 30
 
@@ -33,24 +33,30 @@ async def ingest_document_service(
     data: UploadFile,
     collection_id: str,
 ) -> tuple[Document, str]:
-    """Fast path: validate, read bytes, extract text, create DB record with
-    status=processing. Returns (document, text) for process_ingest_background."""
-    if data.content_type not in ALLOWED_MIME_TYPES:
-        raise UnsupportedFileTypeError()
+    try:
+        content = FileValidator.validate_document(
+            data,
+            allowed_types=DOCUMENT_MIME_TYPES,
+            max_bytes=MAX_BYTES,
+        )
+    except ValueError as e:
+        msg = str(e)
+        if "Tipo de archivo" in msg:
+            raise UnsupportedFileTypeError()
+        if "tamaño máximo" in msg:
+            raise FileTooLargeError()
+        raise
+
     if not data.filename or not data.filename.strip():
         raise MissingFilenameError()
-
-    content_bytes = await data.read()
-    if len(content_bytes) > MAX_BYTES:
-        raise FileTooLargeError()
 
     logger.info(
         "Ingesting document '%s' into collection %s", data.filename, collection_id
     )
     loop = asyncio.get_running_loop()
     try:
-        content = await asyncio.wait_for(
-            loop.run_in_executor(None, extract_text, content_bytes, data.content_type),
+        extracted_text = await asyncio.wait_for(
+            loop.run_in_executor(None, extract_text, content, data.content_type),
             timeout=_EXTRACTION_TIMEOUT_SECONDS,
         )
     except asyncio.TimeoutError:
@@ -59,7 +65,7 @@ async def ingest_document_service(
     except Exception as e:
         logger.error("Text extraction failed for '%s': %s", data.filename, e)
         raise DocumentExtractionError() from e
-    check_document_content(content)
+    check_document_content(extracted_text)
 
     document = Document(
         collection_id=collection_id,
@@ -67,17 +73,15 @@ async def ingest_document_service(
         file_type=data.content_type,
         chunk_count=0,
         status=DocumentStatus.processing,
-        raw_text=content,
+        raw_text=extracted_text,
     )
     session.add(document)
     db_commit(session, f"ingest_document({data.filename})")
     session.refresh(document)
-    return document, content
+    return document, extracted_text
 
 
 def process_ingest_background(session: Session, document: Document, text: str) -> None:
-    """Slow path: run ingest_chunks and update document status to completed/failed.
-    Executed as a BackgroundTask after the 202 response is sent to the client."""
     try:
         chunk_count = ingest_chunks(
             doc_id=document.id,
@@ -138,11 +142,6 @@ def list_documents_service(
 def retry_document_service(
     session: Session, document: Document
 ) -> tuple[Document, str]:
-    """Reset a failed document to processing so it can be re-ingested.
-
-    Returns (document, raw_text) ready for a new process_ingest_background call.
-    Raises DocumentNotRetryableError if document is not failed or has no stored text.
-    """
     if document.status != DocumentStatus.failed or not document.raw_text:
         raise DocumentNotRetryableError()
 
