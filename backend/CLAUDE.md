@@ -29,12 +29,30 @@ alembic revision --autogenerate -m "message"
 
 ```
 app/
-├── api/routes/          # Endpoints (delegan a services/)
-├── core/                # config, deps, common, lifespan
+├── api/routes/          # Endpoints organizados por dominio
+│   ├── auth/            # auth.py, auth_clerk.py
+│   ├── collections/     # collections.py
+│   ├── documents/       # documents.py
+│   ├── entities/        # entities.py, content.py
+│   ├── images/          # image_generation.py
+│   └── admin.py, metadata.py, public.py, rag_query.py, users.py
+├── core/                # auth, common, config, deps, exceptions, soft_delete
 ├── domain/              # category_rules, content_guard, prompt_templates
-├── engine/              # rag, rag_pipeline, llm, extractor, image_prompt_builder
-├── models/              # SQLModel + Pydantic schemas
-└── services/            # Lógica de negocio
+├── engine/              # comfyui_client, extractor, llm, rag, rag_pipeline
+├── models/
+│   ├── db/              # DB models (SQLModel): collection, document, entity, etc.
+│   ├── schemas/         # API schemas (Pydantic): collection, document, entity, etc.
+│   ├── enums.py         # ContentCategory, ContentStatus
+│   └── shared.py        # PaginatedResponse
+└── services/            # Lógica de negocio por dominio
+    ├── collection/       # collection_service
+    ├── document/         # documents_service
+    ├── entity/          # entities, content, generation services
+    ├── image/           # image_generation_service
+    ├── moderation/       # moderation_service
+    ├── profile/         # profile_service
+    ├── cascade_service.py
+    └── deletion_service.py
 ```
 
 ## Image Generation
