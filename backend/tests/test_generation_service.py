@@ -8,7 +8,7 @@ from app.core.exceptions import (
 )
 from app.models.db.entity import Entity, EntityType
 from app.models.enums import ContentCategory, ContentStatus
-from app.services.generation_service import generate
+from app.services.entity.generation_service import generate
 
 
 def _make_entity(
@@ -56,7 +56,7 @@ def mock_pipeline(monkeypatch):
         return "Contenido generado por el pipeline mock", 3
 
     monkeypatch.setattr(
-        "app.services.generation_service.invoke_generation_pipeline", _invoke
+        "app.services.entity.generation_service.invoke_generation_pipeline", _invoke
     )
     return calls
 

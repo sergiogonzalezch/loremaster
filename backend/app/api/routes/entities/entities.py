@@ -21,7 +21,7 @@ from app.models.schemas.entity import (
     EntityResponse,
 )
 from app.models.shared import PaginatedResponse
-from app.services.entities_service import (
+from app.services.entity.entities_service import (
     create_entity_service,
     delete_entity_service,
     list_entities_service,

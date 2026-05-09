@@ -9,18 +9,18 @@ from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.core.lifespan import lifespan
 from app.api.routes import (
-    rag_query,
-    documents,
-    collections,
-    entities,
-    entity_content,
-    metadata,
-    image_generation,
-    auth,
-    auth_clerk,
-    users,
-    public,
-    admin,
+    admin_router,
+    auth_clerk_router,
+    auth_router,
+    collections_router,
+    content_router,
+    documents_router,
+    entities_router,
+    image_router,
+    metadata_router,
+    public_router,
+    rag_query_router,
+    users_router,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -71,15 +71,15 @@ _media_dir = Path(settings.media_root)
 _media_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/media", StaticFiles(directory=str(_media_dir)), name="media")
 
-app.include_router(collections.router, prefix="/api/v1")
-app.include_router(documents.router, prefix="/api/v1")
-app.include_router(rag_query.router, prefix="/api/v1")
-app.include_router(entities.router, prefix="/api/v1")
-app.include_router(image_generation.router, prefix="/api/v1")
-app.include_router(entity_content.router, prefix="/api/v1")
-app.include_router(metadata.router, prefix="/api/v1")
-app.include_router(auth.router, prefix="/api/v1")
-app.include_router(auth_clerk.router, prefix="/api/v1")
-app.include_router(users.router, prefix="/api/v1")
-app.include_router(public.public_router, prefix="/api/v1")
-app.include_router(admin.router, prefix="/api/v1")
+app.include_router(auth_router, prefix="/api/v1")
+app.include_router(auth_clerk_router, prefix="/api/v1")
+app.include_router(collections_router, prefix="/api/v1")
+app.include_router(documents_router, prefix="/api/v1")
+app.include_router(rag_query_router, prefix="/api/v1")
+app.include_router(entities_router, prefix="/api/v1")
+app.include_router(content_router, prefix="/api/v1")
+app.include_router(image_router, prefix="/api/v1")
+app.include_router(metadata_router, prefix="/api/v1")
+app.include_router(users_router, prefix="/api/v1")
+app.include_router(public_router, prefix="/api/v1")
+app.include_router(admin_router, prefix="/api/v1")

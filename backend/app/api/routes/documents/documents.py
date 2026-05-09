@@ -30,14 +30,14 @@ from app.models.db.collection import Collection
 from app.models.db.document import Document, DocumentStatus
 from app.models.schemas.document import DocumentResponse
 from app.models.shared import PaginatedResponse
-from app.services.documents_service import (
+from app.services.document.documents_service import (
     ingest_document_service,
     process_ingest_background,
     list_documents_service,
     retry_document_service,
     delete_document_service,
 )
-from app.services.moderation_service import log_moderation_event
+from app.services.moderation.moderation_service import log_moderation_event
 
 router = APIRouter(prefix="/collections", tags=["documents"])
 

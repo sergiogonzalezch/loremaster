@@ -20,7 +20,7 @@ from app.models.schemas.collection import (
     CollectionResponse,
 )
 from app.models.shared import PaginatedResponse
-from app.services.collection_service import (
+from app.services.collection.collection_service import (
     create_collection_service,
     get_collection_with_counts_service,
     list_collections_service,

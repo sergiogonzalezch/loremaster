@@ -10,7 +10,7 @@ from app.models.db.entity import Entity, EntityType
 from app.models.enums import ContentCategory, ContentStatus
 from app.models.db.entity_content import EntityContent
 from app.models.db.image_generation import ImageRecord
-from app.services.image_generation_service import (
+from app.services.image.image_generation_service import (
     build_prompt_service,
     generate_images_service,
     delete_image_service,
@@ -334,15 +334,15 @@ def test_ig_13_generate_batch_comfyui(
     mock_client.download_image.return_value = fake_image_bytes
 
     with (
-        patch("app.services.image_generation_service.settings") as mock_settings,
-        patch("app.services.image_generation_service.ComfyUIClient", return_value=mock_client),
+        patch("app.services.image.image_generation_service.settings") as mock_settings,
+        patch("app.services.image.image_generation_service.ComfyUIClient", return_value=mock_client),
         patch(
-            "app.services.image_generation_service.load_template",
+            "app.services.image.image_generation_service.load_template",
             return_value={"12": {"inputs": {"value": ""}}},
         ),
-        patch("app.services.image_generation_service.inject_prompt", side_effect=lambda w, p: w),
+        patch("app.services.image.image_generation_service.inject_prompt", side_effect=lambda w, p: w),
         patch(
-            "app.services.image_generation_service._save_comfyui_image",
+            "app.services.image.image_generation_service._save_comfyui_image",
             return_value="col/ent/gen/img.png",
         ),
     ):

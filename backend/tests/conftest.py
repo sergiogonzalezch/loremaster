@@ -171,9 +171,9 @@ def mock_rag_engine(monkeypatch: pytest.MonkeyPatch) -> dict:
         rag_engine_mod, "delete_collection_vectors", _delete_collection_vectors
     )
 
-    monkeypatch.setattr("app.services.documents_service.ingest_chunks", _ingest_chunks)
+    monkeypatch.setattr("app.services.document.documents_service.ingest_chunks", _ingest_chunks)
     monkeypatch.setattr(
-        "app.services.documents_service.delete_document_chunks", _delete_document_chunks
+        "app.services.document.documents_service.delete_document_chunks", _delete_document_chunks
     )
     monkeypatch.setattr("app.engine.rag_pipeline.retrieve_context", _retrieve_context)
     monkeypatch.setattr(
@@ -207,13 +207,13 @@ def mock_text_extractor(monkeypatch: pytest.MonkeyPatch):
         return "Texto extraído simulado"
 
     monkeypatch.setattr("app.engine.extractor.extract_text", _extract_text)
-    monkeypatch.setattr("app.services.documents_service.extract_text", _extract_text)
+    monkeypatch.setattr("app.services.document.documents_service.extract_text", _extract_text)
 
 
 @pytest.fixture
 def mock_image_backend(monkeypatch: pytest.MonkeyPatch):
     """FX-09: Forces image_backend='mock' regardless of .env for tests that verify mock behavior."""
-    import app.services.image_generation_service as svc
+    import app.services.image.image_generation_service as svc
 
     monkeypatch.setattr(svc.settings, "image_backend", "mock")
 

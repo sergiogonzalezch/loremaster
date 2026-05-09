@@ -27,8 +27,8 @@ from app.models.schemas.entity_content import (
 )
 from app.models.enums import ContentCategory
 from app.models.shared import PaginatedResponse
-from app.services import content_management_service, generation_service
-from app.services.moderation_service import log_moderation_event
+from app.services.entity import content_service, generation_service
+from app.services.moderation.moderation_service import log_moderation_event
 
 router = APIRouter(prefix="/collections", tags=["entity-content"])
 
@@ -81,7 +81,7 @@ def list_contents(
     _: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
-    items, total = content_management_service.list_contents(
+    items, total = content_service.list_contents(
         session,
         entity_id,
         collection_id,
@@ -107,7 +107,7 @@ def edit_content(
     session: Session = Depends(get_session),
 ):
     try:
-        result = content_management_service.edit_content(
+        result = content_service.edit_content(
             session, content_id, entity_id, collection_id, request.content
         )
     except ContentDiscardedError as e:
@@ -129,7 +129,7 @@ def confirm_content(
     session: Session = Depends(get_session),
 ):
     try:
-        result = content_management_service.confirm_content(session, content_id, entity)
+        result = content_service.confirm_content(session, content_id, entity)
     except DatabaseError:
         raise HTTPException(status_code=500, detail="Error interno del servidor.")
     if not result:
@@ -150,7 +150,7 @@ def discard_content(
     session: Session = Depends(get_session),
 ):
     try:
-        result = content_management_service.discard_content(
+        result = content_service.discard_content(
             session, content_id, entity_id, collection_id
         )
     except DatabaseError:
@@ -173,7 +173,7 @@ def share_content(
     session: Session = Depends(get_session),
 ):
     try:
-        result = content_management_service.share_content(
+        result = content_service.share_content(
             session, content_id, entity_id, collection_id, request.shared
         )
     except ContentNotShareableError as e:
@@ -197,7 +197,7 @@ def delete_content(
     session: Session = Depends(get_session),
 ):
     try:
-        deleted = content_management_service.soft_delete_content(
+        deleted = content_service.soft_delete_content(
             session, content_id, entity_id, collection_id
         )
     except DatabaseError:

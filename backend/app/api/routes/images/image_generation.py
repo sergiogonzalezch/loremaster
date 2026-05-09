@@ -24,7 +24,7 @@ from app.models.schemas.image_generation import (
     ImageRecordResponse,
     ShareImageRequest,
 )
-from app.services.image_generation_service import (
+from app.services.image.image_generation_service import (
     build_prompt_service,
     generate_images_service,
     delete_image_service,

@@ -11,7 +11,7 @@ from app.core.exceptions import (
 )
 from app.database import get_session
 from app.models.db.collection import Collection
-from app.services.moderation_service import log_moderation_event
+from app.services.moderation.moderation_service import log_moderation_event
 from app.engine.rag_pipeline import invoke_rag_pipeline
 from app.domain.content_guard import check_generated_output, check_user_input
 from app.models.schemas.rag_query import RagQueryRequest, RagQueryResponse
