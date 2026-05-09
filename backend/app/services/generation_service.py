@@ -13,9 +13,10 @@ from app.core.exceptions import (
 from app.domain.category_rules import validate_category_for_entity
 from app.domain.content_guard import check_generated_output, check_user_input
 from app.engine.rag_pipeline import invoke_generation_pipeline
-from app.models.entities import Entity
-from app.models.entity_content import EntityContent, EntityContentResponse
-from app.models.generated_texts import GeneratedText
+from app.models.db.entity import Entity
+from app.models.db.entity_content import EntityContent
+from app.models.schemas.entity_content import EntityContentResponse
+from app.models.db.generated_text import GeneratedText
 from app.models.enums import ContentCategory, ContentStatus
 
 logger = logging.getLogger(__name__)
@@ -181,9 +182,10 @@ def generate(
 from app.domain.category_rules import validate_category_for_entity
 from app.domain.content_guard import check_generated_output, check_user_input
 from app.engine.rag_pipeline import invoke_generation_pipeline
-from app.models.entities import Entity
-from app.models.entity_content import EntityContent, EntityContentResponse
-from app.models.generated_texts import GeneratedText
+from app.models.db.entity import Entity
+from app.models.db.entity_content import EntityContent
+from app.models.schemas.entity_content import EntityContentResponse
+from app.models.db.generated_text import GeneratedText
 from app.models.enums import ContentCategory, ContentStatus
 
 logger = logging.getLogger(__name__)

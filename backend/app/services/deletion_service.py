@@ -3,10 +3,10 @@ import time
 
 from sqlmodel import Session, select
 
-from app.models.collections import Collection
-from app.models.documents import Document
-from app.models.entities import Entity
-from app.models.image_generation import ImageRecord
+from app.models.db.collection import Collection
+from app.models.db.document import Document
+from app.models.db.entity import Entity
+from app.models.db.image_generation import ImageRecord
 from app.core.common import soft_delete
 from app.engine.rag import delete_collection_vectors
 from app.services.content_cascade_service import cascade_delete_by_entity, cascade_delete_by_collection

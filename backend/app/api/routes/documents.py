@@ -26,8 +26,9 @@ from app.core.exceptions import (
     VectorStoreError,
 )
 from app.database import get_session
-from app.models.collections import Collection
-from app.models.documents import Document, DocumentResponse, DocumentStatus
+from app.models.db.collection import Collection
+from app.models.db.document import Document, DocumentStatus
+from app.models.schemas.document import DocumentResponse
 from app.models.shared import PaginatedResponse
 from app.services.documents_service import (
     ingest_document_service,

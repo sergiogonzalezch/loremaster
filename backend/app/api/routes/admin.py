@@ -8,9 +8,9 @@ from app.core.auth_deps import get_admin_user
 from app.core.common import paginate_with_sort
 from app.core.query_params import PaginationParams
 from app.database import get_session
-from app.models.users import User
-from app.models.user_schemas import UserAdminResponse
-from app.models.collections import Collection
+from app.models.db.user import User
+from app.models.schemas.user_schemas import UserAdminResponse
+from app.models.db.collection import Collection
 from app.services.profile_service import get_avatar_info
 
 from app.services.collection_service import delete_collection_service

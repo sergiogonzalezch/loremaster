@@ -3,7 +3,7 @@
 # Without summarizing, skipping, or filtering - only extract what the text mentions
 
 from app.models.enums import ContentCategory
-from app.models.entities import EntityType
+from app.models.db.entity import EntityType
 
 # === REUSABLE CONSTANTS ===
 

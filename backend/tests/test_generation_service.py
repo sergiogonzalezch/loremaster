@@ -6,7 +6,7 @@ from app.core.exceptions import (
     InvalidCategoryError,
     PendingLimitExceededError,
 )
-from app.models.entities import Entity, EntityType
+from app.models.db.entity import Entity, EntityType
 from app.models.enums import ContentCategory, ContentStatus
 from app.services.generation_service import generate
 

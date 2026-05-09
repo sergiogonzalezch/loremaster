@@ -6,10 +6,10 @@ from sqlmodel import select
 from unittest.mock import MagicMock, patch
 
 from app.core.exceptions import NoContextAvailableError
-from app.models.entities import Entity, EntityType
+from app.models.db.entity import Entity, EntityType
 from app.models.enums import ContentCategory, ContentStatus
-from app.models.entity_content import EntityContent
-from app.models.image_generation import ImageRecord
+from app.models.db.entity_content import EntityContent
+from app.models.db.image_generation import ImageRecord
 from app.services.image_generation_service import (
     build_prompt_service,
     generate_images_service,
@@ -169,7 +169,7 @@ def test_ig_07_generate_persists_generation_record(
     )
 
     from sqlmodel import select
-    from app.models.image_generation import ImageGeneration
+    from app.models.db.image_generation import ImageGeneration
 
     gen_record = db_session.exec(
         select(ImageGeneration).where(ImageGeneration.id == result.generation_id)
@@ -335,12 +335,12 @@ def test_ig_13_generate_batch_comfyui(
 
     with (
         patch("app.services.image_generation_service.settings") as mock_settings,
-        patch("app.engine.comfyui_client.ComfyUIClient", return_value=mock_client),
+        patch("app.services.image_generation_service.ComfyUIClient", return_value=mock_client),
         patch(
-            "app.engine.comfyui_client.load_template",
+            "app.services.image_generation_service.load_template",
             return_value={"12": {"inputs": {"value": ""}}},
         ),
-        patch("app.engine.comfyui_client.inject_prompt", side_effect=lambda w, p: w),
+        patch("app.services.image_generation_service.inject_prompt", side_effect=lambda w, p: w),
         patch(
             "app.services.image_generation_service._save_comfyui_image",
             return_value="col/ent/gen/img.png",

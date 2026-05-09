@@ -9,7 +9,7 @@ from langchain_core.output_parsers import StrOutputParser
 
 from app.core.config import settings
 from app.models.enums import ContentCategory
-from app.models.entities import EntityType
+from app.models.db.entity import EntityType
 
 from app.domain.image_prompt_rules import (
     _llm_instruction_by_entity_category,

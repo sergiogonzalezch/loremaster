@@ -3,8 +3,8 @@ import importlib
 import pytest
 from sqlmodel import select
 
-from app.models.collections import Collection
-from app.models.documents import Document, DocumentStatus
+from app.models.db.collection import Collection
+from app.models.db.document import Document, DocumentStatus
 
 
 @pytest.mark.anyio

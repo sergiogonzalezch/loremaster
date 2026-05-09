@@ -44,10 +44,10 @@ if "app.engine.rag" not in sys.modules:
 from app.core.auth_deps import get_current_user
 from app.database import get_session
 from app.main import app
-from app.models.collections import Collection
-from app.models.documents import Document, DocumentStatus
-from app.models.entities import Entity, EntityType
-from app.models.users import User
+from app.models.db.collection import Collection
+from app.models.db.document import Document, DocumentStatus
+from app.models.db.entity import Entity, EntityType
+from app.models.db.user import User
 
 
 @pytest.fixture(params=["asyncio"])
@@ -266,7 +266,7 @@ def sample_entity_content_confirmed(
     db_session: Session, sample_entity: Entity
 ) -> "EntityContent":
     """FX-08: Persisted confirmed sample entity content for image generation."""
-    from app.models.entity_content import EntityContent
+    from app.models.db.entity_content import EntityContent
     from app.models.enums import ContentCategory, ContentStatus
 
     content = EntityContent(

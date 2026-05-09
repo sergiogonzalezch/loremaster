@@ -2,7 +2,7 @@ import logging
 
 from sqlmodel import Session
 
-from app.models.moderation_log import ModerationLog
+from app.models.db.moderation_log import ModerationLog
 
 logger = logging.getLogger(__name__)
 

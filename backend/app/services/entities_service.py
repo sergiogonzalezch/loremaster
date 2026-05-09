@@ -8,12 +8,8 @@ from sqlmodel import Session, select
 
 from app.core.exceptions import DuplicateEntityNameError
 from app.core.common import paginate_with_sort, db_commit
-from app.models.entities import (
-    Entity,
-    EntityType,
-    CreateEntityRequest,
-    UpdateEntityRequest,
-)
+from app.models.db.entity import Entity, EntityType
+from app.models.schemas.entity import CreateEntityRequest, UpdateEntityRequest
 from app.services.deletion_service import cascade_delete_entity
 
 logger = logging.getLogger(__name__)

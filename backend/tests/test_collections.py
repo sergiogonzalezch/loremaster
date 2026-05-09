@@ -1,11 +1,11 @@
 import pytest
 from sqlmodel import select
 
-from app.models.documents import Document
-from app.models.entities import Entity
-from app.models.entity_content import EntityContent
+from app.models.db.document import Document
+from app.models.db.entity import Entity
+from app.models.db.entity_content import EntityContent
 from app.models.enums import ContentStatus
-from app.models.generated_texts import GeneratedText
+from app.models.db.generated_text import GeneratedText
 
 
 @pytest.mark.anyio
@@ -279,7 +279,7 @@ async def test_update_collection_not_found(client):
 @pytest.mark.anyio
 async def test_same_name_different_owners_both_201(client, db_session):
     """COL-17: Colecciones con mismo nombre pero diferente owner coexisten en la DB."""
-    from app.models.collections import Collection
+    from app.models.db.collection import Collection
 
     payload = {"name": "Mundo de Tolkien", "description": "Tolkien world"}
     assert (await client.post("/api/v1/collections/", json=payload)).status_code == 201
@@ -298,7 +298,7 @@ async def test_same_name_different_owners_both_201(client, db_session):
 @pytest.mark.anyio
 async def test_patch_collection_another_user_403(client, db_session):
     """COL-18: PATCH colección ajena retorna 403."""
-    from app.models.collections import Collection
+    from app.models.db.collection import Collection
 
     other_collection = Collection(
         name="Other World", description="other", owner_id="other-user-id"

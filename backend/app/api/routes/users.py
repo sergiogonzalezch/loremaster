@@ -3,27 +3,27 @@ from sqlmodel import Session, select
 
 from app.core.deps import get_current_db_user
 from app.core.public_filters import _CONTENT_CONDITIONS, _IMAGE_CONDITIONS
-from app.models.user_schemas import (
+from app.models.schemas.user_schemas import (
     AvatarResponse,
     UpdateProfileRequest,
     UserProfileResponse,
 )
-from app.models.public import (
+from app.models.schemas.public import (
     PublicProfileResponse,
     SharedContentSummary,
     SharedImageSummary,
 )
-from app.models.users import User
+from app.models.db.user import User
 from app.services.profile_service import (
     delete_profile_image,
     get_avatar_info,
     upload_profile_image,
 )
 from app.database import get_session
-from app.models.collections import Collection
-from app.models.entities import Entity
-from app.models.entity_content import EntityContent
-from app.models.image_generation import ImageGeneration, ImageRecord
+from app.models.db.collection import Collection
+from app.models.db.entity import Entity
+from app.models.db.entity_content import EntityContent
+from app.models.db.image_generation import ImageGeneration, ImageRecord
 
 router = APIRouter(prefix="/users", tags=["users"])
 

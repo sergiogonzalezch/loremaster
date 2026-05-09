@@ -9,9 +9,10 @@ from app.core.exceptions import (
     ContentDiscardedError,
     ContentNotShareableError,
 )
-from app.models.entities import Entity
-from app.models.entity_content import EntityContent, EntityContentResponse
-from app.models.generated_texts import GeneratedText
+from app.models.db.entity import Entity
+from app.models.db.entity_content import EntityContent
+from app.models.schemas.entity_content import EntityContentResponse
+from app.models.db.generated_text import GeneratedText
 from app.models.enums import ContentCategory, ContentStatus
 
 logger = logging.getLogger(__name__)

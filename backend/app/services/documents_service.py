@@ -15,7 +15,7 @@ from app.core.exceptions import (
     UnsupportedFileTypeError,
     VectorStoreError,
 )
-from app.models.documents import Document, DocumentStatus
+from app.models.db.document import Document, DocumentStatus
 from app.core.common import soft_delete, paginate_with_sort, db_commit
 from app.domain.content_guard import check_document_content
 from app.engine.extractor import extract_text

@@ -8,7 +8,7 @@ from sqlmodel import Session
 
 from app.core.config import settings
 from app.core.common import db_commit
-from app.models.users import User
+from app.models.db.user import User
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 

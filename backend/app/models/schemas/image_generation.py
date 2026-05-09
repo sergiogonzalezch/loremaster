@@ -5,42 +5,19 @@ from pydantic import BaseModel, Field
 
 
 class BuildPromptRequest(BaseModel):
-    content_id: str = Field(
-        ...,
-        description="ID del EntityContent confirmado que sirve como base narrativa.",
-    )
+    content_id: str
 
 
 class GenerateImagesRequest(BaseModel):
-    content_id: str = Field(
-        ...,
-        description="ID del EntityContent confirmado.",
-    )
-    auto_prompt: str = Field(
-        ...,
-        description="Prompt generado por el LLM (del build).",
-    )
-    final_prompt: str = Field(
-        ...,
-        description="Prompt aprobada/editado por el usuario.",
-    )
-    batch_size: int = Field(
-        default=4,
-        ge=1,
-        le=4,
-        description="Cantidad de imágenes a generar (1-4).",
-    )
-    seed_base: Optional[int] = Field(
-        default=None,
-        description="Semilla base. None usa el valor de configuración.",
-    )
+    content_id: str
+    auto_prompt: str
+    final_prompt: str
+    batch_size: int = Field(default=4, ge=1, le=4)
+    seed_base: Optional[int] = None
 
 
 class DeleteImageRequest(BaseModel):
-    image_id: str = Field(
-        ...,
-        description="ID de la imagen a eliminar.",
-    )
+    image_id: str
 
 
 class ShareImageRequest(BaseModel):
@@ -76,16 +53,13 @@ class ImageGenerationResponse(BaseModel):
     collection_id: str
     content_id: Optional[str] = None
     category: str
-
     auto_prompt: str
     final_prompt: str
     prompt_token_count: int
-
     batch_size: int
     backend: str
     width: int
     height: int
-
     created_at: datetime
     is_deleted: bool
     deleted_at: Optional[datetime] = None
@@ -96,7 +70,6 @@ class ImageRecordResponse(BaseModel):
     generation_id: str
     entity_id: str
     collection_id: str
-
     seed: int
     storage_path: Optional[str] = None
     image_url: Optional[str] = None
@@ -105,7 +78,6 @@ class ImageRecordResponse(BaseModel):
     width: int
     height: int
     generation_ms: int
-
     is_shared: bool = False
     created_at: datetime
     is_deleted: bool
@@ -126,7 +98,6 @@ class ImageGenerationListItem(BaseModel):
     height: int
     created_at: datetime
     is_deleted: bool
-
     images: list[ImageRecordResponse]
 
 

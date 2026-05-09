@@ -1,10 +1,10 @@
 import pytest
 from sqlmodel import select
 
-from app.models.collections import Collection
-from app.models.entity_content import EntityContent
+from app.models.db.collection import Collection
+from app.models.db.entity_content import EntityContent
 from app.models.enums import ContentCategory, ContentStatus
-from app.models.generated_texts import GeneratedText
+from app.models.db.generated_text import GeneratedText
 
 
 @pytest.mark.anyio
@@ -240,7 +240,7 @@ async def test_delete_entity_cascades_generated_images(
     client, db_session, sample_collection, sample_entity
 ):
     """ENT-13: Eliminar entidad hace soft-delete de sus ImageGeneration e ImageRecord."""
-    from app.models.image_generation import ImageGeneration, ImageRecord
+    from app.models.db.image_generation import ImageGeneration, ImageRecord
 
     # Crear primero un ImageGeneration (el batch)
     generation = ImageGeneration(

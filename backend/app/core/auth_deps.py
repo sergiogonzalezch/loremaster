@@ -5,7 +5,7 @@ from sqlmodel import Session
 from app.core.config import settings
 from app.core.auth import verify_token
 from app.database import get_session
-from app.models.users import User
+from app.models.db.user import User
 
 security = HTTPBearer(auto_error=False)
 

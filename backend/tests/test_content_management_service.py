@@ -1,9 +1,9 @@
 import pytest
 from sqlmodel import select
 
-from app.models.entity_content import EntityContent
+from app.models.db.entity_content import EntityContent
 from app.models.enums import ContentCategory, ContentStatus
-from app.models.generated_texts import GeneratedText
+from app.models.db.generated_text import GeneratedText
 from app.services.content_management_service import _discard_sibling_contents
 
 

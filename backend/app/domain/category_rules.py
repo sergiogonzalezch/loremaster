@@ -1,4 +1,4 @@
-from app.models.entities import EntityType
+from app.models.db.entity import EntityType
 from app.models.enums import ContentCategory
 
 ENTITY_CATEGORY_MAP: dict[EntityType, list[ContentCategory]] = {

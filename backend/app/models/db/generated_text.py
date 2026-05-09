@@ -1,4 +1,3 @@
-import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import Column, ForeignKey, String
@@ -9,7 +8,9 @@ class GeneratedText(SQLModel, table=True):
     __tablename__ = "generated_texts"
 
     id: str = Field(
-        default_factory=lambda: str(uuid.uuid4()), primary_key=True, max_length=36
+        default_factory=lambda: str(__import__("uuid").uuid4()),
+        primary_key=True,
+        max_length=36,
     )
     entity_id: str = Field(
         sa_column=Column(
@@ -26,4 +27,6 @@ class GeneratedText(SQLModel, table=True):
     raw_content: str = Field(max_length=10000)
     sources_count: int = Field(default=0)
     token_count: int = Field(default=0)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )

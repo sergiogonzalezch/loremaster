@@ -5,7 +5,7 @@ from sqlmodel import Session, select
 from app.core.auth import create_access_token, hash_password
 from app.database import get_session
 from app.main import app
-from app.models.users import User
+from app.models.db.user import User
 
 
 @pytest.mark.anyio

@@ -8,9 +8,10 @@ from sqlmodel import Session, select
 
 from app.core.exceptions import DuplicateCollectionNameError
 from app.core.common import paginate_with_sort, db_commit
-from app.models.collections import Collection, UpdateCollectionRequest
-from app.models.documents import Document
-from app.models.entities import Entity
+from app.models.db.collection import Collection
+from app.models.schemas.collection import UpdateCollectionRequest
+from app.models.db.document import Document
+from app.models.db.entity import Entity
 from app.services.deletion_service import cascade_delete_collection
 
 logger = logging.getLogger(__name__)

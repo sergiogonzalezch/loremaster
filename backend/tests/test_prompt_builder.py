@@ -2,7 +2,7 @@
 # Tests para app.engine.image_prompt_builder
 
 from app.engine.image_prompt_builder import build_visual_prompt, _estimate_tokens
-from app.models.entities import EntityType
+from app.models.db.entity import EntityType
 from app.models.enums import ContentCategory
 
 

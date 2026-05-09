@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from sqlmodel import Session, select
 from app.database import engine
-from app.models.users import User
+from app.models.db.user import User
 
 
 def main():

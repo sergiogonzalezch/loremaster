@@ -16,8 +16,10 @@ from app.core.exceptions import (
     PendingLimitExceededError,
 )
 from app.database import get_session
-from app.models.entities import Entity, EntityResponse
-from app.models.entity_content import (
+from app.models.db.entity import Entity
+from app.models.schemas.entity import EntityResponse
+from app.models.db.entity_content import EntityContent
+from app.models.schemas.entity_content import (
     EntityContentResponse,
     GenerateContentRequest,
     ShareContentRequest,

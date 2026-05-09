@@ -1,9 +1,9 @@
 import pytest
 from sqlmodel import select
 
-from app.models.entities import Entity, EntityType
-from app.models.entity_content import EntityContent
-from app.models.generated_texts import GeneratedText
+from app.models.db.entity import Entity, EntityType
+from app.models.db.entity_content import EntityContent
+from app.models.db.generated_text import GeneratedText
 from app.models.enums import ContentStatus
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

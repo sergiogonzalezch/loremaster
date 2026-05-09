@@ -1,21 +1,17 @@
-import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy import Column, ForeignKey, String
 from sqlmodel import SQLModel, Field as SQLField
 
+from app.core.soft_delete import SoftDeleteMixin
 
-class ImageGeneration(SQLModel, table=True):
-    """
-    Registro de generación de imágenes en batch.
-    Almacena los metadatos del prompt y configuración de la generación.
-    """
 
+class ImageGeneration(SQLModel, SoftDeleteMixin, table=True):
     __tablename__ = "image_generations"
 
     id: str = SQLField(
-        default_factory=lambda: str(uuid.uuid4()),
+        default_factory=lambda: str(__import__("uuid").uuid4()),
         primary_key=True,
         max_length=36,
     )
@@ -54,21 +50,16 @@ class ImageGeneration(SQLModel, table=True):
     width: int = SQLField(default=1024)
     height: int = SQLField(default=1024)
 
-    created_at: datetime = SQLField(default_factory=lambda: datetime.now(timezone.utc))
-    is_deleted: bool = SQLField(default=False)
-    deleted_at: Optional[datetime] = SQLField(default=None)
+    created_at: datetime = SQLField(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
 
 
-class ImageRecord(SQLModel, table=True):
-    """
-    Registro de imagen individual generada dentro de un batch.
-    La imagen física se almacena en: media/{collection_id}/{entity_id}/{generation_id}/{id}.png
-    """
-
+class ImageRecord(SQLModel, SoftDeleteMixin, table=True):
     __tablename__ = "image_records"
 
     id: str = SQLField(
-        default_factory=lambda: str(uuid.uuid4()),
+        default_factory=lambda: str(__import__("uuid").uuid4()),
         primary_key=True,
         max_length=36,
     )
@@ -107,6 +98,6 @@ class ImageRecord(SQLModel, table=True):
     generation_ms: int = SQLField(default=0)
 
     is_shared: bool = SQLField(default=False)
-    created_at: datetime = SQLField(default_factory=lambda: datetime.now(timezone.utc))
-    is_deleted: bool = SQLField(default=False)
-    deleted_at: Optional[datetime] = SQLField(default=None)
+    created_at: datetime = SQLField(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )

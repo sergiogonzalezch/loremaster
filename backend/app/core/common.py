@@ -8,6 +8,7 @@ from sqlalchemy.sql import Select
 from sqlmodel import Session, select, SQLModel
 
 from app.core.exceptions import DatabaseError
+from app.core.soft_delete import soft_delete
 
 logger = logging.getLogger(__name__)
 
@@ -62,16 +63,6 @@ def db_commit(session: Session, operation: str) -> None:
         session.rollback()
         logger.error("DB commit failed during %s: %s", operation, e)
         raise DatabaseError() from e
-
-
-def soft_delete(session: Session, record) -> bool:
-    now = datetime.now(timezone.utc)
-    record.is_deleted = True
-    record.deleted_at = now
-    if hasattr(record, "updated_at"):
-        record.updated_at = now
-    session.add(record)
-    return True
 
 
 def get_active_by_id(

@@ -13,8 +13,9 @@ from app.core.exceptions import (
     NoContextAvailableError,
 )
 from app.database import get_session
-from app.models.entities import Entity
-from app.models.image_generation import (
+from app.models.db.entity import Entity
+from app.models.db.image_generation import ImageGeneration, ImageRecord
+from app.models.schemas.image_generation import (
     BuildPromptRequest,
     BuildPromptResponse,
     GenerateImagesRequest,

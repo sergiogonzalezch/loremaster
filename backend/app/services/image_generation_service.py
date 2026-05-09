@@ -21,12 +21,11 @@ from app.engine.comfyui_client import (
     load_template,
 )
 from app.engine.image_prompt_builder import build_visual_prompt
-from app.models.entities import Entity
-from app.models.entity_content import EntityContent
+from app.models.db.entity import Entity
+from app.models.db.entity_content import EntityContent
 from app.models.enums import ContentCategory, ContentStatus
-from app.models.image_generation import (
-    ImageGeneration,
-    ImageRecord,
+from app.models.db.image_generation import ImageGeneration, ImageRecord
+from app.models.schemas.image_generation import (
     BuildPromptResponse,
     GenerateImagesResponse,
     ImageResult,

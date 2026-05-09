@@ -13,12 +13,11 @@ from app.core.deps import (
 from app.core.auth_deps import get_current_user
 from app.core.exceptions import DatabaseError, DuplicateEntityNameError
 from app.database import get_session
-from app.models.collections import Collection
-from app.models.entities import (
+from app.models.db.collection import Collection
+from app.models.db.entity import Entity, EntityType
+from app.models.schemas.entity import (
     CreateEntityRequest,
     UpdateEntityRequest,
-    Entity,
-    EntityType,
     EntityResponse,
 )
 from app.models.shared import PaginatedResponse

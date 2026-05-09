@@ -1,11 +1,11 @@
 from sqlalchemy import and_
 from sqlalchemy.orm import Query
 
-from app.models.entity_content import EntityContent
-from app.models.image_generation import ImageGeneration, ImageRecord
-from app.models.entities import Entity
-from app.models.collections import Collection
-from app.models.users import User
+from app.models.db.entity_content import EntityContent
+from app.models.db.image_generation import ImageGeneration, ImageRecord
+from app.models.db.entity import Entity
+from app.models.db.collection import Collection
+from app.models.db.user import User
 from app.models.enums import ContentStatus
 
 

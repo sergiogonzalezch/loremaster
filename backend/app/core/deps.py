@@ -4,10 +4,10 @@ from sqlmodel import Session
 from app.core.common import get_active_by_id
 from app.core.auth_deps import get_current_user
 from app.database import get_session
-from app.models.collections import Collection
-from app.models.documents import Document
-from app.models.entities import Entity
-from app.models.users import User
+from app.models.db.collection import Collection
+from app.models.db.document import Document
+from app.models.db.entity import Entity
+from app.models.db.user import User
 
 
 def get_collection_or_404(
