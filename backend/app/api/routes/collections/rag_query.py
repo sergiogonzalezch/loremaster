@@ -33,7 +33,9 @@ def rag_query(
         check_user_input(query)
 
         logger.info(
-            "Executing RAG query for collection %s, query: '%.50s'", collection_id, query
+            "Executing RAG query for collection %s, query: '%.50s'",
+            collection_id,
+            query,
         )
         answer, sources_count = invoke_rag_pipeline(
             collection_id=collection_id,

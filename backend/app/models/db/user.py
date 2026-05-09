@@ -22,6 +22,4 @@ class User(SQLModel, SoftDeleteMixin, table=True):
     avatar_path: Optional[str] = SQLField(default=None, max_length=500)
     is_admin: bool = SQLField(default=False)
     token_version: int = SQLField(default=0)
-    created_at: datetime = SQLField(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    created_at: datetime = SQLField(default_factory=lambda: datetime.now(timezone.utc))

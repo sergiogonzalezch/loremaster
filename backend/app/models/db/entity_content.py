@@ -43,8 +43,6 @@ class EntityContent(SQLModel, SoftDeleteMixin, table=True):
     content: str = Field(max_length=10000)
     status: ContentStatus = Field(default=ContentStatus.pending, max_length=50)
     is_shared: bool = Field(default=False)
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     confirmed_at: datetime | None = Field(default=None)
     updated_at: datetime | None = Field(default=None)

@@ -9,7 +9,10 @@ from app.models.db.entity import Entity
 from app.models.db.image_generation import ImageRecord
 from app.core.database.utils import soft_delete
 from app.engine.rag import delete_collection_vectors
-from app.services.cascade_service import cascade_delete_by_entity, cascade_delete_by_collection
+from app.services.cascade_service import (
+    cascade_delete_by_entity,
+    cascade_delete_by_collection,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -93,9 +96,7 @@ def cascade_delete_collection(session: Session, collection: Collection) -> bool:
         "Soft-deleted %d entity(ies) for collection %s", len(entities), collection.id
     )
 
-    orphan_contents = cascade_delete_by_collection(
-        session, collection.id
-    )
+    orphan_contents = cascade_delete_by_collection(session, collection.id)
     if orphan_contents > 0:
         logger.info(
             "Soft-deleted %d orphan EntityContent(s) for collection %s",
@@ -128,9 +129,7 @@ def _cascade_delete_images(
     if collection_id is not None:
         conditions.append(ImageRecord.collection_id == collection_id)
 
-    images = session.exec(
-        select(ImageRecord).where(*conditions)
-    ).all()
+    images = session.exec(select(ImageRecord).where(*conditions)).all()
     for img in images:
         soft_delete(session, img)
     return len(images)

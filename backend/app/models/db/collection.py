@@ -28,7 +28,5 @@ class Collection(SQLModel, SoftDeleteMixin, table=True):
             index=True,
         )
     )
-    created_at: datetime = SQLField(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    created_at: datetime = SQLField(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: Optional[datetime] = SQLField(default=None)

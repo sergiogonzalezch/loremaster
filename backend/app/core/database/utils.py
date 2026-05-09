@@ -22,9 +22,7 @@ def paginate(
     page_size: int = 20,
 ) -> tuple[list, int]:
     skip = (page - 1) * page_size
-    total = session.exec(
-        select(func.count()).select_from(base_stmt.subquery())
-    ).one()
+    total = session.exec(select(func.count()).select_from(base_stmt.subquery())).one()
     items = session.exec(base_stmt.offset(skip).limit(page_size)).all()
     return list(items), total
 
@@ -40,9 +38,7 @@ def paginate_with_sort(
 ) -> tuple[list[T], int]:
     skip = (page - 1) * page_size
     total = session.exec(
-        select(func.count()).select_from(
-            select(model).where(*conditions).subquery()
-        )
+        select(func.count()).select_from(select(model).where(*conditions).subquery())
     ).one()
     sort_col = order_col.asc() if order == "asc" else order_col.desc()
     items = session.exec(

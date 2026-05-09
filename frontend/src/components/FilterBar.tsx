@@ -6,11 +6,7 @@ interface FilterBarProps {
 }
 
 export default function FilterBar({ children }: FilterBarProps) {
-  return (
-    <Form.Group style={{ minWidth: 240 }}>
-      {children}
-    </Form.Group>
-  );
+  return <Form.Group style={{ minWidth: 240 }}>{children}</Form.Group>;
 }
 
 interface PageSizeSelectProps {

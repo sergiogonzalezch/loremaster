@@ -4,7 +4,13 @@ from typing import Set
 from fastapi import UploadFile
 
 IMAGE_EXTENSIONS: Set[str] = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
-IMAGE_MIME_TYPES: Set[str] = {"image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"}
+IMAGE_MIME_TYPES: Set[str] = {
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+}
 DOCUMENT_MIME_TYPES: Set[str] = {"text/plain", "application/pdf"}
 
 
@@ -22,7 +28,9 @@ class FileValidator:
 
         content = file.file.read()
         if max_bytes and len(content) > max_bytes:
-            raise ValueError(f"El archivo excede el tamaño máximo de {max_bytes // (1024*1024)}MB")
+            raise ValueError(
+                f"El archivo excede el tamaño máximo de {max_bytes // (1024*1024)}MB"
+            )
 
         file.file.seek(0)
         return content
@@ -39,7 +47,9 @@ class FileValidator:
 
         content = file.file.read()
         if max_bytes and len(content) > max_bytes:
-            raise ValueError(f"El archivo excede el tamaño máximo de {max_bytes // (1024*1024)}MB")
+            raise ValueError(
+                f"El archivo excede el tamaño máximo de {max_bytes // (1024*1024)}MB"
+            )
 
         file.file.seek(0)
         return content

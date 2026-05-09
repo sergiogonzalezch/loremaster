@@ -50,9 +50,7 @@ class ImageGeneration(SQLModel, SoftDeleteMixin, table=True):
     width: int = SQLField(default=1024)
     height: int = SQLField(default=1024)
 
-    created_at: datetime = SQLField(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    created_at: datetime = SQLField(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class ImageRecord(SQLModel, SoftDeleteMixin, table=True):
@@ -98,6 +96,4 @@ class ImageRecord(SQLModel, SoftDeleteMixin, table=True):
     generation_ms: int = SQLField(default=0)
 
     is_shared: bool = SQLField(default=False)
-    created_at: datetime = SQLField(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    created_at: datetime = SQLField(default_factory=lambda: datetime.now(timezone.utc))

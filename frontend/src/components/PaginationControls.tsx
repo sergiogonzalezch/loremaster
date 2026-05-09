@@ -19,7 +19,10 @@ export default function PaginationControls({
   return (
     <div className="d-flex justify-content-center mt-3">
       <Pagination>
-        <Pagination.First onClick={() => onPageChange(1)} disabled={page <= 1} />
+        <Pagination.First
+          onClick={() => onPageChange(1)}
+          disabled={page <= 1}
+        />
         <Pagination.Prev
           onClick={() => onPageChange(Math.max(1, page - 1))}
           disabled={page <= 1}

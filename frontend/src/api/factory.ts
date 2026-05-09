@@ -33,10 +33,10 @@ export function apiGet<T>(
   options?: RequestInit,
 ): Promise<T> {
   const params = _params as Record<string, unknown> | undefined;
-  return apiFetch<T>(
-    params ? buildPaginatedPath(path, params) : path,
-    { ...options, method: "GET" },
-  );
+  return apiFetch<T>(params ? buildPaginatedPath(path, params) : path, {
+    ...options,
+    method: "GET",
+  });
 }
 
 export function apiPost<T>(

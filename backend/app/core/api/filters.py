@@ -8,7 +8,6 @@ from app.models.db.collection import Collection
 from app.models.db.user import User
 from app.models.enums import ContentStatus
 
-
 _CONTENT_CONDITIONS = (
     EntityContent.is_shared == True,
     EntityContent.is_deleted == False,

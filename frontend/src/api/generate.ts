@@ -6,7 +6,11 @@ export function generateText(
   data: GenerateTextRequest,
   signal?: AbortSignal,
 ): Promise<GenerateTextResponse> {
-  return apiPost<GenerateTextResponse>(`/collections/${collectionId}/query`, data, {
-    signal,
-  });
+  return apiPost<GenerateTextResponse>(
+    `/collections/${collectionId}/query`,
+    data,
+    {
+      signal,
+    },
+  );
 }

@@ -343,12 +343,18 @@ def test_ig_13_generate_batch_comfyui(
 
     with (
         patch("app.services.image.image_generation_service.settings") as mock_settings,
-        patch("app.services.image.image_generation_service.ComfyUIClient", return_value=mock_client),
+        patch(
+            "app.services.image.image_generation_service.ComfyUIClient",
+            return_value=mock_client,
+        ),
         patch(
             "app.services.image.image_generation_service.load_template",
             return_value={"12": {"inputs": {"value": ""}}},
         ),
-        patch("app.services.image.image_generation_service.inject_prompt", side_effect=lambda w, p: w),
+        patch(
+            "app.services.image.image_generation_service.inject_prompt",
+            side_effect=lambda w, p: w,
+        ),
         patch(
             "app.services.image.image_generation_service._save_comfyui_image",
             return_value="col/ent/gen/img.png",

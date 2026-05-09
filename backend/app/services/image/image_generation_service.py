@@ -211,7 +211,9 @@ def _generate_comfyui_images(
             result = client.get_history_until_complete(prompt_id)
             output_images = client.get_output_images(result)
         except Exception as exc:
-            logger.warning("ComfyUI falló en iteración %d/%d: %s", i + 1, batch_size, exc)
+            logger.warning(
+                "ComfyUI falló en iteración %d/%d: %s", i + 1, batch_size, exc
+            )
             continue
 
         for img_info in output_images[:1]:

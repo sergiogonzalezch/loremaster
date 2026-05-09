@@ -92,7 +92,9 @@ def _create_entity_content(
     return content
 
 
-def _to_response(content: EntityContent, generated_text: GeneratedText) -> EntityContentResponse:
+def _to_response(
+    content: EntityContent, generated_text: GeneratedText
+) -> EntityContentResponse:
     return EntityContentResponse(
         id=content.id,
         entity_id=content.entity_id,
@@ -147,9 +149,7 @@ def generate(
     generated_text = _create_generated_text(
         session, entity, category, query, answer, sources_count
     )
-    content = _create_entity_content(
-        session, entity, category, generated_text, answer
-    )
+    content = _create_entity_content(session, entity, category, generated_text, answer)
 
     try:
         recount = count_pending_contents(
@@ -179,6 +179,8 @@ def generate(
         entity.id,
     )
     return _to_response(content, generated_text)
+
+
 from app.domain.category_rules import validate_category_for_entity
 from app.domain.content_guard import check_generated_output, check_user_input
 from app.engine.rag_pipeline import invoke_generation_pipeline

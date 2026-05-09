@@ -37,7 +37,5 @@ class Entity(SQLModel, SoftDeleteMixin, table=True):
     type: EntityType = Field(index=True, max_length=50)
     name: str = Field(max_length=200)
     description: str = Field(default="", max_length=2000)
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime | None = Field(default=None)
