@@ -36,7 +36,14 @@ app/
 │   ├── entities/        # entities.py, content.py
 │   ├── images/          # image_generation.py
 │   └── admin.py, metadata.py, public.py, rag_query.py, users.py
-├── core/                # auth, common, config, deps, exceptions, soft_delete
+├── core/                # Subpackages organizados por dominio
+│   ├── auth/           # JWT, password hashing, dependencies
+│   ├── config/          # Pydantic Settings
+│   ├── database/       # mixins, utils, soft_delete, dependencies
+│   ├── api/            # params, filters, schema_mixin
+│   ├── exceptions/     # Custom exception classes
+│   ├── storage/       # File storage and validation
+│   └── lifespan.py     # App lifecycle
 ├── domain/              # category_rules, content_guard, prompt_templates
 ├── engine/              # comfyui_client, extractor, llm, rag, rag_pipeline
 ├── models/
@@ -54,6 +61,19 @@ app/
     ├── cascade_service.py
     └── deletion_service.py
 ```
+
+## core/ Subpackages
+
+| Subpackage | Contenido |
+|-----------|-----------|
+| `core/auth/` | JWT creation/verify, password hashing, `get_current_user`, `get_admin_user` |
+| `core/config/` | Pydantic `Settings` con todas las env vars |
+| `core/database/` | Mixins (UUIDPrimaryKey, TimestampedModel), utils (pagination), soft_delete |
+| `core/api/` | Query params, filters, `FromAttributesMixin` |
+| `core/exceptions/` | Excepciones custom de dominio |
+| `core/storage/` | File storage manager y `FileValidator` |
+
+**Nota:** Los archivos en la raíz de `core/` son backward-compatibility re-exports.
 
 ## Image Generation
 
