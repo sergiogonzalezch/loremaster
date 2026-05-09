@@ -1,8 +1,8 @@
 """Checkpoint
 
-Revision ID: 7f85b1d6fd3d
+Revision ID: 2a2cda1c4f31
 Revises:
-Create Date: 2026-05-08 13:18:33.325900
+Create Date: 2026-05-09 00:29:12.763275
 
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 import sqlmodel
 
 # revision identifiers, used by Alembic.
-revision: str = "7f85b1d6fd3d"
+revision: str = "2a2cda1c4f31"
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -34,6 +34,8 @@ def upgrade() -> None:
     )
     op.create_table(
         "users",
+        sa.Column("is_deleted", sa.Boolean(), nullable=False),
+        sa.Column("deleted_at", sa.DateTime(), nullable=True),
         sa.Column("id", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=False),
         sa.Column(
             "username", sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False
@@ -54,8 +56,6 @@ def upgrade() -> None:
         sa.Column("is_admin", sa.Boolean(), nullable=False),
         sa.Column("token_version", sa.Integer(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.Column("is_deleted", sa.Boolean(), nullable=False),
-        sa.Column("deleted_at", sa.DateTime(), nullable=True),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("email"),
     )
@@ -66,6 +66,8 @@ def upgrade() -> None:
 
     op.create_table(
         "collections",
+        sa.Column("is_deleted", sa.Boolean(), nullable=False),
+        sa.Column("deleted_at", sa.DateTime(), nullable=True),
         sa.Column("id", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=False),
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
         sa.Column(
@@ -74,8 +76,6 @@ def upgrade() -> None:
         sa.Column("owner_id", sa.String(length=36), nullable=True),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
-        sa.Column("is_deleted", sa.Boolean(), nullable=False),
-        sa.Column("deleted_at", sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(
             ["owner_id"],
             ["users.id"],
@@ -91,6 +91,8 @@ def upgrade() -> None:
 
     op.create_table(
         "documents",
+        sa.Column("is_deleted", sa.Boolean(), nullable=False),
+        sa.Column("deleted_at", sa.DateTime(), nullable=True),
         sa.Column("id", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=False),
         sa.Column("collection_id", sa.String(length=36), nullable=False),
         sa.Column(
@@ -108,8 +110,6 @@ def upgrade() -> None:
         sa.Column("processing_error", sa.Text(), nullable=True),
         sa.Column("raw_text", sa.Text(), nullable=True),
         sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.Column("is_deleted", sa.Boolean(), nullable=False),
-        sa.Column("deleted_at", sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(
             ["collection_id"],
             ["collections.id"],
@@ -123,6 +123,8 @@ def upgrade() -> None:
 
     op.create_table(
         "entities",
+        sa.Column("is_deleted", sa.Boolean(), nullable=False),
+        sa.Column("deleted_at", sa.DateTime(), nullable=True),
         sa.Column("id", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=False),
         sa.Column("collection_id", sa.String(length=36), nullable=False),
         sa.Column(
@@ -143,8 +145,6 @@ def upgrade() -> None:
         ),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
-        sa.Column("is_deleted", sa.Boolean(), nullable=False),
-        sa.Column("deleted_at", sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(
             ["collection_id"],
             ["collections.id"],
@@ -199,6 +199,8 @@ def upgrade() -> None:
 
     op.create_table(
         "entity_contents",
+        sa.Column("is_deleted", sa.Boolean(), nullable=False),
+        sa.Column("deleted_at", sa.DateTime(), nullable=True),
         sa.Column("id", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=False),
         sa.Column("entity_id", sa.String(length=36), nullable=False),
         sa.Column("collection_id", sa.String(length=36), nullable=False),
@@ -226,8 +228,6 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("confirmed_at", sa.DateTime(), nullable=True),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
-        sa.Column("is_deleted", sa.Boolean(), nullable=False),
-        sa.Column("deleted_at", sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(
             ["collection_id"],
             ["collections.id"],
@@ -259,6 +259,8 @@ def upgrade() -> None:
 
     op.create_table(
         "image_generations",
+        sa.Column("is_deleted", sa.Boolean(), nullable=False),
+        sa.Column("deleted_at", sa.DateTime(), nullable=True),
         sa.Column("id", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=False),
         sa.Column("entity_id", sa.String(length=36), nullable=False),
         sa.Column("collection_id", sa.String(length=36), nullable=False),
@@ -282,8 +284,6 @@ def upgrade() -> None:
         sa.Column("width", sa.Integer(), nullable=False),
         sa.Column("height", sa.Integer(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.Column("is_deleted", sa.Boolean(), nullable=False),
-        sa.Column("deleted_at", sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(
             ["collection_id"],
             ["collections.id"],
@@ -313,6 +313,8 @@ def upgrade() -> None:
 
     op.create_table(
         "image_records",
+        sa.Column("is_deleted", sa.Boolean(), nullable=False),
+        sa.Column("deleted_at", sa.DateTime(), nullable=True),
         sa.Column("id", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=False),
         sa.Column("generation_id", sa.String(length=36), nullable=False),
         sa.Column("entity_id", sa.String(length=36), nullable=False),
@@ -335,8 +337,6 @@ def upgrade() -> None:
         sa.Column("generation_ms", sa.Integer(), nullable=False),
         sa.Column("is_shared", sa.Boolean(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.Column("is_deleted", sa.Boolean(), nullable=False),
-        sa.Column("deleted_at", sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(
             ["collection_id"],
             ["collections.id"],

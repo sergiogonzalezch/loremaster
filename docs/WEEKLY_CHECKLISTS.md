@@ -369,40 +369,40 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 
 ### Infraestructura ComfyUI
 
-- [ ] ComfyUI instalado y corriendo en el host (puerto 8188)
-- [ ] Modelo Flux.2 Klein 4B Distilled (FP8) descargado (~8.4 GB VRAM)
-- [ ] Variables en `.env.example`: `COMFY_BACKEND=local`, `COMFY_URL`, `COMFY_TIMEOUT`
+- [x] ComfyUI instalado y corriendo en el host (puerto 8188)
+- [x] Modelo Flux.2 Klein 4B Distilled (FP8) descargado (~8.4 GB VRAM)
+- [x] Variables en `.env.example`: `COMFY_BACKEND=local`, `COMFY_URL`, `COMFY_TIMEOUT`
 - [ ] `start_local.sh` script para levantar Ollama + ComfyUI
 
 ### Workflow ComfyUI
 
-- [ ] `workflows/flux2_klein_t2i.json` creado en formato API de ComfyUI
-- [ ] Parametros fijos: `steps=4`, `cfg=1.0`, `sampler=euler`, `scheduler=simple`
-- [ ] Resolucion: `1024x1024`
+- [x] `workflows/flux2_klein_t2i.json` creado en formato API de ComfyUI
+- [x] Parametros fijos: `steps=4`, `cfg=1.0`, `sampler=euler`, `scheduler=simple`
+- [x] Resolucion: `1024x1024`
 - [ ] Negative prompt base: `blurry, ugly, deformed, watermark, text, extra limbs, worst quality`
-- [ ] Assert en cliente: `cfg` DEBE ser 1.0 (cfg > 1.0 produce imagenes degradadas)
+- [x] Assert en cliente: `cfg` DEBE ser 1.0 (cfg > 1.0 produce imagenes degradadas)
 
 ### Cliente ComfyUI
 
-- [ ] `comfy_client.py` implementado con comunicacion HTTP/WebSocket a ComfyUI
-- [ ] Enviar workflow con prompt inyectado
-- [ ] Recibir imagen generada (bytes)
+- [x] `comfy_client.py` implementado con comunicacion HTTP/WebSocket a ComfyUI
+- [x] Enviar workflow con prompt inyectado
+- [x] Recibir imagen generada (bytes)
 - [ ] Timeout configurable (default 60s)
 - [ ] Manejo de errores: ComfyUI no disponible → `HTTP 503`
 
 ### Integracion con Endpoint
 
-- [ ] `/image-generation/generate` reemplaza mock por generacion real
-- [ ] Flujo: descripcion → build_visual_prompt → validate → ComfyUI → imagen
-- [ ] Retorna imagen (URL o bytes) + metadata (visual_prompt, seed)
+- [x] `/image-generation/generate` reemplaza mock por generacion real
+- [x] Flujo: descripcion → build_visual_prompt → validate → ComfyUI → imagen
+- [x] Retorna imagen (URL o bytes) + metadata (visual_prompt, seed)
 
 ### Criterios de aceptacion Semana 7
 
-- [ ] `POST /image-generation/generate` con descripcion genera imagen real (1024x1024)
-- [ ] Imagen corresponde visualmente a la descripcion proporcionada
-- [ ] Metadata incluye `visual_prompt` y `seed` usados
+- [x] `POST /image-generation/generate` con descripcion genera imagen real (1024x1024)
+- [x] Imagen corresponde visualmente a la descripcion proporcionada
+- [x] Metadata incluye `visual_prompt` y `seed` usados
 - [ ] Timeout de ComfyUI retorna 503 con mensaje claro
-- [ ] `cfg=1.0` esta hardcodeado y validado
+- [x] `cfg=1.0` esta hardcodeado y validado
 
 ### Nota — Semana 7 implementada parcialmente (backend mock activo)
 
