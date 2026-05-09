@@ -3,7 +3,7 @@ from typing import Optional
 
 from sqlmodel import SQLModel, Field as SQLField
 
-from app.core.soft_delete import SoftDeleteMixin
+from app.core.database.soft_delete import SoftDeleteMixin
 
 
 class User(SQLModel, SoftDeleteMixin, table=True):

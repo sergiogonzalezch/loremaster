@@ -2,7 +2,7 @@ import logging
 
 from sqlmodel import Session, select
 
-from app.core.common import soft_delete
+from app.core.database.utils import soft_delete
 from app.models.db.entity_content import EntityContent
 
 logger = logging.getLogger(__name__)

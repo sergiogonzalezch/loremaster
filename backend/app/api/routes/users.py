@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 from sqlmodel import Session, select
 
-from app.core.deps import get_current_db_user
-from app.core.public_filters import _CONTENT_CONDITIONS, _IMAGE_CONDITIONS
+from app.core.database.dependencies import get_current_db_user
+from app.core.api.filters import _CONTENT_CONDITIONS, _IMAGE_CONDITIONS
 from app.models.schemas.user_schemas import (
     AvatarResponse,
     UpdateProfileRequest,

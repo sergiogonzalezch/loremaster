@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlmodel import Session, select
 from app.core.auth import create_access_token, hash_password, verify_password
-from app.core.auth_deps import get_current_user
+from app.core.auth.dependencies import get_current_user
 from app.database import get_session
 from app.models.db.user import User
 

@@ -7,7 +7,7 @@ from app.models.db.collection import Collection
 from app.models.db.document import Document
 from app.models.db.entity import Entity
 from app.models.db.image_generation import ImageRecord
-from app.core.common import soft_delete
+from app.core.database.utils import soft_delete
 from app.engine.rag import delete_collection_vectors
 from app.services.cascade_service import cascade_delete_by_entity, cascade_delete_by_collection
 

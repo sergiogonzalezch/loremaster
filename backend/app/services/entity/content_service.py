@@ -4,7 +4,7 @@ from typing import Literal, Optional
 
 from sqlmodel import Session, select
 
-from app.core.common import soft_delete, paginate_with_sort, db_commit
+from app.core.database.utils import soft_delete, paginate_with_sort, db_commit
 from app.core.exceptions import (
     ContentDiscardedError,
     ContentNotShareableError,

@@ -16,8 +16,8 @@ from app.core.exceptions import (
     VectorStoreError,
 )
 from app.models.db.document import Document, DocumentStatus
-from app.core.common import soft_delete, paginate_with_sort, db_commit
-from app.core.file_validator import FileValidator, DOCUMENT_MIME_TYPES
+from app.core.database.utils import soft_delete, paginate_with_sort, db_commit
+from app.core.storage.validator import FileValidator, DOCUMENT_MIME_TYPES
 from app.domain.content_guard import check_document_content
 from app.engine.extractor import extract_text
 from app.engine.rag import ingest_chunks, delete_document_chunks

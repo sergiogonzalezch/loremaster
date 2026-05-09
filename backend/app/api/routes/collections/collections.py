@@ -6,11 +6,11 @@ from sqlmodel import Session
 
 logger = logging.getLogger(__name__)
 
-from app.core.query_params import DateRangeParams, PaginationParams
-from app.core.deps import (
+from app.core.api.params import DateRangeParams, PaginationParams
+from app.core.database.dependencies import (
     get_collection_or_404_owned,
 )
-from app.core.auth_deps import get_current_user
+from app.core.auth.dependencies import get_current_user
 from app.core.exceptions import DatabaseError, DuplicateCollectionNameError
 from app.database import get_session
 from app.models.db.collection import Collection

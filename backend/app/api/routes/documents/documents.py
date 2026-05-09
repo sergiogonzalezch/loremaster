@@ -12,9 +12,9 @@ from fastapi import (
 )
 from sqlmodel import Session
 
-from app.core.query_params import DateRangeParams, PaginationParams
-from app.core.deps import get_collection_or_404, get_document_or_404
-from app.core.auth_deps import get_current_user
+from app.core.api.params import DateRangeParams, PaginationParams
+from app.core.database.dependencies import get_collection_or_404, get_document_or_404
+from app.core.auth.dependencies import get_current_user
 from app.core.exceptions import (
     ContentNotAllowedError,
     DatabaseError,

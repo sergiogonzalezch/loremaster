@@ -4,7 +4,7 @@ from typing import Optional
 from sqlalchemy import Column, ForeignKey, String, UniqueConstraint
 from sqlmodel import SQLModel, Field as SQLField
 
-from app.core.soft_delete import SoftDeleteMixin
+from app.core.database.soft_delete import SoftDeleteMixin
 
 
 class Collection(SQLModel, SoftDeleteMixin, table=True):

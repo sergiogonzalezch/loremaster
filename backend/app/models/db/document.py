@@ -5,7 +5,7 @@ from enum import Enum
 from sqlalchemy import Column, ForeignKey, String, Text
 from sqlmodel import SQLModel, Field
 
-from app.core.soft_delete import SoftDeleteMixin
+from app.core.database.soft_delete import SoftDeleteMixin
 
 
 class DocumentStatus(str, Enum):

@@ -41,7 +41,7 @@ if "app.engine.rag" not in sys.modules:
     rag_stub.delete_collection_vectors = _stub_delete_collection_vectors
     sys.modules["app.engine.rag"] = rag_stub
 
-from app.core.auth_deps import get_current_user
+from app.core.auth.dependencies import get_current_user
 from app.database import get_session
 from app.main import app
 from app.models.db.collection import Collection

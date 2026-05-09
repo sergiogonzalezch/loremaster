@@ -3,14 +3,14 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlmodel import Session
 
-from app.core.query_params import DateRangeParams, PaginationParams
-from app.core.deps import (
+from app.core.api.params import DateRangeParams, PaginationParams
+from app.core.database.dependencies import (
     get_collection_or_404,
     get_collection_or_404_owned,
     get_entity_or_404,
     get_entity_or_404_owned,
 )
-from app.core.auth_deps import get_current_user
+from app.core.auth.dependencies import get_current_user
 from app.core.exceptions import DatabaseError, DuplicateEntityNameError
 from app.database import get_session
 from app.models.db.collection import Collection

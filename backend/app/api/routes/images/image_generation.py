@@ -7,8 +7,8 @@ from sqlmodel import Session
 
 logger = logging.getLogger(__name__)
 
-from app.core.auth_deps import get_current_user
-from app.core.deps import get_entity_or_404_owned
+from app.core.auth.dependencies import get_current_user
+from app.core.database.dependencies import get_entity_or_404_owned
 from app.core.exceptions import (
     DatabaseError,
     NoContextAvailableError,

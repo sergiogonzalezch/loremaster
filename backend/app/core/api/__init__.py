@@ -1,12 +1,6 @@
-from pydantic import BaseModel, ConfigDict
-
-
-class FromAttributesMixin(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-
 from app.core.api.params import PaginationParams, DateRangeParams
 from app.core.api.filters import _CONTENT_CONDITIONS, _IMAGE_CONDITIONS
+from app.core.api.schema_mixin import FromAttributesMixin
 
 __all__ = [
     "FromAttributesMixin",

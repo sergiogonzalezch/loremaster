@@ -4,9 +4,9 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlmodel import Session, select
 
-from app.core.auth_deps import get_admin_user
-from app.core.common import paginate_with_sort
-from app.core.query_params import PaginationParams
+from app.core.auth.dependencies import get_admin_user
+from app.core.database.utils import paginate_with_sort
+from app.core.api.params import PaginationParams
 from app.database import get_session
 from app.models.db.user import User
 from app.models.schemas.user_schemas import UserAdminResponse
