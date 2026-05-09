@@ -292,9 +292,9 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 
 ### Mejora de Retrieval
 
-- [x] `score_threshold` configurable para filtrar resultados de baja relevancia
+- [x] `score_threshold` configurable para filtrar resultados de baja relevancia (`rag_score_threshold: float = 0.3` en config)
 - [x] `top_k` configurable (default 4, se lee de `config.py` y se pasa como parametro)
-- [x] Logging basico de queries y scores de retrieval
+- [x] Logging basico de queries y scores de retrieval (`logging` en todos los servicios)
 
 ### Soporte Documentos Grandes
 
@@ -326,17 +326,17 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 
 ### Mejora de QA/RAG
 
-- [ ] Prompt template refinado para respuestas mas precisas y contextuales
-- [ ] Manejo de queries fuera de contexto (el LLM responde "no hay informacion suficiente")
-- [ ] Respuestas consistentes en espanol
+- [x] Prompt template refinado para respuestas mas precisas y contextuales (instrucciones por categoria en `prompt_templates.py`, system prompt en `llm.py`)
+- [x] Manejo de queries fuera de contexto: instruccion "Si el contexto no es suficiente, indícalo" + HTTP 422 cuando no hay chunks disponibles
+- [x] Respuestas consistentes en espanol (todos los templates y system prompts en español)
 
 ### Prompt Builder (Opción C — plantillas deterministas por categoría de contenido)
 
-- [x] `prompt_builder.py` creado con lógica de construcción de prompts visuales — `backend/app/domain/prompt_builder.py`
-- [ ] `STYLE_PREFIX` definido por tipo de entidad — no implementado en Opción C (estrategia basada en `ContentCategory`, no en prefijos por tipo)
+- [x] `image_prompt_builder.py` creado con lógica de construcción de prompts visuales consolidado — `backend/app/engine/image_prompt_builder.py`
+- [x] `build_visual_prompt()` implementada con tres estrategias deterministas por `ContentCategory`: `direct` (extended_description), `entity_only` (backstory/item), `first_sentences` (scene/chapter)
+- [ ] `STYLE_PREFIX` definido por tipo de entidad — no implementado (estrategia basada en `ContentCategory`, no en prefijos por tipo)
 - [ ] `QUALITY_SUFFIX` con tags de calidad para Flux.2 — pendiente para integración real con Flux.2 (Semana 7)
-- [x] Función `build_visual_prompt(entity_type, entity_name, entity_description, confirmed_content, category, max_tokens, target_tokens)` implementada con tres estrategias: `direct` (extended_description), `entity_only` (backstory/item), `first_sentences` (scene/chapter)
-- [x] Límite configurable de tokens en prompt visual (`image_prompt_max_tokens=150`) — marcadores `[OPTION_B]` en código para upgrade futuro con extracción LLM
+- [x] Límite configurable de tokens en prompt visual (`image_prompt_max_tokens=512`)
 
 ### Filtrado de Contenido
 
@@ -346,17 +346,18 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 
 ### Endpoint de Imagenes (Mock)
 
-- [x] `POST /api/v1/collections/{id}/entities/{entity_id}/generate/image` — endpoint creado (ruta bajo entidad para alinear con el flujo de contenidos RAG)
+- [x] `POST /api/v1/collections/{id}/entities/{entity_id}/image-generation/build-prompt` — endpoint de construccion de prompt visual (`image_prompt_builder.py` consolidado)
+- [x] `POST /api/v1/collections/{id}/entities/{entity_id}/image-generation/generate` — endpoint de generacion con mock (backend="mock" por defecto, configurable via `IMAGE_BACKEND`)
 - [x] Request schema: `GenerateImageRequest` con `content_id` (UUID de contenido confirmado, obligatorio)
-- [x] Response mock: retorna `visual_prompt`, `prompt_token_count`, `prompt_source`, `prompt_strategy`, `backend: "mock"`, `generation_ms: 0` — sin URL de imagen hasta integración real con Flux.2 (Semana 7)
-- [x] Validación: requiere `content_id` con status `confirmed` → HTTP 422 si pending, inexistente, o no pertenece a la entidad
+- [x] Response mock: retorna `images[]` con `image_url` generado, `seed`, `backend: "mock"` — sin URL real hasta integracion con Flux.2 (Semana 7)
+- [x] Validacion: requiere `content_id` con status `confirmed` → HTTP 422 si pending, inexistente, o no pertenece a la entidad
 
 ### Criterios de aceptacion Semana 6
 
-- [x] `build_visual_prompt` genera prompts coherentes por categoría de contenido (9 tests en `test_prompt_builder.py` pasando)
+- [x] `build_visual_prompt` genera prompts coherentes por categoria de contenido (9 tests en `test_prompt_builder.py` pasando)
 - [x] Contenido bloqueado es rechazado con HTTP 422 y mensaje descriptivo antes de construir el prompt
-- [x] Endpoint `/generate/image` retorna **201** con mock response (7 tests en `test_image_generation.py` pasando)
-- [x] Endpoint `/generate/image` retorna 422 si `content_id` no confirmado o inexistente
+- [x] Endpoint `/image-generation/generate` retorna **201** con mock response (13 tests en `test_image_generation_service.py` pasando)
+- [x] Endpoint `/image-generation/generate` retorna 422 si `content_id` no confirmado o inexistente
 
 ---
 
@@ -391,17 +392,29 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 
 ### Integracion con Endpoint
 
-- [ ] `/generate/image` reemplaza mock por generacion real
+- [ ] `/image-generation/generate` reemplaza mock por generacion real
 - [ ] Flujo: descripcion → build_visual_prompt → validate → ComfyUI → imagen
 - [ ] Retorna imagen (URL o bytes) + metadata (visual_prompt, seed)
 
 ### Criterios de aceptacion Semana 7
 
-- [ ] `POST /generate/image` con descripcion genera imagen real (1024x1024)
+- [ ] `POST /image-generation/generate` con descripcion genera imagen real (1024x1024)
 - [ ] Imagen corresponde visualmente a la descripcion proporcionada
 - [ ] Metadata incluye `visual_prompt` y `seed` usados
 - [ ] Timeout de ComfyUI retorna 503 con mensaje claro
 - [ ] `cfg=1.0` esta hardcodeado y validado
+
+### Nota — Semana 7 implementada parcialmente (backend mock activo)
+
+El endpoint de generacion de imagenes esta funcional en modo mock. La arquitectura esta preparada para la integracion real con ComfyUI:
+
+- [x] Flujo de dos pasos implementado: `build-prompt` → `generate`
+- [x] `image_backend` configurable: `"mock"` (default) o `"comfyui"`
+- [x] `ComfyUIIntegrationError` (HTTP 503) y `ComfyUITimeoutError` (HTTP 504) disponibles para cuando se conecte ComfyUI real
+- [x] Límite de 512 tokens en prompt visual (`image_prompt_max_tokens=512`)
+- [x] Seed generable por batch (base + offset por imagen)
+- [x] 13 tests en `test_image_generation_service.py` pasando (mock + build-prompt + guardrails)
+- [ ] Integracion real con ComfyUI/Flux.2 Klein pendiente (requiere GPU local o RunPod)
 
 ---
 
@@ -413,7 +426,7 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 
 ### Imagenes con Contexto RAG
 
-- [ ] `/generate/image` recupera contexto de Qdrant antes de construir prompt visual
+- [ ] `/image-generation/build-prompt` recupera contexto de Qdrant antes de construir prompt visual
 - [ ] `build_visual_prompt` recibe `lore_context` del retrieval (limitado a 200 chars)
 - [ ] Flujo completo: documento → contexto RAG → prompt visual → ComfyUI → imagen
 
@@ -443,7 +456,7 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 
 ### Criterios de aceptacion Semana 8
 
-- [ ] Flujo completo: ingestar lore → query de imagen → imagen coherente con el lore
+- [ ] Flujo completo: ingestar lore → build-prompt con contexto RAG → imagen coherente con el lore (pendiente integracion ComfyUI real)
 - [ ] Imagen guardada en LocalStack S3 y URL retornada al cliente
 - [x] CRUD de entidades funcional con soft delete
 - [x] Metadata de generación registrada (`visual_prompt`, `prompt_token_count`, `prompt_source`, `prompt_strategy`, `backend`, `generation_ms`)
@@ -580,8 +593,8 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 
 ### Criterios de aceptacion Semana 11
 
-- [ ] `/generate/image` genera imagen via RunPod cuando `COMFY_BACKEND=runpod`
-- [ ] `/generate/image` genera imagen via ComfyUI local cuando `COMFY_BACKEND=local`
+- [ ] `/image-generation/generate` genera imagen via RunPod cuando `COMFY_BACKEND=runpod`
+- [ ] `/image-generation/generate` genera imagen via ComfyUI local cuando `COMFY_BACKEND=local`
 - [ ] Imagen se guarda en S3 real (no solo LocalStack)
 - [ ] Metadata registra correctamente el backend usado
 - [ ] Switch entre backends no requiere cambio de codigo
