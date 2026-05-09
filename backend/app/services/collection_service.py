@@ -3,11 +3,11 @@ from datetime import datetime, timezone
 from typing import Literal, Optional
 
 from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
-from app.core.exceptions import DatabaseError, DuplicateCollectionNameError
-from app.core.common import paginate_with_sort
+from app.core.exceptions import DuplicateCollectionNameError
+from app.core.common import paginate_with_sort, db_commit
 from app.models.collections import Collection, UpdateCollectionRequest
 from app.models.documents import Document
 from app.models.entities import Entity
@@ -157,12 +157,7 @@ def update_collection_service(
 
 
 def delete_collection_service(session: Session, collection: Collection) -> bool:
-    try:
-        vectors_cleaned = cascade_delete_collection(session, collection)
-        session.commit()
-    except SQLAlchemyError as e:
-        session.rollback()
-        logger.error("DB commit failed deleting collection %s: %s", collection.id, e)
-        raise DatabaseError() from e
+    vectors_cleaned = cascade_delete_collection(session, collection)
+    db_commit(session, f"delete_collection({collection.id})")
     logger.info("Collection '%s' (%s) deleted", collection.name, collection.id)
     return vectors_cleaned

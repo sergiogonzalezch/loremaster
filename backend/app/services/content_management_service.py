@@ -2,14 +2,12 @@ import logging
 from datetime import datetime, timezone
 from typing import Literal, Optional
 
-from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Session, select
 
-from app.core.common import soft_delete, paginate_with_sort
+from app.core.common import soft_delete, paginate_with_sort, db_commit
 from app.core.exceptions import (
     ContentDiscardedError,
     ContentNotShareableError,
-    DatabaseError,
 )
 from app.models.entities import Entity
 from app.models.entity_content import EntityContent, EntityContentResponse
@@ -78,13 +76,8 @@ def edit_content(
     content.content = new_text
     content.updated_at = now
     session.add(content)
-    try:
-        session.commit()
-        session.refresh(content)
-    except SQLAlchemyError as e:
-        session.rollback()
-        logger.error("DB commit failed editing content %s: %s", content_id, e)
-        raise DatabaseError() from e
+    db_commit(session, f"edit_content({content_id})")
+    session.refresh(content)
     return _to_response(session, content)
 
 
@@ -118,13 +111,8 @@ def confirm_content(
         content.category,
     )
 
-    try:
-        session.commit()
-        session.refresh(content)
-    except SQLAlchemyError as e:
-        session.rollback()
-        logger.error("DB commit failed confirming content %s: %s", content_id, e)
-        raise DatabaseError() from e
+    db_commit(session, f"confirm_content({content_id})")
+    session.refresh(content)
     logger.info("EntityContent %s confirmed for entity %s", content_id, entity.id)
     return content
 
@@ -141,13 +129,8 @@ def discard_content(
     content.status = ContentStatus.discarded
     content.updated_at = datetime.now(timezone.utc)
     session.add(content)
-    try:
-        session.commit()
-        session.refresh(content)
-    except SQLAlchemyError as e:
-        session.rollback()
-        logger.error("DB commit failed discarding content %s: %s", content_id, e)
-        raise DatabaseError() from e
+    db_commit(session, f"discard_content({content_id})")
+    session.refresh(content)
     logger.info("EntityContent %s discarded", content_id)
     return _to_response(session, content)
 
@@ -166,13 +149,8 @@ def share_content(
         raise ContentNotShareableError()
     content.is_shared = shared
     session.add(content)
-    try:
-        session.commit()
-        session.refresh(content)
-    except SQLAlchemyError as e:
-        session.rollback()
-        logger.error("DB commit failed sharing content %s: %s", content_id, e)
-        raise DatabaseError() from e
+    db_commit(session, f"share_content({content_id})")
+    session.refresh(content)
     logger.info("EntityContent %s is_shared=%s", content_id, shared)
     return _to_response(session, content)
 
@@ -188,12 +166,7 @@ def soft_delete_content(
         return False
     content.is_shared = False
     soft_delete(session, content)
-    try:
-        session.commit()
-    except SQLAlchemyError as e:
-        session.rollback()
-        logger.error("DB commit failed soft-deleting content %s: %s", content_id, e)
-        raise DatabaseError() from e
+    db_commit(session, f"soft_delete_content({content_id})")
     logger.info("EntityContent %s soft-deleted", content_id)
     return True
 

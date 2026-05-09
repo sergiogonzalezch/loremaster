@@ -14,7 +14,7 @@ from app.models.public import (
     SharedImageSummary,
 )
 from app.models.users import User
-from app.services.user_image import (
+from app.services.profile_service import (
     delete_profile_image,
     get_avatar_info,
     upload_profile_image,

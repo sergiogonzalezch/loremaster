@@ -3,11 +3,11 @@ from datetime import datetime, timezone
 from typing import Literal, Optional
 
 from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
-from app.core.exceptions import DatabaseError, DuplicateEntityNameError
-from app.core.common import paginate_with_sort
+from app.core.exceptions import DuplicateEntityNameError
+from app.core.common import paginate_with_sort, db_commit
 from app.models.entities import (
     Entity,
     EntityType,
@@ -117,13 +117,8 @@ def update_entity_service(
 
 
 def delete_entity_service(session: Session, entity: Entity) -> bool:
-    try:
-        cascade_delete_entity(session, entity)
-        session.commit()
-    except SQLAlchemyError as e:
-        session.rollback()
-        logger.error("DB commit failed deleting entity %s: %s", entity.id, e)
-        raise DatabaseError() from e
+    cascade_delete_entity(session, entity)
+    db_commit(session, f"delete_entity({entity.id})")
     logger.info(
         "Entity '%s' (%s) deleted from collection %s",
         entity.name,

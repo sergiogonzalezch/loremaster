@@ -3,8 +3,11 @@ from datetime import datetime, timezone
 from typing import TypeVar, Type, Optional, Sequence
 
 from sqlalchemy import func
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import Select
 from sqlmodel import Session, select, SQLModel
+
+from app.core.exceptions import DatabaseError
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +52,16 @@ def paginate_with_sort(
         .limit(page_size)
     ).all()
     return list(items), total
+
+
+def db_commit(session: Session, operation: str) -> None:
+    """Commit with consistent error handling."""
+    try:
+        session.commit()
+    except SQLAlchemyError as e:
+        session.rollback()
+        logger.error("DB commit failed during %s: %s", operation, e)
+        raise DatabaseError() from e
 
 
 def soft_delete(session: Session, record) -> bool:

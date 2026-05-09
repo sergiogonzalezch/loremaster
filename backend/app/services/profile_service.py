@@ -7,16 +7,10 @@ from fastapi import UploadFile
 from sqlmodel import Session
 
 from app.core.config import settings
+from app.core.common import db_commit
 from app.models.users import User
 
-ALLOWED_CONTENT_TYPES = {
-    "image/jpeg",
-    "image/jpg",
-    "image/png",
-    "image/webp",
-    "image/gif",
-}
-ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 
 
 def _get_profile_image_dir(username: str) -> Path:
@@ -34,10 +28,10 @@ def _build_avatar_url(avatar_path: str | None) -> str | None:
 
 
 def validate_image_file(file: UploadFile) -> None:
-    if file.content_type not in ALLOWED_CONTENT_TYPES:
+    if file.content_type not in {"image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"}:
         raise ValueError(
             f"Tipo de archivo no permitido: {file.content_type}. "
-            f"Solo se permiten imágenes: {', '.join(sorted(ALLOWED_EXTENSIONS))}"
+            f"Solo se permiten imágenes: {', '.join(sorted(IMAGE_EXTENSIONS))}"
         )
 
 
@@ -45,7 +39,7 @@ async def upload_profile_image(session: Session, user: User, file: UploadFile) -
     validate_image_file(file)
 
     ext = Path(file.filename or "image.jpg").suffix.lower()
-    if ext not in ALLOWED_EXTENSIONS:
+    if ext not in IMAGE_EXTENSIONS:
         raise ValueError(f"Extensión no permitida: {ext}")
 
     max_bytes = int(settings.profile_image_max_size_mb * 1024 * 1024)
@@ -71,7 +65,7 @@ async def upload_profile_image(session: Session, user: User, file: UploadFile) -
     avatar_path = _build_avatar_path(user.username, unique_filename)
     user.avatar_path = avatar_path
     session.add(user)
-    session.commit()
+    db_commit(session, f"upload_profile_image({user.username})")
 
     return _build_avatar_url(avatar_path)
 
@@ -86,7 +80,7 @@ def delete_profile_image(session: Session, user: User) -> None:
 
     user.avatar_path = None
     session.add(user)
-    session.commit()
+    db_commit(session, f"delete_profile_image({user.username})")
 
 
 def get_avatar_info(user: User) -> dict:

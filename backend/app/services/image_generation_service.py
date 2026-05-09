@@ -8,11 +8,11 @@ logger = logging.getLogger(__name__)
 
 from datetime import datetime, timezone
 from pathlib import Path
-from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Session, select
 
 from app.core.config import settings
-from app.core.exceptions import DatabaseError, NoContextAvailableError
+from app.core.common import db_commit
+from app.core.exceptions import NoContextAvailableError
 from app.domain.content_guard import check_user_input
 from app.engine.comfyui_client import (
     ComfyUIClient,
@@ -384,11 +384,7 @@ def generate_images_service(
             "Usar: 'mock' o 'comfyui'"
         )
 
-    try:
-        session.commit()
-    except SQLAlchemyError as e:
-        session.rollback()
-        raise DatabaseError() from e
+    db_commit(session, f"generate_images({entity.id})")
 
     return GenerateImagesResponse(
         generation_id=generation_id,
@@ -426,12 +422,8 @@ def share_image_service(
         raise NoContextAvailableError()
 
     record.is_shared = shared
-    try:
-        session.commit()
-        session.refresh(record)
-    except SQLAlchemyError as e:
-        session.rollback()
-        raise DatabaseError() from e
+    db_commit(session, f"share_image({image_id})")
+    session.refresh(record)
 
     return ImageRecordResponse(
         id=record.id,
@@ -490,11 +482,7 @@ def delete_image_service(
             except OSError:
                 pass
 
-    try:
-        session.commit()
-    except SQLAlchemyError as e:
-        session.rollback()
-        raise DatabaseError() from e
+    db_commit(session, f"delete_image({image_id})")
 
 
 def get_generation_service(

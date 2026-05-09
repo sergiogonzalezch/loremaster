@@ -8,7 +8,6 @@ from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.core.exceptions import (
-    DatabaseError,
     DocumentExtractionError,
     DocumentNotRetryableError,
     FileTooLargeError,
@@ -17,7 +16,7 @@ from app.core.exceptions import (
     VectorStoreError,
 )
 from app.models.documents import Document, DocumentStatus
-from app.core.common import soft_delete, paginate_with_sort
+from app.core.common import soft_delete, paginate_with_sort, db_commit
 from app.domain.content_guard import check_document_content
 from app.engine.extractor import extract_text
 from app.engine.rag import ingest_chunks, delete_document_chunks
@@ -71,15 +70,8 @@ async def ingest_document_service(
         raw_text=content,
     )
     session.add(document)
-    try:
-        session.commit()
-        session.refresh(document)
-    except Exception as e:
-        session.rollback()
-        logger.error(
-            "DB commit failed during document ingest for '%s': %s", data.filename, e
-        )
-        raise DatabaseError() from e
+    db_commit(session, f"ingest_document({data.filename})")
+    session.refresh(document)
     return document, content
 
 
@@ -158,13 +150,8 @@ def retry_document_service(
     document.status = DocumentStatus.processing
     document.processing_error = None
     session.add(document)
-    try:
-        session.commit()
-        session.refresh(document)
-    except Exception as e:
-        session.rollback()
-        logger.error("DB commit failed during retry for doc %s: %s", document.id, e)
-        raise DatabaseError() from e
+    db_commit(session, f"retry_document({document.id})")
+    session.refresh(document)
     return document, raw_text
 
 
@@ -176,7 +163,7 @@ def delete_document_service(session: Session, document: Document) -> bool:
         raise VectorStoreError() from e
 
     soft_delete(session, document)
-    session.commit()
+    db_commit(session, f"delete_document({document.id})")
     logger.info(
         "Document %s soft-deleted from collection %s",
         document.id,
