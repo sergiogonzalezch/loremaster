@@ -1,6 +1,4 @@
-import { apiFetch } from "./apiClient";
-import { buildQuery } from "./query";
-import { trimStringValues } from "../utils/strings";
+import { apiGet, apiPost, apiPatch, apiDelete, buildQuery } from "./factory";
 import type {
   Entity,
   EntityListResponse,
@@ -24,8 +22,9 @@ export function getEntities(
   params: EntitiesQueryParams = {},
   signal?: AbortSignal,
 ): Promise<EntityListResponse> {
-  return apiFetch<EntityListResponse>(
-    `/collections/${collectionId}/entities${buildQuery({ ...params })}`,
+  return apiGet<EntityListResponse>(
+    `/collections/${collectionId}/entities${buildQuery(params)}`,
+    undefined,
     { signal },
   );
 }
@@ -35,19 +34,18 @@ export function getEntity(
   entityId: string,
   signal?: AbortSignal,
 ): Promise<Entity> {
-  return apiFetch<Entity>(`/collections/${collectionId}/entities/${entityId}`, {
-    signal,
-  });
+  return apiGet<Entity>(
+    `/collections/${collectionId}/entities/${entityId}`,
+    undefined,
+    { signal },
+  );
 }
 
 export function createEntity(
   collectionId: string,
   data: CreateEntityRequest,
 ): Promise<Entity> {
-  return apiFetch<Entity>(`/collections/${collectionId}/entities`, {
-    method: "POST",
-    body: JSON.stringify(trimStringValues(data)),
-  });
+  return apiPost<Entity>(`/collections/${collectionId}/entities`, data);
 }
 
 export function updateEntity(
@@ -55,17 +53,15 @@ export function updateEntity(
   entityId: string,
   data: UpdateEntityRequest,
 ): Promise<Entity> {
-  return apiFetch<Entity>(`/collections/${collectionId}/entities/${entityId}`, {
-    method: "PATCH",
-    body: JSON.stringify(trimStringValues(data)),
-  });
+  return apiPatch<Entity>(
+    `/collections/${collectionId}/entities/${entityId}`,
+    data,
+  );
 }
 
 export function deleteEntity(
   collectionId: string,
   entityId: string,
 ): Promise<void> {
-  return apiFetch<void>(`/collections/${collectionId}/entities/${entityId}`, {
-    method: "DELETE",
-  });
+  return apiDelete<void>(`/collections/${collectionId}/entities/${entityId}`);
 }

@@ -1,6 +1,4 @@
-// frontend/src/api/images.ts
-
-import { apiFetch } from "./apiClient";
+import { apiGet, apiPost, apiPatch, apiDelete } from "./factory";
 import type {
   GenerateImageRequest,
   GenerateImagesResponse,
@@ -14,16 +12,13 @@ export function buildPrompt(
   contentId: string,
   signal?: AbortSignal,
 ) {
-  return apiFetch<{
+  return apiPost<{
     auto_prompt: string;
     token_count: number;
   }>(
     `/collections/${collectionId}/entities/${entityId}/image-generation/build-prompt`,
-    {
-      method: "POST",
-      body: JSON.stringify({ content_id: contentId }),
-      signal,
-    },
+    { content_id: contentId },
+    { signal },
   );
 }
 
@@ -33,13 +28,10 @@ export function generateImages(
   data: GenerateImageRequest,
   signal?: AbortSignal,
 ): Promise<GenerateImagesResponse> {
-  return apiFetch<GenerateImagesResponse>(
+  return apiPost<GenerateImagesResponse>(
     `/collections/${collectionId}/entities/${entityId}/image-generation/generate`,
-    {
-      method: "POST",
-      body: JSON.stringify(data),
-      signal,
-    },
+    data,
+    { signal },
   );
 }
 
@@ -48,9 +40,10 @@ export function listImageGenerations(
   entityId: string,
   signal?: AbortSignal,
 ): Promise<ImageGenerationListResponse> {
-  return apiFetch<ImageGenerationListResponse>(
+  return apiGet<ImageGenerationListResponse>(
     `/collections/${collectionId}/entities/${entityId}/image-generation`,
-    { method: "GET", signal },
+    undefined,
+    { signal },
   );
 }
 
@@ -61,9 +54,9 @@ export function deleteImage(
   imageId: string,
   signal?: AbortSignal,
 ) {
-  return apiFetch(
+  return apiDelete(
     `/collections/${collectionId}/entities/${entityId}/image-generation/${generationId}/images/${imageId}`,
-    { method: "DELETE", signal },
+    { signal },
   );
 }
 
@@ -74,11 +67,8 @@ export function shareImage(
   imageId: string,
   data: { shared: boolean },
 ): Promise<ImageRecord> {
-  return apiFetch<ImageRecord>(
+  return apiPatch<ImageRecord>(
     `/collections/${collectionId}/entities/${entityId}/image-generation/${generationId}/images/${imageId}/share`,
-    {
-      method: "PATCH",
-      body: JSON.stringify(data),
-    },
+    data,
   );
 }

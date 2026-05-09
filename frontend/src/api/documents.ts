@@ -1,5 +1,5 @@
 import { apiFetch } from "./apiClient";
-import { buildQuery } from "./query";
+import { apiGet, apiPost, apiDelete, buildQuery } from "./factory";
 import type { Document, DocumentListResponse } from "../types";
 import type { DocumentStatus } from "../utils/enums";
 
@@ -31,8 +31,9 @@ export function getDocuments(
   params: DocumentsQueryParams = {},
   signal?: AbortSignal,
 ): Promise<DocumentListResponse> {
-  return apiFetch<DocumentListResponse>(
-    `/collections/${collectionId}/documents${buildQuery({ ...params })}`,
+  return apiGet<DocumentListResponse>(
+    `/collections/${collectionId}/documents${buildQuery(params)}`,
+    undefined,
     { signal },
   );
 }
@@ -42,18 +43,19 @@ export function getDocument(
   docId: string,
   signal?: AbortSignal,
 ): Promise<Document> {
-  return apiFetch<Document>(`/collections/${collectionId}/documents/${docId}`, {
-    signal,
-  });
+  return apiGet<Document>(
+    `/collections/${collectionId}/documents/${docId}`,
+    undefined,
+    { signal },
+  );
 }
 
 export function retryDocument(
   collectionId: string,
   docId: string,
 ): Promise<Document> {
-  return apiFetch<Document>(
+  return apiPost<Document>(
     `/collections/${collectionId}/documents/${docId}/retry`,
-    { method: "POST" },
   );
 }
 
@@ -61,7 +63,5 @@ export function deleteDocument(
   collectionId: string,
   docId: string,
 ): Promise<void> {
-  return apiFetch<void>(`/collections/${collectionId}/documents/${docId}`, {
-    method: "DELETE",
-  });
+  return apiDelete<void>(`/collections/${collectionId}/documents/${docId}`);
 }

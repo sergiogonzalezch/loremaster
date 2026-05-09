@@ -1,6 +1,4 @@
-import { apiFetch } from "./apiClient";
-import { buildQuery } from "./query";
-import { trimStringValues } from "../utils/strings";
+import { apiGet, apiPost, apiPatch, apiDelete, buildQuery } from "./factory";
 import type {
   Collection,
   CreateCollectionRequest,
@@ -21,8 +19,9 @@ export function getCollections(
   params: CollectionsQueryParams = {},
   signal?: AbortSignal,
 ): Promise<CollectionListResponse> {
-  return apiFetch<CollectionListResponse>(
-    `/collections/${buildQuery({ ...params })}`,
+  return apiGet<CollectionListResponse>(
+    `/collections/${buildQuery(params)}`,
+    undefined,
     { signal },
   );
 }
@@ -31,28 +30,22 @@ export function getCollection(
   id: string,
   signal?: AbortSignal,
 ): Promise<Collection> {
-  return apiFetch<Collection>(`/collections/${id}`, { signal });
+  return apiGet<Collection>(`/collections/${id}`, undefined, { signal });
 }
 
 export function createCollection(
   data: CreateCollectionRequest,
 ): Promise<Collection> {
-  return apiFetch<Collection>("/collections/", {
-    method: "POST",
-    body: JSON.stringify(trimStringValues(data)),
-  });
+  return apiPost<Collection>("/collections/", data);
 }
 
 export function updateCollection(
   id: string,
   data: UpdateCollectionRequest,
 ): Promise<Collection> {
-  return apiFetch<Collection>(`/collections/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify(trimStringValues(data)),
-  });
+  return apiPatch<Collection>(`/collections/${id}`, data);
 }
 
 export function deleteCollection(id: string): Promise<void> {
-  return apiFetch<void>(`/collections/${id}`, { method: "DELETE" });
+  return apiDelete<void>(`/collections/${id}`);
 }

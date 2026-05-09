@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { Alert, Card, Form, Nav, Pagination } from "react-bootstrap";
+import { Alert, Card, Form, Nav } from "react-bootstrap";
 import ContentCard from "./ContentCard";
+import { PageSizeSelect } from "./FilterBar";
 import LoadingSpinner from "./LoadingSpinner";
+import PaginationControls from "./PaginationControls";
 import { useEntityContents } from "../hooks/useEntityContents";
-import { usePagination } from "../hooks/usePagination";
 import type { EntityContent } from "../types";
 import type { ContentCategory } from "../utils/enums";
 import { CATEGORY_LABELS } from "../utils/constants";
@@ -40,8 +41,6 @@ export default function EntityContentsPanel({
   >("pending");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-
-  const paginationItems = usePagination(page, meta.total_pages);
 
   const pendingInCategory = useMemo(
     () =>
@@ -145,22 +144,13 @@ export default function EntityContentsPanel({
                 ))}
               </Form.Select>
             </Form.Group>
-            <Form.Group style={{ minWidth: 130 }}>
-              <Form.Label>Page size</Form.Label>
-              <Form.Select
-                value={String(pageSize)}
-                onChange={(e) => {
-                  setPageSize(Number(e.target.value));
-                  setPage(1);
-                }}
-              >
-                {[5, 10, 20, 50].map((size) => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
+            <PageSizeSelect
+              value={pageSize}
+              onChange={(size) => {
+                setPageSize(size);
+                setPage(1);
+              }}
+            />
           </div>
         </Card.Body>
       </Card>
@@ -190,43 +180,11 @@ export default function EntityContentsPanel({
               onOpenImagePanel={onOpenImagePanel}
             />
           ))}
-          {meta.total_pages > 1 && (
-            <div className="d-flex justify-content-center mt-3">
-              <Pagination>
-                <Pagination.First
-                  onClick={() => setPage(1)}
-                  disabled={page <= 1}
-                />
-                <Pagination.Prev
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page <= 1}
-                />
-                {paginationItems.map((item) =>
-                  typeof item === "number" ? (
-                    <Pagination.Item
-                      key={item}
-                      active={item === page}
-                      onClick={() => setPage(item)}
-                    >
-                      {item}
-                    </Pagination.Item>
-                  ) : (
-                    <Pagination.Ellipsis key={item} disabled />
-                  ),
-                )}
-                <Pagination.Next
-                  onClick={() =>
-                    setPage((p) => Math.min(meta.total_pages, p + 1))
-                  }
-                  disabled={page >= meta.total_pages}
-                />
-                <Pagination.Last
-                  onClick={() => setPage(meta.total_pages)}
-                  disabled={page >= meta.total_pages}
-                />
-              </Pagination>
-            </div>
-          )}
+          <PaginationControls
+            page={page}
+            totalPages={meta.total_pages}
+            onPageChange={setPage}
+          />
         </>
       )}
     </>

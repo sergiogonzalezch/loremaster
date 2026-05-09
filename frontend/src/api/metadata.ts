@@ -1,10 +1,10 @@
-import { apiFetch } from "./apiClient";
+import { apiGet } from "./factory";
 import type { EntityType, ContentCategory } from "../utils/enums";
 
 export function getEntityCategories(): Promise<
   Record<EntityType, ContentCategory[]>
 > {
-  return apiFetch<Record<EntityType, ContentCategory[]>>("/entity-categories");
+  return apiGet<Record<EntityType, ContentCategory[]>>("/entity-categories");
 }
 
 export interface AppLimits {
@@ -12,5 +12,5 @@ export interface AppLimits {
 }
 
 export function getLimits(): Promise<AppLimits> {
-  return apiFetch<AppLimits>("/limits");
+  return apiGet<AppLimits>("/limits");
 }

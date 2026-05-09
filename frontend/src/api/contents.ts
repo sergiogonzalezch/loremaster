@@ -1,5 +1,4 @@
-import { apiFetch } from "./apiClient";
-import { trimStringValues } from "../utils/strings";
+import { apiGet, apiPost, apiPatch, apiDelete, buildQuery } from "./factory";
 import type {
   EntityContent,
   GenerateContentRequest,
@@ -8,7 +7,6 @@ import type {
 } from "../types";
 import type { ContentCategory } from "../utils/enums";
 import type { Entity } from "../types";
-import { buildQuery } from "./query";
 
 export interface ContentsQueryParams {
   category?: ContentCategory;
@@ -28,13 +26,10 @@ export function generateContent(
   data: GenerateContentRequest,
   signal?: AbortSignal,
 ): Promise<EntityContent> {
-  return apiFetch<EntityContent>(
+  return apiPost<EntityContent>(
     `${base(collectionId, entityId)}/generate/${category}`,
-    {
-      method: "POST",
-      body: JSON.stringify(trimStringValues(data)),
-      signal,
-    },
+    data,
+    { signal },
   );
 }
 
@@ -44,12 +39,13 @@ export function getContents(
   params: ContentsQueryParams = {},
   signal?: AbortSignal,
 ): Promise<PaginatedResponse<EntityContent>> {
-  return apiFetch<PaginatedResponse<EntityContent>>(
+  return apiGet<PaginatedResponse<EntityContent>>(
     `${base(collectionId, entityId)}/contents${buildQuery({
       page: 1,
       page_size: 100,
       ...params,
     })}`,
+    undefined,
     { signal },
   );
 }
@@ -60,12 +56,9 @@ export function updateContent(
   contentId: string,
   data: UpdateContentRequest,
 ): Promise<EntityContent> {
-  return apiFetch<EntityContent>(
+  return apiPatch<EntityContent>(
     `${base(collectionId, entityId)}/contents/${contentId}`,
-    {
-      method: "PATCH",
-      body: JSON.stringify(trimStringValues(data)),
-    },
+    data,
   );
 }
 
@@ -74,11 +67,8 @@ export function confirmContent(
   entityId: string,
   contentId: string,
 ): Promise<Entity> {
-  return apiFetch<Entity>(
+  return apiPost<Entity>(
     `${base(collectionId, entityId)}/contents/${contentId}/confirm`,
-    {
-      method: "POST",
-    },
   );
 }
 
@@ -87,11 +77,8 @@ export function discardContent(
   entityId: string,
   contentId: string,
 ): Promise<EntityContent> {
-  return apiFetch<EntityContent>(
+  return apiPatch<EntityContent>(
     `${base(collectionId, entityId)}/contents/${contentId}/discard`,
-    {
-      method: "PATCH",
-    },
   );
 }
 
@@ -100,11 +87,8 @@ export function deleteContent(
   entityId: string,
   contentId: string,
 ): Promise<void> {
-  return apiFetch<void>(
+  return apiDelete<void>(
     `${base(collectionId, entityId)}/contents/${contentId}`,
-    {
-      method: "DELETE",
-    },
   );
 }
 
@@ -114,11 +98,8 @@ export function shareContent(
   contentId: string,
   data: { shared: boolean },
 ): Promise<EntityContent> {
-  return apiFetch<EntityContent>(
+  return apiPatch<EntityContent>(
     `${base(collectionId, entityId)}/contents/${contentId}/share`,
-    {
-      method: "PATCH",
-      body: JSON.stringify(data),
-    },
+    data,
   );
 }

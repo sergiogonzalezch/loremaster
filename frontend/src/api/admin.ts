@@ -1,5 +1,4 @@
-import { apiFetch } from "./apiClient";
-import { buildQuery } from "./query";
+import { apiGet, apiDelete, buildQuery } from "./factory";
 import type { UserAdminRecord } from "../types/user";
 
 export interface AdminMeta {
@@ -16,15 +15,13 @@ export interface AdminUsersResponse {
 export function getAdminUsers(
   params: { page?: number; page_size?: number } = {},
 ): Promise<AdminUsersResponse> {
-  return apiFetch<AdminUsersResponse>(`/admin/users${buildQuery(params)}`);
+  return apiGet<AdminUsersResponse>(`/admin/users${buildQuery(params)}`);
 }
 
 export function adminDeleteUser(userId: string): Promise<void> {
-  return apiFetch<void>(`/admin/users/${userId}`, { method: "DELETE" });
+  return apiDelete<void>(`/admin/users/${userId}`);
 }
 
 export function adminDeleteCollection(collectionId: string): Promise<void> {
-  return apiFetch<void>(`/admin/collections/${collectionId}`, {
-    method: "DELETE",
-  });
+  return apiDelete<void>(`/admin/collections/${collectionId}`);
 }
