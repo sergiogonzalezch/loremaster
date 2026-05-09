@@ -1,3 +1,10 @@
+/**
+ * Cliente HTTP base para la API del backend.
+ *
+ * Envuelve `fetch` con manejo de token JWT, mensajes de error por código HTTP
+ * y redirección automática al login en caso de 401.
+ */
+
 import { getToken, removeToken } from "../utils/token";
 
 const BASE_URL =
@@ -17,6 +24,7 @@ const HTTP_STATUS_MESSAGES: Partial<Record<number, string>> = {
   503: "El servicio no está disponible. Inténtalo de nuevo más tarde.",
 };
 
+/** Error lanzado cuando la API retorna una respuesta no exitosa. */
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -27,6 +35,7 @@ export class ApiError extends Error {
   }
 }
 
+/** Error lanzado cuando una solicitud es cancelada mediante AbortController. */
 export class ApiAbortError extends Error {
   constructor() {
     super("Solicitud cancelada");
@@ -34,6 +43,21 @@ export class ApiAbortError extends Error {
   }
 }
 
+/**
+ * Ejecuta una petición fetch contra la API del backend.
+ *
+ * Agrega automáticamente el header Authorization con el token JWT
+ * y el Content-Type cuando el body no es FormData.
+ *
+ * En respuesta 401 elimina el token y redirige al login.
+ * En respuestas de error extrae el mensaje del body o usa uno por código HTTP.
+ *
+ * @param endpoint - Ruta relativa de la API (ej: `/collections/`)
+ * @param options - Opciones de fetch adicionales
+ * @returns Promise con el body JSON parseado al tipo T
+ * @throws ApiError si la respuesta no es exitosa
+ * @throws ApiAbortError si la solicitud fue cancelada
+ */
 export async function apiFetch<T>(
   endpoint: string,
   options: RequestInit = {},

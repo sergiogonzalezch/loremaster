@@ -1,3 +1,10 @@
+/**
+ * Componente de controles de paginación reutilizable.
+ *
+ * Usa usePagination para generar una lista compacta de páginas
+ * con elipsis cuando hay muchas páginas disponibles.
+ */
+
 import { Pagination } from "react-bootstrap";
 import { usePagination } from "../hooks/usePagination";
 

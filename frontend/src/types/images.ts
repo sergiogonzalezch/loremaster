@@ -1,8 +1,14 @@
-// frontend/src/types/image.ts
+/**
+ * Tipos TypeScript para imágenes generadas (espejo del backend).
+ */
 
+/** Estado de una imagen en el sistema. */
 export type ImageStatus = "pending" | "confirmed" | "discarded";
+
+/** Backends soportados para generación de imágenes. */
 export type ImageBackend = "mock" | "comfyui" | "local" | "runpod";
 
+/** Registro individual de una imagen generada. */
 export interface ImageRecord {
   id: string;
   generation_id: string;
@@ -24,6 +30,7 @@ export interface ImageRecord {
 
 export type ImageRecordData = ImageRecord;
 
+/** Generación de imágenes (batch) con sus registros. */
 export interface ImageGenerationItem {
   id: string;
   entity_id: string;
@@ -41,11 +48,13 @@ export interface ImageGenerationItem {
   images: ImageRecord[];
 }
 
+/** Respuesta de listado de generaciones de imágenes. */
 export interface ImageGenerationListResponse {
   generations: ImageGenerationItem[];
   total: number;
 }
 
+/** Payload para generar imágenes. */
 export interface GenerateImageRequest {
   content_id: string;
   auto_prompt: string;
@@ -54,6 +63,7 @@ export interface GenerateImageRequest {
   seed_base?: number;
 }
 
+/** Respuesta tras generar imágenes. */
 export interface GenerateImagesResponse {
   generation_id: string;
   auto_prompt: string;

@@ -32,6 +32,17 @@ interface Props {
   onDocumentsMutated: () => void;
 }
 
+/**
+ * Pestaña de documentos dentro del detalle de una colección.
+ *
+ * Lista los documentos de la colección con filtros por nombre y estado,
+ * permite subir nuevos archivos (PDF o TXT), reintentar documentos
+ * fallidos, eliminar documentos y ver su detalle. Gestiona el polling
+ * automático de documentos en proceso.
+ *
+ * @param collectionId - Identificador de la colección.
+ * @param onDocumentsMutated - Callback cuando la lista de documentos cambia.
+ */
 export default function DocumentsTab({
   collectionId,
   onDocumentsMutated,
@@ -70,6 +81,11 @@ export default function DocumentsTab({
   const [processingDocs, setProcessingDocs] = useState<Document[]>([]);
   const [retrying, setRetrying] = useState<Set<string>>(new Set());
 
+  /**
+   * Carga la lista de documentos aplicando filtros y paginación.
+   *
+   * @param signal - Señal de aborto para cancelar la petición.
+   */
   const fetchDocuments = useCallback(
     async (signal?: AbortSignal) => {
       setLoading(true);
@@ -173,6 +189,12 @@ export default function DocumentsTab({
     };
   }, [processingDocs, collectionId, fetchDocuments, onDocumentsMutated]);
 
+  /**
+   * Reintenta la ingestión de un documento fallido y lo mueve
+   * a la lista de documentos en proceso.
+   *
+   * @param doc - Documento a reintentar.
+   */
   async function handleRetry(doc: Document) {
     setRetrying((prev) => new Set(prev).add(doc.id));
     try {
@@ -192,6 +214,12 @@ export default function DocumentsTab({
     }
   }
 
+  /**
+   * Sube un nuevo archivo a la colección y lo añade a la lista
+   * de documentos en proceso.
+   *
+   * @param e - Evento de cambio del input de tipo archivo.
+   */
   async function handleUpload(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -216,6 +244,12 @@ export default function DocumentsTab({
     }
   }
 
+  /**
+   * Abre el modal de detalle cargando la información completa
+   * de un documento.
+   *
+   * @param docId - Identificador del documento.
+   */
   async function handleOpenDocumentDetail(docId: string) {
     setLoadingDocumentDetail(true);
     try {

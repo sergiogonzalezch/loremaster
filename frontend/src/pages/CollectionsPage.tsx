@@ -27,6 +27,13 @@ import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { usePagination } from "../hooks/usePagination";
 import { useDeleteConfirm } from "../hooks/useDeleteConfirm";
 
+/**
+ * Página de listado y gestión de colecciones.
+ *
+ * Muestra las colecciones del usuario autenticado con filtros por nombre,
+ * rango de fechas y orden. Permite crear, editar y eliminar colecciones,
+ * así como navegar al detalle de cada una.
+ */
 export default function CollectionsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -74,6 +81,12 @@ export default function CollectionsPage() {
 
   const debouncedName = useDebouncedValue(name);
 
+  /**
+   * Actualiza los parámetros de búsqueda de la URL sincronizando
+   * el estado del filtro con la query string.
+   *
+   * @param updates - Mapa de clave-valor con los parámetros a modificar.
+   */
   const setParam = useCallback(
     (updates: Record<string, string | null>) => {
       const next = new URLSearchParams(searchParams);
@@ -89,6 +102,12 @@ export default function CollectionsPage() {
     [searchParams, setSearchParams],
   );
 
+  /**
+   * Carga las colecciones desde la API aplicando los filtros
+   * y paginación actuales.
+   *
+   * @param signal - Señal de aborto para cancelar la petición.
+   */
   const fetchCollections = useCallback(
     async (signal?: AbortSignal) => {
       setLoading(true);
@@ -145,12 +164,22 @@ export default function CollectionsPage() {
     );
   }, [collections, navigate]);
 
+  /**
+   * Abre el modal de edición cargando los datos de la colección seleccionada.
+   *
+   * @param col - Colección a editar.
+   */
   function handleOpenEdit(col: Collection) {
     setEditTarget(col);
     setEditName(col.name);
     setEditDescription(col.description);
   }
 
+  /**
+   * Guarda los cambios realizados en el modal de edición de colección.
+   *
+   * @param e - Evento del formulario de edición.
+   */
   async function handleSaveEdit(e: FormEvent) {
     e.preventDefault();
     if (!editTarget) return;
@@ -169,6 +198,11 @@ export default function CollectionsPage() {
     }
   }
 
+  /**
+   * Crea una nueva colección con los datos introducidos en el modal.
+   *
+   * @param e - Evento del formulario de creación.
+   */
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
     setCreating(true);

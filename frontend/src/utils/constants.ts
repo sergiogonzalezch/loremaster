@@ -1,5 +1,10 @@
+/**
+ * Constantes de la aplicación: etiquetas, mapeos de categorías y límites.
+ */
+
 import type { ContentCategory, EntityType } from "./enums";
 
+/** Variante Bootstrap Badge para cada tipo de entidad. */
 export const ENTITY_TYPE_BADGE: Record<EntityType, string> = {
   character: "primary",
   creature: "info",
@@ -8,6 +13,7 @@ export const ENTITY_TYPE_BADGE: Record<EntityType, string> = {
   item: "secondary",
 };
 
+/** Etiqueta legible para cada tipo de entidad. */
 export const ENTITY_TYPE_LABELS: Record<EntityType, string> = {
   character: "Personaje",
   creature: "Criatura",
@@ -16,6 +22,7 @@ export const ENTITY_TYPE_LABELS: Record<EntityType, string> = {
   item: "Objeto",
 };
 
+/** Mapeo de tipos de entidad a las categorías de contenido que soportan. */
 export const ENTITY_CATEGORY_MAP: Record<EntityType, ContentCategory[]> = {
   character: ["backstory", "extended_description", "scene", "chapter"],
   creature: ["backstory", "extended_description", "scene"],
@@ -24,6 +31,7 @@ export const ENTITY_CATEGORY_MAP: Record<EntityType, ContentCategory[]> = {
   item: ["backstory", "extended_description"],
 };
 
+/** Etiqueta legible para cada categoría de contenido. */
 export const CATEGORY_LABELS: Record<ContentCategory, string> = {
   backstory: "Trasfondo",
   extended_description: "Descripción extendida",
@@ -31,5 +39,8 @@ export const CATEGORY_LABELS: Record<ContentCategory, string> = {
   chapter: "Capítulo",
 };
 
+/** Longitud mínima de la query para generación de contenido. */
 export const MIN_QUERY_LENGTH = 5;
+
+/** Límite máximo de tokens para generación de contenido. */
 export const MAX_GENERATION_TOKENS = 2000;

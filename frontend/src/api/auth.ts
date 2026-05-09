@@ -1,3 +1,7 @@
+/**
+ * Endpoints de autenticación: login, registro y logout.
+ */
+
 import { apiFetch } from "./apiClient";
 
 interface TokenResponse {
@@ -16,6 +20,7 @@ interface RegisterCredentials {
   password: string;
 }
 
+/** Inicia sesión y retorna el token JWT. */
 export function login(credentials: LoginCredentials): Promise<TokenResponse> {
   return apiFetch<TokenResponse>("/auth/login", {
     method: "POST",
@@ -23,6 +28,7 @@ export function login(credentials: LoginCredentials): Promise<TokenResponse> {
   });
 }
 
+/** Registra un nuevo usuario y retorna el token JWT. */
 export function register(
   credentials: RegisterCredentials,
 ): Promise<TokenResponse> {
@@ -32,6 +38,7 @@ export function register(
   });
 }
 
+/** Cierra la sesión del usuario actual (invalida el token en el backend). */
 export function logoutApi(): Promise<void> {
   return apiFetch<void>("/auth/logout", { method: "POST" });
 }

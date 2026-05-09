@@ -26,6 +26,14 @@ interface Props {
   collectionId: string;
 }
 
+/**
+ * Pestaña de entidades dentro del detalle de una colección.
+ *
+ * Lista las entidades de la colección con filtros por nombre y tipo,
+ * permite crear nuevas entidades y navegar al detalle de cada una.
+ *
+ * @param collectionId - Identificador de la colección.
+ */
 export default function EntitiesTab({ collectionId }: Props) {
   const navigate = useNavigate();
   const [entities, setEntities] = useState<Entity[]>([]);
@@ -56,6 +64,9 @@ export default function EntitiesTab({ collectionId }: Props) {
   });
   const [creating, setCreating] = useState(false);
 
+  /**
+   * Carga la lista de entidades aplicando filtros y paginación.
+   */
   const fetchEntities = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -80,6 +91,11 @@ export default function EntitiesTab({ collectionId }: Props) {
     fetchEntities();
   }, [fetchEntities]);
 
+  /**
+   * Crea una nueva entidad en la colección con los datos del formulario.
+   *
+   * @param e - Evento del formulario de creación.
+   */
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
     setCreating(true);

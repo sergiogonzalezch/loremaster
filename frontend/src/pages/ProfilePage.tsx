@@ -22,6 +22,12 @@ import { parseApiError } from "../utils/errors";
 import { formatDate } from "../utils/formatters";
 import type { UserProfile, UpdateProfileRequest } from "../types/user";
 
+/**
+ * Página de edición del perfil del usuario autenticado.
+ *
+ * Permite modificar el nombre para mostrar, la biografía y el correo
+ * electrónico, así como subir o eliminar la foto de perfil.
+ */
 export default function ProfilePage() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -51,6 +57,11 @@ export default function ProfilePage() {
       .finally(() => setLoading(false));
   }, []);
 
+  /**
+   * Valida y sube un nuevo archivo de imagen como avatar del usuario.
+   *
+   * @param e - Evento de cambio del input de tipo archivo.
+   */
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -81,6 +92,9 @@ export default function ProfilePage() {
     }
   }
 
+  /**
+   * Elimina el avatar actual del usuario.
+   */
   async function handleDeleteAvatar() {
     setError(null);
     try {
@@ -91,6 +105,12 @@ export default function ProfilePage() {
     }
   }
 
+  /**
+   * Envía los cambios del perfil al backend, actualizando solo
+   * los campos que han sido modificados.
+   *
+   * @param e - Evento del formulario de perfil.
+   */
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setSaving(true);

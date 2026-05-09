@@ -1,8 +1,13 @@
+/**
+ * Endpoints de documentos: subida, listado, reintentar y eliminar.
+ */
+
 import { apiFetch } from "./apiClient";
 import { apiGet, apiPost, apiDelete, buildQuery } from "./factory";
 import type { Document, DocumentListResponse } from "../types";
 import type { DocumentStatus } from "../utils/enums";
 
+/** Parámetros de query para listar documentos. */
 export interface DocumentsQueryParams {
   page?: number;
   page_size?: number;
@@ -14,6 +19,7 @@ export interface DocumentsQueryParams {
   order?: "asc" | "desc";
 }
 
+/** Sube un archivo a una colección para ingestión. */
 export function uploadDocument(
   collectionId: string,
   file: File,
@@ -26,6 +32,7 @@ export function uploadDocument(
   });
 }
 
+/** Lista los documentos de una colección con paginación y filtros. */
 export function getDocuments(
   collectionId: string,
   params: DocumentsQueryParams = {},
@@ -38,6 +45,7 @@ export function getDocuments(
   );
 }
 
+/** Obtiene un documento específico de una colección. */
 export function getDocument(
   collectionId: string,
   docId: string,
@@ -50,6 +58,7 @@ export function getDocument(
   );
 }
 
+/** Reintenta la ingestión de un documento fallido. */
 export function retryDocument(
   collectionId: string,
   docId: string,
@@ -59,6 +68,7 @@ export function retryDocument(
   );
 }
 
+/** Elimina un documento de una colección. */
 export function deleteDocument(
   collectionId: string,
   docId: string,

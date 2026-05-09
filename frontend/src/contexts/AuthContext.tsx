@@ -1,3 +1,10 @@
+/**
+ * Contexto de autenticación para la aplicación.
+ *
+ * Gestiona el estado del usuario autenticado, decodifica el JWT,
+ * y programa auto-logout cuando el token expira.
+ */
+
 import {
   createContext,
   useState,
@@ -8,12 +15,14 @@ import {
 import { getToken, setToken, removeToken } from "../utils/token";
 import { logoutApi } from "../api/auth";
 
+/** Datos del usuario extraídos del token JWT. */
 interface AuthUser {
   id: string;
   username: string;
   is_admin: boolean;
 }
 
+/** Valor expuesto por el contexto de autenticación. */
 interface AuthContextValue {
   user: AuthUser | null;
   login: (token: string) => void;
@@ -24,6 +33,7 @@ interface AuthContextValue {
 export const AuthContext = createContext<AuthContextValue | null>(null);
 /* eslint-enable react-refresh/only-export-components */
 
+/** Decodifica el payload del JWT para extraer datos del usuario. */
 function decodeUser(token: string): AuthUser | null {
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
@@ -37,6 +47,7 @@ function decodeUser(token: string): AuthUser | null {
   }
 }
 
+/** Extrae la fecha de expiración (en ms) de un token JWT. */
 function getTokenExpiry(token: string): number | null {
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
@@ -46,11 +57,18 @@ function getTokenExpiry(token: string): number | null {
   }
 }
 
+/** Verifica si un token JWT ya expiró. */
 function isTokenExpired(token: string): boolean {
   const expiry = getTokenExpiry(token);
   return expiry === null || expiry <= Date.now();
 }
 
+/**
+ * Provider del contexto de autenticación.
+ *
+ * Inicializa el usuario desde el token en localStorage, y programa
+ * un timer para auto-logout cuando el token expire.
+ */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => {
     const token = getToken();

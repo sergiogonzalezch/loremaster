@@ -1,3 +1,7 @@
+/**
+ * Endpoints de colecciones: CRUD y listado paginado con filtros.
+ */
+
 import { apiGet, apiPost, apiPatch, apiDelete, buildQuery } from "./factory";
 import type {
   Collection,
@@ -6,6 +10,7 @@ import type {
   CollectionListResponse,
 } from "../types";
 
+/** Parámetros de query para listar colecciones. */
 export interface CollectionsQueryParams {
   page?: number;
   page_size?: number;
@@ -15,6 +20,7 @@ export interface CollectionsQueryParams {
   order?: "asc" | "desc";
 }
 
+/** Lista las colecciones del usuario con paginación y filtros. */
 export function getCollections(
   params: CollectionsQueryParams = {},
   signal?: AbortSignal,
@@ -26,6 +32,7 @@ export function getCollections(
   );
 }
 
+/** Obtiene una colección por ID. */
 export function getCollection(
   id: string,
   signal?: AbortSignal,
@@ -33,12 +40,14 @@ export function getCollection(
   return apiGet<Collection>(`/collections/${id}`, undefined, { signal });
 }
 
+/** Crea una nueva colección. */
 export function createCollection(
   data: CreateCollectionRequest,
 ): Promise<Collection> {
   return apiPost<Collection>("/collections/", data);
 }
 
+/** Actualiza una colección existente. */
 export function updateCollection(
   id: string,
   data: UpdateCollectionRequest,
@@ -46,6 +55,7 @@ export function updateCollection(
   return apiPatch<Collection>(`/collections/${id}`, data);
 }
 
+/** Elimina una colección (soft-delete en cascada). */
 export function deleteCollection(id: string): Promise<void> {
   return apiDelete<void>(`/collections/${id}`);
 }

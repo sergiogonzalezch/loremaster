@@ -17,6 +17,13 @@ import TokenCounter from "../components/TokenCounter";
 import { useGenerate } from "../hooks/useGenerate";
 import { useCollectionDocumentsStatus } from "../hooks/useCollectionDocumentsStatus";
 
+/**
+ * Página independiente de generación de texto para una colección.
+ *
+ * Ofrece una interfaz dedicada para consultar el pipeline RAG de una
+ * colección específica, mostrando el resultado con formato Markdown
+ * y el número de fuentes utilizadas.
+ */
 export default function GeneratePage() {
   const { collectionId } = useParams<{ collectionId: string }>();
 
@@ -49,6 +56,11 @@ export default function GeneratePage() {
 
   const parsedError = error ? parseApiError(error) : null;
 
+  /**
+   * Envía la consulta al backend tras verificar que hay documentos listos.
+   *
+   * @param e - Evento del formulario de consulta.
+   */
   async function handleGenerate(e: FormEvent) {
     e.preventDefault();
     if (!collectionId) return;
@@ -60,6 +72,9 @@ export default function GeneratePage() {
     await run(collectionId, { query: trimmedQuery });
   }
 
+  /**
+   * Reenvía la última consulta para regenerar la respuesta.
+   */
   async function handleRegenerate() {
     if (!collectionId || lastQuery.trim().length < 5) return;
     const canGenerate = await refresh();

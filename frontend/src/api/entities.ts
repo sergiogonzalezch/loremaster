@@ -1,3 +1,7 @@
+/**
+ * Endpoints de entidades: CRUD y listado paginado con filtros.
+ */
+
 import { apiGet, apiPost, apiPatch, apiDelete, buildQuery } from "./factory";
 import type {
   Entity,
@@ -7,6 +11,7 @@ import type {
 } from "../types";
 import type { EntityType } from "../utils/enums";
 
+/** Parámetros de query para listar entidades. */
 export interface EntitiesQueryParams {
   page?: number;
   page_size?: number;
@@ -17,6 +22,7 @@ export interface EntitiesQueryParams {
   order?: "asc" | "desc";
 }
 
+/** Lista las entidades de una colección con paginación y filtros. */
 export function getEntities(
   collectionId: string,
   params: EntitiesQueryParams = {},
@@ -29,6 +35,7 @@ export function getEntities(
   );
 }
 
+/** Obtiene una entidad por ID dentro de una colección. */
 export function getEntity(
   collectionId: string,
   entityId: string,
@@ -41,6 +48,7 @@ export function getEntity(
   );
 }
 
+/** Crea una nueva entidad en una colección. */
 export function createEntity(
   collectionId: string,
   data: CreateEntityRequest,
@@ -48,6 +56,7 @@ export function createEntity(
   return apiPost<Entity>(`/collections/${collectionId}/entities`, data);
 }
 
+/** Actualiza una entidad existente. */
 export function updateEntity(
   collectionId: string,
   entityId: string,
@@ -59,6 +68,7 @@ export function updateEntity(
   );
 }
 
+/** Elimina una entidad de una colección. */
 export function deleteEntity(
   collectionId: string,
   entityId: string,

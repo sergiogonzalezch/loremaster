@@ -36,6 +36,13 @@ import {
   ENTITY_TYPE_LABELS,
 } from "../utils/constants";
 
+/**
+ * Página de detalle de una entidad.
+ *
+ * Muestra la información de la entidad, permite generar contenido
+ * para diferentes categorías, gestionar borradores pendientes y
+ * generar imágenes asociadas a los contenidos confirmados.
+ */
 export default function EntityDetailPage() {
   const { collectionId, entityId } = useParams<{
     collectionId: string;
@@ -87,6 +94,11 @@ export default function EntityDetailPage() {
     reset: resetGenerate,
   } = useGenerate(generateContent);
 
+  /**
+   * Carga la colección y la entidad desde la API.
+   *
+   * @param signal - Señal de aborto para cancelar la petición.
+   */
   const fetchEntityData = useCallback(
     async (signal?: AbortSignal) => {
       if (!collectionId || !entityId) return;
@@ -109,6 +121,10 @@ export default function EntityDetailPage() {
     [collectionId, entityId],
   );
 
+  /**
+   * Refresca silenciosamente los datos de la entidad sin mostrar
+   * estados de carga ni sobrescribir errores existentes.
+   */
   const refreshEntityQuiet = useCallback(async () => {
     if (!collectionId || !entityId) return;
     try {
@@ -121,6 +137,11 @@ export default function EntityDetailPage() {
     }
   }, [collectionId, entityId]);
 
+  /**
+   * Actualiza el conteo de contenidos pendientes en la categoría seleccionada.
+   *
+   * @param count - Número de contenidos pendientes.
+   */
   const handlePendingCountChange = useCallback((count: number) => {
     setPendingInCategoryCount(count);
   }, []);
@@ -145,6 +166,11 @@ export default function EntityDetailPage() {
     }
   }, [availableCategories, selectedCategory]);
 
+  /**
+   * Genera un nuevo contenido para la entidad en la categoría seleccionada.
+   *
+   * @param e - Evento del formulario de generación.
+   */
   async function handleGenerate(e: FormEvent) {
     e.preventDefault();
     if (
@@ -168,6 +194,9 @@ export default function EntityDetailPage() {
     }
   }
 
+  /**
+   * Reenvía el último prompt para regenerar contenido en la categoría activa.
+   */
   async function handleRegenerate() {
     if (
       !collectionId ||

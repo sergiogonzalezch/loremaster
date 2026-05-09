@@ -1,3 +1,7 @@
+/**
+ * Endpoints de generación de imágenes: build-prompt, generate, listar, eliminar y compartir.
+ */
+
 import { apiGet, apiPost, apiPatch, apiDelete } from "./factory";
 import type {
   GenerateImageRequest,
@@ -6,6 +10,7 @@ import type {
   ImageRecord,
 } from "../types";
 
+/** Construye el prompt visual automático para una imagen a partir de un contenido confirmado. */
 export function buildPrompt(
   collectionId: string,
   entityId: string,
@@ -22,6 +27,7 @@ export function buildPrompt(
   );
 }
 
+/** Genera un batch de imágenes para una entidad usando el prompt construido. */
 export function generateImages(
   collectionId: string,
   entityId: string,
@@ -35,6 +41,7 @@ export function generateImages(
   );
 }
 
+/** Lista las generaciones de imágenes de una entidad. */
 export function listImageGenerations(
   collectionId: string,
   entityId: string,
@@ -47,6 +54,7 @@ export function listImageGenerations(
   );
 }
 
+/** Elimina una imagen específica de una generación. */
 export function deleteImage(
   collectionId: string,
   entityId: string,
@@ -60,6 +68,7 @@ export function deleteImage(
   );
 }
 
+/** Cambia el estado de visibilidad pública de una imagen. */
 export function shareImage(
   collectionId: string,
   entityId: string,

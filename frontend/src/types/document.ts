@@ -1,6 +1,11 @@
+/**
+ * Tipos TypeScript para documentos (espejo del backend).
+ */
+
 import type { DocumentStatus } from "../utils/enums";
 import type { PaginatedMeta } from "./content";
 
+/** Documento ingestado en una colección. */
 export interface Document {
   id: string;
   collection_id: string;
@@ -12,6 +17,7 @@ export interface Document {
   created_at: string;
 }
 
+/** Respuesta paginada de documentos. */
 export interface DocumentListResponse {
   data: Document[];
   meta: PaginatedMeta;

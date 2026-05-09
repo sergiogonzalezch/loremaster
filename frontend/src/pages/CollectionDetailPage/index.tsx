@@ -9,6 +9,13 @@ import GenerateTab from "./GenerateTab";
 import type { Collection } from "../../types";
 import { getErrorMessage } from "../../utils/errors";
 
+/**
+ * Página de detalle de una colección.
+ *
+ * Organiza la vista en tres pestañas: documentos, entidades y generación
+ * de texto. Mantiene sincronizado el estado de documentos entre las
+ * pestañas de documentos y generación mediante una clave de refresco.
+ */
 export default function CollectionDetailPage() {
   const { collectionId } = useParams<{ collectionId: string }>();
   const [collection, setCollection] = useState<Collection | null>(null);
@@ -16,6 +23,9 @@ export default function CollectionDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [documentsRefreshKey, setDocumentsRefreshKey] = useState(0);
 
+  /**
+   * Carga los datos básicos de la colección desde la API.
+   */
   const fetchCollection = useCallback(async () => {
     if (!collectionId) return;
     setError(null);

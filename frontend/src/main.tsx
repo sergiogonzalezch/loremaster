@@ -1,3 +1,9 @@
+/**
+ * Punto de entrada de la aplicación React.
+ *
+ * Monta el árbol de componentes en el DOM con StrictMode habilitado.
+ */
+
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "bootstrap/dist/css/bootstrap.min.css";

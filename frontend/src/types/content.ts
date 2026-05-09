@@ -1,5 +1,10 @@
+/**
+ * Tipos TypeScript para contenidos de entidades y paginación.
+ */
+
 import type { ContentCategory, ContentStatus } from "../utils/enums";
 
+/** Contenido generado para una entidad (backstory, scene, etc.). */
 export interface EntityContent {
   id: string;
   entity_id: string;
@@ -19,14 +24,17 @@ export interface EntityContent {
   updated_at: string | null;
 }
 
+/** Payload para generar contenido. */
 export interface GenerateContentRequest {
   query: string;
 }
 
+/** Payload para actualizar contenido. */
 export interface UpdateContentRequest {
   content: string;
 }
 
+/** Metadata de paginación para respuestas de listado. */
 export interface PaginatedMeta {
   total: number;
   page: number;
@@ -34,6 +42,7 @@ export interface PaginatedMeta {
   total_pages: number;
 }
 
+/** Respuesta paginada genérica. */
 export interface PaginatedResponse<T> {
   data: T[];
   meta: PaginatedMeta;

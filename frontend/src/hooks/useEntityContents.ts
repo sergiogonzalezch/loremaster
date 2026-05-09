@@ -1,3 +1,10 @@
+/**
+ * Hook para cargar y refrescar los contenidos de una entidad.
+ *
+ * Mantiene estado de carga, error y metadatos de paginación.
+ * Soporta filtros por categoría y estado, y silenciamiento del spinner.
+ */
+
 import { useState, useCallback } from "react";
 import { getContents } from "../api/contents";
 import { ApiAbortError } from "../api/apiClient";
@@ -19,6 +26,7 @@ export function useEntityContents(
     total_pages: 0,
   });
 
+  /** Recarga los contenidos con los filtros y paginación indicados. */
   const refresh = useCallback(
     async (options?: {
       signal?: AbortSignal;

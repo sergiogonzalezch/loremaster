@@ -1,3 +1,7 @@
+/**
+ * Barrel exports de todos los módulos de la API.
+ */
+
 export * from "./collections";
 export * from "./documents";
 export * from "./entities";

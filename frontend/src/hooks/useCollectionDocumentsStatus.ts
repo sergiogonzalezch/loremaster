@@ -1,3 +1,14 @@
+/**
+ * Hook para monitorear el estado de los documentos de una colección.
+ *
+ * Detecta si hay documentos completados y si hay documentos en procesamiento.
+ * Cuando hay documentos procesando, hace polling cada 3 segundos hasta
+ * que todos terminen.
+ *
+ * @param collectionId - ID de la colección a monitorear
+ * @returns Estado de documentos y función refresh para forzar recarga
+ */
+
 import { useCallback, useEffect, useState } from "react";
 import { getDocuments } from "../api";
 import { ApiAbortError } from "../api/apiClient";

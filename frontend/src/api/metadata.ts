@@ -1,16 +1,23 @@
+/**
+ * Endpoints de metadata: categorías por tipo de entidad y límites de la app.
+ */
+
 import { apiGet } from "./factory";
 import type { EntityType, ContentCategory } from "../utils/enums";
 
+/** Obtiene el mapa de categorías válidas por tipo de entidad. */
 export function getEntityCategories(): Promise<
   Record<EntityType, ContentCategory[]>
 > {
   return apiGet<Record<EntityType, ContentCategory[]>>("/entity-categories");
 }
 
+/** Límites configurados de la aplicación. */
 export interface AppLimits {
   max_pending_contents: number;
 }
 
+/** Obtiene los límites operativos de la aplicación. */
 export function getLimits(): Promise<AppLimits> {
   return apiGet<AppLimits>("/limits");
 }

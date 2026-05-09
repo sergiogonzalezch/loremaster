@@ -1,3 +1,8 @@
+/**
+ * Tipos TypeScript para usuarios, perfiles públicos y administración.
+ */
+
+/** Perfil del usuario autenticado. */
 export interface UserProfile {
   id: string;
   username: string;
@@ -7,6 +12,7 @@ export interface UserProfile {
   created_at: string;
 }
 
+/** Payload para actualizar el perfil. */
 export interface UpdateProfileRequest {
   display_name?: string | null;
   bio?: string | null;
@@ -14,6 +20,7 @@ export interface UpdateProfileRequest {
   email?: string | null;
 }
 
+/** Item de contenido compartido en perfil público. */
 export interface SharedContentItem {
   id: string;
   content: string;
@@ -24,6 +31,7 @@ export interface SharedContentItem {
   created_at: string;
 }
 
+/** Item del feed público de contenidos. */
 export interface PublicFeedItem {
   content_id: string;
   content: string;
@@ -37,6 +45,7 @@ export interface PublicFeedItem {
   created_at: string;
 }
 
+/** Item de imagen compartida en perfil público. */
 export interface SharedImageItem {
   id: string;
   generation_id: string;
@@ -50,6 +59,7 @@ export interface SharedImageItem {
   created_at: string;
 }
 
+/** Item del feed público de imágenes. */
 export interface PublicImageItem {
   image_id: string;
   generation_id: string;
@@ -65,6 +75,7 @@ export interface PublicImageItem {
   created_at: string;
 }
 
+/** Perfil público de un usuario. */
 export interface PublicProfile {
   username: string;
   display_name: string | null;
@@ -74,11 +85,13 @@ export interface PublicProfile {
   shared_images: SharedImageItem[];
 }
 
+/** Respuesta de operaciones de avatar. */
 export interface AvatarResponse {
   avatar_url: string | null;
   has_avatar: boolean;
 }
 
+/** Registro de usuario para el panel de administración. */
 export interface UserAdminRecord {
   id: string;
   username: string;

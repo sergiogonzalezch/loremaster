@@ -1,3 +1,12 @@
+/**
+ * Hook para ejecutar funciones de API con soporte de cancelación vía AbortSignal.
+ *
+ * Útil para operaciones largas como generación de contenido con LLM,
+ * donde el usuario puede querer cancelar la petición en curso.
+ *
+ * La función envuelta debe aceptar AbortSignal como último argumento.
+ */
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiAbortError } from "../api/apiClient";
 
@@ -23,8 +32,8 @@ export interface UseGenerateReturn<TArgs extends unknown[], TResult> {
 }
 
 /**
- * Envuelve una función de API que acepta AbortSignal como último argumento.
- * Permite cancelar la petición en curso (útil para generaciones LLM largas).
+ * @param fn - Función de API que acepta AbortSignal como último argumento
+ * @returns Estado de la ejecución y controles run/cancel/reset
  */
 export function useGenerate<TArgs extends unknown[], TResult>(
   fn: RunFn<TArgs, TResult>,
@@ -46,14 +55,17 @@ export function useGenerate<TArgs extends unknown[], TResult>(
     };
   }, []);
 
+  /** Cancela la petición en curso. */
   const cancel = useCallback(() => {
     controllerRef.current?.abort();
   }, []);
 
+  /** Resetea el estado a valores iniciales. */
   const reset = useCallback(() => {
     setState({ data: null, error: null, isLoading: false, isCancelled: false });
   }, []);
 
+  /** Ejecuta la función con un nuevo AbortController. */
   const run = useCallback(
     async (...args: TArgs): Promise<TResult | null> => {
       controllerRef.current?.abort();

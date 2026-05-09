@@ -21,6 +21,13 @@ import type { PaginatedResponse } from "../types";
 
 const PAGE_SIZE = 12;
 
+/**
+ * Página de feed público con contenido e imágenes compartidas.
+ *
+ * Muestra un muro de lore público generado por la comunidad,
+ * incluyendo tarjetas de contenido narrativo e imágenes compartidas.
+ * Permite navegar por páginas y abrir modales con el detalle completo.
+ */
 export default function PublicFeedPage() {
   const [items, setItems] = useState<PublicFeedItem[]>([]);
   const [images, setImages] = useState<PublicImageItem[]>([]);
@@ -33,6 +40,9 @@ export default function PublicFeedPage() {
     null,
   );
 
+  /**
+   * Carga el feed público y las imágenes compartidas en paralelo.
+   */
   useEffect(() => {
     const ctrl = new AbortController();
     setLoading(true);

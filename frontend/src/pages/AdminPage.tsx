@@ -18,6 +18,13 @@ import type { UserAdminRecord } from "../types/user";
 
 const PAGE_SIZE = 20;
 
+/**
+ * Panel de administración para gestionar usuarios del sistema.
+ *
+ * Muestra un listado paginado de todos los usuarios registrados
+ * con información de roles, estados y fechas. Permite a los
+ * administradores eliminar (desactivar) cuentas de usuario.
+ */
 export default function AdminPage() {
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<UserAdminRecord[]>([]);
@@ -33,6 +40,9 @@ export default function AdminPage() {
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
+  /**
+   * Carga el listado paginado de usuarios desde el endpoint de admin.
+   */
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -51,6 +61,9 @@ export default function AdminPage() {
     fetchUsers();
   }, [fetchUsers]);
 
+  /**
+   * Desactiva el usuario seleccionado y refresca el listado.
+   */
   async function handleDelete() {
     if (!deleteTarget) return;
     setDeleting(true);

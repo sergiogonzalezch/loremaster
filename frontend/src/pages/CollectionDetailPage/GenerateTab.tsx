@@ -20,6 +20,16 @@ interface Props {
   refreshKey: number;
 }
 
+/**
+ * Pestaña de generación de texto dentro del detalle de una colección.
+ *
+ * Permite realizar consultas RAG sobre los documentos procesados de la
+ * colección, mostrando la respuesta generada por el LLM junto con el
+ * número de fuentes consultadas.
+ *
+ * @param collectionId - Identificador de la colección.
+ * @param refreshKey - Clave que fuerza la recarga del estado de documentos.
+ */
 export default function GenerateTab({ collectionId, refreshKey }: Props) {
   const [query, setQuery] = useState("");
   const [lastQuery, setLastQuery] = useState("");
@@ -47,6 +57,11 @@ export default function GenerateTab({ collectionId, refreshKey }: Props) {
     return () => controller.abort();
   }, [refreshKey, refresh]);
 
+  /**
+   * Envía la consulta al backend para generar texto basado en RAG.
+   *
+   * @param e - Evento del formulario de consulta.
+   */
   async function handleGenerate(e: FormEvent) {
     e.preventDefault();
     const trimmedQuery = query.trim();
@@ -55,6 +70,9 @@ export default function GenerateTab({ collectionId, refreshKey }: Props) {
     await run(collectionId, { query: trimmedQuery });
   }
 
+  /**
+   * Reenvía la última consulta para regenerar la respuesta.
+   */
   async function handleRegenerate() {
     if (lastQuery.trim().length < 5 || !hasCompletedDocs) return;
     await run(collectionId, { query: lastQuery.trim() });

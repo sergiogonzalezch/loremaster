@@ -1,9 +1,17 @@
+/**
+ * Barra de navegación superior con branding, enlaces y menú de usuario.
+ *
+ * Muestra el avatar del usuario (o iniciales como fallback), enlaces a
+ * colecciones, perfil público, admin (si aplica) y logout.
+ */
+
 import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Container, Dropdown } from "react-bootstrap";
 import { useAuth } from "../hooks/useAuth";
 import { getMyAvatar } from "../api/users";
 
+/** Círculo con las iniciales del usuario como avatar fallback. */
 function InitialsCircle({ username }: { username: string }) {
   const initials = username.slice(0, 2).toUpperCase();
   return (

@@ -1,5 +1,20 @@
+/**
+ * Utilidades para extraer mensajes de error de excepciones y formatearlos
+ * para mostrar al usuario con el nivel de severidad adecuado.
+ */
+
 import { ApiError } from "../api/apiClient";
 
+/**
+ * Extrae un mensaje legible de cualquier error.
+ *
+ * Prioriza el mensaje de ApiError (ya procesado por apiClient.ts),
+ * luego Error.message, y finalmente un mensaje por defecto.
+ *
+ * @param error - Error capturado (puede ser cualquier valor)
+ * @param fallback - Mensaje por defecto si no se puede extraer ninguno
+ * @returns Mensaje de error legible
+ */
 export function getErrorMessage(
   error: unknown,
   fallback = "Error inesperado",
@@ -14,6 +29,16 @@ export function getErrorMessage(
   return fallback;
 }
 
+/**
+ * Parsea un error en un objeto con variant Bootstrap y texto legible.
+ *
+ * Los errores 4xx se marcan como "warning" (el usuario puede corregirlos),
+ * los errores 5xx y de red como "danger".
+ *
+ * @param error - Error capturado
+ * @param fallback - Mensaje por defecto para errores no ApiError
+ * @returns Objeto con la variante Bootstrap y el texto del mensaje
+ */
 export function parseApiError(
   error: unknown,
   fallback = "Error de conexión con el servidor.",

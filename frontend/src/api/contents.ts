@@ -1,3 +1,7 @@
+/**
+ * Endpoints de contenido de entidades: generar, listar, confirmar, descartar, editar y compartir.
+ */
+
 import { apiGet, apiPost, apiPatch, apiDelete, buildQuery } from "./factory";
 import type {
   EntityContent,
@@ -8,6 +12,7 @@ import type {
 import type { ContentCategory } from "../utils/enums";
 import type { Entity } from "../types";
 
+/** Parámetros de query para listar contenidos. */
 export interface ContentsQueryParams {
   category?: ContentCategory;
   status?: "active" | "pending" | "confirmed" | "discarded" | "all";
@@ -19,6 +24,7 @@ export interface ContentsQueryParams {
 const base = (collectionId: string, entityId: string) =>
   `/collections/${collectionId}/entities/${entityId}`;
 
+/** Genera contenido para una entidad en una categoría dada. */
 export function generateContent(
   collectionId: string,
   entityId: string,
@@ -33,6 +39,7 @@ export function generateContent(
   );
 }
 
+/** Lista los contenidos de una entidad con filtros y paginación. */
 export function getContents(
   collectionId: string,
   entityId: string,
@@ -50,6 +57,7 @@ export function getContents(
   );
 }
 
+/** Actualiza el texto de un contenido. */
 export function updateContent(
   collectionId: string,
   entityId: string,
@@ -62,6 +70,7 @@ export function updateContent(
   );
 }
 
+/** Confirma un contenido (descarta automáticamente los pendientes de la misma categoría). */
 export function confirmContent(
   collectionId: string,
   entityId: string,
@@ -72,6 +81,7 @@ export function confirmContent(
   );
 }
 
+/** Descarta un contenido (cambia su estado a discarded). */
 export function discardContent(
   collectionId: string,
   entityId: string,
@@ -82,6 +92,7 @@ export function discardContent(
   );
 }
 
+/** Elimina un contenido (soft-delete). */
 export function deleteContent(
   collectionId: string,
   entityId: string,
@@ -92,6 +103,7 @@ export function deleteContent(
   );
 }
 
+/** Cambia el estado de visibilidad pública (share) de un contenido. */
 export function shareContent(
   collectionId: string,
   entityId: string,

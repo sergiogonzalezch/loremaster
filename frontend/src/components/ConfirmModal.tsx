@@ -1,3 +1,10 @@
+/**
+ * Modal de confirmación reutilizable para acciones destructivas.
+ *
+ * Muestra título, mensaje y botones Confirmar/Cancelar.
+ * Soporta estado de carga (deshabilita controles y muestra spinner).
+ */
+
 import { Modal, Button, Spinner } from "react-bootstrap";
 
 interface ConfirmModalProps {

@@ -1,3 +1,9 @@
+/**
+ * Spinner de carga con texto personalizable.
+ *
+ * Usado como fallback mientras se cargan datos de la API.
+ */
+
 import { Spinner } from "react-bootstrap";
 
 interface LoadingSpinnerProps {

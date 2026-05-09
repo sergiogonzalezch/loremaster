@@ -1,3 +1,10 @@
+/**
+ * Hook para gestionar un flujo de confirmación antes de eliminar un elemento.
+ *
+ * Mantiene el elemento target seleccionado y ejecuta onDelete solo tras
+ * la confirmación del usuario (vía modal).
+ */
+
 import { useState } from "react";
 
 interface Options<T> {
@@ -9,6 +16,7 @@ export function useDeleteConfirm<T>({ onDelete, onError }: Options<T>) {
   const [target, setTarget] = useState<T | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  /** Ejecuta la eliminación del elemento seleccionado. */
   async function handleConfirm() {
     if (target === null) return;
     setDeleting(true);

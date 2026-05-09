@@ -25,6 +25,14 @@ import type {
   SharedImageItem,
 } from "../types/user";
 
+/**
+ * Página de perfil público de un usuario.
+ *
+ * Muestra la información pública del usuario (nombre, bio, avatar),
+ * sus imágenes compartidas y el lore público que ha compartido.
+ * Permite copiar el enlace al perfil y, si es el usuario autenticado,
+ * navegar a la edición de su perfil.
+ */
 export default function PublicProfilePage() {
   const { username } = useParams<{ username: string }>();
   const navigate = useNavigate();
@@ -53,6 +61,10 @@ export default function PublicProfilePage() {
     .slice(0, 2)
     .toUpperCase();
 
+  /**
+   * Copia la URL actual del perfil al portapapeles y muestra
+   * una confirmación temporal.
+   */
   function handleShare() {
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);

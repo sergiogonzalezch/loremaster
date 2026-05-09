@@ -1,3 +1,10 @@
+/**
+ * Componente raíz de la aplicación.
+ *
+ * Configura React Router con AuthProvider, rutas públicas y rutas protegidas.
+ * Las rutas dentro de ProtectedRoute requieren autenticación.
+ */
+
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import Layout from "./components/Layout";

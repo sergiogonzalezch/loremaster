@@ -1,3 +1,10 @@
+/**
+ * Hooks para envío de formularios y ejecución de acciones con estado de carga.
+ *
+ * `useFormSubmit` ejecuta una llamada API con manejo de éxito/error genérico.
+ * `useAction` es similar pero sin manejo de data de respuesta en onSuccess.
+ */
+
 import { useState, useCallback } from "react";
 import { parseApiError } from "../utils/errors";
 
@@ -6,6 +13,12 @@ interface FormSubmitOptions {
   onError?: (message: string) => void;
 }
 
+/**
+ * Hook para enviar formularios con estado de guardado.
+ *
+ * @param options - Callbacks opcionales onSuccess y onError
+ * @returns Estado saving y función submit para ejecutar la llamada
+ */
 export function useFormSubmit({ onSuccess, onError }: FormSubmitOptions = {}) {
   const [saving, setSaving] = useState(false);
 
@@ -35,6 +48,14 @@ export function useFormSubmit({ onSuccess, onError }: FormSubmitOptions = {}) {
   return { saving, submit };
 }
 
+/**
+ * Hook para ejecutar acciones con estado de carga.
+ *
+ * Similar a useFormSubmit pero orientado a acciones sin data de retorno.
+ *
+ * @param options - Callback opcional onError
+ * @returns Estado busy y función run para ejecutar la acción
+ */
 export function useAction({
   onError,
 }: { onError?: (message: string) => void } = {}) {

@@ -26,6 +26,14 @@ interface RegisterForm {
   password: string;
 }
 
+/**
+ * Página de inicio de sesión y registro de usuarios.
+ *
+ * Permite autenticarse con nombre de usuario o correo electrónico,
+ * o crear una nueva cuenta. Muestra un fondo animado de estrellas
+ * y un formulario centralizado con pestañas para alternar entre
+ * los modos de login y registro.
+ */
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login: contextLogin } = useAuth();
@@ -43,6 +51,12 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  /**
+   * Envía las credenciales de login al backend y, si son válidas,
+   * almacena el token en el contexto de autenticación.
+   *
+   * @param e - Evento del formulario de login.
+   */
   async function handleLogin(e: FormEvent) {
     e.preventDefault();
     setError(null);
@@ -59,6 +73,12 @@ export default function LoginPage() {
     }
   }
 
+  /**
+   * Registra un nuevo usuario y, tras el éxito, muestra un mensaje
+   * de confirmación y cambia automáticamente a la pestaña de login.
+   *
+   * @param e - Evento del formulario de registro.
+   */
   async function handleRegister(e: FormEvent) {
     e.preventDefault();
     setError(null);
