@@ -368,52 +368,82 @@ loremaster/
 │   │   │   ├── users/                      # Perfil propio, avatar, perfil público
 │   │   │   ├── admin.py                    # Admin: listar usuarios, eliminar colección/usuario
 │   │   │   └── metadata.py
-│   │   ├── models/                        # SQLModel (tabla ORM) + Pydantic (schemas) co-localizados
-│   │   │   ├── collections.py             # Collection (owner_id FK → users), CreateCollectionRequest, CollectionResponse
-│   │   │   ├── documents.py               # Document, DocumentStatus (processing|completed|failed)
-│   │   │   ├── entities.py                # Entity, EntityType (character|creature|location|faction|item)
+│   │   ├── models/                        # SQLModel (ORM) + Pydantic (schemas)
 │   │   │   ├── enums.py                   # ContentCategory, ContentStatus (enums compartidos)
-│   │   │   ├── entity_content.py          # EntityContent (is_shared), EntityContentResponse
-│   │   │   ├── generated_texts.py         # GeneratedText: raw_content, query, sources_count, token_count
-│   │   │   ├── image_generation.py        # ImageGeneration + ImageRecord (is_shared) + schemas de request/response
-│   │   │   ├── users.py                   # User (is_admin, token_version, is_deleted), UserProfileResponse, UpdateProfileRequest
-│   │   │   ├── rag_query.py               # RagQueryRequest, RagQueryResponse
-│   │   │   └── shared.py                  # PaginatedResponse[T] + PaginationMeta genéricos
-│   │   ├── core/
-│   │   │   ├── config.py                  # Pydantic Settings (lee .env)
-│   │   │   ├── lifespan.py                # Startup: migraciones Alembic (crítico) + health checks
-│   │   │   ├── auth_deps.py               # get_current_user (verifica firma JWT + token_version en DB) / get_admin_user
-│   │   │   ├── deps.py                    # get_collection_or_404_owned, get_entity_or_404, get_entity_or_404_owned
-│   │   │   ├── query_params.py            # PaginationParams (page, page_size)
-│   │   │   └── common.py                  # Helpers DB: soft_delete, get_active_by_id
+│   │   │   ├── shared.py                  # PaginatedResponse[T] + PaginationMeta genéricos
+│   │   │   ├── db/                        # Modelos SQLModel (tablas ORM)
+│   │   │   │   ├── collection.py          # Collection (owner_id FK → users)
+│   │   │   │   ├── document.py            # Document, DocumentStatus (processing|completed|failed)
+│   │   │   │   ├── entity.py              # Entity, EntityType (character|creature|location|faction|item)
+│   │   │   │   ├── entity_content.py      # EntityContent (is_shared)
+│   │   │   │   ├── generated_text.py      # GeneratedText: raw_content, query, sources_count, token_count
+│   │   │   │   ├── image_generation.py    # ImageGeneration + ImageRecord
+│   │   │   │   ├── moderation_log.py      # Registro de rechazos del content guard
+│   │   │   │   └── user.py                # User (is_admin, token_version, is_deleted)
+│   │   │   └── schemas/                   # Schemas Pydantic (request/response)
+│   │   │       ├── collection.py          # CreateCollectionRequest, CollectionResponse
+│   │   │       ├── document.py
+│   │   │       ├── entity.py
+│   │   │       ├── entity_content.py      # EntityContentResponse
+│   │   │       ├── image_generation.py
+│   │   │       ├── public.py              # Schemas para feed público
+│   │   │       ├── rag_query.py           # RagQueryRequest, RagQueryResponse
+│   │   │       └── user_schemas.py        # UserProfileResponse, UpdateProfileRequest
+│   │   ├── core/                          # Infraestructura y dependencias transversales
+│   │   │   ├── __init__.py                # Minimal; evita imports circulares
+│   │   │   ├── lifespan.py                # Startup: migraciones Alembic + health checks
+│   │   │   ├── auth/                      # JWT, password hashing, dependencies
+│   │   │   │   └── dependencies.py        # get_current_user, get_admin_user
+│   │   │   ├── config/                    # Pydantic Settings (lee .env)
+│   │   │   ├── database/                  # Mixins, utils, soft_delete, dependencies
+│   │   │   │   ├── mixins.py              # UUIDPrimaryKey, TimestampedModel
+│   │   │   │   ├── soft_delete.py         # SoftDeleteMixin
+│   │   │   │   ├── utils.py               # pagination helpers
+│   │   │   │   └── dependencies.py
+│   │   │   ├── api/                       # Query params, filters, schema_mixin
+│   │   │   │   ├── params.py              # PaginationParams
+│   │   │   │   ├── filters.py
+│   │   │   │   └── schema_mixin.py        # FromAttributesMixin
+│   │   │   ├── exceptions/                # Custom exception classes
+│   │   │   └── storage/                   # File storage and validation
+│   │   │       └── validator.py           # FileValidator
 │   │   ├── engine/                        # Pipeline IA — LLM + Qdrant + RAG + Imágenes
 │   │   │   ├── rag.py                     # Qdrant: ingest_chunks, search_context, delete, ping_qdrant
 │   │   │   ├── rag_pipeline.py            # invoke_rag_pipeline() (libre) + invoke_generation_pipeline() (por entidad/categoría)
 │   │   │   ├── llm.py                     # OllamaLLM singletons: llm (bare) + chain (PromptTemplate pipeline)
 │   │   │   ├── extractor.py               # Extracción de texto PDF/TXT
-│   │   │   └── image_prompt_builder.py    # Consolidado: build_prompt_from_content + generación visual (ComfyUI/mock)
+│   │   │   ├── comfyui_client.py          # Cliente HTTP/WebSocket para ComfyUI local/RunPod
+│   │   │   └── image_prompt_builder.py    # Consolidado: build_prompt_from_content + generación visual
 │   │   ├── domain/                        # Lógica de dominio pura — sin I/O ni DB
 │   │   │   ├── category_rules.py          # ENTITY_CATEGORY_MAP, validate_category_for_entity()
-│   │   │   ├── content_guard.py           # Moderación de contenido: check_user_input(), check_document_content(), check_generated_output()
+│   │   │   ├── content_guard.py           # Moderación: check_user_input(), check_document_content(), check_generated_output()
+│   │   │   ├── image_prompt_rules.py      # Reglas de construcción de prompts visuales
 │   │   │   └── prompt_templates.py        # _TEMPLATES, get_template(), render_prompt()
-│   │   └── services/                      # Lógica de negocio (reciben objetos ORM, no IDs)
-│   │       ├── collection_service.py      # delete_collection_service (wraps cascade + commit)
-│   │       ├── deletion_service.py        # cascade_delete_entity / cascade_delete_collection (sin commit)
-│   │       ├── documents_service.py       # ingest (async, con check_document_content), list, get, delete
-│   │       ├── entities_service.py        # CRUD + nombre único por colección
-│   │       ├── generation_service.py      # generate(): check_user_input → límite pending → RAG → post-flush recount → EntityContent
-│   │       ├── content_management_service.py  # list, edit, confirm (discard category-scoped), discard, share, soft_delete
-│   │       ├── image_generation_service.py    # build_prompt, generate_images, share_image, delete_image, list/get generations
-│   │       ├── user_image.py              # upload_profile_image, delete_profile_image, get_avatar_info
-│   │       └── rag_query_service.py       # execute_rag_query(): check_user_input → RAG → check_generated_output
+│   │   └── services/                      # Lógica de negocio por dominio (reciben objetos ORM, no IDs)
+│   │       ├── collection/                # collection_service
+│   │       │   └── collection_service.py  # delete_collection_service (wraps cascade + commit)
+│   │       ├── document/                  # documents_service
+│   │       │   └── documents_service.py   # ingest, list, get, delete
+│   │       ├── entity/                    # entities, content, generation
+│   │       │   ├── entities_service.py    # CRUD + nombre único por colección
+│   │       │   ├── content_service.py     # list, edit, confirm, discard, share, soft_delete
+│   │       │   └── generation_service.py  # generate(): RAG → EntityContent
+│   │       ├── image/                     # image_generation_service
+│   │       │   └── image_generation_service.py  # build_prompt, generate_images, share, delete
+│   │       ├── moderation/                # moderation_service
+│   │       │   └── moderation_service.py
+│   │       ├── profile/                   # profile_service
+│   │       │   └── profile_service.py     # upload/delete avatar
+│   │       ├── cascade_service.py         # Helpers de cascada
+│   │       └── deletion_service.py        # cascade_delete_entity / cascade_delete_collection
 │   ├── alembic/                           # Migraciones (render_as_batch=True para SQLite)
 │   ├── evaluations/                       # Evaluación end-to-end contra API en ejecución
 │   │   ├── baseline_evals.py              # Runner: 81 casos del golden dataset
 │   │   └── dataset/
 │   │       ├── golden_dataset.json        # Casos: RAG, CRUD, entity_content, guardrail, imagen, feed
 │   │       └── golden_seed.txt            # Documento semilla (Mundo de Valdorath)
-│   ├── tests/                             # pytest con SQLite in-memory; stubs de engine.rag y LLM (173 tests)
-│   ├── Makefile
+│   ├── tests/                             # pytest con SQLite in-memory; stubs de engine.rag y LLM (175 tests)
+│   ├── Makefile                           # Comandos: run, test, format, lint, install, clean, clean-all. Centraliza pycache en `.pycache/` (PYTHONPYCACHEPREFIX)
 │   ├── requirements.txt
 │   ├── requirements-dev.txt
 │   └── .env.example
@@ -423,17 +453,24 @@ loremaster/
 │   │   ├── App.tsx                        # BrowserRouter + rutas + AuthProvider
 │   │   ├── api/                           # Capa de acceso al backend
 │   │   │   ├── apiClient.ts               # fetch wrapper: apiFetch<T>, ApiError, ApiAbortError
+│   │   │   ├── factory.ts                 # Factory pattern para endpoints CRUD reutilizables
 │   │   │   ├── auth.ts                    # login() / register() / logoutApi()
 │   │   │   ├── collections.ts / documents.ts / entities.ts / contents.ts / generate.ts
-│   │   │   ├── imageGeneration.ts         # buildPrompt, generate, list, get, shareImage, deleteImage
+│   │   │   ├── images.ts                  # buildPrompt, generate, list, get, shareImage, deleteImage
 │   │   │   ├── users.ts                   # getMyProfile, updateMyProfile, getPublicProfile, getPublicFeed,
 │   │   │   │                              # getPublicImages, getMyAvatar, uploadMyAvatar, deleteMyAvatar
+│   │   │   ├── admin.ts                   # Endpoints de administración
+│   │   │   ├── metadata.ts                # Metadatos de la API
 │   │   │   ├── query.ts                   # buildQuery() — utilidad interna para query strings de URL
 │   │   │   └── index.ts                   # Re-exporta todos los módulos de api/ (no incluye query.ts)
 │   │   ├── pages/
 │   │   │   ├── LoginPage.tsx              # Formulario con tabs login/registro
 │   │   │   ├── CollectionsPage.tsx        # Listado, creación y eliminación de colecciones
-│   │   │   ├── CollectionDetailPage.tsx   # Tabs: Documentos / Entidades / Generar texto
+│   │   │   ├── CollectionDetailPage/      # Tabs: Documentos / Entidades / Generar texto
+│   │   │   │   ├── index.tsx
+│   │   │   │   ├── DocumentsTab.tsx
+│   │   │   │   ├── EntitiesTab.tsx
+│   │   │   │   └── GenerateTab.tsx
 │   │   │   ├── EntityDetailPage.tsx       # Detalle de entidad + generación de contenido + imágenes
 │   │   │   ├── GeneratePage.tsx           # Consulta RAG libre
 │   │   │   ├── ProfilePage.tsx            # Edición de perfil propio: display_name, bio, avatar, email
@@ -444,9 +481,16 @@ loremaster/
 │   │   │   ├── AppNavbar.tsx              # Dropdown: avatar/iniciales, Mi perfil público, Admin, Cerrar sesión
 │   │   │   ├── ContentCard.tsx            # Card de EntityContent: acciones por estado, busy-lock, badge ✎ editado
 │   │   │   ├── ConfirmModal.tsx           # Modal de confirmación reutilizable
+│   │   │   ├── EntityContentsPanel.tsx    # Panel de contenidos de entidad
+│   │   │   ├── EntityEditForm.tsx         # Formulario de edición de entidad
+│   │   │   ├── FilterBar.tsx              # Barra de filtros reutilizable
+│   │   │   ├── ImageGallery.tsx           # Galería de imágenes
+│   │   │   ├── ImageGenerator.tsx         # Componente de generación de imágenes
+│   │   │   ├── ImagePanel.tsx             # Panel de imágenes de entidad
 │   │   │   ├── Layout.tsx                 # AppNavbar + Outlet + StarfieldCanvas
 │   │   │   ├── LoadingSpinner.tsx         # Spinner centrado con texto opcional
 │   │   │   ├── MarkdownContent.tsx        # Markdown sanitizado (remark-gfm + rehype-sanitize)
+│   │   │   ├── PaginationControls.tsx     # Controles de paginación reutilizables
 │   │   │   ├── ProtectedRoute.tsx         # Guard: redirige a /login si no hay sesión
 │   │   │   ├── PublicContentModal.tsx     # Modal de texto compartido (markdown, badges, link al autor)
 │   │   │   ├── PublicImageModal.tsx       # Modal de imagen: imagen, seed, prompts, descarga
@@ -456,13 +500,21 @@ loremaster/
 │   │   │   └── AuthContext.tsx            # AuthProvider + AuthContext: { id, username, is_admin } -- valida exp al init, auto-logout timer, server logout al cerrar sesión
 │   │   ├── hooks/
 │   │   │   ├── useAuth.ts                       # Acceso al contexto de autenticación
-│   │   │   ├── useGenerate.ts                   # Peticiones LLM cancelables con AbortSignal
-│   │   │   ├── useEntityContents.ts             # Fetching/refresco de contenidos de entidad
+│   │   │   ├── useApiError.ts                   # Manejo centralizado de errores de API
 │   │   │   ├── useCollectionDocumentsStatus.ts  # Polling cada 3s si hay documentos processing
-│   │   │   └── useDebouncedValue.ts             # Debounce configurable (default 300 ms)
+│   │   │   ├── useDebouncedValue.ts             # Debounce configurable (default 300 ms)
+│   │   │   ├── useDeleteConfirm.ts              # Confirmación antes de eliminar
+│   │   │   ├── useEntityContents.ts             # Fetching/refresco de contenidos de entidad
+│   │   │   ├── useFormSubmit.ts                 # Manejo de submits de formulario
+│   │   │   ├── useGenerate.ts                   # Peticiones LLM cancelables con AbortSignal
+│   │   │   └── usePagination.ts                 # Paginación reutilizable
+│   │   ├── test/                          # Tests unitarios (React Testing Library)
 │   │   ├── types/                         # Tipos TypeScript (espejo exacto de schemas del backend)
+│   │   │   ├── collection.ts / content.ts / document.ts / entity.ts / generate.ts
+│   │   │   ├── images.ts / user.ts
+│   │   │   └── index.ts
 │   │   └── utils/                         # enums.ts, constants.ts, errors.ts (mensajes en español),
-│   │                                      # formatters.ts, tokens.ts
+│   │                                      # formatters.ts, strings.ts, token.ts, tokens.ts
 │   └── package.json
 │
 ├── docker-compose.yml
@@ -604,14 +656,14 @@ DATABASE_URL=postgresql://user:pass@postgres:5432/loremaster
 
 | **Tabla** | **Campos principales** | **Notas / Restricciones** |
 |---|---|---|
-| **users** | id (UUID PK), username (unique), hashed_password, email (unique), display_name, bio, avatar_url, is_admin, token_version, created_at, is_deleted, deleted_at | Campos de perfil opcionales. `is_admin` designado vía `scripts/make_admin.py`, nunca por API pública. Un admin soft-deleted no puede autenticarse. `token_version` se incrementa en cada logout para invalidar tokens previos. |
+| **users** | id (UUID PK), username (unique), hashed_password, email (unique), display_name, bio, avatar_path, is_admin, token_version, created_at, is_deleted, deleted_at | Campos de perfil opcionales. `is_admin` designado vía `scripts/make_admin.py`, nunca por API pública. Un admin soft-deleted no puede autenticarse. `token_version` se incrementa en cada logout para invalidar tokens previos. |
 | **collections** | id (UUID PK), name, description, owner_id (FK → users), is_public, created_at, updated_at, is_deleted, deleted_at | `UNIQUE(name, owner_id)`. `owner_id` nullable para datos migrados. `is_public=False` por defecto; el contenido se comparte de forma selectiva a nivel de ítem. |
 | **documents** | id (UUID PK), collection_id (FK), filename, file_type, chunk_count, status, created_at, is_deleted, deleted_at | El texto vive en Qdrant, no en esta tabla. `status`: processing \| completed \| failed. |
 | **entities** | id (UUID PK), collection_id (FK), type (ENUM), name, description, created_at, updated_at, is_deleted, deleted_at | `type`: character \| creature \| location \| faction \| item. Nombre único por colección: `uq_entity_collection_name`. Los nombres de entidades eliminadas quedan reservados. |
 | **generated_texts** | id (UUID PK), entity_id (FK), collection_id (FK), category, query, raw_content, sources_count, token_count, created_at | Salida bruta del LLM antes de cualquier edición del usuario. Vinculada 1:1 con `entity_contents`. |
 | **entity_contents** | id (UUID PK), entity_id (FK), collection_id (FK), generated_text_id (FK), category, content, status, is_shared, confirmed_at, created_at, updated_at, is_deleted, deleted_at | `status`: pending \| confirmed \| discarded. Máx. 5 `pending` por entidad y por categoría. Confirmar descarta los demás `pending` de esa categoría. `is_shared`: solo `confirmed` puede compartirse. |
-| **image_generations** | id (UUID PK), entity_id (FK), collection_id (FK), content_id (FK), auto_prompt, final_prompt, batch_size, backend, created_at, is_deleted, deleted_at | Una generación produce N imágenes (batch_size 1-4). `backend`: comfyui \| mock. |
-| **image_records** | id (UUID PK), generation_id (FK), entity_id (FK), collection_id (FK), image_url, storage_path, seed, is_shared, is_deleted, deleted_at, created_at | Una fila por imagen del batch. `is_shared` controla visibilidad en feed público. |
+| **image_generations** | id (UUID PK), entity_id (FK), collection_id (FK), content_id (FK), category, auto_prompt, final_prompt, prompt_token_count, batch_size, backend, width, height, created_at, is_deleted, deleted_at | Una generación produce N imágenes (batch_size 1-4). `backend`: comfyui \| mock. `category` vincula el contenido base usado para el prompt. |
+| **image_records** | id (UUID PK), generation_id (FK), entity_id (FK), collection_id (FK), seed, storage_path, image_url, filename, extension, width, height, generation_ms, is_shared, is_deleted, deleted_at, created_at | Una fila por imagen del batch. `is_shared` controla visibilidad en feed público. `filename` y `extension` identifican el archivo generado. `generation_ms` mide el tiempo de generación. |
 | **moderation_log** | id (UUID PK), layer, snippet, created_at | `layer`: input \| document \| output. Registra cada rechazo del guardrail con los primeros 200 chars. |
 | **entity_relations** | id (UUID PK), source_id (FK entities), target_id (FK entities), relation_type, created_at | Planificado. ENUM: belongs_to, contains, allied_with, enemy_of. |
 
