@@ -1,3 +1,8 @@
+"""Paquete raíz de la aplicación Lore Master.
+
+Configura el prefijo de pycache centralizado al importar el paquete.
+"""
+
 from __future__ import annotations
 
 import os
@@ -6,8 +11,7 @@ from pathlib import Path
 
 
 def _configure_pycache_prefix() -> None:
-    """
-    Centraliza los archivos .pyc del proyecto en backend/.pycache.
+    """Centraliza los archivos .pyc del proyecto en backend/.pycache.
 
     Se ejecuta al importar el paquete `app` (por ejemplo, al correr
     `uvicorn app.main:app --reload` o en contenedores Docker con el mismo

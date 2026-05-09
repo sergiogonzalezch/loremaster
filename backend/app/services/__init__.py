@@ -1,3 +1,5 @@
+"""Re-exportación de todos los servicios de la aplicación."""
+
 from app.services.collection import (
     create_collection_service,
     delete_collection_service,
@@ -24,7 +26,6 @@ from app.services.entity import (
     share_content,
     soft_delete_content,
     update_entity_service,
-    count_pending_contents,
 )
 from app.services.cascade_service import (
     cascade_delete_by_entity,
@@ -69,7 +70,6 @@ __all__ = [
     "share_content",
     "soft_delete_content",
     "update_entity_service",
-    "count_pending_contents",
     "build_prompt_service",
     "delete_image_service",
     "generate_images_service",

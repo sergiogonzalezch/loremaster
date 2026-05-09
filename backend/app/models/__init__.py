@@ -1,3 +1,5 @@
+"""Re-exportación de todos los modelos de base de datos."""
+
 from app.models.db.collection import Collection
 from app.models.db.document import Document
 from app.models.db.entity import Entity

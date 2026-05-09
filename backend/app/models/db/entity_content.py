@@ -8,6 +8,26 @@ from app.models.enums import ContentCategory, ContentStatus
 
 
 class EntityContent(SQLModel, SoftDeleteMixin, table=True):
+    """Contenido generado por RAG asociado a una entidad.
+
+    Representa una versión del contenido (backstory, scene, etc.) con su
+    estado de revisión. La información original de la generación se almacena
+    en GeneratedText.
+
+    Attributes:
+        id: Identificador único UUID.
+        entity_id: Entidad a la que pertenece el contenido.
+        collection_id: Colección de la entidad.
+        generated_text_id: Referencia al GeneratedText con metadata de la generación.
+        category: Categoría del contenido (backstory, scene, etc.).
+        content: Texto final (puede ser editado tras la generación).
+        status: Estado del ciclo de vida (pending, confirmed, discarded).
+        is_shared: Si el contenido ha sido compartido en el feed público.
+        created_at: Fecha y hora de creación (UTC).
+        confirmed_at: Fecha y hora de confirmación (UTC), o None.
+        updated_at: Fecha y hora de última modificación (UTC).
+    """
+
     __tablename__ = "entity_contents"
 
     id: str = Field(

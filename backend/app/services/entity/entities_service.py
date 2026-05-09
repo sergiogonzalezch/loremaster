@@ -28,6 +28,19 @@ def _find_by_name(session: Session, collection_id: str, name: str) -> Entity | N
 def create_entity_service(
     session: Session, request: CreateEntityRequest, collection_id: str
 ) -> Entity:
+    """Crea una nueva entidad dentro de una colección.
+
+    Args:
+        session: Sesión de base de datos activa.
+        request: Datos de la entidad a crear.
+        collection_id: Identificador de la colección.
+
+    Returns:
+        Instancia de la entidad creada.
+
+    Raises:
+        DuplicateEntityNameError: Si ya existe una entidad con ese nombre.
+    """
     name = request.name.strip()
     description = request.description.strip()
     if _find_by_name(session, collection_id, name):
@@ -60,6 +73,22 @@ def list_entities_service(
     created_before: Optional[datetime] = None,
     order: Literal["asc", "desc"] = "desc",
 ) -> tuple[list[Entity], int]:
+    """Lista las entidades de una colección con paginación y filtros.
+
+    Args:
+        session: Sesión de base de datos activa.
+        collection_id: Identificador de la colección.
+        page: Número de página.
+        page_size: Elementos por página.
+        name: Filtrar por nombre (búsqueda parcial).
+        entity_type: Filtrar por tipo de entidad.
+        created_after: Filtrar por fecha de creación mínima.
+        created_before: Filtrar por fecha de creación máxima.
+        order: Orden ascendente o descendente.
+
+    Returns:
+        Tupla de (lista de entidades, total de resultados).
+    """
     conditions = [
         Entity.collection_id == collection_id,
         Entity.is_deleted == False,
@@ -87,6 +116,19 @@ def list_entities_service(
 def update_entity_service(
     session: Session, entity: Entity, request: UpdateEntityRequest
 ) -> Entity:
+    """Actualiza los campos de una entidad existente.
+
+    Args:
+        session: Sesión de base de datos activa.
+        entity: Instancia de la entidad a actualizar.
+        request: Esquema con los campos a modificar.
+
+    Returns:
+        Instancia de la entidad actualizada.
+
+    Raises:
+        DuplicateEntityNameError: Si el nuevo nombre ya está en uso.
+    """
     new_name = request.name.strip() if request.name is not None else entity.name
     if new_name != entity.name and _find_by_name(
         session, entity.collection_id, new_name
@@ -113,6 +155,15 @@ def update_entity_service(
 
 
 def delete_entity_service(session: Session, entity: Entity) -> bool:
+    """Elimina una entidad y todos sus contenidos en cascada.
+
+    Args:
+        session: Sesión de base de datos activa.
+        entity: Instancia de la entidad a eliminar.
+
+    Returns:
+        True siempre (la eliminación en cascada se encarga de todo).
+    """
     cascade_delete_entity(session, entity)
     db_commit(session, f"delete_entity({entity.id})")
     logger.info(

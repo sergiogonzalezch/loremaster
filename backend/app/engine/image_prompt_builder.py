@@ -1,6 +1,8 @@
-# Engine para construcción de prompts visuales para generación de imágenes
-# Fusiona: prompt_builder + image_pipeline
-# Usa LLM para extraer tipo específico + atributos visuales del contenido confirmado
+"""Motor para construcción de prompts visuales para generación de imágenes.
+
+Fusiona: prompt_builder + image_pipeline.
+Usa LLM para extraer tipo específico + atributos visuales del contenido confirmado.
+"""
 
 import logging
 import threading
@@ -24,9 +26,11 @@ _llm_semaphore = threading.Semaphore(settings.max_concurrent_llm_calls)
 generation_chain = None
 
 QUALITY_SUFFIX = "high quality, masterpiece, sharp focus, professional digital art"
+"""Sufijo de calidad añadido a todos los prompts visuales."""
 
 
 def _get_generation_chain():
+    """Inicializa lazy la cadena de generación del LLM."""
     global generation_chain
     if generation_chain is None:
         from app.engine.llm import llm
@@ -36,12 +40,12 @@ def _get_generation_chain():
 
 
 def _estimate_tokens(text: str) -> int:
-    """~4 chars por token."""
+    """Estima tokens usando ~4 caracteres por token."""
     return max(0, len(text) // 4)
 
 
 def _truncate_to_tokens(text: str, max_tokens: int) -> str:
-    """Trunca a max_tokens preservando palabras completas."""
+    """Trunca el texto a max_tokens preservando palabras completas."""
     if _estimate_tokens(text) <= max_tokens:
         return text
     words = text.split()
@@ -60,7 +64,13 @@ def _extract_with_llm(
     category: ContentCategory,
     target_tokens: int,
 ) -> tuple[str, str]:
-    """Usa el LLM para extraer tipo específico y atributos visuales."""
+    """Usa el LLM para extraer tipo específico y atributos visuales del contenido.
+
+    Retorna una tupla (tipo_especifico, atributos).
+
+    Raises:
+        RuntimeError: Si el LLM no está disponible.
+    """
     instruction_key = (entity_type, category)
     llm_instruction = _llm_instruction_by_entity_category[instruction_key]
     type_prompt = _TYPE_EXTRACT_PROMPT.get(entity_type, "")
@@ -124,8 +134,7 @@ def build_visual_prompt(
     category: ContentCategory,
     max_tokens: int = 512,
 ) -> dict[str, str | int]:
-    """
-    Construye un prompt visual para generación de imagen usando LLM.
+    """Construye un prompt visual para generación de imagen usando LLM.
 
     El prompt NO incluye el nombre de la entidad - solo atributos visuales
     que los modelos de imagen pueden interpretar correctamente.

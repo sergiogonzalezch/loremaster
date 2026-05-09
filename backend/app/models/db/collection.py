@@ -8,6 +8,20 @@ from app.core.database.soft_delete import SoftDeleteMixin
 
 
 class Collection(SQLModel, SoftDeleteMixin, table=True):
+    """Representa una colección de documentos y entidades de un mundo fictional.
+
+    Una colección pertenece a un usuario (owner_id) y agrupa documentos
+    para RAG, entidades asociadas y sus contenidos generados.
+
+    Attributes:
+        id: Identificador único UUID.
+        name: Nombre de la colección (único por propietario).
+        description: Descripción breve del mundo o proyecto.
+        owner_id: UUID del usuario propietario.
+        created_at: Fecha y hora de creación (UTC).
+        updated_at: Fecha y hora de última modificación (UTC).
+    """
+
     __tablename__ = "collections"
     __table_args__ = (
         UniqueConstraint("name", "owner_id", name="uq_collection_name_owner"),

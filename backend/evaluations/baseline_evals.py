@@ -163,6 +163,7 @@ def check_fields(body: dict, fields: dict) -> list[Result]:
 
 
 def create_collection(api: APIClient, name: str) -> tuple[Optional[str], str]:
+    """Crea una colección para la evaluación. Retorna (collection_id, error_msg)."""
     resp = api.post("/collections/", json={"name": name, "description": "Eval run"})
     if resp.status_code == 201:
         return resp.json()["id"], ""
@@ -170,10 +171,12 @@ def create_collection(api: APIClient, name: str) -> tuple[Optional[str], str]:
 
 
 def delete_collection(api: APIClient, cid: str) -> None:
+    """Elimina una colección de evaluación."""
     api.delete(f"/collections/{cid}")
 
 
 def ingest_seed(api: APIClient, cid: str, seed_path: Path) -> tuple[bool, str]:
+    """Ingesta el documento semilla en la colección indicada."""
     if not seed_path.exists():
         return False, f"seed not found: {seed_path}"
     resp = api.post_file(f"/collections/{cid}/documents", seed_path)
@@ -183,6 +186,7 @@ def ingest_seed(api: APIClient, cid: str, seed_path: Path) -> tuple[bool, str]:
 
 
 def wait_for_docs(api: APIClient, cid: str) -> tuple[bool, str]:
+    """Espera a que los documentos de una colección terminen de procesarse."""
     for _ in range(DOC_POLL_MAX):
         resp = api.get(f"/collections/{cid}/documents")
         if resp.status_code != 200:
@@ -1268,6 +1272,10 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
 
 
 def run_case(api: APIClient, cid: str, case: dict, entity_cache: dict) -> Result:
+    """Ejecuta un caso de prueba del golden dataset contra la API.
+
+    Delega al runner específico según la categoría del caso.
+    """
     category = case.get("category")
     try:
         if category == "rag_query":

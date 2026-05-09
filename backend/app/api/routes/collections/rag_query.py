@@ -28,6 +28,11 @@ def rag_query(
     _: Collection = Depends(get_collection_or_404_owned),
     session: Session = Depends(get_session),
 ):
+    """Ejecuta una consulta RAG sobre los documentos de la colección.
+
+    Busca fragmentos similares, construye un prompt con contexto y devuelve
+    la respuesta generada por el LLM.
+    """
     try:
         query = request.query.strip()
         check_user_input(query)

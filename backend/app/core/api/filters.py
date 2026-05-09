@@ -1,3 +1,5 @@
+"""Condiciones de filtro reutilizables para consultas de contenido compartido e imágenes."""
+
 from sqlalchemy import and_
 from sqlalchemy.orm import Query
 
@@ -16,6 +18,7 @@ _CONTENT_CONDITIONS = (
     Collection.is_deleted == False,
     User.is_deleted == False,
 )
+"""Condiciones para filtrar contenidos compartidos activos."""
 
 _IMAGE_CONDITIONS = (
     ImageRecord.is_shared == True,
@@ -25,3 +28,4 @@ _IMAGE_CONDITIONS = (
     Collection.is_deleted == False,
     User.is_deleted == False,
 )
+"""Condiciones para filtrar imágenes compartidas activas."""

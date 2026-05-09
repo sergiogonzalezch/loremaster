@@ -7,6 +7,15 @@ T = TypeVar("T")
 
 
 class PaginationMeta(BaseModel):
+    """Metadatos de paginación incluidos en respuestas paginadas.
+
+    Attributes:
+        total: Número total de elementos disponibles.
+        page: Página actual (1-indexed).
+        page_size: Cantidad de elementos por página.
+        total_pages: Total de páginas calculadas.
+    """
+
     total: int
     page: int
     page_size: int
@@ -14,6 +23,16 @@ class PaginationMeta(BaseModel):
 
 
 class PaginatedResponse(BaseModel, Generic[T]):
+    """Respuesta estándar paginada para endpoints de listado.
+
+    Attributes:
+        data: Lista de elementos de la página actual.
+        meta: Metadatos de paginación.
+
+    Type Parameters:
+        T: Tipo de los elementos contenidos en data.
+    """
+
     data: List[T]
     meta: PaginationMeta
 

@@ -1,3 +1,5 @@
+"""Plantillas de prompt para generación de contenido por categoría."""
+
 from app.models.enums import ContentCategory
 
 _SAFETY_INSTRUCTION = (
@@ -52,6 +54,7 @@ _TEMPLATES: dict[ContentCategory, str] = {
 
 
 def get_template(category: ContentCategory) -> str:
+    """Retorna la plantilla de prompt para una categoría de contenido."""
     return _TEMPLATES[category]
 
 
@@ -62,6 +65,11 @@ def render_prompt(
     context: str,
     query: str,
 ) -> str:
+    """Renderiza la plantilla de prompt con los valores proporcionados.
+
+    Escapa llaves en los valores para evitar errores de formato.
+    """
+
     def _escape(v: str) -> str:
         return v.replace("{", "{{").replace("}", "}}")
 

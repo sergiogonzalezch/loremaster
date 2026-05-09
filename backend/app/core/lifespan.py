@@ -16,6 +16,7 @@ _ALEMBIC_INI = Path(__file__).resolve().parent.parent.parent / "alembic.ini"
 
 
 def _run_migrations() -> None:
+    """Ejecuta las migraciones de Alembic heads-up usando la URL de la base de datos configurada."""
     alembic_cfg = Config(str(_ALEMBIC_INI))
     alembic_cfg.set_main_option("sqlalchemy.url", settings.database_url)
     command.upgrade(alembic_cfg, "head")
@@ -23,6 +24,11 @@ def _run_migrations() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Contexto del ciclo de vida de la aplicación.
+
+    Al iniciar: aplica migraciones, verifica conexión a Qdrant y Ollama.
+    Al cerrar: yield (sin limpieza especial).
+    """
     try:
         _run_migrations()
         logger.info("Database migrations applied")

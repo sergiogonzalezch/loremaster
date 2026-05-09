@@ -23,6 +23,10 @@ def get_public_feed(
     pagination: Annotated[PaginationParams, Depends()],
     session: Session = Depends(get_session),
 ):
+    """Obtiene el feed público de contenidos compartidos por todos los usuarios.
+
+    No requiere autenticación. Incluye solo contenidos confirmados.
+    """
     base = (
         select(EntityContent, Entity, User)
         .join(Entity, EntityContent.entity_id == Entity.id)
@@ -55,6 +59,10 @@ def get_public_images(
     pagination: Annotated[PaginationParams, Depends()],
     session: Session = Depends(get_session),
 ):
+    """Obtiene el feed público de imágenes compartidas por todos los usuarios.
+
+    No requiere autenticación.
+    """
     base = (
         select(ImageRecord, ImageGeneration, Entity, User)
         .join(ImageGeneration, ImageRecord.generation_id == ImageGeneration.id)

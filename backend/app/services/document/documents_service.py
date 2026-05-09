@@ -33,6 +33,25 @@ async def ingest_document_service(
     data: UploadFile,
     collection_id: str,
 ) -> tuple[Document, str]:
+    """Ingesta un documento en una colección: validación, extracción y registro.
+
+    Valida tipo y tamaño del archivo, extrae el texto, lo almacena en la BD
+    y retorna el documento para que el caller dispare la indexación en background.
+
+    Args:
+        session: Sesión de base de datos activa.
+        data: Archivo subido por el usuario.
+        collection_id: Colección destino.
+
+    Returns:
+        Tupla de (Documento creado, texto extraído).
+
+    Raises:
+        UnsupportedFileTypeError: Si el tipo de archivo no es soportado.
+        FileTooLargeError: Si el archivo supera el límite.
+        MissingFilenameError: Si el archivo no tiene nombre.
+        DocumentExtractionError: Si falla la extracción de texto.
+    """
     try:
         content = FileValidator.validate_document(
             data,
@@ -82,6 +101,16 @@ async def ingest_document_service(
 
 
 def process_ingest_background(session: Session, document: Document, text: str) -> None:
+    """Procesa la indexación vectorial de un documento en segundo plano.
+
+    Divide el texto en chunks, los embeddea y los almacena en Qdrant.
+    Actualiza el estado del documento a 'completed' o 'failed'.
+
+    Args:
+        session: Sesión de base de datos activa.
+        document: Instancia del documento a indexar.
+        text: Texto extraído del documento.
+    """
     try:
         chunk_count = ingest_chunks(
             doc_id=document.id,
@@ -112,6 +141,25 @@ def list_documents_service(
     created_before: Optional[datetime] = None,
     order: Literal["asc", "desc"] = "desc",
 ) -> tuple[list[Document], int]:
+    """Lista los documentos de una colección con paginación y filtros.
+
+    Excluye automáticamente los documentos en estado 'processing'.
+
+    Args:
+        session: Sesión de base de datos activa.
+        collection_id: Identificador de la colección.
+        page: Número de página.
+        page_size: Elementos por página.
+        filename: Filtrar por nombre (búsqueda parcial).
+        file_type: Filtrar por tipo/extension.
+        status: Filtrar por estado de procesamiento.
+        created_after: Filtrar por fecha de creación mínima.
+        created_before: Filtrar por fecha de creación máxima.
+        order: Orden ascendente o descendente.
+
+    Returns:
+        Tupla de (lista de documentos, total de resultados).
+    """
     conditions = [
         Document.collection_id == collection_id,
         Document.is_deleted == False,
@@ -142,6 +190,20 @@ def list_documents_service(
 def retry_document_service(
     session: Session, document: Document
 ) -> tuple[Document, str]:
+    """Reinicia el procesamiento de un documento que falló.
+
+    Solo permite reintentar documentos en estado 'failed' con texto extraído.
+
+    Args:
+        session: Sesión de base de datos activa.
+        document: Instancia del documento a reintentar.
+
+    Returns:
+        Tupla de (documento actualizado, texto a reprocesar).
+
+    Raises:
+        DocumentNotRetryableError: Si el documento no es reintentable.
+    """
     if document.status != DocumentStatus.failed or not document.raw_text:
         raise DocumentNotRetryableError()
 
@@ -155,6 +217,18 @@ def retry_document_service(
 
 
 def delete_document_service(session: Session, document: Document) -> bool:
+    """Elimina un documento: vectores en Qdrant y soft-delete en BD.
+
+    Args:
+        session: Sesión de base de datos activa.
+        document: Instancia del documento a eliminar.
+
+    Returns:
+        True si la eliminación fue exitosa.
+
+    Raises:
+        VectorStoreError: Si falla la eliminación de vectores en Qdrant.
+    """
     try:
         delete_document_chunks(document.collection_id, document.id)
     except Exception as e:

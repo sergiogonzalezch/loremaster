@@ -21,6 +21,17 @@ _QDRANT_RETRY_DELAY = 0.5
 
 
 def _delete_vectors_with_retry(collection_id: str) -> bool:
+    """Elimina vectores de Qdrant con reintentos automáticos.
+
+    Realiza hasta 3 intentos con 0.5 segundos de demora entre cada uno.
+
+    Args:
+        collection_id: Identificador de la colección cuyos vectores se eliminarán.
+
+    Returns:
+        True si la eliminación fue exitosa; False si fallaron todos los intentos
+        (vectores huérfanos que requieren limpieza manual).
+    """
     for attempt in range(1, _QDRANT_RETRY_ATTEMPTS + 1):
         try:
             delete_collection_vectors(collection_id)
@@ -48,6 +59,15 @@ def _delete_vectors_with_retry(collection_id: str) -> bool:
 
 
 def cascade_delete_entity(session: Session, entity: Entity) -> None:
+    """Elimina en cascada una entidad y todos sus contenidos relacionados.
+
+    Se eliminan de forma suave: los EntityContent asociados, los ImageRecord
+    asociados, y la propia entidad.
+
+    Args:
+        session: Sesión de base de datos activa.
+        entity: Instancia de la entidad a eliminar.
+    """
     deleted_contents = cascade_delete_by_entity(
         session, entity.id, entity.collection_id
     )
@@ -67,10 +87,21 @@ def cascade_delete_entity(session: Session, entity: Entity) -> None:
 
 
 def cascade_delete_collection(session: Session, collection: Collection) -> bool:
-    """Soft-delete docs, entities (with their drafts), and Qdrant vectors.
+    """Elimina en cascada una colección y todos sus contenidos relacionados.
 
-    Returns True if Qdrant vectors were also cleaned up, False if they remain
-    (orphan vectors — requires manual cleanup or retry when Qdrant is available).
+    Se eliminan de forma suave: todos los documentos, todas las entidades
+    (con sus contenidos e imágenes asociados), los EntityContents huérfanos,
+    los ImageRecord huérfanos, y la propia colección. Además intenta eliminar
+    los vectores de Qdrant con reintentos automáticos.
+
+    Args:
+        session: Sesión de base de datos activa.
+        collection: Instancia de la colección a eliminar.
+
+    Returns:
+        True si los vectores de Qdrant también fueron eliminados exitosamente;
+        False si fallaron los reintentos y quedan vectores huérfanos
+        (requieren limpieza manual).
     """
     docs = session.exec(
         select(Document).where(
@@ -123,6 +154,19 @@ def _cascade_delete_images(
     entity_id: str | None = None,
     collection_id: str | None = None,
 ) -> int:
+    """Elimina de forma suave los ImageRecord según los filtros indicados.
+
+    Args:
+        session: Sesión de base de datos activa.
+        entity_id: Si se proporciona, elimina imágenes de esta entidad.
+        collection_id: Si se proporciona, elimina imágenes de esta colección.
+
+    Returns:
+        Número de ImageRecords eliminados de forma suave.
+
+    Raises:
+        ValueError: Si no se proporciona al menos un filtro (entity_id o collection_id).
+    """
     conditions = [ImageRecord.is_deleted == False]
     if entity_id is not None:
         conditions.append(ImageRecord.entity_id == entity_id)
@@ -136,8 +180,26 @@ def _cascade_delete_images(
 
 
 def _cascade_delete_images_by_entity(session: Session, entity_id: str) -> int:
+    """Elimina de forma suave todos los ImageRecord asociados a una entidad.
+
+    Args:
+        session: Sesión de base de datos activa.
+        entity_id: Identificador de la entidad.
+
+    Returns:
+        Número de ImageRecords eliminados de forma suave.
+    """
     return _cascade_delete_images(session, entity_id=entity_id)
 
 
 def _cascade_delete_images_by_collection(session: Session, collection_id: str) -> int:
+    """Elimina de forma suave todos los ImageRecord asociados a una colección.
+
+    Args:
+        session: Sesión de base de datos activa.
+        collection_id: Identificador de la colección.
+
+    Returns:
+        Número de ImageRecords eliminados de forma suave.
+    """
     return _cascade_delete_images(session, collection_id=collection_id)

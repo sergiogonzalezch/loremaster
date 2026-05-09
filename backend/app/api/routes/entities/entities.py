@@ -40,6 +40,7 @@ def create_entity(
     _: Collection = Depends(get_collection_or_404_owned),
     session: Session = Depends(get_session),
 ):
+    """Crea una nueva entidad (character, creature, faction, location o item)."""
     try:
         return create_entity_service(session, request, collection_id)
     except DuplicateEntityNameError as exc:
@@ -59,6 +60,7 @@ def list_entities(
     __: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
+    """Lista las entidades de una colección con filtros y paginación."""
     entities, total = list_entities_service(
         session,
         collection_id,
@@ -79,6 +81,7 @@ def list_entities(
 def get_entity(
     entity: Entity = Depends(get_entity_or_404_owned),
 ):
+    """Obtiene los datos de una entidad específica."""
     return entity
 
 
@@ -88,6 +91,7 @@ def update_entity(
     entity: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
+    """Actualiza los campos de una entidad existente."""
     try:
         return update_entity_service(session, entity, request)
     except DuplicateEntityNameError as exc:
@@ -99,6 +103,7 @@ def delete_entity(
     entity: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
+    """Elimina una entidad y todos sus contenidos en cascada."""
     try:
         delete_entity_service(session, entity)
     except DatabaseError:

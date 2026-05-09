@@ -1,3 +1,5 @@
+"""Re-exportación de todos los routers de la API."""
+
 from app.api.routes.auth import auth_router, auth_clerk_router
 from app.api.routes.admin.admin import router as admin_router
 from app.api.routes.collections import collections_router, rag_query_router

@@ -7,6 +7,21 @@ from app.core.database.soft_delete import SoftDeleteMixin
 
 
 class User(SQLModel, SoftDeleteMixin, table=True):
+    """Usuario autenticado en la plataforma.
+
+    Attributes:
+        id: Identificador único UUID.
+        username: Nombre de usuario único.
+        hashed_password: Hash de la contraseña (bcrypt).
+        email: Correo electrónico único (opcional).
+        display_name: Nombre visible públicamente.
+        bio: Biografía pública del usuario.
+        avatar_path: Ruta de la imagen de perfil.
+        is_admin: Indica si el usuario tiene privilegios de administrador.
+        token_version: Versión del token (incrementada al hacer logout de todos los dispositivos).
+        created_at: Fecha y hora de registro (UTC).
+    """
+
     __tablename__ = "users"
 
     id: str = SQLField(

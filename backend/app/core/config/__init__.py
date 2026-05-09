@@ -1,8 +1,19 @@
+"""Configuración de la aplicación usando Pydantic Settings.
+
+Carga variables de entorno desde archivo .env y valida valores críticos
+como CORS y secret_key en entornos no locales.
+"""
+
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    """Configuración centralizada de la aplicación Lore Master.
+
+    Lee variables de entorno desde .env y aplica valores por defecto
+    para desarrollo local.
+    """
 
     project_name: str = "Lore Master API"
     api_version: str = "1.0.0"
@@ -59,6 +70,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _validate_cors(self) -> "Settings":
+        """Valida que CORS no use '*' cuando allow_credentials=True y
+        que secret_key no sea el valor por defecto en producción."""
         if "*" in self.allowed_origins:
             raise ValueError(
                 "ALLOWED_ORIGINS no puede contener '*' cuando allow_credentials=True. "

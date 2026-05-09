@@ -1,24 +1,35 @@
-# Domain rules for visual attribute extraction for image generation
-# These instructions guide the LLM to extract visual attributes from text
-# Without summarizing, skipping, or filtering - only extract what the text mentions
+"""Reglas de dominio para extracción de atributos visuales para generación de imágenes.
+
+Estas instrucciones guían al LLM para extraer atributos visuales del texto
+sin resumir, omitir o filtrar — solo extraer lo que el texto menciona explícitamente.
+"""
 
 from app.models.enums import ContentCategory
 from app.models.db.entity import EntityType
 
-# === REUSABLE CONSTANTS ===
+# === CONSTANTES REUTILIZABLES ===
 
 ENGLISH_RESPONSE_INSTRUCTION = "Respond IN ENGLISH"
+"""Instrucción de respuesta en inglés para los prompts del LLM."""
+
 _TYPE_EXTRACT_SUFFIX = (
     f". {ENGLISH_RESPONSE_INSTRUCTION} with only one word or short term: "
 )
+"""Sufijo para extracción del tipo específico de entidad."""
 
 _ATTRIBUTE_EXTRACT_SUFFIX = (
     "Respond IN ENGLISH only with the list of visual attributes, without explanation."
 )
+"""Sufijo para extracción de atributos visuales."""
 
 _BASE_EXTRACT = "extract ALL visual attributes that the text EXPLICITLY mentions. "
+"""Instrucción base para extraer atributos visuales."""
+
 _NO_SKIP = "DO NOT summarize, DO NOT skip. Every visual detail must be included. "
+"""Instrucción para no omitir detalles visuales."""
+
 _FORMAT_ATTRS = f"ONLY loose attributes in ENGLISH, NO complete sentences. {ENGLISH_RESPONSE_INSTRUCTION}. "
+"""Formato de salida esperado: atributos sueltos en inglés."""
 
 _IGNORA_BY_CATEGORY = {
     ContentCategory.extended_description: "IGNORE: narrative, motivations, history, names.",
@@ -26,6 +37,7 @@ _IGNORA_BY_CATEGORY = {
     ContentCategory.scene: "IGNORE: dialogue, thoughts, emotions.",
     ContentCategory.chapter: "IGNORE: plot, development, secondary characters.",
 }
+"""Instrucciones de ignorado por categoría de contenido."""
 
 _ENTITY_NAME_EN = {
     EntityType.character: "character",
@@ -34,6 +46,7 @@ _ENTITY_NAME_EN = {
     EntityType.faction: "faction",
     EntityType.item: "item",
 }
+"""Nombres en inglés de cada tipo de entidad."""
 
 _TYPE_LABEL_BY_ENTITY = {
     EntityType.character: "Include the ENTITY TYPE: robot, android, cyborg, human, alien, demon, angel, beast, mythical creature.",
@@ -42,6 +55,7 @@ _TYPE_LABEL_BY_ENTITY = {
     EntityType.faction: "Include the FACTION TYPE: kingdom, clan, brotherhood, order, guild, corporation, religion, movement.",
     EntityType.item: "Include the OBJECT TYPE: weapon, armor, tool, relic, artifact, jewelry, instrument, vehicle.",
 }
+"""Etiquetas de tipo por entidad para el prompt del LLM."""
 
 _TYPE_EXTRACT_PROMPT = {
     EntityType.character: (
@@ -75,6 +89,7 @@ _TYPE_EXTRACT_PROMPT = {
         "If no specific type is clear, respond 'item'."
     ),
 }
+"""Prompts de extracción de tipo específico por entidad."""
 
 _ATTRIBUTOS_BY_ENTITY_CATEGORY = {
     (EntityType.character, ContentCategory.extended_description): (
@@ -156,6 +171,7 @@ _ATTRIBUTOS_BY_ENTITY_CATEGORY = {
         "presence, position, lighting, visible state, colors"
     ),
 }
+"""Atributos visuales esperados por combinación de tipo de entidad y categoría."""
 
 _PREFIX_BY_CATEGORY = {
     ContentCategory.extended_description: "From the following text describing",
@@ -163,13 +179,14 @@ _PREFIX_BY_CATEGORY = {
     ContentCategory.scene: "From the following scene",
     ContentCategory.chapter: "From the following chapter, extract visual attributes in the opening scene of",
 }
+"""Prefijos de instrucción por categoría de contenido."""
 
 
-# === BUILDER FUNCTIONS ===
+# === FUNCIONES CONSTRUCTORAS ===
 
 
 def _build_instruction(entity_type: EntityType, category: ContentCategory) -> str:
-    """Builds the LLM instruction for an entity_type + category combination."""
+    """Construye la instrucción del LLM para una combinación entity_type + category."""
     prefix = _PREFIX_BY_CATEGORY.get(category, "From the following text")
     entity_en = _ENTITY_NAME_EN.get(entity_type, entity_type.value)
     if category == ContentCategory.chapter:
@@ -194,7 +211,7 @@ def _build_instruction(entity_type: EntityType, category: ContentCategory) -> st
     )
 
 
-# === BUILD DICTIONARY ===
+# === DICCIONARIO CONSTRUIDO ===
 
 _llm_instruction_by_entity_category = {
     (entity_type, category): _build_instruction(entity_type, category)
@@ -202,3 +219,4 @@ _llm_instruction_by_entity_category = {
     for category in ContentCategory
     if (entity_type, category) in _ATTRIBUTOS_BY_ENTITY_CATEGORY
 }
+"""Instrucciones del LLM indexadas por (EntityType, ContentCategory)."""

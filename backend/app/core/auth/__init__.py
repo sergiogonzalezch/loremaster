@@ -13,6 +13,8 @@ ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    """Crea un token de acceso JWT con fecha de expiración."""
+
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + (
         expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -22,6 +24,8 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 
 def verify_token(token: str) -> dict:
+    """Verifica y decodifica un token JWT, lanzando HTTPException si es inválido."""
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         if payload.get("sub") is None:
@@ -36,8 +40,12 @@ def verify_token(token: str) -> dict:
 
 
 def hash_password(password: str) -> str:
+    """Genera un hash bcrypt para la contraseña proporcionada."""
+
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verifica una contraseña en texto plano contra un hash bcrypt."""
+
     return bcrypt.checkpw(plain_password.encode(), hashed_password.encode())

@@ -28,6 +28,21 @@ def list_contents(
     page_size: int = 20,
     order: Literal["asc", "desc"] = "desc",
 ) -> tuple[list[EntityContentResponse], int]:
+    """Lista los contenidos de una entidad con filtros y paginación.
+
+    Args:
+        session: Sesión de base de datos activa.
+        entity_id: Identificador de la entidad.
+        collection_id: Identificador de la colección.
+        category: Filtrar por categoría (opcional).
+        status: Filtrar por estado. 'active' excluye discarded por defecto.
+        page: Número de página.
+        page_size: Elementos por página.
+        order: Orden ascendente o descendente.
+
+    Returns:
+        Tupla de (lista de contenidos con GeneratedText, total de resultados).
+    """
     conditions = [
         EntityContent.entity_id == entity_id,
         EntityContent.collection_id == collection_id,
@@ -67,6 +82,23 @@ def edit_content(
     collection_id: str,
     new_text: str,
 ) -> EntityContentResponse | None:
+    """Edita el texto de un contenido activo (pending o confirmed).
+
+    No permite editar contenidos descartados.
+
+    Args:
+        session: Sesión de base de datos activa.
+        content_id: Identificador del contenido.
+        entity_id: Identificador de la entidad.
+        collection_id: Identificador de la colección.
+        new_text: Nuevo texto para el contenido.
+
+    Returns:
+        Contenido actualizado con el GeneratedText asociado, o None si no existe.
+
+    Raises:
+        ContentDiscardedError: Si el contenido está descartado.
+    """
     new_text = new_text.strip()
     content = _get_active_content(session, content_id, entity_id, collection_id)
     if not content:
@@ -87,6 +119,19 @@ def confirm_content(
     content_id: str,
     entity: Entity,
 ) -> EntityContent | None:
+    """Confirma un contenido pendiente y descarta automáticamente sus hermanos.
+
+    Al confirmar, todos los contenidos pending de la misma categoría en la
+    misma entidad se marcan como 'discarded'.
+
+    Args:
+        session: Sesión de base de datos activa.
+        content_id: Identificador del contenido a confirmar.
+        entity: Instancia de la entidad propietaria.
+
+    Returns:
+        Contenido confirmado, o None si no existe o no está pending.
+    """
     content = _get_pending_content(session, content_id, entity.id, entity.collection_id)
     if not content:
         return None
@@ -124,6 +169,17 @@ def discard_content(
     entity_id: str,
     collection_id: str,
 ) -> EntityContentResponse | None:
+    """Descarta un contenido pendiente.
+
+    Args:
+        session: Sesión de base de datos activa.
+        content_id: Identificador del contenido.
+        entity_id: Identificador de la entidad.
+        collection_id: Identificador de la colección.
+
+    Returns:
+        Contenido descartado con sus metadatos, o None si no existe.
+    """
     content = _get_pending_content(session, content_id, entity_id, collection_id)
     if not content:
         return None
@@ -143,6 +199,23 @@ def share_content(
     collection_id: str,
     shared: bool,
 ) -> EntityContentResponse | None:
+    """Comparte o deja de compartir un contenido en el feed público.
+
+    Solo contenidos en estado 'confirmed' pueden compartirse.
+
+    Args:
+        session: Sesión de base de datos activa.
+        content_id: Identificador del contenido.
+        entity_id: Identificador de la entidad.
+        collection_id: Identificador de la colección.
+        shared: True para compartir, False para dejar de compartir.
+
+    Returns:
+        Contenido actualizado, o None si no existe.
+
+    Raises:
+        ContentNotShareableError: Si el contenido no está confirmado.
+    """
     content = _get_active_content(session, content_id, entity_id, collection_id)
     if not content:
         return None
@@ -162,6 +235,19 @@ def soft_delete_content(
     entity_id: str,
     collection_id: str,
 ) -> bool:
+    """Elimina suavemente un contenido de entidad.
+
+    Establece is_shared=False y marca como eliminada.
+
+    Args:
+        session: Sesión de base de datos activa.
+        content_id: Identificador del contenido.
+        entity_id: Identificador de la entidad.
+        collection_id: Identificador de la colección.
+
+    Returns:
+        True si se eliminó, False si no se encontró el contenido.
+    """
     content = _get_active_content(session, content_id, entity_id, collection_id)
     if not content:
         return False

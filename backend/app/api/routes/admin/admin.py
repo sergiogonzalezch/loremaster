@@ -24,6 +24,10 @@ def list_all_users(
     _: dict = Depends(get_admin_user),
     session: Session = Depends(get_session),
 ):
+    """Lista todos los usuarios (solo administradores).
+
+    Incluye usuarios eliminados y no eliminados.
+    """
     users, total = paginate_with_sort(
         session,
         User,
@@ -64,6 +68,11 @@ def admin_delete_collection(
     _: dict = Depends(get_admin_user),
     session: Session = Depends(get_session),
 ):
+    """Elimina una colección en nombre de un usuario (solo administradores).
+
+    Elimina en cascada todos los contenidos. Retorna 204 aunque la colección
+    no exista (idempotente).
+    """
     collection = session.get(Collection, collection_id)
     if not collection or collection.is_deleted:
         return Response(status_code=204)
@@ -77,6 +86,10 @@ def admin_delete_user(
     current_admin: dict = Depends(get_admin_user),
     session: Session = Depends(get_session),
 ):
+    """Elimina un usuario y todas sus colecciones (solo administradores).
+
+    No permite que un admin se elimine a sí mismo.
+    """
     if user_id == current_admin["sub"]:
         raise HTTPException(
             status_code=403, detail="No puedes eliminar tu propia cuenta"

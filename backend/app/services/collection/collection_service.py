@@ -47,6 +47,15 @@ def _fetch_counts(
 def get_collection_with_counts_service(
     session: Session, collection: Collection
 ) -> dict:
+    """Enriquece una colección con recuentos de documentos y entidades.
+
+    Args:
+        session: Sesión de base de datos activa.
+        collection: Instancia de la colección a enriquecer.
+
+    Returns:
+        Diccionario con los datos de la colección más document_count y entity_count.
+    """
     doc_counts, entity_counts = _fetch_counts(session, [collection.id])
     return {
         **collection.model_dump(),
@@ -58,6 +67,22 @@ def get_collection_with_counts_service(
 def create_collection_service(
     session: Session, owner_id: str, name: str, description: str = ""
 ) -> Collection:
+    """Crea una nueva colección para un usuario.
+
+    Valida que no exista otra colección con el mismo nombre para el propietario.
+
+    Args:
+        session: Sesión de base de datos activa.
+        owner_id: UUID del usuario propietario.
+        name: Nombre de la colección.
+        description: Descripción opcional.
+
+    Returns:
+        Instancia de la colección creada.
+
+    Raises:
+        DuplicateCollectionNameError: Si ya existe una colección con ese nombre.
+    """
     name = name.strip()
     description = description.strip()
     existing = session.exec(
@@ -94,6 +119,21 @@ def list_collections_service(
     created_before: Optional[datetime] = None,
     order: Literal["asc", "desc"] = "desc",
 ) -> tuple[list[dict], int]:
+    """Lista las colecciones de un usuario con paginación y filtros.
+
+    Args:
+        session: Sesión de base de datos activa.
+        owner_id: UUID del propietario.
+        page: Número de página (1-indexed).
+        page_size: Elementos por página.
+        name: Filtrar por nombre (búsqueda parcial, case-insensitive).
+        created_after: Filtrar colecciones creadas después de esta fecha.
+        created_before: Filtrar colecciones creadas antes de esta fecha.
+        order: Ordenar por fecha de creación (asc o desc).
+
+    Returns:
+        Tupla de (lista de colecciones enriquecidas con counts, total de resultados).
+    """
     conditions = [Collection.is_deleted == False, Collection.owner_id == owner_id]
     if name:
         conditions.append(Collection.name.ilike(f"%{name}%"))
@@ -127,6 +167,19 @@ def list_collections_service(
 def update_collection_service(
     session: Session, collection: Collection, request: UpdateCollectionRequest
 ) -> Collection:
+    """Actualiza el nombre y/o descripción de una colección.
+
+    Args:
+        session: Sesión de base de datos activa.
+        collection: Instancia de la colección a actualizar.
+        request: Esquema con los campos a modificar.
+
+    Returns:
+        Instancia de la colección actualizada.
+
+    Raises:
+        DuplicateCollectionNameError: Si el nuevo nombre ya está en uso.
+    """
     new_name = request.name.strip() if request.name is not None else collection.name
     if new_name != collection.name:
         existing = session.exec(
@@ -158,6 +211,16 @@ def update_collection_service(
 
 
 def delete_collection_service(session: Session, collection: Collection) -> bool:
+    """Elimina una colección en cascada (documentos, entidades, vectores).
+
+    Args:
+        session: Sesión de base de datos activa.
+        collection: Instancia de la colección a eliminar.
+
+    Returns:
+        True si los vectores de Qdrant fueron eliminados exitosamente;
+        False si quedaron vectores huérfanos.
+    """
     vectors_cleaned = cascade_delete_collection(session, collection)
     db_commit(session, f"delete_collection({collection.id})")
     logger.info("Collection '%s' (%s) deleted", collection.name, collection.id)

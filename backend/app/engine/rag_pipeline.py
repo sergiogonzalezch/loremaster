@@ -21,11 +21,13 @@ def invoke_rag_pipeline(
     query: str,
     extra_context: str = "",
 ) -> tuple[str, int]:
-    """Search RAG context, build prompt, invoke LLM, return (answer, num_chunks).
+    """Ejecuta el pipeline RAG: busca contexto, construye prompt e invoca el LLM.
+
+    Retorna una tupla (respuesta, num_chunks).
 
     Raises:
-        RuntimeError: If Qdrant or the LLM is unavailable.
-        NoContextAvailableError: If there is no context at all (no chunks and no extra_context).
+        RuntimeError: Si Qdrant o el LLM no están disponibles.
+        NoContextAvailableError: Si no hay contexto ni chunks ni extra_context.
     """
     logger.debug(
         "invoke_rag_pipeline: collection=%s threshold=%.2f top_k=%d query='%.80s'",
@@ -64,11 +66,13 @@ def invoke_generation_pipeline(
     query: str,
     extra_context: str = "",
 ) -> tuple[str, int]:
-    """Entity-aware RAG pipeline using category-specific prompt templates.
+    """Pipeline RAG consciente de entidades usando plantillas de prompt específicas por categoría.
+
+    Retorna una tupla (respuesta, num_chunks).
 
     Raises:
-        RuntimeError: If Qdrant or the LLM is unavailable.
-        NoContextAvailableError: If there is no context at all (no chunks and no extra_context).
+        RuntimeError: Si Qdrant o el LLM no están disponibles.
+        NoContextAvailableError: Si no hay contexto ni chunks ni extra_context.
     """
     logger.debug(
         "invoke_generation_pipeline: collection=%s entity='%s' category=%s threshold=%.2f top_k=%d query='%.80s'",

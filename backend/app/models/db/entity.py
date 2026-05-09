@@ -8,6 +8,16 @@ from app.core.database.soft_delete import SoftDeleteMixin
 
 
 class EntityType(str, Enum):
+    """Tipos de entidad que pueden existir dentro de una colección.
+
+    Attributes:
+        character: Persona, héroe, NPC o cualquier ser consciente.
+        creature: Bestia, monstruo o ser no humano.
+        faction: Organización, guild, reino o grupo.
+        location: Lugar, ciudad, dungeon o región geográfica.
+        item: Objeto, artefacto, arma o recurso.
+    """
+
     character = "character"
     creature = "creature"
     faction = "faction"
@@ -16,6 +26,18 @@ class EntityType(str, Enum):
 
 
 class Entity(SQLModel, SoftDeleteMixin, table=True):
+    """Entidad dentro de una colección (personaje, criatura, facción, etc.).
+
+    Attributes:
+        id: Identificador único UUID.
+        collection_id: Colección a la que pertenece.
+        type: Tipo de entidad (character, creature, faction, location, item).
+        name: Nombre único dentro de la colección.
+        description: Descripción inicial o notes de referencia.
+        created_at: Fecha y hora de creación (UTC).
+        updated_at: Fecha y hora de última modificación (UTC).
+    """
+
     __tablename__ = "entities"
     __table_args__ = (
         UniqueConstraint("collection_id", "name", name="uq_entity_collection_name"),

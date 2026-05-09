@@ -5,6 +5,24 @@ from sqlmodel import SQLModel, Field
 
 
 class GeneratedText(SQLModel, table=True):
+    """Registro de una llamada al pipeline LLM de generación.
+
+    Almacena la consulta original, la respuesta cruda del LLM y metadatos
+    de la generación (número de fuentes, tokens estimados). Es inmutable
+    tras su creación.
+
+    Attributes:
+        id: Identificador único UUID.
+        entity_id: Entidad para la que se generó el contenido.
+        collection_id: Colección de la entidad.
+        category: Categoría del contenido generado.
+        query: Consulta/prompt original enviado por el usuario.
+        raw_content: Respuesta cruda del LLM (sin edición).
+        sources_count: Número de fragmentos de contexto utilizados.
+        token_count: Estimación del número de tokens de la respuesta.
+        created_at: Fecha y hora de generación (UTC).
+    """
+
     __tablename__ = "generated_texts"
 
     id: str = Field(

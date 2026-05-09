@@ -9,12 +9,34 @@ from app.core.database.soft_delete import SoftDeleteMixin
 
 
 class DocumentStatus(str, Enum):
+    """Estados de procesamiento de un documento.
+
+    Attributes:
+        processing: Documento siendo extraído y chunkeado.
+        completed: Documento procesado exitosamente e indexado en Qdrant.
+        failed: Error durante el procesamiento.
+    """
+
     processing = "processing"
     completed = "completed"
     failed = "failed"
 
 
 class Document(SQLModel, SoftDeleteMixin, table=True):
+    """Documento subido a una colección para indexación RAG.
+
+    Attributes:
+        id: Identificador único UUID.
+        collection_id: Colección a la que pertenece.
+        filename: Nombre original del archivo.
+        file_type: Tipo MIME o extensión del archivo.
+        chunk_count: Número de chunks vectorizados.
+        status: Estado actual del procesamiento.
+        processing_error: Mensaje de error si el procesamiento falló.
+        raw_text: Texto extraído completo (almacenado en BD).
+        created_at: Fecha y hora de subida (UTC).
+    """
+
     __tablename__ = "documents"
 
     id: str = Field(

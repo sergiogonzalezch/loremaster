@@ -15,8 +15,15 @@ DOCUMENT_MIME_TYPES: Set[str] = {"text/plain", "application/pdf"}
 
 
 class FileValidator:
+    """Validador estático para archivos subidos."""
+
     @staticmethod
     def validate_image(file: UploadFile, max_bytes: int | None = None) -> bytes:
+        """Valida que el archivo sea una imagen válida (tipo MIME y extensión).
+        Lanza ValueError si no pasa la validación.
+
+        Lee y retorna el contenido del archivo tras la validación.
+        """
         if file.content_type not in IMAGE_MIME_TYPES:
             raise ValueError(
                 f"Tipo de archivo no permitido: {file.content_type}. "
@@ -41,6 +48,11 @@ class FileValidator:
         allowed_types: Set[str] | None = None,
         max_bytes: int | None = None,
     ) -> bytes:
+        """Valida que el archivo sea un documento permitido (tipo MIME).
+        Lanza ValueError si no pasa la validación.
+
+        Lee y retorna el contenido del archivo tras la validación.
+        """
         allowed = allowed_types or DOCUMENT_MIME_TYPES
         if file.content_type not in allowed:
             raise ValueError(f"Tipo de archivo no permitido: {file.content_type}")

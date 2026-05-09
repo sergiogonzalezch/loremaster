@@ -1,3 +1,9 @@
+"""Punto de entrada principal de la aplicación FastAPI.
+
+Configura la aplicación, middleware CORS, manejador de excepciones,
+servicio de archivos estáticos e incluye todos los routers de la API.
+"""
+
 import logging
 from pathlib import Path
 
@@ -36,6 +42,7 @@ app = FastAPI(
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Maneja excepciones no capturadas retornando error 500 genérico."""
     logger.error(
         "Unhandled exception on %s %s: %s",
         request.method,
@@ -59,11 +66,13 @@ app.add_middleware(
 
 @app.get("/")
 def read_root():
+    """Retorna información básica del servicio."""
     return {"service": settings.project_name, "version": settings.api_version}
 
 
 @app.get("/health")
 def health_check():
+    """Endpoint de health check para monitoreo."""
     return {"status": "healthy"}
 
 

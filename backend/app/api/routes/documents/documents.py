@@ -53,6 +53,11 @@ async def ingest(
     __: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
+    """Ingesta un documento en la colección y dispara el procesamiento en segundo plano.
+
+    El documento se registra en estado 'processing' y la indexación vectorial
+    se ejecuta de forma asíncrona.
+    """
     try:
         document, text = await ingest_document_service(session, file, collection_id)
     except UnsupportedFileTypeError:
@@ -88,6 +93,10 @@ def get_documents(
     __: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
+    """Lista los documentos de una colección con filtros y paginación.
+
+    Excluye documentos en estado 'processing'.
+    """
     if status == DocumentStatus.processing:
         raise HTTPException(
             status_code=422,
@@ -113,6 +122,7 @@ def get_document(
     doc: Document = Depends(get_document_or_404),
     _: dict = Depends(get_current_user),
 ):
+    """Obtiene los datos de un documento específico."""
     return doc
 
 
@@ -127,6 +137,7 @@ async def retry_ingest(
     _: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
+    """Reinicia el procesamiento de un documento que falló."""
     try:
         document, text = retry_document_service(session, doc)
     except DocumentNotRetryableError as e:
@@ -143,6 +154,7 @@ def delete_document(
     _: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
+    """Elimina un documento: vectores en Qdrant y soft-delete en BD."""
     try:
         delete_document_service(session, doc)
     except VectorStoreError:

@@ -5,11 +5,18 @@ from sqlmodel import Session
 
 
 class SoftDeleteMixin:
+    """Mixin que agrega campos de soft-delete a un modelo: is_deleted y deleted_at."""
+
     is_deleted: bool = False
     deleted_at: Optional[datetime] = None
 
 
 def soft_delete(session: Session, record) -> bool:
+    """Marca un registro como eliminado (soft-delete) actualizando is_deleted,
+    deleted_at y updated_at, y hace commit en la sesión.
+
+    Retorna True si la operación fue exitosa.
+    """
     from app.core.database.utils import db_commit
 
     now = datetime.now(timezone.utc)

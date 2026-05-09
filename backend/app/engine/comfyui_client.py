@@ -1,6 +1,4 @@
-# app/engine/comfyui_client.py
-"""
-Cliente HTTP para la API de ComfyUI.
+"""Cliente HTTP para la API de ComfyUI.
 
 Endpoints utilizados:
 - POST /prompt → Envía workflow en formato API para ejecución
@@ -18,11 +16,14 @@ import httpx
 
 
 class ComfyUIClient:
+    """Cliente para interactuar con la API REST de ComfyUI."""
 
     def __init__(self, base_url: str):
+        """Inicializa el cliente con la URL base del servidor ComfyUI."""
         self.base_url = base_url.rstrip("/")
 
     def _request(self, method: str, path: str, **kwargs) -> httpx.Response:
+        """Ejecuta una petición HTTP contra la API de ComfyUI."""
         url = f"{self.base_url}/{path.lstrip('/')}"
         with httpx.Client(timeout=30.0) as client:
             response = client.request(method, url, **kwargs)
@@ -30,8 +31,7 @@ class ComfyUIClient:
             return response
 
     def queue_prompt(self, workflow: dict) -> str:
-        """
-        Envía un workflow en formato API para ejecución.
+        """Envía un workflow en formato API para ejecución.
 
         Args:
             workflow: Workflow en formato API (dict con IDs de nodo como claves string)
@@ -59,8 +59,7 @@ class ComfyUIClient:
         raise RuntimeError(f"Respuesta inesperada de ComfyUI: {data}")
 
     def get_history(self, prompt_id: str) -> dict:
-        """
-        Obtiene el estado y resultados de una ejecución.
+        """Obtiene el estado y resultados de una ejecución.
 
         Devuelve dict con:
         - status: "queued" | "running" | "completed" | "failed"
@@ -89,8 +88,7 @@ class ComfyUIClient:
     def get_history_until_complete(
         self, prompt_id, timeout: int = 300, poll_interval: float = 2.0
     ) -> dict:
-        """
-        Espera hasta que la ejecución complete (polling).
+        """Espera hasta que la ejecución complete (polling).
 
         Args:
             prompt_id: ID del prompt
@@ -127,8 +125,7 @@ class ComfyUIClient:
     def download_image(
         self, filename: str, subfolder: str = "", folder_type: str = "output"
     ) -> bytes:
-        """
-        Descarga una imagen generada.
+        """Descarga una imagen generada.
 
         Args:
             filename: Nombre del archivo (del history)
@@ -146,8 +143,7 @@ class ComfyUIClient:
         return response.content
 
     def get_output_images(self, history_result: dict) -> list[dict]:
-        """
-        Extrae las imágenes generadas del resultado del history.
+        """Extrae las imágenes generadas del resultado del history.
 
         Args:
             history_result: Resultado de get_history() con status="completed"
@@ -176,8 +172,7 @@ class ComfyUIClient:
 
 
 def load_template(template_name: str) -> dict:
-    """
-    Carga un template de workflow de ComfyUI en formato API desde JSON.
+    """Carga un template de workflow de ComfyUI en formato API desde JSON.
 
     Args:
         template_name: Nombre del archivo template (sin path). Debe ser formato API.
@@ -199,8 +194,7 @@ def load_template(template_name: str) -> dict:
 
 
 def inject_seed(workflow: dict, seed: int) -> dict:
-    """
-    Inyecta un seed fijo en el nodo 104 (RandomNoise).
+    """Inyecta un seed fijo en el nodo 104 (RandomNoise).
 
     Sin esto, múltiples llamadas a queue_prompt con el mismo workflow
     producen la misma imagen (el seed de la plantilla no varía vía API).
@@ -214,8 +208,7 @@ def inject_seed(workflow: dict, seed: int) -> dict:
 
 
 def inject_prompt(workflow: dict, prompt: str) -> dict:
-    """
-    Inyecta el prompt en el nodo 12 (PrimitiveStringMultiline) del workflow.
+    """Inyecta el prompt en el nodo 12 (PrimitiveStringMultiline) del workflow.
 
     El template debe estar en formato API de ComfyUI. En este formato, los nodos
     son claves string y el prompt se inyecta en inputs["value"], no en widgets_values.

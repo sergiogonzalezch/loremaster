@@ -30,6 +30,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 @router.get("/me", response_model=UserProfileResponse)
 def get_my_profile(user: User = Depends(get_current_db_user)):
+    """Obtiene el perfil del usuario autenticado."""
     return user
 
 
@@ -39,6 +40,7 @@ def update_my_profile(
     user: User = Depends(get_current_db_user),
     session: Session = Depends(get_session),
 ):
+    """Actualiza el perfil del usuario autenticado (display_name, bio, email)."""
     if request.display_name is not None:
         user.display_name = request.display_name
     if request.bio is not None:
@@ -54,6 +56,7 @@ def update_my_profile(
 
 @router.get("/me/avatar", response_model=AvatarResponse)
 def get_my_avatar(user: User = Depends(get_current_db_user)):
+    """Obtiene la información del avatar del usuario autenticado."""
     return get_avatar_info(user)
 
 
@@ -63,6 +66,7 @@ async def upload_my_avatar(
     session: Session = Depends(get_session),
     file: UploadFile = File(...),
 ):
+    """Sube o reemplaza la imagen de perfil del usuario autenticado."""
     try:
         avatar_url = await upload_profile_image(session, user, file)
     except ValueError as e:
@@ -76,6 +80,7 @@ def delete_my_avatar(
     user: User = Depends(get_current_db_user),
     session: Session = Depends(get_session),
 ):
+    """Elimina la imagen de perfil del usuario autenticado."""
     delete_profile_image(session, user)
     return Response(status_code=204)
 
@@ -85,6 +90,7 @@ def get_public_profile(
     username: str,
     session: Session = Depends(get_session),
 ):
+    """Obtiene el perfil público de un usuario con sus contenidos e imágenes compartidos."""
     user = session.exec(
         select(User).where(User.username == username, User.is_deleted == False)
     ).first()

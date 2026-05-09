@@ -1,3 +1,5 @@
+"""Motor de recuperación aumentada por generación (RAG) usando Qdrant y sentence-transformers."""
+
 import logging
 import uuid
 
@@ -28,11 +30,13 @@ _splitter = RecursiveCharacterTextSplitter(
 
 
 def _collection_exists(name: str) -> bool:
+    """Verifica si una colección Qdrant existe."""
     existing = {c.name for c in _qdrant_client.get_collections().collections}
     return name in existing
 
 
 def _ensure_qdrant_collection(collection_id: str) -> None:
+    """Crea la colección Qdrant si no existe, con vectores cosine de las dimensiones configuradas."""
     name = f"lm_{collection_id}"
     if not _collection_exists(name):
         _qdrant_client.create_collection(
@@ -49,6 +53,10 @@ def _ensure_qdrant_collection(collection_id: str) -> None:
 
 
 def ingest_chunks(*, doc_id: str, collection_id: str, text: str) -> int:
+    """Fragmenta el texto, genera embeddings y los almacena en Qdrant.
+
+    Retorna el número de chunks ingestados.
+    """
     chunks = _splitter.split_text(text)
     if not chunks:
         return 0
@@ -78,6 +86,7 @@ def ingest_chunks(*, doc_id: str, collection_id: str, text: str) -> int:
 
 
 def delete_collection_vectors(collection_id: str) -> bool:
+    """Elimina la colección de vectores Qdrant asociada a una colección. Retorna True si existía."""
     name = f"lm_{collection_id}"
     if not _collection_exists(name):
         return False
@@ -87,6 +96,7 @@ def delete_collection_vectors(collection_id: str) -> bool:
 
 
 def delete_document_chunks(collection_id: str, doc_id: str) -> int:
+    """Elimina los chunks de un documento específico de Qdrant. Retorna el número de puntos eliminados."""
     name = f"lm_{collection_id}"
     if not _collection_exists(name):
         return 0
@@ -100,6 +110,7 @@ def delete_document_chunks(collection_id: str, doc_id: str) -> int:
 
 
 def ping_qdrant() -> None:
+    """Verifica la conectividad con Qdrant listando las colecciones existentes."""
     _qdrant_client.get_collections()
 
 
@@ -109,6 +120,10 @@ def search_context(
     top_k: int | None = None,
     score_threshold: float | None = None,
 ) -> list[str]:
+    """Busca los chunks más relevantes en Qdrant para una consulta.
+
+    Retorna una lista de textos de los chunks encontrados.
+    """
     name = f"lm_{collection_id}"
     if not _collection_exists(name):
         return []
@@ -148,10 +163,10 @@ def retrieve_context(
     query: str,
     extra_context: str = "",
 ) -> tuple[str, int]:
-    """Search Qdrant, merge extra_context, return (context_str, num_chunks).
+    """Busca en Qdrant, combina extra_context y retorna (contexto, num_chunks).
 
     Raises:
-        NoContextAvailableError: If no context is found from any source.
+        NoContextAvailableError: Si no hay contexto de ninguna fuente.
     """
     try:
         context_chunks = search_context(

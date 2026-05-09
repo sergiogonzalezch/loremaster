@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlmodel import Session, select
+
 from app.core.auth import create_access_token, hash_password, verify_password
 from app.core.auth.dependencies import get_current_user
 from app.database import get_session
@@ -27,6 +28,11 @@ class TokenResponse(BaseModel):
 
 @router.post("/login", response_model=TokenResponse)
 def login(request: LoginRequest, session: Session = Depends(get_session)):
+    """Autentica un usuario con username/email y contraseña.
+
+    Returns:
+        Token JWT de acceso (Bearer).
+    """
     statement = select(User).where(
         (User.username == request.username_or_email)
         | (User.email == request.username_or_email),
@@ -53,6 +59,10 @@ def login(request: LoginRequest, session: Session = Depends(get_session)):
 
 @router.post("/register", response_model=TokenResponse)
 def register(request: RegisterRequest, session: Session = Depends(get_session)):
+    """Registra un nuevo usuario y devuelve un token JWT.
+
+    Valida que el username y email no estén en uso.
+    """
     existing_username = session.exec(
         select(User).where(User.username == request.username)
     ).first()
@@ -96,6 +106,10 @@ def logout(
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> None:
+    """Invalida el token del usuario incrementando su token_version.
+
+    Requiere autenticación. El usuario no podrá usar tokens previos.
+    """
     user = session.get(User, current_user["sub"])
     if user and not user.is_deleted:
         user.token_version += 1

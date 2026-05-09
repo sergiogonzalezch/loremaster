@@ -204,6 +204,7 @@ async def test_filter_documents_created_after_future(
 
 @pytest.mark.anyio
 async def test_ingest_blocked_document_returns_422(client, sample_collection):
+    """DOC-16: Ingesta de documento con contenido bloqueado retorna 422."""
     response = await client.post(
         f"/api/v1/collections/{sample_collection.id}/documents",
         files={"file": ("bad.txt", b"contenido porno xxx", "text/plain")},

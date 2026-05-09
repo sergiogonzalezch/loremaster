@@ -7,6 +7,8 @@ from fastapi import Query
 
 @dataclass
 class PaginationParams:
+    """Parámetros de paginación para endpoints."""
+
     page: int = Query(default=1, ge=1)
     page_size: int = Query(default=20, ge=1, le=100)
     order: Literal["asc", "desc"] = Query(default="desc")
@@ -14,5 +16,7 @@ class PaginationParams:
 
 @dataclass
 class DateRangeParams:
+    """Parámetros de rango de fechas para filtrado."""
+
     created_after: Optional[datetime] = Query(default=None)
     created_before: Optional[datetime] = Query(default=None)

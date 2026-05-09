@@ -37,6 +37,11 @@ def create_collection(
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
+    """Crea una nueva colección para el usuario autenticado.
+
+    Returns:
+        Colección creada con status 201.
+    """
     try:
         return create_collection_service(
             session, current_user["sub"], request.name, request.description
@@ -53,6 +58,7 @@ def get_collections(
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
+    """Lista las colecciones del usuario autenticado con filtros y paginación."""
     items, total = list_collections_service(
         session,
         current_user["sub"],
@@ -71,6 +77,7 @@ def get_collection(
     collection: Collection = Depends(get_collection_or_404_owned),
     session: Session = Depends(get_session),
 ):
+    """Obtiene los datos de una colección con recuentos de documentos y entidades."""
     return get_collection_with_counts_service(session, collection)
 
 
@@ -80,6 +87,7 @@ def update_collection(
     collection: Collection = Depends(get_collection_or_404_owned),
     session: Session = Depends(get_session),
 ):
+    """Actualiza el nombre o descripción de una colección."""
     try:
         return update_collection_service(session, collection, request)
     except DuplicateCollectionNameError as exc:
@@ -91,6 +99,7 @@ def delete_collection(
     collection: Collection = Depends(get_collection_or_404_owned),
     session: Session = Depends(get_session),
 ):
+    """Elimina una colección y todos sus contenidos en cascada."""
     try:
         vectors_cleaned = delete_collection_service(session, collection)
     except DatabaseError:

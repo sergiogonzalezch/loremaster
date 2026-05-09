@@ -21,6 +21,11 @@ def paginate(
     page: int = 1,
     page_size: int = 20,
 ) -> tuple[list, int]:
+    """Pagina una consulta base con página y tamaño dados.
+
+    Retorna una tupla (items, total) donde items es la página solicitada
+    y total es el conteo total de registros.
+    """
     skip = (page - 1) * page_size
     total = session.exec(select(func.count()).select_from(base_stmt.subquery())).one()
     items = session.exec(base_stmt.offset(skip).limit(page_size)).all()
@@ -36,6 +41,10 @@ def paginate_with_sort(
     order_col=None,
     order: str = "desc",
 ) -> tuple[list[T], int]:
+    """Pagina y ordena una consulta por modelo y condiciones dadas.
+
+    Retorna una tupla (items, total) con paginación y ordenamiento.
+    """
     skip = (page - 1) * page_size
     total = session.exec(
         select(func.count()).select_from(select(model).where(*conditions).subquery())
@@ -52,7 +61,10 @@ def paginate_with_sort(
 
 
 def db_commit(session: Session, operation: str) -> None:
-    """Commit with consistent error handling."""
+    """Ejecuta commit en la sesión con manejo consistente de errores.
+
+    En caso de error SQLAlchemy, hace rollback y lanza DatabaseError.
+    """
     try:
         session.commit()
     except SQLAlchemyError as e:
@@ -67,6 +79,7 @@ def get_active_by_id(
     record_id: str,
     collection_id: str,
 ) -> Optional[T]:
+    """Obtiene un registro activo por ID y collection_id, sin soft-deleted."""
     stmt = select(model).where(
         model.id == record_id,
         model.collection_id == collection_id,
@@ -80,6 +93,7 @@ def list_active_by_collection(
     model: Type[T],
     collection_id: str,
 ) -> list[T]:
+    """Lista todos los registros activos de un modelo para una colección."""
     stmt = select(model).where(
         model.collection_id == collection_id,
         model.is_deleted == False,
@@ -94,6 +108,10 @@ def list_active_paginated(
     skip: int,
     limit: int,
 ) -> tuple[list[T], int]:
+    """Lista registros activos de una colección con paginación.
+
+    Retorna una tupla (items, total).
+    """
     base_filter = (
         model.collection_id == collection_id,
         model.is_deleted == False,

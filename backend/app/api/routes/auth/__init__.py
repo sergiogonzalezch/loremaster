@@ -1,3 +1,5 @@
+"""Rutas de autenticación (local y Clerk)."""
+
 from app.api.routes.auth.auth import router as auth_router
 from app.api.routes.auth.auth_clerk import router as auth_clerk_router
 

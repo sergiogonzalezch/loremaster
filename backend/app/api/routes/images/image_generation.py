@@ -1,5 +1,3 @@
-# backend/app/api/routes/image_generation.py
-
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -46,7 +44,11 @@ def build_prompt(
     entity: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
-    """Construye el prompt automático sin guardar nada."""
+    """Genera un prompt visual a partir de un contenido confirmado.
+
+    Usa el LLM para transformar el texto del contenido en una descripción
+    visual adecuada para generación de imágenes. No guarda nada en BD.
+    """
     try:
         return build_prompt_service(session, entity, request.content_id)
     except NoContextAvailableError:
@@ -73,7 +75,10 @@ def generate_images(
     session: Session = Depends(get_session),
     current_user: dict = Depends(get_current_user),
 ):
-    """Genera el batch de imágenes."""
+    """Genera un batch de imágenes usando ComfyUI o mock.
+
+    Aplica guardrails al prompt antes de enviarlo al motor.
+    """
     try:
         return generate_images_service(
             session,
@@ -137,7 +142,7 @@ def delete_image(
     entity: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
-    """Elimina una imagen individual del batch."""
+    """Elimina una imagen individual del batch (soft delete)."""
     try:
         delete_image_service(session, entity, generation_id, image_id)
     except NoContextAvailableError:
@@ -161,7 +166,7 @@ def get_generation(
     entity: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
-    """Obtiene una generación existente con sus imágenes."""
+    """Obtiene una solicitud de generación con sus imágenes."""
     try:
         return get_generation_service(session, entity, generation_id)
     except NoContextAvailableError:
@@ -182,7 +187,7 @@ def list_generations(
     entity: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
-    """Lista todas las generaciones de imágenes de una entidad."""
+    """Lista todas las solicitudes de generación de imágenes de una entidad."""
     try:
         generations, total = list_generations_service(session, entity)
         return ImageGenerationListResponse(generations=generations, total=total)

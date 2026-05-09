@@ -19,6 +19,14 @@ _JWKS_TTL = 3600  # 1 hora; Clerk rota claves ocasionalmente
 
 
 def get_jwks() -> dict:
+    """Obtiene las claves públicas JWKS de Clerk con caché de 1 hora.
+
+    Returns:
+        Diccionario con las claves JWKS.
+
+    Raises:
+        HTTPException(503): Si no se puede conectar con Clerk.
+    """
     global _jwks_cache, _jwks_cache_time
     with _jwks_lock:
         if _jwks_cache is None or time.monotonic() - _jwks_cache_time > _JWKS_TTL:
@@ -36,6 +44,17 @@ def get_jwks() -> dict:
 
 
 def decode_clerk_token(token: str) -> dict:
+    """Decodifica y valida un token JWT de Clerk.
+
+    Args:
+        token: Token JWT de Clerk.
+
+    Returns:
+        Payload decodificado del token.
+
+    Raises:
+        HTTPException(401): Si el token es inválido o ha expirado.
+    """
     try:
         return jwt.decode(
             token, get_jwks(), algorithms=["RS256"], audience=settings.clerk_audience
@@ -48,6 +67,11 @@ def decode_clerk_token(token: str) -> dict:
 
 @router.get("/verify")
 def verify(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verifica la validez de un token Bearer de Clerk.
+
+    Returns:
+        Diccionario con valid=True y el user_id del token.
+    """
     if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="No autorizado"

@@ -1,7 +1,11 @@
 #!/usr/bin/env python
-"""Make a user admin.
+"""Script para promover un usuario a administrador.
 
-Usage: python scripts/make_admin.py <username>
+Uso:
+    python scripts/make_admin.py <username>
+
+Conecta directamente a la base de datos configurada en DATABASE_URL
+y actualiza el campo is_admin del usuario indicado.
 """
 
 import sys
@@ -15,6 +19,7 @@ from app.models.db.user import User
 
 
 def main():
+    """Busca un usuario por nombre de usuario y lo promueve a administrador."""
     if len(sys.argv) != 2:
         print(f"Usage: python {sys.argv[0]} <username>")
         sys.exit(1)

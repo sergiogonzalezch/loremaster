@@ -44,6 +44,11 @@ def generate_content(
     entity: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
+    """Genera contenido RAG para una entidad usando el pipeline LLM.
+
+    Crea un EntityContent en estado 'pending' junto con su GeneratedText.
+    Aplica guardrails de entrada y salida.
+    """
     try:
         return generation_service.generate(session, entity, category, request.query)
     except PendingLimitExceededError as e:
@@ -81,6 +86,7 @@ def list_contents(
     _: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
+    """Lista los contenidos de una entidad con filtros y paginación."""
     items, total = content_service.list_contents(
         session,
         entity_id,
@@ -106,6 +112,7 @@ def edit_content(
     _: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
+    """Edita el texto de un contenido activo (pending o confirmed)."""
     try:
         result = content_service.edit_content(
             session, content_id, entity_id, collection_id, request.content
@@ -128,6 +135,7 @@ def confirm_content(
     entity: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
+    """Confirma un contenido pending y descarta sus hermanos de la misma categoría."""
     try:
         result = content_service.confirm_content(session, content_id, entity)
     except DatabaseError:
@@ -149,6 +157,7 @@ def discard_content(
     _: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
+    """Descarta un contenido pendiente."""
     try:
         result = content_service.discard_content(
             session, content_id, entity_id, collection_id
@@ -172,6 +181,10 @@ def share_content(
     _: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
+    """Comparte o deja de compartir un contenido en el feed público.
+
+    Solo contenidos en estado 'confirmed' pueden compartirse.
+    """
     try:
         result = content_service.share_content(
             session, content_id, entity_id, collection_id, request.shared
@@ -196,6 +209,7 @@ def delete_content(
     _: Entity = Depends(get_entity_or_404_owned),
     session: Session = Depends(get_session),
 ):
+    """Elimina suavemente un contenido de entidad."""
     try:
         deleted = content_service.soft_delete_content(
             session, content_id, entity_id, collection_id

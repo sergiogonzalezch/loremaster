@@ -1,3 +1,5 @@
+"""Servicios de colecciones: CRUD y listado."""
+
 from app.services.collection.collection_service import (
     create_collection_service,
     delete_collection_service,

@@ -1,3 +1,5 @@
+"""Configuración del modelo LLM (Ollama) y cadena de procesamiento para RAG."""
+
 from langchain_ollama import OllamaLLM
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -10,6 +12,7 @@ _SAFETY_INSTRUCTION = (
     "Si la solicitud o el contexto contienen ese tipo de material, responde únicamente: "
     "'No puedo procesar esta solicitud.' y no generes ningún contenido adicional.\n\n"
 )
+"""Instrucción de seguridad inyectada en todos los prompts del LLM."""
 
 _PROMPT = PromptTemplate.from_template(
     """
@@ -19,10 +22,13 @@ _PROMPT = PromptTemplate.from_template(
     Eres un asistente experto en narrativa y worldbuilding.\n
     Responde usando ÚNICAMENTE la información del contexto proporcionado.\n
     Si el contexto no contiene información suficiente, indícalo claramente.\n\n
-    CONTEXTO:\n{context},\n
-    PREGUNTA:\n{query}.
+    CONTEXTO:
+{context},\n
+    PREGUNTA:
+{query}.
     """
 )
+"""Plantilla de prompt para consultas RAG."""
 
 llm = OllamaLLM(
     model=settings.ollama_model,
@@ -30,5 +36,7 @@ llm = OllamaLLM(
     temperature=settings.temperature,
     num_predict=settings.max_tokens,
 )
+"""Instancia del modelo Ollama configurada con los parámetros de la aplicación."""
 
 chain = _PROMPT | llm | StrOutputParser()
+"""Cadena de procesamiento LangChain: prompt → LLM → parser de salida."""

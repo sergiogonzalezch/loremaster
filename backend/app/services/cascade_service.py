@@ -13,6 +13,16 @@ def cascade_delete_by_entity(
     entity_id: str,
     collection_id: str,
 ) -> int:
+    """Realiza soft-delete de todos los EntityContent asociados a una entidad.
+
+    Args:
+        session: Sesión de base de datos activa.
+        entity_id: Identificador de la entidad.
+        collection_id: Identificador de la colección (para filtrar contenidos).
+
+    Returns:
+        Número de EntityContents eliminados de forma suave.
+    """
     contents = session.exec(
         select(EntityContent).where(
             EntityContent.entity_id == entity_id,
@@ -32,6 +42,15 @@ def cascade_delete_by_collection(
     session: Session,
     collection_id: str,
 ) -> int:
+    """Realiza soft-delete de todos los EntityContent de una colección.
+
+    Args:
+        session: Sesión de base de datos activa.
+        collection_id: Identificador de la colección.
+
+    Returns:
+        Número de EntityContents eliminados de forma suave.
+    """
     contents = session.exec(
         select(EntityContent).where(
             EntityContent.collection_id == collection_id,

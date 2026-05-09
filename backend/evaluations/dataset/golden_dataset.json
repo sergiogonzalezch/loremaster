@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Golden dataset de Lore Master — cobertura completa: RAG, CRUD de entidades (5 tipos x 10 casos), todas las combinaciones de categoria valida e invalida, guardrails, generacion de imagen y flujos de ciclo de vida.",
   "created_at": "2026-04-29",
   "updated_at": "2026-05-08",

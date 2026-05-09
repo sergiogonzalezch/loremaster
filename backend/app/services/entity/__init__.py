@@ -1,3 +1,5 @@
+"""Servicios de entidades: CRUD, contenido y generación."""
+
 from app.services.entity.entities_service import (
     create_entity_service,
     delete_entity_service,
@@ -12,10 +14,7 @@ from app.services.entity.content_service import (
     share_content,
     soft_delete_content,
 )
-from app.services.entity.generation_service import (
-    count_pending_contents,
-    generate,
-)
+from app.services.entity.generation_service import generate
 
 __all__ = [
     "create_entity_service",
@@ -28,6 +27,5 @@ __all__ = [
     "list_contents",
     "share_content",
     "soft_delete_content",
-    "count_pending_contents",
     "generate",
 ]

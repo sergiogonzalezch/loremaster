@@ -1,5 +1,4 @@
-# tests/test_prompt_builder.py
-# Tests para app.engine.image_prompt_builder
+"""Tests para el constructor de prompts visuales (app.engine.image_prompt_builder)."""
 
 from app.engine.image_prompt_builder import build_visual_prompt, _estimate_tokens
 from app.models.db.entity import EntityType

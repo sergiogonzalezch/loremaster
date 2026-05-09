@@ -1,3 +1,5 @@
+"""Servicios de perfil de usuario."""
+
 from app.services.profile.profile_service import (
     delete_profile_image,
     get_avatar_info,

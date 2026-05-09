@@ -1,3 +1,5 @@
+"""Servicios de generación de imágenes."""
+
 from app.services.image.image_generation_service import (
     build_prompt_service,
     delete_image_service,
