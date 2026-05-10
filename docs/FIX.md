@@ -276,37 +276,46 @@ Aspectos que deben resolverse antes de cualquier despliegue fuera de entorno loc
 | P2 | Sin rate limiting — un usuario puede saturar la cola del LLM | Alto |
 | P3 | ~~CORS configurado solo para `localhost` — requiere revisión antes de deploy~~ | ✅ Resuelto |
 | P4 | Sin detección de documentos duplicados — el vector store crece con contenido repetido | Medio |
-| P5 | Sin health check granular — `/health` no verifica Qdrant ni el modelo LLM | Medio |
+| P5 | ~~Sin health check granular — `/health` no verifica Qdrant ni el modelo LLM~~ | ✅ Resuelto |
 | P6 | Sin audit trail de usuario — `updated_at`/`deleted_at` existen, pero no `updated_by` | Bajo |
 | P7 | Sin operaciones bulk — no se puede eliminar múltiples colecciones o entidades a la vez | Bajo |
 | P8 | Modelo LLM y embeddings no cambiables en runtime desde la UI | Bajo |
 | P9 | ~~Sin auditoría de contenido moderado — rechazos de guardrail no persisten (ver ítem 19)~~ | ✅ Resuelto |
-| P10 | `/media/**` sirve imágenes sin autenticación — cualquier URL es accesible sin token | Medio |
+| P10 | ~~`/media/**` sirve imágenes sin autenticación — cualquier URL es accesible sin token~~ | ✅ Resuelto |
 
 **Notas sobre gaps cerrados:**
 
-### P10 — `/media/**` sin autenticación
+### ~~P5 — Health check granular~~ ✅ Resuelto
 
 **Capa:** Backend  
-**Archivo:** `backend/app/main.py` líneas 67-69  
-**Impacto:** Medio — cualquier URL de imagen es accesible sin token JWT desde un navegador o cliente externo.
+**Archivo:** `backend/app/main.py`  
+**Impacto:** Medio — el health check ahora verifica Qdrant y Ollama.
 
-`StaticFiles` se monta como sub-aplicación de ASGI. Al ser un sub-app independiente, **no hereda el `CORSMiddleware` ni ninguna otra dependencia** del `app` padre. Esto significa que el middleware de autenticación nunca se ejecuta sobre `/media/**`.
+**Solución aplicada:** El endpoint `/health` ahora retorna un objeto con:
+- `status`: "healthy" si todos los serviciosOK, "degraded" si alguno falla
+- `services`: objeto con el estado de cada servicio ("qdrant", "ollama")
 
-La protección actual es únicamente por oscuridad: la ruta incluye cuatro UUIDs anidados (`{collection_id}/{entity_id}/{generation_id}/{image_id}.png`), lo que hace estadísticamente imposible adivinar una URL. No obstante, quien posea un enlace (p. ej. via historial del navegador, logs de red, o un usuario que comparte una URL) puede acceder a la imagen sin autenticar.
+El health check hace requests HTTP a los endpoints `/ready` de Qdrant y `/api/tags` de Ollama con timeout de 2s. Si un servicio no responde, se marca como "unhealthy" y el status general baja a "degraded".
 
-**Solución sugerida:** Reemplazar el mount estático por un endpoint autenticado:
+---
 
-```python
-@router.get("/images/{image_id}/file")
-def serve_image(image_id: str, _: dict = Depends(get_current_user), session: Session = Depends(get_session)):
-    record = session.get(ImageRecord, image_id)
-    if not record or record.is_deleted:
-        raise HTTPException(404)
-    return FileResponse(Path(settings.media_root) / record.storage_path)
-```
+### ~~P10 — `/media/**` sin autenticación~~ ✅ Resuelto
 
-No urgente mientras el proyecto sea de uso interno local. Abordar antes de cualquier despliegue donde las imágenes puedan ser datos sensibles.
+**Capa:** Backend  
+**Archivos:** `backend/app/main.py`, `backend/app/api/routes/media.py`  
+**Impacto:** Medio — las imágenes ahora requieren autenticación JWT.
+
+**Solución aplicada:**
+
+- Eliminado el mount de `StaticFiles` en `main.py`
+- Creado nuevo router `app/api/routes/media.py` con endpoint autenticado `GET /media/{path:path}`
+- El endpoint verifica:
+  1. Token JWT válido (vía `get_current_user`)
+  2. Ownership de la colección extraída del path (`collection_id/...`)
+  3. Retorna 404 si la colección no existe o el archivo no se encuentra
+  4. Retorna 403 si el usuario no es el dueño de la colección
+
+El path esperado es `{collection_id}/{entity_id}/{generation_id}/{image_id}.{extension}`.
 
 ---
 

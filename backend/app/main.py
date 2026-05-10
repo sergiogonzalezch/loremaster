@@ -10,7 +10,6 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
 from app.core.lifespan import lifespan
@@ -28,6 +27,7 @@ from app.api.routes import (
     rag_query_router,
     users_router,
 )
+from app.api.routes.media import router as media_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -73,12 +73,33 @@ def read_root():
 @app.get("/health")
 def health_check():
     """Endpoint de health check para monitoreo."""
-    return {"status": "healthy"}
+    import httpx
+
+    status = {"status": "healthy", "services": {}}
+
+    qdrant_url = settings.qdrant_url
+    try:
+        with httpx.Client(timeout=2.0) as client:
+            resp = client.get(f"{qdrant_url}/ready")
+            status["services"]["qdrant"] = "healthy" if resp.status_code == 200 else "unhealthy"
+    except Exception:
+        status["services"]["qdrant"] = "unhealthy"
+        status["status"] = "degraded"
+
+    ollama_url = settings.ollama_base_url
+    try:
+        with httpx.Client(timeout=2.0) as client:
+            resp = client.get(f"{ollama_url}/api/tags")
+            status["services"]["ollama"] = "healthy" if resp.status_code == 200 else "unhealthy"
+    except Exception:
+        status["services"]["ollama"] = "unhealthy"
+        status["status"] = "degraded"
+
+    return status
 
 
 _media_dir = Path(settings.media_root)
 _media_dir.mkdir(parents=True, exist_ok=True)
-app.mount("/media", StaticFiles(directory=str(_media_dir)), name="media")
 
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(auth_clerk_router, prefix="/api/v1")
@@ -92,3 +113,4 @@ app.include_router(metadata_router, prefix="/api/v1")
 app.include_router(users_router, prefix="/api/v1")
 app.include_router(public_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
+app.include_router(media_router, tags=["media"])
