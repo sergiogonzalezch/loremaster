@@ -10,6 +10,10 @@ vi.mock("../api", () => ({
 import { getDocuments } from "../api";
 const mockGetDocuments = vi.mocked(getDocuments);
 
+vi.mock("../utils/token", () => ({
+  getToken: vi.fn().mockReturnValue(null),
+}));
+
 const EMPTY_PAGE = {
   data: [] as import("../types/document").Document[],
   meta: { total: 0, page: 1, page_size: 100, total_pages: 0 },
@@ -45,16 +49,31 @@ const COMPLETED_PAGE = {
   meta: { total: 1, page: 1, page_size: 100, total_pages: 1 },
 };
 
-beforeEach(() => {
-  vi.clearAllMocks();
-  vi.useFakeTimers();
-});
-
-afterEach(() => {
-  vi.useRealTimers();
-});
-
 describe("useCollectionDocumentsStatus", () => {
+  let mockEventSource: {
+    onmessage: ((event: { data: string }) => void) | null;
+    onerror: (() => void) | null;
+    close: () => void;
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockEventSource = {
+      onmessage: null,
+      onerror: null,
+      close: vi.fn(),
+    };
+
+    vi.spyOn(global, "EventSource").mockImplementation(() => {
+      return mockEventSource as unknown as EventSource;
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("sin collectionId no llama a la API", async () => {
     renderHook(() => useCollectionDocumentsStatus(undefined));
     await act(async () => {});
@@ -77,50 +96,79 @@ describe("useCollectionDocumentsStatus", () => {
     expect(result.current.hasProcessingDocs).toBe(false);
   });
 
-  it("el polling se activa cuando hay documentos en 'processing'", async () => {
+  it("crea EventSource cuando hay documentos en processing", async () => {
+    mockGetDocuments.mockResolvedValue(PROCESSING_PAGE);
+    const eventSourceSpy = vi.spyOn(global, "EventSource");
+
+    const { result } = renderHook(() => useCollectionDocumentsStatus("col-1"));
+    await act(async () => {});
+
+    expect(eventSourceSpy).toHaveBeenCalled();
+    expect(result.current.hasProcessingDocs).toBe(true);
+  });
+
+  it("hace refresh al recibir evento 'processing' del SSE", async () => {
     mockGetDocuments.mockResolvedValue(PROCESSING_PAGE);
     const { result } = renderHook(() => useCollectionDocumentsStatus("col-1"));
 
-    // Flush initial load
     await act(async () => {});
     expect(result.current.hasProcessingDocs).toBe(true);
 
     const callsBefore = mockGetDocuments.mock.calls.length;
 
-    // Advance 3s — interval fires once
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(3000);
+    mockGetDocuments.mockResolvedValue(PROCESSING_PAGE);
+    act(() => {
+      mockEventSource.onmessage?.({ data: "processing" });
     });
 
     expect(mockGetDocuments.mock.calls.length).toBeGreaterThan(callsBefore);
   });
 
-  it("el polling se detiene cuando todos los documentos salen de 'processing'", async () => {
+  it("hace refresh y cierra EventSource al recibir evento 'completed'", async () => {
     mockGetDocuments
-      .mockResolvedValueOnce(PROCESSING_PAGE) // initial load
-      .mockResolvedValue(COMPLETED_PAGE); // interval calls
+      .mockResolvedValueOnce(PROCESSING_PAGE)
+      .mockResolvedValueOnce(COMPLETED_PAGE);
 
     const { result } = renderHook(() => useCollectionDocumentsStatus("col-1"));
 
-    // Initial load → hasProcessingDocs=true
     await act(async () => {});
     expect(result.current.hasProcessingDocs).toBe(true);
 
-    // Interval fires → COMPLETED → hasProcessingDocs=false → interval cleared
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(3000);
+    const closeSpy = vi.spyOn(mockEventSource, "close");
+
+    act(() => {
+      mockEventSource.onmessage?.({ data: "completed" });
     });
+
+    await act(async () => {});
 
     expect(result.current.hasProcessingDocs).toBe(false);
+    expect(closeSpy).toHaveBeenCalled();
+  });
 
-    const callsAfterStop = mockGetDocuments.mock.calls.length;
+  it("cierra EventSource cuando hasProcessingDocs es false", async () => {
+    mockGetDocuments
+      .mockResolvedValueOnce(PROCESSING_PAGE)
+      .mockResolvedValueOnce(COMPLETED_PAGE);
 
-    // 9 more seconds — no new calls because interval was cleared
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(9000);
+    const { unmount } = renderHook(() =>
+      useCollectionDocumentsStatus("col-1"),
+    );
+
+    await act(async () => {});
+
+    const closeSpy = vi.spyOn(mockEventSource, "close");
+
+    act(() => {
+      mockEventSource.onmessage?.({ data: "completed" });
     });
 
-    expect(mockGetDocuments.mock.calls.length).toBe(callsAfterStop);
+    await act(async () => {});
+
+    expect(closeSpy).toHaveBeenCalled();
+
+    unmount();
+    expect(closeSpy).toHaveBeenCalledTimes(2);
   });
 
   it("ApiAbortError no actualiza estado (queda en valores iniciales)", async () => {
@@ -129,5 +177,20 @@ describe("useCollectionDocumentsStatus", () => {
     await act(async () => {});
     expect(result.current.hasCompletedDocs).toBeNull();
     expect(result.current.hasProcessingDocs).toBe(false);
+  });
+
+  it("maneja error de EventSource cerrando la conexión", async () => {
+    mockGetDocuments.mockResolvedValue(PROCESSING_PAGE);
+
+    renderHook(() => useCollectionDocumentsStatus("col-1"));
+    await act(async () => {});
+
+    const closeSpy = vi.spyOn(mockEventSource, "close");
+
+    act(() => {
+      mockEventSource.onerror?.();
+    });
+
+    expect(closeSpy).toHaveBeenCalled();
   });
 });

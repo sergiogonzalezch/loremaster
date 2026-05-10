@@ -2,16 +2,17 @@
  * Hook para monitorear el estado de los documentos de una colección.
  *
  * Detecta si hay documentos completados y si hay documentos en procesamiento.
- * Cuando hay documentos procesando, hace polling cada 3 segundos hasta
- * que todos terminen.
+ * Usa SSE (Server-Sent Events) para notificaciones en tiempo real en lugar de polling.
  *
  * @param collectionId - ID de la colección a monitorear
  * @returns Estado de documentos y función refresh para forzar recarga
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getDocuments } from "../api";
 import { ApiAbortError } from "../api/apiClient";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
 
 interface UseCollectionDocumentsStatusResult {
   hasCompletedDocs: boolean | null;
@@ -22,10 +23,9 @@ interface UseCollectionDocumentsStatusResult {
 export function useCollectionDocumentsStatus(
   collectionId: string | undefined,
 ): UseCollectionDocumentsStatusResult {
-  const [hasCompletedDocs, setHasCompletedDocs] = useState<boolean | null>(
-    null,
-  );
+  const [hasCompletedDocs, setHasCompletedDocs] = useState<boolean | null>(null);
   const [hasProcessingDocs, setHasProcessingDocs] = useState(false);
+  const eventSourceRef = useRef<EventSource | null>(null);
 
   const refresh = useCallback(
     async (signal?: AbortSignal) => {
@@ -57,14 +57,49 @@ export function useCollectionDocumentsStatus(
   }, [refresh]);
 
   useEffect(() => {
-    if (!hasProcessingDocs) return;
-    const controller = new AbortController();
-    const interval = setInterval(() => refresh(controller.signal), 3000);
-    return () => {
-      clearInterval(interval);
-      controller.abort();
+    if (!hasProcessingDocs) {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+      return;
+    }
+
+    const baseUrl = API_BASE_URL.replace("/api/v1", "");
+    const eventUrl = `${baseUrl}/collections/${collectionId}/documents/events`;
+    const token = localStorage.getItem("token");
+
+    const eventSource = new EventSource(
+      token ? `${eventUrl}?auth=${encodeURIComponent(token)}` : eventUrl,
+    );
+    eventSourceRef.current = eventSource;
+
+    eventSource.onmessage = async (event) => {
+      const data = event.data;
+
+      if (data === "processing" || data === "completed") {
+        await refresh();
+
+        if (data === "completed") {
+          eventSource.close();
+          eventSourceRef.current = null;
+        }
+      } else if (data === "done") {
+        eventSource.close();
+        eventSourceRef.current = null;
+      }
     };
-  }, [hasProcessingDocs, refresh]);
+
+    eventSource.onerror = () => {
+      eventSource.close();
+      eventSourceRef.current = null;
+    };
+
+    return () => {
+      eventSource.close();
+      eventSourceRef.current = null;
+    };
+  }, [hasProcessingDocs, collectionId, refresh]);
 
   return { hasCompletedDocs, hasProcessingDocs, refresh };
 }

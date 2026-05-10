@@ -10,6 +10,7 @@ import {
   useState,
   useEffect,
   useRef,
+  useCallback,
   type ReactNode,
 } from "react";
 import { getToken, setToken, removeToken } from "../utils/token";
@@ -83,13 +84,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Ref so the timer callback always calls the current logout without re-scheduling
   const logoutRef = useRef<() => void>(() => {});
 
-  function logout() {
+  const logout = useCallback(() => {
     void logoutApi().catch(() => {});
     removeToken();
     setUser(null);
-  }
+  }, []);
 
-  logoutRef.current = logout;
+  useEffect(() => {
+    logoutRef.current = logout;
+  }, [logout]);
 
   // Auto-logout when the current token expires
   useEffect(() => {

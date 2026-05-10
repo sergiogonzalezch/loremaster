@@ -85,7 +85,10 @@ export async function apiFetch<T>(
 
   if (response.status === 401) {
     removeToken();
-    window.location.href = "/login";
+    const isAlreadyOnLogin = window.location.pathname === "/login";
+    if (!isAlreadyOnLogin) {
+      window.location.href = "/login";
+    }
     throw new ApiError(401, "Sesión expirada. Inicia sesión de nuevo.");
   }
 

@@ -27,7 +27,7 @@ Lista de tech debt identificado y aún no corregido. Ordenado por impacto estima
 | 17 | Guardrails sin normalización Unicode ni tests adversariales | Backend | ✅ Resuelto | — |
 | 18 | Páginas excluidas del coverage de tests (`vitest.config.ts`) | Frontend | ✅ Resuelto | — |
 | 19 | Sin auditoría de contenido moderado | Backend | ✅ Resuelto | — |
-| 20 | Polling de 3 s en `useCollectionDocumentsStatus` | Frontend | 🟡 Pendiente | Candidato a SSE/WebSocket — no urgente con volumen actual |
+| 20 | ~~Polling de 3 s en `useCollectionDocumentsStatus`~~ | Frontend | ✅ Resuelto | Reemplazado polling con SSE |
 | 21 | `ImageRecord` excluido del cascade soft-delete | Backend | ✅ Resuelto | — |
 | 22 | Guardrail semánticamente incorrecto en image service | Backend | ✅ Resuelto | — |
 | 23 | `NoContextAvailableError` reutilizada para regla de negocio | Backend | ✅ Resuelto | — |
@@ -246,15 +246,21 @@ Creado `tests/test_content_guard.py` con 32 tests: baseline (inputs limpios y pa
 
 ---
 
-## 20. Polling de 3 s en `useCollectionDocumentsStatus`
+## ~~20. Polling de 3 s en `useCollectionDocumentsStatus`~~ ✅ Resuelto
 
-**Capa:** Frontend  
-**Archivo:** `frontend/src/hooks/useCollectionDocumentsStatus.ts`  
-**Impacto:** Bajo (con el volumen actual) — genera una request al backend cada 3 s por pestaña activa mientras existan documentos en estado `processing`. Escala mal con muchos usuarios o colecciones grandes.
+**Capa:** Frontend + Backend  
+**Archivos:** 
+- `backend/app/api/routes/documents/documents.py` — nuevo endpoint `GET /collections/{collection_id}/documents/events`
+- `frontend/src/hooks/useCollectionDocumentsStatus.ts` — usa EventSource en lugar de setInterval
 
-El hook se auto-cancela cuando todos los documentos salen de `processing`, lo que mitiga el problema en condiciones normales. El coste real es bajo mientras el proyecto sea single-user local.
+**Solución aplicada:** El polling de 3 segundos fue reemplazado por SSE (Server-Sent Events):
 
-**Solución sugerida:** Reemplazar el polling con SSE (Server-Sent Events) o WebSocket para notificaciones en tiempo real desde el backend. No urgente — abordar antes de cualquier despliegue multi-usuario.
+- El backend expone un endpoint de streaming que emite eventos `processing` mientras hay documentos procesando y `completed` cuando todos terminan.
+- El frontend usa `EventSource` para escuchar estos eventos y hace un único refresh al recibir notificación de cambio de estado.
+- La conexión SSE se cierra automáticamente cuando no hay más documentos en procesamiento.
+- El hook mantiene el refresh inicial y la función manual para consistencia de API.
+
+Esta solución reduce drásticamente el tráfico de red (de ~1 req/3s a ~1-2 req por ciclo de procesamiento) y escala correctamente para múltiples usuarios.
 
 ---
 

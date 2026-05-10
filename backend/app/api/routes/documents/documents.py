@@ -1,3 +1,6 @@
+import asyncio
+import logging
+import time
 from typing import Annotated, Optional
 
 from fastapi import (
@@ -10,7 +13,8 @@ from fastapi import (
     UploadFile,
     File,
 )
-from sqlmodel import Session
+from fastapi.responses import StreamingResponse
+from sqlmodel import Session, select, func
 
 from app.core.api.params import DateRangeParams, PaginationParams
 from app.core.database.dependencies import get_collection_or_404, get_document_or_404
@@ -162,3 +166,59 @@ def delete_document(
             status_code=503, detail="El almacén de vectores no está disponible."
         )
     return Response(status_code=204)
+
+
+@router.get("/{collection_id}/documents/events")
+def document_events(
+    collection_id: str,
+    _: Collection = Depends(get_collection_or_404),
+    __: dict = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Stream de eventos SSE para notificaciones de cambio de estado de documentos.
+
+    Emite 'processing' mientras haya documentos en procesamiento,
+    y 'completed' cuando todos terminen (exitosamente o con error).
+    El cliente debe reconnectar tras recibir 'completed'.
+    """
+
+    def event_stream():
+        seen_processing: dict[str, DocumentStatus] = {}
+        check_interval = 2
+
+        while True:
+            time.sleep(check_interval)
+
+            try:
+                stmt = select(Document).where(
+                    Document.collection_id == collection_id,
+                    Document.is_deleted == False,
+                )
+                docs = session.exec(stmt).all()
+
+                current_processing = {
+                    d.id: d.status
+                    for d in docs
+                    if d.status == DocumentStatus.processing
+                }
+
+                if current_processing != seen_processing:
+                    seen_processing.clear()
+                    seen_processing.update(current_processing)
+
+                    event_data = "completed" if not current_processing else "processing"
+                    yield f"data: {event_data}\n\n"
+
+                    if not current_processing:
+                        break
+
+                if not docs:
+                    break
+
+            except Exception:
+                logging.exception("Error in SSE document events")
+                break
+
+        yield f"data: done\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
