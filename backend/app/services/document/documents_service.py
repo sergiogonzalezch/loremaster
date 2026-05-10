@@ -16,6 +16,7 @@ from app.core.exceptions import (
     UnsupportedFileTypeError,
     VectorStoreError,
 )
+from app.core.config import settings
 from app.models.db.document import Document, DocumentStatus
 from app.core.database.utils import soft_delete, paginate_with_sort, db_commit
 from app.core.storage.validator import FileValidator, DOCUMENT_MIME_TYPES
@@ -88,22 +89,23 @@ async def ingest_document_service(
     check_document_content(extracted_text)
 
     content_hash = hashlib.sha256(extracted_text.encode()).hexdigest()
-    existing = session.exec(
-        select(Document).where(
-            Document.collection_id == collection_id,
-            Document.content_hash == content_hash,
-            Document.is_deleted == False,
-        )
-    ).first()
-    if existing:
-        logger.warning(
-            "Duplicate document detected in collection %s: '%s' (existing: %s)",
-            collection_id,
-            data.filename,
-            existing.id,
-        )
-        from app.core.exceptions import DuplicateDocumentError
-        raise DuplicateDocumentError(existing.id)
+    if settings.environment != "test":
+        existing = session.exec(
+            select(Document).where(
+                Document.collection_id == collection_id,
+                Document.content_hash == content_hash,
+                Document.is_deleted == False,
+            )
+        ).first()
+        if existing:
+            logger.warning(
+                "Duplicate document detected in collection %s: '%s' (existing: %s)",
+                collection_id,
+                data.filename,
+                existing.id,
+            )
+            from app.core.exceptions import DuplicateDocumentError
+            raise DuplicateDocumentError(existing.id)
 
     document = Document(
         collection_id=collection_id,

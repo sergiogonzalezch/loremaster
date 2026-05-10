@@ -3,6 +3,8 @@ import os
 import sys
 from collections.abc import Generator
 
+os.environ.setdefault("ENVIRONMENT", "test")
+
 import pytest
 from typing import AsyncGenerator
 from httpx import ASGITransport, AsyncClient

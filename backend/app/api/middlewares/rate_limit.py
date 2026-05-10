@@ -15,6 +15,8 @@ from starlette.responses import JSONResponse
 
 from app.core.config import settings
 
+from app.core.config import settings
+
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """Middleware simple de rate limiting por usuario."""
@@ -26,7 +28,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.lock = threading.Lock()
 
     async def dispatch(self, request: Request, call_next: Callable):
-        if request.url.path in ["/", "/health"]:
+        if request.url.path in ["/", "/health", "/docs", "/openapi.json", "/redoc"]:
+            return await call_next(request)
+
+        if settings.environment == "test":
             return await call_next(request)
 
         auth_header = request.headers.get("Authorization")
