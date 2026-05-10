@@ -18,6 +18,7 @@ from app.models.schemas.collection import (
     CreateCollectionRequest,
     UpdateCollectionRequest,
     CollectionResponse,
+    BulkDeleteRequest,
 )
 from app.models.shared import PaginatedResponse
 from app.services.collection.collection_service import (
@@ -110,4 +111,31 @@ def delete_collection(
             "Collection %s soft-deleted but Qdrant vectors were NOT removed — manual cleanup needed.",
             collection.id,
         )
+    return Response(status_code=204)
+
+
+@router.post("/bulk-delete", status_code=204)
+def bulk_delete_collections(
+    request: BulkDeleteRequest,
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Elimina múltiples colecciones en cascada."""
+    from app.models.db.collection import Collection
+    from sqlmodel import select
+
+    collections = session.exec(
+        select(Collection).where(
+            Collection.id.in_(request.ids),
+            Collection.owner_id == current_user["sub"],
+            Collection.is_deleted == False,
+        )
+    ).all()
+
+    for collection in collections:
+        try:
+            delete_collection_service(session, collection)
+        except Exception:
+            pass
+
     return Response(status_code=204)

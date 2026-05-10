@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import logging
 from datetime import datetime
 from typing import Literal, Optional
@@ -86,10 +87,29 @@ async def ingest_document_service(
         raise DocumentExtractionError() from e
     check_document_content(extracted_text)
 
+    content_hash = hashlib.sha256(extracted_text.encode()).hexdigest()
+    existing = session.exec(
+        select(Document).where(
+            Document.collection_id == collection_id,
+            Document.content_hash == content_hash,
+            Document.is_deleted == False,
+        )
+    ).first()
+    if existing:
+        logger.warning(
+            "Duplicate document detected in collection %s: '%s' (existing: %s)",
+            collection_id,
+            data.filename,
+            existing.id,
+        )
+        from app.core.exceptions import DuplicateDocumentError
+        raise DuplicateDocumentError(existing.id)
+
     document = Document(
         collection_id=collection_id,
         filename=data.filename,
         file_type=data.content_type,
+        content_hash=content_hash,
         chunk_count=0,
         status=DocumentStatus.processing,
         raw_text=extracted_text,

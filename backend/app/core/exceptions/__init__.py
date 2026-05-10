@@ -133,3 +133,11 @@ class DocumentNotRetryableError(Exception):
             "El documento no está en estado 'failed' o no tiene texto almacenado "
             "para reintentar la ingestión."
         )
+
+
+class DuplicateDocumentError(Exception):
+    """Lanzada cuando se detecta un documento duplicado por su contenido."""
+
+    def __init__(self, existing_id: str) -> None:
+        self.existing_id = existing_id
+        super().__init__("El contenido del documento ya existe en esta colección.")

@@ -28,6 +28,16 @@ class UpdateCollectionRequest(BaseModel):
     description: str | None = Field(default=None, max_length=2000)
 
 
+class BulkDeleteRequest(BaseModel):
+    """Esquema para eliminar múltiples recursos.
+
+    Attributes:
+        ids: Lista de IDs a eliminar.
+    """
+
+    ids: list[str] = Field(..., min_length=1, max_length=100)
+
+
 class CollectionResponse(BaseModel):
     """Respuesta con los datos de una colección.
 

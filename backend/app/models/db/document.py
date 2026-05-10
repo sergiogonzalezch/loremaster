@@ -30,6 +30,7 @@ class Document(SQLModel, SoftDeleteMixin, table=True):
         collection_id: Colección a la que pertenece.
         filename: Nombre original del archivo.
         file_type: Tipo MIME o extensión del archivo.
+        content_hash: Hash del contenido para detección de duplicados.
         chunk_count: Número de chunks vectorizados.
         status: Estado actual del procesamiento.
         processing_error: Mensaje de error si el procesamiento falló.
@@ -54,6 +55,7 @@ class Document(SQLModel, SoftDeleteMixin, table=True):
     )
     filename: str = Field(max_length=255)
     file_type: str = Field(max_length=100)
+    content_hash: Optional[str] = Field(default=None, max_length=64)
     chunk_count: int = Field(default=0)
     status: DocumentStatus = Field(default=DocumentStatus.processing, max_length=50)
     processing_error: Optional[str] = Field(

@@ -275,10 +275,10 @@ Aspectos que deben resolverse antes de cualquier despliegue fuera de entorno loc
 | P1 | ~~Sin autenticación/autorización (ver ítem 1)~~ | ✅ Resuelto |
 | P2 | ~~Sin rate limiting — un usuario puede saturar la cola del LLM~~ | ✅ Resuelto |
 | P3 | ~~CORS configurado solo para `localhost` — requiere revisión antes de deploy~~ | ✅ Resuelto |
-| P4 | Sin detección de documentos duplicados — el vector store crece con contenido repetido | Medio |
+| P4 | ~~Sin detección de documentos duplicados — el vector store crece con contenido repetido~~ | ✅ Resuelto |
 | P5 | ~~Sin health check granular — `/health` no verifica Qdrant ni el modelo LLM~~ | ✅ Resuelto |
 | P6 | ~~Sin audit trail de usuario — `updated_at`/`deleted_at` existen, pero no `updated_by`~~ | ✅ Resuelto |
-| P7 | Sin operaciones bulk — no se puede eliminar múltiples colecciones o entidades a la vez | Bajo |
+| P7 | ~~Sin operaciones bulk — no se puede eliminar múltiples colecciones o entidades a la vez~~ | ✅ Resuelto |
 | P8 | Modelo LLM y embeddings no cambiables en runtime desde la UI | Bajo |
 | P9 | ~~Sin auditoría de contenido moderado — rechazos de guardrail no persisten (ver ítem 19)~~ | ✅ Resuelto |
 | P10 | ~~`/media/**` sirve imágenes sin autenticación — cualquier URL es accesible sin token~~ | ✅ Resuelto |
@@ -355,6 +355,43 @@ El path esperado es `{collection_id}/{entity_id}/{generation_id}/{image_id}.{ext
 - Los servicios de update ahora aceptan un parámetro `user_id` opcional
 - Al actualizar, se asigna `updated_by = user_id` si está disponible
 - Los routes de API pasan `current_user["sub"]` al invocar los servicios
+
+---
+
+### ~~P4 — Detección de documentos duplicados~~ ✅ Resuelto
+
+**Capa:** Backend  
+**Archivos:** 
+- `backend/app/models/db/document.py` — añadido campo `content_hash`
+- `backend/app/services/document/documents_service.py` — cálculo SHA256 y verificación
+- `backend/app/core/exceptions/__init__.py` — nueva excepción `DuplicateDocumentError`
+
+**Impacto:** Medio — evita ingestión de documentos con contenido idéntico.
+
+**Solución aplicada:**
+
+- Añadido campo `content_hash: Optional[str]` (SHA256 hex) al modelo Document
+- En `ingest_document_service`: calculado hash del texto extraído y verificado contra documentos existentes en la colección
+- Si existe documento con mismo hash, lanza `DuplicateDocumentError` (409)
+- El endpoint de ingest captura la excepción y retorna 409 con mensaje descriptivo
+
+---
+
+### ~~P7 — Operaciones bulk~~ ✅ Resuelto
+
+**Capa:** Backend  
+**Archivos:** 
+- `backend/app/models/schemas/collection.py` — nuevo schema `BulkDeleteRequest`
+- `backend/app/api/routes/collections/collections.py` — endpoint `POST /bulk-delete`
+- `backend/app/api/routes/entities/entities.py` — endpoint `POST /{collection_id}/entities/bulk-delete`
+
+**Impacto:** Bajo — permite eliminar múltiples recursos en una sola llamada.
+
+**Solución aplicada:**
+
+- Nuevo schema `BulkDeleteRequest` con lista de IDs (1-100)
+- `POST /api/v1/collections/bulk-delete` — elimina múltiples colecciones del usuario
+- `POST /api/v1/collections/{id}/entities/bulk-delete` — elimina múltiples entidades de una colección
 
 ---
 

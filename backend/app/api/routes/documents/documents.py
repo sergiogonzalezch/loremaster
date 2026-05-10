@@ -24,6 +24,7 @@ from app.core.exceptions import (
     DatabaseError,
     DocumentExtractionError,
     DocumentNotRetryableError,
+    DuplicateDocumentError,
     FileTooLargeError,
     MissingFilenameError,
     UnsupportedFileTypeError,
@@ -77,6 +78,8 @@ async def ingest(
         raise HTTPException(
             status_code=422, detail="No se pudo extraer el texto del archivo."
         )
+    except DuplicateDocumentError as e:
+        raise HTTPException(status_code=409, detail=str(e))
     except DatabaseError:
         raise HTTPException(status_code=500, detail="Error interno del servidor.")
     background_tasks.add_task(process_ingest_background, session, document, text)

@@ -20,6 +20,7 @@ from app.models.schemas.entity import (
     UpdateEntityRequest,
     EntityResponse,
 )
+from app.models.schemas.collection import BulkDeleteRequest
 from app.models.shared import PaginatedResponse
 from app.services.entity.entities_service import (
     create_entity_service,
@@ -109,4 +110,32 @@ def delete_entity(
         delete_entity_service(session, entity)
     except DatabaseError:
         raise HTTPException(status_code=500, detail="Error interno del servidor.")
+    return Response(status_code=204)
+
+
+@router.post("/{collection_id}/entities/bulk-delete", status_code=204)
+def bulk_delete_entities(
+    collection_id: str,
+    request: BulkDeleteRequest,
+    collection: Collection = Depends(get_collection_or_404_owned),
+    session: Session = Depends(get_session),
+):
+    """Elimina múltiples entidades en cascada."""
+    from app.models.db.entity import Entity
+    from sqlmodel import select
+
+    entities = session.exec(
+        select(Entity).where(
+            Entity.id.in_(request.ids),
+            Entity.collection_id == collection_id,
+            Entity.is_deleted == False,
+        )
+    ).all()
+
+    for entity in entities:
+        try:
+            delete_entity_service(session, entity)
+        except Exception:
+            pass
+
     return Response(status_code=204)
