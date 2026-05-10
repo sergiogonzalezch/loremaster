@@ -273,11 +273,11 @@ Aspectos que deben resolverse antes de cualquier despliegue fuera de entorno loc
 | # | Gap | Impacto |
 |---|---|---|
 | P1 | ~~Sin autenticación/autorización (ver ítem 1)~~ | ✅ Resuelto |
-| P2 | Sin rate limiting — un usuario puede saturar la cola del LLM | Alto |
+| P2 | ~~Sin rate limiting — un usuario puede saturar la cola del LLM~~ | ✅ Resuelto |
 | P3 | ~~CORS configurado solo para `localhost` — requiere revisión antes de deploy~~ | ✅ Resuelto |
 | P4 | Sin detección de documentos duplicados — el vector store crece con contenido repetido | Medio |
 | P5 | ~~Sin health check granular — `/health` no verifica Qdrant ni el modelo LLM~~ | ✅ Resuelto |
-| P6 | Sin audit trail de usuario — `updated_at`/`deleted_at` existen, pero no `updated_by` | Bajo |
+| P6 | ~~Sin audit trail de usuario — `updated_at`/`deleted_at` existen, pero no `updated_by`~~ | ✅ Resuelto |
 | P7 | Sin operaciones bulk — no se puede eliminar múltiples colecciones o entidades a la vez | Bajo |
 | P8 | Modelo LLM y embeddings no cambiables en runtime desde la UI | Bajo |
 | P9 | ~~Sin auditoría de contenido moderado — rechazos de guardrail no persisten (ver ítem 19)~~ | ✅ Resuelto |
@@ -316,6 +316,45 @@ El health check hace requests HTTP a los endpoints `/ready` de Qdrant y `/api/ta
   4. Retorna 403 si el usuario no es el dueño de la colección
 
 El path esperado es `{collection_id}/{entity_id}/{generation_id}/{image_id}.{extension}`.
+
+---
+
+### ~~P2 — Rate limiting~~ ✅ Resuelto
+
+**Capa:** Backend  
+**Archivos:** `backend/app/main.py`, `backend/app/core/config/__init__.py`  
+**Impacto:** Alto — ahora los usuarios tienen un límite de requests por minuto.
+
+**Solución aplicada:**
+
+- Añadido middleware `RateLimitMiddleware` en `main.py` que limita requests por usuario
+- Configurable vía `rate_limit_per_minute` en settings (default: 30 requests/minuto)
+- El middleware extrae el user ID del JWT token para identificar al usuario
+- Si el usuario excede el límite, retorna 429 "Demasiadas solicitudes. Intenta de nuevo en un minuto."
+- Para usuarios sin token, usa la IP del cliente como identificador (fallback)
+
+---
+
+### ~~P6 — Audit trail (updated_by)~~ ✅ Resuelto
+
+**Capa:** Backend  
+**Archivos:**
+- `backend/app/models/db/collection.py` — añadido campo `updated_by`
+- `backend/app/models/db/entity.py` — añadido campo `updated_by`
+- `backend/app/models/db/entity_content.py` — añadido campo `updated_by`
+- `backend/app/services/collection/collection_service.py` — actualizado `update_collection_service`
+- `backend/app/services/entity/entities_service.py` — actualizado `update_entity_service`
+- `backend/app/services/entity/content_service.py` — actualizado `edit_content`
+- Routers actualizados para pasar `current_user["sub"]` a los servicios
+
+**Impacto:** Bajo — ahora cada actualización de colección, entidad y contenido registra qué usuario la realizó.
+
+**Solución aplicada:**
+
+- Añadido campo `updated_by: Optional[str]` (UUID) a los tres modelos
+- Los servicios de update ahora aceptan un parámetro `user_id` opcional
+- Al actualizar, se asigna `updated_by = user_id` si está disponible
+- Los routes de API pasan `current_user["sub"]` al invocar los servicios
 
 ---
 

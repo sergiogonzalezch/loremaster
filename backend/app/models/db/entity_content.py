@@ -14,18 +14,19 @@ class EntityContent(SQLModel, SoftDeleteMixin, table=True):
     estado de revisión. La información original de la generación se almacena
     en GeneratedText.
 
-    Attributes:
+Attributes:
         id: Identificador único UUID.
         entity_id: Entidad a la que pertenece el contenido.
         collection_id: Colección de la entidad.
-        generated_text_id: Referencia al GeneratedText con metadata de la generación.
-        category: Categoría del contenido (backstory, scene, etc.).
-        content: Texto final (puede ser editado tras la generación).
-        status: Estado del ciclo de vida (pending, confirmed, discarded).
+        generated_text_id: Referencia al texto original generado por el LLM.
+        category: Categoría del contenido (lore, backstory, personality, etc.).
+        content: Texto del contenido generado.
+        status: Estado del contenido (pending, confirmed, discarded).
         is_shared: Si el contenido ha sido compartido en el feed público.
         created_at: Fecha y hora de creación (UTC).
         confirmed_at: Fecha y hora de confirmación (UTC), o None.
         updated_at: Fecha y hora de última modificación (UTC).
+        updated_by: UUID del último usuario que modificó (audit trail).
     """
 
     __tablename__ = "entity_contents"
@@ -66,3 +67,4 @@ class EntityContent(SQLModel, SoftDeleteMixin, table=True):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     confirmed_at: datetime | None = Field(default=None)
     updated_at: datetime | None = Field(default=None)
+    updated_by: str | None = Field(default=None, max_length=36)

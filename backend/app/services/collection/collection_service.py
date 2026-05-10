@@ -165,7 +165,10 @@ def list_collections_service(
 
 
 def update_collection_service(
-    session: Session, collection: Collection, request: UpdateCollectionRequest
+    session: Session,
+    collection: Collection,
+    request: UpdateCollectionRequest,
+    user_id: Optional[str] = None,
 ) -> Collection:
     """Actualiza el nombre y/o descripción de una colección.
 
@@ -199,6 +202,8 @@ def update_collection_service(
         collection.description = request.description.strip()
 
     collection.updated_at = datetime.now(timezone.utc)
+    if user_id:
+        collection.updated_by = user_id
     session.add(collection)
     try:
         session.commit()

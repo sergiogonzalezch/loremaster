@@ -20,6 +20,7 @@ class Collection(SQLModel, SoftDeleteMixin, table=True):
         owner_id: UUID del usuario propietario.
         created_at: Fecha y hora de creación (UTC).
         updated_at: Fecha y hora de última modificación (UTC).
+        updated_by: UUID del último usuario que modificó (audit trail).
     """
 
     __tablename__ = "collections"
@@ -44,3 +45,4 @@ class Collection(SQLModel, SoftDeleteMixin, table=True):
     )
     created_at: datetime = SQLField(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: Optional[datetime] = SQLField(default=None)
+    updated_by: Optional[str] = SQLField(default=None, max_length=36)

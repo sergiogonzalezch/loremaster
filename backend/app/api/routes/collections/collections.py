@@ -85,11 +85,12 @@ def get_collection(
 def update_collection(
     request: UpdateCollectionRequest,
     collection: Collection = Depends(get_collection_or_404_owned),
+    current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     """Actualiza el nombre o descripción de una colección."""
     try:
-        return update_collection_service(session, collection, request)
+        return update_collection_service(session, collection, request, current_user["sub"])
     except DuplicateCollectionNameError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 

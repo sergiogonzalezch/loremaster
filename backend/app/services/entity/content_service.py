@@ -81,6 +81,7 @@ def edit_content(
     entity_id: str,
     collection_id: str,
     new_text: str,
+    user_id: str | None = None,
 ) -> EntityContentResponse | None:
     """Edita el texto de un contenido activo (pending o confirmed).
 
@@ -108,6 +109,8 @@ def edit_content(
     now = datetime.now(timezone.utc)
     content.content = new_text
     content.updated_at = now
+    if user_id:
+        content.updated_by = user_id
     session.add(content)
     db_commit(session, f"edit_content({content_id})")
     session.refresh(content)

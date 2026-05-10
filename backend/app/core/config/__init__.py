@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     max_tokens: int = 2000
     max_concurrent_llm_calls: int = 1
     max_pending_contents: int = 5
+    rate_limit_per_minute: int = 30
 
     # Image generation
     image_prompt_tokens: int = 512

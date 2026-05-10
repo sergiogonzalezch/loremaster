@@ -89,11 +89,12 @@ def get_entity(
 def update_entity(
     request: UpdateEntityRequest,
     entity: Entity = Depends(get_entity_or_404_owned),
+    current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     """Actualiza los campos de una entidad existente."""
     try:
-        return update_entity_service(session, entity, request)
+        return update_entity_service(session, entity, request, current_user["sub"])
     except DuplicateEntityNameError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 

@@ -114,7 +114,10 @@ def list_entities_service(
 
 
 def update_entity_service(
-    session: Session, entity: Entity, request: UpdateEntityRequest
+    session: Session,
+    entity: Entity,
+    request: UpdateEntityRequest,
+    user_id: Optional[str] = None,
 ) -> Entity:
     """Actualiza los campos de una entidad existente.
 
@@ -141,6 +144,8 @@ def update_entity_service(
     if request.description is not None:
         entity.description = request.description.strip()
     entity.updated_at = datetime.now(timezone.utc)
+    if user_id:
+        entity.updated_by = user_id
     session.add(entity)
     try:
         session.commit()

@@ -1,0 +1,74 @@
+"""Middleware de rate limiting para la API.
+
+Limita el número de requests por usuario en una ventana de tiempo.
+"""
+
+import base64
+import json
+import threading
+import time
+from typing import Callable
+
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse
+
+from app.core.config import settings
+
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    """Middleware simple de rate limiting por usuario."""
+
+    def __init__(self, app, requests_per_minute: int = 30):
+        super().__init__(app)
+        self.requests_per_minute = requests_per_minute
+        self.requests: dict[str, list[float]] = {}
+        self.lock = threading.Lock()
+
+    async def dispatch(self, request: Request, call_next: Callable):
+        if request.url.path in ["/", "/health"]:
+            return await call_next(request)
+
+        auth_header = request.headers.get("Authorization")
+
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+            user_id = self._extract_user_from_token(token)
+        else:
+            user_id = request.client.host if request.client else "anonymous"
+
+        if user_id and not self._check_rate_limit(user_id):
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Demasiadas solicitudes. Intenta de nuevo en un minuto."},
+            )
+
+        return await call_next(request)
+
+    def _extract_user_from_token(self, token: str) -> str | None:
+        try:
+            parts = token.split(".")
+            if len(parts) >= 2:
+                payload = json.loads(base64.urlsafe_b64decode(parts[1] + "=="))
+                return payload.get("sub")
+        except Exception:
+            pass
+        return None
+
+    def _check_rate_limit(self, user_id: str) -> bool:
+        now = time.time()
+        window_start = now - 60
+
+        with self.lock:
+            if user_id not in self.requests:
+                self.requests[user_id] = []
+
+            self.requests[user_id] = [
+                t for t in self.requests[user_id] if t > window_start
+            ]
+
+            if len(self.requests[user_id]) >= self.requests_per_minute:
+                return False
+
+            self.requests[user_id].append(now)
+            return True

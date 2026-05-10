@@ -110,12 +110,13 @@ def edit_content(
     content_id: str,
     request: UpdateContentRequest,
     _: Entity = Depends(get_entity_or_404_owned),
+    current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     """Edita el texto de un contenido activo (pending o confirmed)."""
     try:
         result = content_service.edit_content(
-            session, content_id, entity_id, collection_id, request.content
+            session, content_id, entity_id, collection_id, request.content, current_user["sub"]
         )
     except ContentDiscardedError as e:
         raise HTTPException(status_code=409, detail=str(e))

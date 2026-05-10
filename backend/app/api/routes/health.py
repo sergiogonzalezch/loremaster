@@ -1,0 +1,34 @@
+"""Endpoints de monitoreo y health check."""
+
+from fastapi import APIRouter
+from app.core.config import settings
+
+router = APIRouter(tags=["health"])
+
+
+@router.get("/health")
+def health_check():
+    """Endpoint de health check para monitoreo."""
+    import httpx
+
+    status = {"status": "healthy", "services": {}}
+
+    qdrant_url = settings.qdrant_url
+    try:
+        with httpx.Client(timeout=2.0) as client:
+            resp = client.get(f"{qdrant_url}/ready")
+            status["services"]["qdrant"] = "healthy" if resp.status_code == 200 else "unhealthy"
+    except Exception:
+        status["services"]["qdrant"] = "unhealthy"
+        status["status"] = "degraded"
+
+    ollama_url = settings.ollama_base_url
+    try:
+        with httpx.Client(timeout=2.0) as client:
+            resp = client.get(f"{ollama_url}/api/tags")
+            status["services"]["ollama"] = "healthy" if resp.status_code == 200 else "unhealthy"
+    except Exception:
+        status["services"]["ollama"] = "unhealthy"
+        status["status"] = "degraded"
+
+    return status

@@ -28,14 +28,15 @@ class EntityType(str, Enum):
 class Entity(SQLModel, SoftDeleteMixin, table=True):
     """Entidad dentro de una colección (personaje, criatura, facción, etc.).
 
-    Attributes:
+Attributes:
         id: Identificador único UUID.
         collection_id: Colección a la que pertenece.
-        type: Tipo de entidad (character, creature, faction, location, item).
+        type: Tipo de entidad (character, creature, location, faction, item).
         name: Nombre único dentro de la colección.
         description: Descripción inicial o notes de referencia.
         created_at: Fecha y hora de creación (UTC).
         updated_at: Fecha y hora de última modificación (UTC).
+        updated_by: UUID del último usuario que modificó (audit trail).
     """
 
     __tablename__ = "entities"
@@ -61,3 +62,4 @@ class Entity(SQLModel, SoftDeleteMixin, table=True):
     description: str = Field(default="", max_length=2000)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime | None = Field(default=None)
+    updated_by: str | None = Field(default=None, max_length=36)
