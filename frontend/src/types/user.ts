@@ -9,6 +9,7 @@ export interface UserProfile {
   display_name: string | null;
   bio: string | null;
   avatar_url: string | null;
+  is_admin: boolean;
   created_at: string;
 }
 

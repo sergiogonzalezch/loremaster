@@ -15,8 +15,9 @@ import {
 } from "react";
 import { getToken, setToken, removeToken } from "../utils/token";
 import { logoutApi } from "../api/auth";
+import { getMyProfile } from "../api/users";
 
-/** Datos del usuario extraídos del token JWT. */
+/** Datos del usuario extraídos del token JWT + backend. */
 interface AuthUser {
   id: string;
   username: string;
@@ -34,14 +35,14 @@ interface AuthContextValue {
 export const AuthContext = createContext<AuthContextValue | null>(null);
 /* eslint-enable react-refresh/only-export-components */
 
-/** Decodifica el payload del JWT para extraer datos del usuario. */
+/** Decodifica el payload del JWT para extraer datos básicos del usuario. */
 function decodeUser(token: string): AuthUser | null {
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
     return {
       id: payload.sub,
       username: payload.username,
-      is_admin: payload.is_admin ?? false,
+      is_admin: false, // Se actualiza via fetch al backend
     };
   } catch {
     return null;
@@ -118,9 +119,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.clearTimeout(timer);
   }, [user]);
 
+  // Fetch user profile from backend to get is_admin
+  useEffect(() => {
+    const token = getToken();
+    if (!token || isTokenExpired(token)) return;
+
+    getMyProfile()
+      .then((profile) => {
+        setUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                is_admin: profile.is_admin ?? false,
+              }
+            : null
+        );
+      })
+      .catch(() => {
+        // Silenciar error — si falla, is_admin queda en false
+      });
+  }, []);
+
   function login(token: string) {
     setToken(token);
-    setUser(decodeUser(token));
+    const basicUser = decodeUser(token);
+    setUser(basicUser);
+
+    // Fetch is_admin from backend after login
+    if (basicUser) {
+      getMyProfile()
+        .then((profile) => {
+          setUser({
+            ...basicUser,
+            is_admin: profile.is_admin ?? false,
+          });
+        })
+        .catch(() => {
+          // Silenciar error
+        });
+    }
   }
 
   return (
