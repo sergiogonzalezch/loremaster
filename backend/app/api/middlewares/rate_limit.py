@@ -41,6 +41,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable):
         """Procesa la petición aplicando rate limiting.
 
+        Solo aplica rate limiting a métodos que mutan estado
+        (POST, PUT, PATCH, DELETE). Los GET y HEAD para carga de datos
+        no se limitan para no afectar la experiencia del usuario.
+
         Args:
             request: Petición HTTP entrante.
             call_next: Siguiente middleware/handler en la cadena.
@@ -52,6 +56,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         if settings.environment == "test":
+            return await call_next(request)
+
+        # Solo rate-limitar operaciones que mutan estado
+        if request.method in ("GET", "HEAD", "OPTIONS"):
             return await call_next(request)
 
         auth_header = request.headers.get("Authorization")
