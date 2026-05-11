@@ -40,6 +40,8 @@ cp .env.example .env
 | `CHUNK_SIZE` | `512` | Tamaño de chunk en caracteres |
 | `CHUNK_OVERLAP` | `50` | Solapamiento entre chunks en caracteres |
 | `TOP_K` | `4` | Chunks de contexto recuperados por RAG |
+| `MAX_PDF_PAGES` | `100` | Límite de páginas para PDFs (prevención de PDF bombs) |
+| `RATE_LIMIT_PER_MINUTE` | `30` | Máximo de requests por minuto por IP (protección contra brute force) |
 | `ALLOWED_ORIGINS` | `["http://localhost:3000","http://localhost:5173"]` | Orígenes permitidos por CORS |
 | `REDIS_URL` | `redis://redis:6379/0` | Caché semántico (staged) |
 | `CACHE_TTL` | `3600` | TTL del caché en segundos (staged) |
