@@ -51,7 +51,8 @@ export default function ProfilePage() {
         setProfile(p);
         setDisplayName(p.display_name ?? "");
         setBio(p.bio ?? "");
-        setAvatarUrl(avatar.avatar_url ?? "");
+        const url = avatar.avatar_url;
+        setAvatarUrl(url ? `${url}?t=${Date.now()}` : "");
         setEmail("");
       })
       .catch((e) => setError(parseApiError(e).text))
@@ -84,7 +85,8 @@ export default function ProfilePage() {
 
     try {
       const result = await uploadMyAvatar(file);
-      setAvatarUrl(result.avatar_url ?? "");
+      const url = result.avatar_url;
+      setAvatarUrl(url ? `${url}?t=${Date.now()}` : "");
     } catch (e) {
       setError(parseApiError(e).text);
     } finally {
