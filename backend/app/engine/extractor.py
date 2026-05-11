@@ -1,4 +1,8 @@
-"""Extracción de texto desde archivos PDF y TXT."""
+"""Extracción de texto desde archivos PDF y TXT.
+
+Implementa extracción de texto plano con protección contra PDF bombs (H-7):
+límite de páginas configurable via max_pdf_pages en Settings.
+"""
 
 import io
 
@@ -11,6 +15,19 @@ def extract_text(content_bytes: bytes, content_type: str) -> str:
     """Extrae texto plano desde bytes según el tipo de contenido.
 
     Soporta 'application/pdf' y 'text/plain'. Lanza ValueError para tipos no soportados.
+
+    Para PDFs, implementa H-7: validación de límite de páginas para prevenir
+    PDF bombs (archivos PDF con miles de páginas que causan OOM).
+
+    Args:
+        content_bytes: Contenido binario del archivo.
+        content_type: Tipo MIME del archivo (application/pdf o text/plain).
+
+    Returns:
+        Texto extraído del documento.
+
+    Raises:
+        ValueError: Si el tipo no es soportado, o si el PDF excede max_pdf_pages.
     """
     if content_type == "application/pdf":
         reader = PdfReader(io.BytesIO(content_bytes))

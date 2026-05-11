@@ -87,10 +87,12 @@ export async function apiFetch<T>(
     removeToken();
     const isAlreadyOnLogin = window.location.pathname === "/login";
     if (!isAlreadyOnLogin) {
+      // 401 fuera de /login = sesión expirada o token inválido
       window.location.href = "/login";
       throw new ApiError(401, "Sesión expirada. Inicia sesión de nuevo.");
     }
-    // En la página de login, mostrar el mensaje del backend o credenciales inválidas
+    // 401 en /login = credenciales incorrectas (login fallido)
+    // Mostrar mensaje del backend o fallback descriptivo
     let message = "Usuario o contraseña incorrectos.";
     try {
       const body = await response.json();
