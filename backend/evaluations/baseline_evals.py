@@ -18,6 +18,13 @@ Uso (desde backend/ con el venv activo):
     python evaluations/baseline_eval.py --ids RAG-001 CHAR-005 FLOW-001
     python evaluations/baseline_eval.py --keep-collection
     python evaluations/baseline_eval.py --no-seed
+
+Notas de seguridad:
+  - Este script es para desarrollo/testing local. No ejecutar en produccion.
+  - Por defecto apunta a http://localhost:8000. Para evaluar un environment
+    remoto, usar --base-url <url> (requiere token o credenciales validas).
+  - El token JWT se pasa via --token o se obtiene via --username/--password.
+  - No commitear tokens ni credenciales en el golden dataset.
 """
 
 import argparse
