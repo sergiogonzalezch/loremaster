@@ -17,7 +17,7 @@ from fastapi.responses import StreamingResponse
 from sqlmodel import Session, select, func
 
 from app.core.api.params import DateRangeParams, PaginationParams
-from app.core.database.dependencies import get_collection_or_404, get_document_or_404
+from app.core.database.dependencies import get_collection_or_404_owned, get_document_or_404
 from app.core.auth.dependencies import get_current_user
 from app.core.exceptions import (
     ContentNotAllowedError,
@@ -54,7 +54,7 @@ async def ingest(
     collection_id: str,
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    _: Collection = Depends(get_collection_or_404),
+    _: Collection = Depends(get_collection_or_404_owned),
     __: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
@@ -96,7 +96,7 @@ def get_documents(
     filename: Optional[str] = Query(default=None),
     file_type: Optional[str] = Query(default=None),
     status: Optional[DocumentStatus] = Query(default=None),
-    _: Collection = Depends(get_collection_or_404),
+    _: Collection = Depends(get_collection_or_404_owned),
     __: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
@@ -174,7 +174,7 @@ def delete_document(
 @router.get("/{collection_id}/documents/events")
 def document_events(
     collection_id: str,
-    _: Collection = Depends(get_collection_or_404),
+    _: Collection = Depends(get_collection_or_404_owned),
     __: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):

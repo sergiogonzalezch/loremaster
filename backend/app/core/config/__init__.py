@@ -83,6 +83,19 @@ class Settings(BaseSettings):
                 "SECRET_KEY no puede ser el valor por defecto en entornos no locales. "
                 "Define SECRET_KEY en .env"
             )
+        if self.environment == "production":
+            for origin in self.allowed_origins:
+                if not origin.startswith("https://"):
+                    raise ValueError(
+                        f"ALLOWED_ORIGINS en producción debe usar HTTPS: '{origin}'. "
+                        f"Cambia a https:// para entorno production"
+                    )
+        valid_envs = {"local", "demo", "production", "test"}
+        if self.environment not in valid_envs:
+            raise ValueError(
+                f"ENVIRONMENT debe ser uno de: {', '.join(valid_envs)}. "
+                f"Valor recibido: '{self.environment}'"
+            )
         return self
 
     model_config = SettingsConfigDict(

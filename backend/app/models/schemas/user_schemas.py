@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserResponse(BaseModel):
@@ -83,7 +83,7 @@ class UpdateProfileRequest(BaseModel):
 
     display_name: Optional[str] = Field(default=None, max_length=100)
     bio: Optional[str] = Field(default=None, max_length=500)
-    email: Optional[str] = Field(default=None, max_length=255)
+    email: Optional[EmailStr] = Field(default=None, max_length=255)
 
 
 class AvatarResponse(BaseModel):

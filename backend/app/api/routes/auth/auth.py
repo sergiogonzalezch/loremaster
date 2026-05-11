@@ -1,5 +1,6 @@
+import re
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from sqlmodel import Session, select
 
 from app.core.auth import create_access_token, hash_password, verify_password
@@ -19,6 +20,15 @@ class RegisterRequest(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     email: EmailStr
     password: str = Field(..., min_length=8)
+
+    @field_validator("username")
+    @classmethod
+    def validate_username(cls, v: str) -> str:
+        if not re.match(r"^[A-Za-z0-9_-]{3,50}$", v):
+            raise ValueError(
+                "El nombre de usuario debe contener solo letras, números, guiones bajos y guiones"
+            )
+        return v
 
 
 class TokenResponse(BaseModel):

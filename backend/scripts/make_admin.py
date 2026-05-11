@@ -20,11 +20,22 @@ from app.models.db.user import User
 
 def main():
     """Busca un usuario por nombre de usuario y lo promueve a administrador."""
-    if len(sys.argv) != 2:
-        print(f"Usage: python {sys.argv[0]} <username>")
+    if len(sys.argv) < 2:
+        print(f"Usage: python {sys.argv[0]} <username> [--force]")
+        print("  --force: Omite la confirmación de seguridad (usar con precaución)")
         sys.exit(1)
 
     username = sys.argv[1]
+    force = "--force" in sys.argv
+
+    if not force:
+        response = input(
+            f"WARNING: You are about to make '{username}' an admin. "
+            "This grants full system access. Continue? (yes/no): "
+        )
+        if response.lower() != "yes":
+            print("Aborted.")
+            sys.exit(0)
 
     with Session(engine) as session:
         user = session.exec(

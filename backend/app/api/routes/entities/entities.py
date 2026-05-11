@@ -57,8 +57,7 @@ def list_entities(
     dates: Annotated[DateRangeParams, Depends()],
     name: Optional[str] = Query(default=None),
     type: Optional[EntityType] = Query(default=None),
-    _: Collection = Depends(get_collection_or_404),
-    __: dict = Depends(get_current_user),
+    collection: Collection = Depends(get_collection_or_404_owned),
     session: Session = Depends(get_session),
 ):
     """Lista las entidades de una colección con filtros y paginación."""
