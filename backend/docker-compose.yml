@@ -16,17 +16,18 @@ services:
     profiles:
       - postgres
     environment:
-      POSTGRES_USER: loremaster
-      POSTGRES_PASSWORD: loremaster
-      POSTGRES_DB: loremaster
+      POSTGRES_USER: ${POSTGRES_USER:-loremaster}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-loremaster}
+      POSTGRES_DB: ${POSTGRES_DB:-loremaster}
     ports:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - loremaster
+    # Bind to 127.0.0.1 only in production (remove ports or use 127.0.0.1:5433:5432)
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U loremaster"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-loremaster}"]
       interval: 10s
       timeout: 5s
       retries: 5

@@ -1,7 +1,9 @@
+from io import BytesIO
 from pathlib import Path
 from typing import Set
 
 from fastapi import UploadFile
+from PIL import Image
 
 IMAGE_EXTENSIONS: Set[str] = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 IMAGE_MIME_TYPES: Set[str] = {
@@ -12,6 +14,42 @@ IMAGE_MIME_TYPES: Set[str] = {
     "image/gif",
 }
 DOCUMENT_MIME_TYPES: Set[str] = {"text/plain", "application/pdf"}
+
+MAGIC_BYTES: dict[bytes, str] = {
+    b"%PDF": "application/pdf",
+    b"PK\x03\x04": "application/pdf",
+    b"text": "text/plain",
+}
+
+
+def _verify_magic_bytes(content: bytes, expected_type: str) -> None:
+    """Verifica que el contenido coincida con el tipo esperado usando magic bytes."""
+    if expected_type == "application/pdf":
+        if not (content.startswith(b"%PDF") or content.startswith(b"PK\x03\x04")):
+            raise ValueError("El archivo no es un PDF válido")
+    elif expected_type == "text/plain":
+        try:
+            content.decode("utf-8")
+        except UnicodeDecodeError:
+            raise ValueError("El archivo no es un texto válido")
+
+
+def _strip_exif(data: bytes) -> bytes:
+    """Elimina metadatos EXIF de una imagen.
+
+    Args:
+        data: Contenido binario de la imagen.
+
+    Returns:
+        Contenido binario sin metadatos EXIF.
+    """
+    try:
+        img = Image.open(BytesIO(data))
+        buffer = BytesIO()
+        img.save(buffer, format=img.format or "JPEG")
+        return buffer.getvalue()
+    except Exception:
+        return data
 
 
 class FileValidator:
@@ -34,6 +72,8 @@ class FileValidator:
             raise ValueError(f"Extensión no permitida: {ext}")
 
         content = file.file.read()
+        content = _strip_exif(content)
+
         if max_bytes and len(content) > max_bytes:
             raise ValueError(
                 f"El archivo excede el tamaño máximo de {max_bytes // (1024*1024)}MB"
@@ -62,6 +102,7 @@ class FileValidator:
             raise ValueError(
                 f"El archivo excede el tamaño máximo de {max_bytes // (1024*1024)}MB"
             )
+        _verify_magic_bytes(content, file.content_type)
 
         file.file.seek(0)
         return content

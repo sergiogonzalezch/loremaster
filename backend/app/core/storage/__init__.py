@@ -1,7 +1,20 @@
+import re
 import uuid
 from pathlib import Path
 
 from app.core.config import settings
+
+
+def sanitize_for_log(text: str) -> str:
+    """Elimina caracteres de control que permiten log injection.
+
+    Args:
+        text: Texto a sanitizar.
+
+    Returns:
+        Texto sin caracteres de control.
+    """
+    return re.sub(r"[\r\n\t]", "", text)
 
 
 def build_storage_path(*parts: str) -> Path:

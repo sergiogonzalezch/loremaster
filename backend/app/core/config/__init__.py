@@ -59,6 +59,7 @@ class Settings(BaseSettings):
     chunk_overlap: int = 50
     top_k: int = 4
     rag_score_threshold: float = 0.3
+    max_pdf_pages: int = 100
 
     secret_key: str = "your-secret-key"
     algorithm: str = "HS256"
@@ -83,6 +84,11 @@ class Settings(BaseSettings):
             raise ValueError(
                 "SECRET_KEY no puede ser el valor por defecto en entornos no locales. "
                 "Define SECRET_KEY en .env"
+            )
+        if self.environment != "local" and len(self.secret_key) < 32:
+            raise ValueError(
+                f"SECRET_KEY debe tener al menos 32 caracteres en entornos no locales. "
+                f"Actual: {len(self.secret_key)} caracteres"
             )
         if self.environment == "production":
             for origin in self.allowed_origins:
