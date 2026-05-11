@@ -65,7 +65,7 @@ export default function PublicContentModal({
               onClick={onHide}
               style={{ color: "var(--lm-accent)", textDecoration: "none" }}
             >
-              @{ownerDisplayName ?? ownerUsername}
+              @{ownerUsername}
             </Link>
             <span className="text-muted ms-2">
               {confirmedAt ? formatDate(confirmedAt) : formatDate(createdAt)}

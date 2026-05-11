@@ -171,7 +171,7 @@ export default function PublicFeedPage() {
                             textDecoration: "none",
                           }}
                         >
-                          @{img.owner_display_name ?? img.owner_username}
+                          @{img.owner_username}
                         </Link>
                         {" · "}
                         {img.entity_name}
@@ -249,7 +249,7 @@ export default function PublicFeedPage() {
                               textDecoration: "none",
                             }}
                           >
-                            @{item.owner_display_name ?? item.owner_username}
+                            @{item.owner_username}
                           </Link>
                           <small
                             className="text-muted d-block"

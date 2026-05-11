@@ -78,7 +78,7 @@ export default function PublicImageModal({
               onClick={onHide}
               style={{ color: "var(--lm-accent)", textDecoration: "none" }}
             >
-              @{ownerDisplayName ?? ownerUsername}
+              @{ownerUsername}
             </Link>
           </div>
         </div>
