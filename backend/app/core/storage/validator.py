@@ -1,3 +1,18 @@
+"""Validador de archivos subidos.
+
+Provee validación de tipos MIME, magic bytes, extensión y sanitización
+para archivos de imagen y documentos.
+
+Funcionalidades de seguridad:
+    - Validación de magic bytes para PDFs (H-6).
+    - Strip de metadatos EXIF en imágenes (L-2).
+    - Validación de extensión vs tipo MIME.
+    - Límite de tamaño configurable.
+
+TODO:
+    - Añadir validación de magic bytes para imágenes (M-18).
+"""
+
 from io import BytesIO
 from pathlib import Path
 from typing import Set
@@ -23,7 +38,18 @@ MAGIC_BYTES: dict[bytes, str] = {
 
 
 def _verify_magic_bytes(content: bytes, expected_type: str) -> None:
-    """Verifica que el contenido coincida con el tipo esperado usando magic bytes."""
+    """Verifica que el contenido coincida con el tipo esperado usando magic bytes.
+
+    Implementa la validación H-6: no confiar únicamente en el content_type
+    del cliente. Verifica los bytes reales del archivo.
+
+    Args:
+        content: Contenido binario del archivo.
+        expected_type: Tipo MIME esperado (application/pdf o text/plain).
+
+    Raises:
+        ValueError: Si los magic bytes no coinciden con el tipo esperado.
+    """
     if expected_type == "application/pdf":
         if not (content.startswith(b"%PDF") or content.startswith(b"PK\x03\x04")):
             raise ValueError("El archivo no es un PDF válido")
@@ -36,6 +62,9 @@ def _verify_magic_bytes(content: bytes, expected_type: str) -> None:
 
 def _strip_exif(data: bytes) -> bytes:
     """Elimina metadatos EXIF de una imagen.
+
+    Implementa la protección L-2: strip de metadatos sensibles
+    (GPS, datos de cámara, etc.) de imágenes subidas.
 
     Args:
         data: Contenido binario de la imagen.
@@ -53,14 +82,27 @@ def _strip_exif(data: bytes) -> bytes:
 
 
 class FileValidator:
-    """Validador estático para archivos subidos."""
+    """Validador estático para archivos subidos.
+
+    Valida tipos MIME, extensiones, magic bytes y tamaño de archivos.
+    """
 
     @staticmethod
     def validate_image(file: UploadFile, max_bytes: int | None = None) -> bytes:
-        """Valida que el archivo sea una imagen válida (tipo MIME y extensión).
-        Lanza ValueError si no pasa la validación.
+        """Valida que el archivo sea una imagen válida.
 
-        Lee y retorna el contenido del archivo tras la validación.
+        Verifica tipo MIME permitido, extensión válida, strip de EXIF
+        y tamaño máximo.
+
+        Args:
+            file: Archivo subido via UploadFile.
+            max_bytes: Tamaño máximo en bytes (opcional).
+
+        Returns:
+            Contenido binario de la imagen validada y sanitizada.
+
+        Raises:
+            ValueError: Si no pasa alguna validación.
         """
         if file.content_type not in IMAGE_MIME_TYPES:
             raise ValueError(
@@ -88,10 +130,22 @@ class FileValidator:
         allowed_types: Set[str] | None = None,
         max_bytes: int | None = None,
     ) -> bytes:
-        """Valida que el archivo sea un documento permitido (tipo MIME).
-        Lanza ValueError si no pasa la validación.
+        """Valida que el archivo sea un documento permitido.
 
-        Lee y retorna el contenido del archivo tras la validación.
+        Verifica tipo MIME, magic bytes y tamaño máximo.
+        Implementa H-6: validación de magic bytes para prevenir
+        que un atacante suba archivos con content_type falsificado.
+
+        Args:
+            file: Archivo subido via UploadFile.
+            allowed_types: Conjunto de tipos MIME permitidos (default: PDF, TXT).
+            max_bytes: Tamaño máximo en bytes (opcional).
+
+        Returns:
+            Contenido binario del documento validado.
+
+        Raises:
+            ValueError: Si no pasa alguna validación.
         """
         allowed = allowed_types or DOCUMENT_MIME_TYPES
         if file.content_type not in allowed:

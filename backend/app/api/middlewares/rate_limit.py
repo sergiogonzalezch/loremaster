@@ -1,6 +1,10 @@
 """Middleware de rate limiting para la API.
 
 Limita el número de requests por usuario en una ventana de tiempo.
+Implementa protección contra brute force y DoS (P-2 / H-8).
+
+El rate limiter opera en memoria (dict) con bloqueo por threading.Lock.
+Para producción con múltiples workers, considerar Redis como backend.
 """
 
 import base64
@@ -15,11 +19,18 @@ from starlette.responses import JSONResponse
 
 from app.core.config import settings
 
-from app.core.config import settings
-
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Middleware simple de rate limiting por usuario."""
+    """Middleware simple de rate limiting por usuario.
+
+    Limita requests por minuto por usuario identificado (JWT) o IP.
+    Omite rate limiting en entornos de test y en endpoints de health.
+
+    Attributes:
+        requests_per_minute: Máximo de requests permitidos por ventana de 60s.
+        requests: Dict que almacena timestamps de requests por user_id.
+        lock: Lock de threading para acceso seguro al dict.
+    """
 
     def __init__(self, app, requests_per_minute: int = 30):
         super().__init__(app)
@@ -28,6 +39,15 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.lock = threading.Lock()
 
     async def dispatch(self, request: Request, call_next: Callable):
+        """Procesa la petición aplicando rate limiting.
+
+        Args:
+            request: Petición HTTP entrante.
+            call_next: Siguiente middleware/handler en la cadena.
+
+        Returns:
+            Response del siguiente handler, o 429 si excede el límite.
+        """
         if request.url.path in ["/", "/health", "/docs", "/openapi.json", "/redoc"]:
             return await call_next(request)
 
@@ -51,6 +71,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
     def _extract_user_from_token(self, token: str) -> str | None:
+        """Extrae el user_id (sub) del payload de un JWT.
+
+        Args:
+            token: Token JWT (formato header.payload.signature).
+
+        Returns:
+            user_id si se puede extraer, None en caso contrario.
+        """
         try:
             parts = token.split(".")
             if len(parts) >= 2:
@@ -61,6 +89,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return None
 
     def _check_rate_limit(self, user_id: str) -> bool:
+        """Verifica si el usuario está dentro del límite de requests.
+
+        Mantiene una ventana deslizante de 60 segundos.
+
+        Args:
+            user_id: Identificador del usuario (sub del JWT o IP).
+
+        Returns:
+            True si el request está permitido, False si excede el límite.
+        """
         now = time.time()
         window_start = now - 60
 
