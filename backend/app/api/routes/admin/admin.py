@@ -1,8 +1,11 @@
+import logging
 from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlmodel import Session, select
+
+logger = logging.getLogger(__name__)
 
 from app.core.auth.dependencies import get_admin_user
 from app.core.database.utils import paginate_with_sort
@@ -76,7 +79,9 @@ def admin_delete_collection(
     collection = session.get(Collection, collection_id)
     if not collection or collection.is_deleted:
         return Response(status_code=204)
+    owner_id = collection.owner_id
     delete_collection_service(session, collection)
+    logger.info("Admin delete collection %s (owner: %s)", collection_id, owner_id)
     return Response(status_code=204)
 
 
@@ -109,4 +114,5 @@ def admin_delete_user(
     user.deleted_at = datetime.now(timezone.utc)
     session.add(user)
     session.commit()
+    logger.info("Admin delete user %s (by: %s)", user_id, current_admin["sub"])
     return Response(status_code=204)

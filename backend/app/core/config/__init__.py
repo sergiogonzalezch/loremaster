@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     project_name: str = "Lore Master API"
     api_version: str = "1.0.0"
     environment: str = "local"
+    log_level: str = "INFO"
     allowed_origins: list[str] = ["http://localhost:3000"]
 
     # LLM (Ollama)

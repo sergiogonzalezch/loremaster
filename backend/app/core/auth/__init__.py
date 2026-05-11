@@ -13,7 +13,12 @@ ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """Crea un token de acceso JWT con fecha de expiración."""
+    """Crea un token de acceso JWT con fecha de expiración.
+
+    El token expira según ACCESS_TOKEN_EXPIRE_MINUTES (default 24h).
+    Para revocar un token antes de su expiración, incrementar token_version
+    del usuario (el token contiene la versión y será rechazado al no coincidir).
+    """
 
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + (

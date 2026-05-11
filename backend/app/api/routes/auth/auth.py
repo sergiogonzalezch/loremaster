@@ -60,7 +60,6 @@ def login(request: LoginRequest, session: Session = Depends(get_session)):
         data={
             "sub": user.id,
             "username": user.username,
-            "is_admin": user.is_admin,
             "version": user.token_version,
         }
     )

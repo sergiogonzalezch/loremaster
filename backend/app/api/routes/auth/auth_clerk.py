@@ -55,9 +55,14 @@ def decode_clerk_token(token: str) -> dict:
     Raises:
         HTTPException(401): Si el token es inválido o ha expirado.
     """
+    clerk_issuer = settings.clerk_jwks_url.replace("/.well-known/jwks.json", "")
     try:
         return jwt.decode(
-            token, get_jwks(), algorithms=["RS256"], audience=settings.clerk_audience
+            token,
+            get_jwks(),
+            algorithms=["RS256"],
+            audience=settings.clerk_audience,
+            issuer=clerk_issuer,
         )
     except JWTError:
         raise HTTPException(

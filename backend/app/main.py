@@ -8,6 +8,7 @@ import logging
 from pathlib import Path
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -29,9 +30,9 @@ from app.api.routes import (
     users_router,
 )
 from app.api.routes.media import router as media_router
-from app.api.middlewares import RateLimitMiddleware
+from app.api.middlewares import RateLimitMiddleware, SecurityHeadersMiddleware
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=settings.log_level)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
@@ -60,6 +61,15 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
     )
 
 
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    """Maneja errores de validación sin repetir el input del cliente (evita info leak)."""
+    logger.warning("Validation error on %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=422, content={"detail": "Error de validación en la solicitud."}
+    )
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
@@ -69,6 +79,7 @@ app.add_middleware(
 )
 
 app.add_middleware(RateLimitMiddleware, requests_per_minute=settings.rate_limit_per_minute)
+app.add_middleware(SecurityHeadersMiddleware)
 
 
 @app.get("/")

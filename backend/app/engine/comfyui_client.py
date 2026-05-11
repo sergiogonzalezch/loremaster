@@ -9,10 +9,16 @@ El template debe estar en formato API (Export API desde ComfyUI con Developer Mo
 """
 
 import json
+import re
 import time
 from pathlib import Path
 
 import httpx
+
+
+def _sanitize_filename(name: str) -> str:
+    """Elimina caracteres que podrían permitir path traversal."""
+    return re.sub(r"[^\w\-.]", "", name)
 
 
 class ComfyUIClient:
@@ -135,9 +141,11 @@ class ComfyUIClient:
         Returns:
             Bytes de la imagen
         """
-        params = {"filename": filename, "type": folder_type}
-        if subfolder:
-            params["subfolder"] = subfolder
+        safe_filename = _sanitize_filename(filename)
+        safe_subfolder = _sanitize_filename(subfolder)
+        params = {"filename": safe_filename, "type": folder_type}
+        if safe_subfolder:
+            params["subfolder"] = safe_subfolder
 
         response = self._request("GET", "view", params=params)
         return response.content

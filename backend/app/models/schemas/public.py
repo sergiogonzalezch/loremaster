@@ -33,7 +33,6 @@ class SharedImageSummary(BaseModel):
         id: Identificador de la imagen.
         generation_id: Solicitud de generación asociada.
         image_url: URL pública de la imagen.
-        storage_path: Ruta de almacenamiento.
         seed: Semilla del generador.
         auto_prompt: Prompt automático generado.
         final_prompt: Prompt final usado.
@@ -45,7 +44,6 @@ class SharedImageSummary(BaseModel):
     id: str
     generation_id: str
     image_url: Optional[str] = None
-    storage_path: Optional[str] = None
     seed: int
     auto_prompt: str
     final_prompt: str
@@ -109,7 +107,6 @@ class PublicImageItem(BaseModel):
         image_id: Identificador de la imagen.
         generation_id: Solicitud de generación asociada.
         image_url: URL de la imagen.
-        storage_path: Ruta de almacenamiento.
         seed: Semilla del generador.
         auto_prompt: Prompt automático.
         final_prompt: Prompt final.
@@ -123,7 +120,6 @@ class PublicImageItem(BaseModel):
     image_id: str
     generation_id: str
     image_url: Optional[str] = None
-    storage_path: Optional[str] = None
     seed: int
     auto_prompt: str
     final_prompt: str
