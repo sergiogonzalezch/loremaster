@@ -88,8 +88,19 @@ export async function apiFetch<T>(
     const isAlreadyOnLogin = window.location.pathname === "/login";
     if (!isAlreadyOnLogin) {
       window.location.href = "/login";
+      throw new ApiError(401, "Sesión expirada. Inicia sesión de nuevo.");
     }
-    throw new ApiError(401, "Sesión expirada. Inicia sesión de nuevo.");
+    // En la página de login, mostrar el mensaje del backend o credenciales inválidas
+    let message = "Usuario o contraseña incorrectos.";
+    try {
+      const body = await response.json();
+      if (typeof body?.detail === "string" && body.detail.trim()) {
+        message = body.detail;
+      }
+    } catch {
+      // cuerpo no parseable — mantener mensaje por defecto
+    }
+    throw new ApiError(401, message);
   }
 
   if (!response.ok) {
