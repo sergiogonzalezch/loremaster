@@ -16,6 +16,7 @@ import AppNavbar from "../components/AppNavbar";
 import MarkdownContent from "../components/MarkdownContent";
 import PublicContentModal from "../components/PublicContentModal";
 import PublicImageModal from "../components/PublicImageModal";
+import SafeImage from "../components/SafeImage";
 import { parseApiError } from "../utils/errors";
 import { formatDate } from "../utils/formatters";
 import { CATEGORY_LABELS, ENTITY_TYPE_LABELS } from "../utils/constants";
@@ -91,7 +92,7 @@ export default function PublicProfilePage() {
             <>
               <div className="d-flex align-items-center gap-4 mb-5 flex-wrap">
                 {profile.avatar_url ? (
-                  <img
+                  <SafeImage
                     src={profile.avatar_url}
                     alt={profile.display_name ?? profile.username}
                     style={{
@@ -199,7 +200,7 @@ export default function PublicProfilePage() {
                           onClick={() => setSelectedImage(img)}
                         >
                           {img.image_url ? (
-                            <img
+                            <SafeImage
                               src={img.image_url}
                               alt={img.entity_name}
                               style={{

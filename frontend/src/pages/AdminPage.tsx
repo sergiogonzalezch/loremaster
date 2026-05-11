@@ -12,6 +12,7 @@ import {
 } from "react-bootstrap";
 import { getAdminUsers, adminDeleteUser } from "../api/admin";
 import ConfirmModal from "../components/ConfirmModal";
+import SafeImage from "../components/SafeImage";
 import { parseApiError } from "../utils/errors";
 import { formatDate } from "../utils/formatters";
 import type { UserAdminRecord } from "../types/user";
@@ -138,7 +139,7 @@ export default function AdminPage() {
                     <td className="ps-4 py-3">
                       <div className="d-flex align-items-center gap-2">
                         {u.avatar_url ? (
-                          <img
+                          <SafeImage
                             src={u.avatar_url}
                             alt={u.username}
                             style={{

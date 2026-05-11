@@ -16,6 +16,7 @@ import { parseApiError } from "../utils/errors";
 import { CATEGORY_LABELS, ENTITY_TYPE_LABELS } from "../utils/constants";
 import PublicContentModal from "../components/PublicContentModal";
 import PublicImageModal from "../components/PublicImageModal";
+import SafeImage from "../components/SafeImage";
 import type { PublicFeedItem, PublicImageItem } from "../types/user";
 import type { PaginatedResponse } from "../types";
 
@@ -123,7 +124,7 @@ export default function PublicFeedPage() {
                       onClick={() => setSelectedImage(img)}
                     >
                       {img.image_url ? (
-                        <img
+                        <SafeImage
                           src={img.image_url}
                           alt={img.entity_name}
                           style={{

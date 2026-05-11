@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Container, Dropdown } from "react-bootstrap";
 import { useAuth } from "../hooks/useAuth";
+import SafeImage from "./SafeImage";
 import { getMyAvatar } from "../api/users";
 
 /** Círculo con las iniciales del usuario como avatar fallback. */
@@ -106,7 +107,7 @@ export default function AppNavbar() {
                 className="d-flex align-items-center gap-2"
               >
                 {avatarUrl ? (
-                  <img
+                  <SafeImage
                     src={avatarUrl}
                     alt={user.username}
                     style={{

@@ -18,6 +18,7 @@ import {
   deleteMyAvatar,
   getMyAvatar,
 } from "../api/users";
+import SafeImage from "../components/SafeImage";
 import { parseApiError } from "../utils/errors";
 import { formatDate } from "../utils/formatters";
 import type { UserProfile, UpdateProfileRequest } from "../types/user";
@@ -200,7 +201,7 @@ export default function ProfilePage() {
                   </Form.Label>
                   <div className="d-flex align-items-center gap-3">
                     {avatarUrl ? (
-                      <img
+                      <SafeImage
                         src={avatarUrl}
                         alt="Avatar"
                         style={{

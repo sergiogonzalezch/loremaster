@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Alert, Button, Card, Badge, Modal } from "react-bootstrap";
 import LoadingSpinner from "./LoadingSpinner";
+import SafeImage from "./SafeImage";
 import { listImageGenerations, deleteImage, shareImage } from "../api/images";
 import type { ImageGenerationItem, ImageRecordData } from "../types";
 import { formatDate } from "../utils/formatters";
@@ -189,7 +190,7 @@ export default function ImageGallery({
                       setSelectedImage(img);
                     }}
                   >
-                    <img
+                    <SafeImage
                       src={getImageUrl(img)}
                       alt={`Imagen ${img.seed}`}
                       className="img-fluid rounded"
@@ -218,7 +219,7 @@ export default function ImageGallery({
         <Modal.Body>
           {selectedImage && selectedGeneration && (
             <div className="text-center">
-              <img
+              <SafeImage
                 src={getImageUrl(selectedImage)}
                 alt={`Imagen seed ${selectedImage.seed}`}
                 className="img-fluid rounded"
@@ -375,7 +376,7 @@ export default function ImageGallery({
                     style={{ cursor: "pointer" }}
                     onClick={() => setSelectedImage(img)}
                   >
-                    <img
+                    <SafeImage
                       src={getImageUrl(img)}
                       alt={`Imagen ${img.seed}`}
                       className="img-fluid rounded"
