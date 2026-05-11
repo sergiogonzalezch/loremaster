@@ -1,8 +1,8 @@
 """Checkpoint
 
-Revision ID: 1064fb419cc5
-Revises: 2a2cda1c4f31
-Create Date: 2026-05-09 09:29:34.265200
+Revision ID: 2041cd05678f
+Revises: 44e100e56077
+Create Date: 2026-05-10 21:47:41.757767
 
 """
 
@@ -13,8 +13,8 @@ import sqlalchemy as sa
 import sqlmodel
 
 # revision identifiers, used by Alembic.
-revision: str = "1064fb419cc5"
-down_revision: Union[str, Sequence[str], None] = "2a2cda1c4f31"
+revision: str = "2041cd05678f"
+down_revision: Union[str, Sequence[str], None] = "44e100e56077"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

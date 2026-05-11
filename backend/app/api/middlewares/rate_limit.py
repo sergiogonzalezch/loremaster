@@ -65,7 +65,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if user_id and not self._check_rate_limit(user_id):
             return JSONResponse(
                 status_code=429,
-                content={"detail": "Demasiadas solicitudes. Intenta de nuevo en un minuto."},
+                content={
+                    "detail": "Demasiadas solicitudes. Intenta de nuevo en un minuto."
+                },
             )
 
         return await call_next(request)

@@ -12,7 +12,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getDocuments } from "../api";
 import { ApiAbortError } from "../api/apiClient";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
 
 interface UseCollectionDocumentsStatusResult {
   hasCompletedDocs: boolean | null;
@@ -23,7 +24,9 @@ interface UseCollectionDocumentsStatusResult {
 export function useCollectionDocumentsStatus(
   collectionId: string | undefined,
 ): UseCollectionDocumentsStatusResult {
-  const [hasCompletedDocs, setHasCompletedDocs] = useState<boolean | null>(null);
+  const [hasCompletedDocs, setHasCompletedDocs] = useState<boolean | null>(
+    null,
+  );
   const [hasProcessingDocs, setHasProcessingDocs] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
 

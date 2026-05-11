@@ -10,23 +10,23 @@ from app.models.enums import ContentCategory, ContentStatus
 class EntityContent(SQLModel, SoftDeleteMixin, table=True):
     """Contenido generado por RAG asociado a una entidad.
 
-    Representa una versión del contenido (backstory, scene, etc.) con su
-    estado de revisión. La información original de la generación se almacena
-    en GeneratedText.
+        Representa una versión del contenido (backstory, scene, etc.) con su
+        estado de revisión. La información original de la generación se almacena
+        en GeneratedText.
 
-Attributes:
-        id: Identificador único UUID.
-        entity_id: Entidad a la que pertenece el contenido.
-        collection_id: Colección de la entidad.
-        generated_text_id: Referencia al texto original generado por el LLM.
-        category: Categoría del contenido (lore, backstory, personality, etc.).
-        content: Texto del contenido generado.
-        status: Estado del contenido (pending, confirmed, discarded).
-        is_shared: Si el contenido ha sido compartido en el feed público.
-        created_at: Fecha y hora de creación (UTC).
-        confirmed_at: Fecha y hora de confirmación (UTC), o None.
-        updated_at: Fecha y hora de última modificación (UTC).
-        updated_by: UUID del último usuario que modificó (audit trail).
+    Attributes:
+            id: Identificador único UUID.
+            entity_id: Entidad a la que pertenece el contenido.
+            collection_id: Colección de la entidad.
+            generated_text_id: Referencia al texto original generado por el LLM.
+            category: Categoría del contenido (lore, backstory, personality, etc.).
+            content: Texto del contenido generado.
+            status: Estado del contenido (pending, confirmed, discarded).
+            is_shared: Si el contenido ha sido compartido en el feed público.
+            created_at: Fecha y hora de creación (UTC).
+            confirmed_at: Fecha y hora de confirmación (UTC), o None.
+            updated_at: Fecha y hora de última modificación (UTC).
+            updated_by: UUID del último usuario que modificó (audit trail).
     """
 
     __tablename__ = "entity_contents"

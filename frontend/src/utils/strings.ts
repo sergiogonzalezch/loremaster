@@ -74,7 +74,12 @@ export function isImageUrlAllowed(url: string | null | undefined): boolean {
     // DEBUG: en desarrollo, loguear URLs rechazadas
     if (import.meta.env.DEV) {
       // eslint-disable-next-line no-console
-      console.warn("[SafeImage] URL rechazada:", trimmed, "hostname:", hostname);
+      console.warn(
+        "[SafeImage] URL rechazada:",
+        trimmed,
+        "hostname:",
+        hostname,
+      );
     }
 
     return false;

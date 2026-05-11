@@ -132,7 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 ...prev,
                 is_admin: profile.is_admin ?? false,
               }
-            : null
+            : null,
         );
       })
       .catch(() => {

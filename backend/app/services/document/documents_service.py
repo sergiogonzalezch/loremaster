@@ -24,6 +24,8 @@ from app.models.db.document import Document, DocumentStatus
 def _sanitize_for_log(filename: str) -> str:
     """Elimina caracteres de control (CR/LF) que permiten log injection."""
     return re.sub(r"[\r\n]", "", filename)
+
+
 from app.core.database.utils import soft_delete, paginate_with_sort, db_commit
 from app.core.storage.validator import FileValidator, DOCUMENT_MIME_TYPES
 from app.domain.content_guard import check_document_content
@@ -87,10 +89,14 @@ async def ingest_document_service(
             timeout=_EXTRACTION_TIMEOUT_SECONDS,
         )
     except asyncio.TimeoutError:
-        logger.error("Text extraction timed out for '%s'", _sanitize_for_log(data.filename))
+        logger.error(
+            "Text extraction timed out for '%s'", _sanitize_for_log(data.filename)
+        )
         raise DocumentExtractionError() from None
     except Exception as e:
-        logger.error("Text extraction failed for '%s': %s", _sanitize_for_log(data.filename), e)
+        logger.error(
+            "Text extraction failed for '%s': %s", _sanitize_for_log(data.filename), e
+        )
         raise DocumentExtractionError() from e
     check_document_content(extracted_text)
 
@@ -111,6 +117,7 @@ async def ingest_document_service(
                 existing.id,
             )
             from app.core.exceptions import DuplicateDocumentError
+
             raise DuplicateDocumentError(existing.id)
 
     document = Document(

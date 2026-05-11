@@ -62,7 +62,9 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 
 
 @app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
     """Maneja errores de validación sin repetir el input del cliente (evita info leak)."""
     logger.warning("Validation error on %s %s", request.method, request.url.path)
     return JSONResponse(
@@ -78,7 +80,9 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 
-app.add_middleware(RateLimitMiddleware, requests_per_minute=settings.rate_limit_per_minute)
+app.add_middleware(
+    RateLimitMiddleware, requests_per_minute=settings.rate_limit_per_minute
+)
 app.add_middleware(SecurityHeadersMiddleware)
 
 

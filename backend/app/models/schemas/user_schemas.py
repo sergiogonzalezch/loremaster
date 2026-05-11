@@ -23,9 +23,6 @@ class UserResponse(BaseModel):
 class UserProfileResponse(BaseModel):
     """Respuesta completa del perfil del usuario autenticado.
 
-    Incluye is_admin para que el frontend pueda mostrar/ocultar
-    opciones de administrador sin depender del JWT (H-1).
-
     Attributes:
         id: Identificador único.
         username: Nombre de usuario.
@@ -33,7 +30,7 @@ class UserProfileResponse(BaseModel):
         display_name: Nombre visible públicamente.
         bio: Biografía.
         avatar_url: URL de la imagen de perfil.
-        is_admin: Si el usuario es administrador (H-1, no via JWT).
+        is_admin: Si el usuario es administrador.
         created_at: Fecha de registro.
     """
 

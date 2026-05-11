@@ -17,7 +17,10 @@ from fastapi.responses import StreamingResponse
 from sqlmodel import Session, select, func
 
 from app.core.api.params import DateRangeParams, PaginationParams
-from app.core.database.dependencies import get_collection_or_404_owned, get_document_or_404
+from app.core.database.dependencies import (
+    get_collection_or_404_owned,
+    get_document_or_404,
+)
 from app.core.auth.dependencies import get_current_user
 from app.core.exceptions import (
     ContentNotAllowedError,

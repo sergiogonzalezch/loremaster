@@ -151,9 +151,7 @@ describe("useCollectionDocumentsStatus", () => {
       .mockResolvedValueOnce(PROCESSING_PAGE)
       .mockResolvedValueOnce(COMPLETED_PAGE);
 
-    const { unmount } = renderHook(() =>
-      useCollectionDocumentsStatus("col-1"),
-    );
+    const { unmount } = renderHook(() => useCollectionDocumentsStatus("col-1"));
 
     await act(async () => {});
 

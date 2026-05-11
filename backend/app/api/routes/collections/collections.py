@@ -91,7 +91,9 @@ def update_collection(
 ):
     """Actualiza el nombre o descripción de una colección."""
     try:
-        return update_collection_service(session, collection, request, current_user["sub"])
+        return update_collection_service(
+            session, collection, request, current_user["sub"]
+        )
     except DuplicateCollectionNameError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
