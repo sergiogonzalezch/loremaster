@@ -1,8 +1,8 @@
 """Checkpoint
 
-Revision ID: 2a2cda1c4f31
+Revision ID: e011b055990d
 Revises:
-Create Date: 2026-05-09 00:29:12.763275
+Create Date: 2026-05-10 23:36:51.159329
 
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 import sqlmodel
 
 # revision identifiers, used by Alembic.
-revision: str = "2a2cda1c4f31"
+revision: str = "e011b055990d"
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -76,6 +76,9 @@ def upgrade() -> None:
         sa.Column("owner_id", sa.String(length=36), nullable=True),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
+        sa.Column(
+            "updated_by", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=True
+        ),
         sa.ForeignKeyConstraint(
             ["owner_id"],
             ["users.id"],
@@ -100,6 +103,9 @@ def upgrade() -> None:
         ),
         sa.Column(
             "file_type", sqlmodel.sql.sqltypes.AutoString(length=100), nullable=False
+        ),
+        sa.Column(
+            "content_hash", sqlmodel.sql.sqltypes.AutoString(length=64), nullable=True
         ),
         sa.Column("chunk_count", sa.Integer(), nullable=False),
         sa.Column(
@@ -145,6 +151,9 @@ def upgrade() -> None:
         ),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
+        sa.Column(
+            "updated_by", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=True
+        ),
         sa.ForeignKeyConstraint(
             ["collection_id"],
             ["collections.id"],
@@ -228,6 +237,9 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("confirmed_at", sa.DateTime(), nullable=True),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
+        sa.Column(
+            "updated_by", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=True
+        ),
         sa.ForeignKeyConstraint(
             ["collection_id"],
             ["collections.id"],
