@@ -91,12 +91,11 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 
 ## Problemas Parcialmente Resueltos (6)
 
-### 🟠 Altos (2)
+### 🟠 Altos (1)
 
 | ID | Problema | Qué está hecho | Qué falta |
 |---|---|---|---|
 | **H-3** | Feed público filtra por `is_deleted`, pero admin delete no despublica contenido/imágenes generadas | El feed público filtra por `User.is_deleted == False` (`filters.py:19`). Avatares se eliminan en cascada durante `admin_delete_user` ([Fase 2](AUDIT-FASE2-LOG.md)). | El contenido generado (imágenes de entidades) y el `media_router` permiten acceso directo sin verificar `is_shared`. |
-| **L-10** | `/admin` solo gateado por `ProtectedRoute` sin verificación de rol admin | La ruta `/admin` requiere autenticación. Las APIs de admin retornan 403 si el usuario no es admin. | El frontend permite que cualquier usuario autenticado navegue a `/admin` y vea la UI (aunque no pueda ejecutar acciones). Falta `AdminRoute` que verifique `is_admin`. |
 
 ### 🟡 Medios (4)
 
@@ -106,6 +105,12 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 | **M-2** | ReDoS / CPU-DoS en `content_guard.py` | Limite de 100KB agregado antes de normalizacion NFKD ([Fase 8](AUDIT-FASE8-LOG.md)). | Las 6 regex siguen existiendo; el limite mitiga pero no elimina el riesgo de bloqueo del worker. |
 | **M-4** | ComfyUI `download_image` reenvía `filename`/`subfolder` sin sanitizar | Ahora usa `_sanitize_filename` que elimina caracteres no alfanuméricos/guiones/puntos. | Mitiga pero no elimina completamente el riesgo histórico de ese endpoint. |
 | **M-12** | Default `environment="local"` en código (fail-open) | Se agregó log WARNING en startup cuando `environment == "local"` ([Fase 6](AUDIT-FASE6-LOG.md)). | El default sigue siendo `"local"` (fail-open). No se cambió para no romper el flujo de desarrollo local. |
+
+### 🟢 Bajos (1)
+
+| ID | Problema | Qué está hecho | Qué falta |
+|---|---|---|---|
+| **L-10** | `/admin` solo gateado por `ProtectedRoute` sin verificación de rol admin | La ruta `/admin` requiere autenticación. Las APIs de admin retornan 403 si el usuario no es admin. | El frontend permite que cualquier usuario autenticado navegue a `/admin` y vea la UI (aunque no pueda ejecutar acciones). Falta `AdminRoute` que verifique `is_admin`. |
 
 ---
 
