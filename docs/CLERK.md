@@ -1,14 +1,16 @@
 # Integración con Clerk - Guía completa
 
+> **Nota (2026-05-12):** Desde la Fase 13, el sistema usa **cookies HttpOnly** + **CSRF tokens** para todas las sesiones. Clerk sigue siendo el proveedor de identidad, pero el token de sesión local se transporta via cookie (no header `Authorization`). Ver `docs/CLERK-APP-INTEGRATION.md` para los detalles técnicos actualizados.
+
 ## Visión general
 
 Lore Master soporta 3 entornos con diferentes configuraciones de autenticación:
 
 | Entorno | ENVIRONMENT | Autenticación | Registro | Uso |
 |---------|-------------|---------------|----------|-----|
-| Local | `local` | JWT propio | Formulario propio | Desarrollo offline |
-| Demo | `demo` | Clerk | Invitaciones manuales | Demos públicas (Vercel) |
-| Production | `production` | Clerk | Registro abierto | Servidor de producción |
+| Local | `local` | JWT propio + cookies | Formulario propio | Desarrollo offline |
+| Demo | `demo` | Clerk + cookies | Invitaciones manuales | Demos públicas (Vercel) |
+| Production | `production` | Clerk + cookies | Registro abierto | Servidor de producción |
 
 ---
 
@@ -52,6 +54,8 @@ Lore Master soporta 3 entornos con diferentes configuraciones de autenticación:
 │  2. Redirige a Clerk para autenticarse                    │
 │  3. Clerk redirige de vuelta con JWT                      │
 │  4. Tu backend valida el JWT de Clerk                     │
+│  5. Backend crea/setea cookie HttpOnly local              │
+│  6. Frontend usa cookies para requests posteriores        │
 │                                                             │
 │  ALMACENAMIENTO:                                           │
 │  ┌──────────────────────┐  ┌──────────────────────────────┐   │
@@ -87,6 +91,8 @@ Lore Master soporta 3 entornos con diferentes configuraciones de autenticación:
 │  4. Clerk crea usuario automáticamente                   │
 │  5. Redirige a tu app con JWT                             │
 │  6. Tu backend valida el JWT de Clerk                     │
+│  7. Backend crea/setea cookie HttpOnly local              │
+│  8. Frontend usa cookies para requests posteriores        │
 │                                                             │
 │  ALMACENAMIENTO:                                           │
 │  (Exactamente igual que Demo)                             │
@@ -217,13 +223,15 @@ Verificar en `backend/requirements.txt`.
 
 ## Notas importantes
 
-1. **No necesitas tabla de users** - En demo y production, el usuario no se crea en tu BD. Solo usas el `sub` del token de Clerk como identificador.
+1. **Cookies HttpOnly + CSRF** - Desde la Fase 13, todos los entornos usan cookies HttpOnly para el token de sesión y validación CSRF en mutaciones (POST/PUT/PATCH/DELETE). Clerk sigue siendo el proveedor de identidad, pero el frontend no maneja tokens JWT directamente.
 
-2. **Todos los datos de la app van a tu BD** - Colecciones, entidades, documentos, contenidos... todos almacenados localmente, solo referencian al owner_id de Clerk.
+2. **Provisioning de usuarios** - En demo y production, el usuario Clerk debe existir en la BD local (ver `get_or_create_user` en `CLERK-APP-INTEGRATION.md`). El `owner_id` referencia el ID de Clerk.
 
-3. **El flujo es idéntico para demo y production** - Cambia solo la configuración en el dashboard de Clerk para controlar registro.
+3. **Todos los datos de la app van a tu BD** - Colecciones, entidades, documentos, contenidos... todos almacenados localmente, solo referencian al owner_id de Clerk.
 
-4. **Local es el único ambiente con BD de usuarios** - Solo en desarrollo local se usa el sistema tradicional de registro.
+4. **El flujo es idéntico para demo y production** - Cambia solo la configuración en el dashboard de Clerk para controlar registro.
+
+5. **Local es el único ambiente con registro propio** - Solo en desarrollo local se usa el sistema tradicional de registro con bcrypt.
 
 ---
 
