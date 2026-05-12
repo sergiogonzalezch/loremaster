@@ -21,6 +21,28 @@ export default defineConfig([
     },
     rules: {
       "react-hooks/set-state-in-effect": "off",
+      // M-16: bloquear rehype-raw (desactiva el sanitizado XSS de react-markdown)
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["rehype-raw", "rehype-raw/*"],
+              message:
+                "rehype-raw desactiva el sanitizado XSS de react-markdown. Usa rehype-sanitize en su lugar.",
+            },
+          ],
+        },
+      ],
+      // M-16: bloquear dangerouslySetInnerHTML en JSX
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "JSXAttribute[name.name='dangerouslySetInnerHTML']",
+          message:
+            "dangerouslySetInnerHTML está prohibido. Usa react-markdown con rehype-sanitize.",
+        },
+      ],
     },
   },
 ]);

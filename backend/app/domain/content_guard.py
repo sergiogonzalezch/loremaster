@@ -23,6 +23,10 @@ from app.core.exceptions import ContentNotAllowedError, GeneratedContentBlockedE
 
 logger = logging.getLogger(__name__)
 
+# Sustituciones leetspeak comunes para evasión de filtros (M-1)
+# 0→o, 1→i, 3→e, 4→a, 5→s, 6→g, @→a, $→s
+_LEET_TABLE = str.maketrans("013456@$", "oieasgas")
+
 # Limite de longitud para prevenir ReDoS/CPU-DoS (M-2)
 _MAX_TEXT_LENGTH = 100_000  # 100 KB
 
@@ -75,12 +79,14 @@ _OUTPUT_BLOCKED_PATTERNS: tuple[re.Pattern[str], ...] = (
 
 
 def _normalize(text: str) -> str:
-    """Normaliza texto para comparación insensible a acentos.
+    """Normaliza texto para comparación robusta contra evasiones comunes (M-1, M-2).
 
-    NFKD descompone ligaduras/caracteres de ancho completo; eliminar Mn quita diacríticos
-    combinados de modo que é→e, ó→o, etc., habilitando coincidencia insensible a acentos.
-
-    Si el texto excede _MAX_TEXT_LENGTH, se trunca y se loguea una advertencia (M-2).
+    Pasos:
+    1. Trunca a _MAX_TEXT_LENGTH para prevenir ReDoS (M-2).
+    2. NFKD + elimina diacríticos: é→e, ó→o, caracteres de ancho completo.
+    3. Lowercase.
+    4. Sustituye leetspeak (_LEET_TABLE): 0→o, 1→i, 3→e, @→a, $→s, etc.
+    5. Colapsa chars repetidos (bbooommmb→bomb) para evadir filtros por repetición.
     """
     if len(text) > _MAX_TEXT_LENGTH:
         logger.warning(
@@ -88,11 +94,13 @@ def _normalize(text: str) -> str:
             _MAX_TEXT_LENGTH,
         )
         text = text[:_MAX_TEXT_LENGTH]
-    return "".join(
+    text = "".join(
         c
         for c in unicodedata.normalize("NFKD", text)
         if unicodedata.category(c) != "Mn"
     ).lower()
+    text = text.translate(_LEET_TABLE)
+    return re.sub(r"(.)\1{2,}", r"\1", text)
 
 
 def _check_text(
