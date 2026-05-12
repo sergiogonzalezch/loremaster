@@ -70,9 +70,9 @@ async def ingest_document_service(
     except ValueError as e:
         msg = str(e)
         if "Tipo de archivo" in msg:
-            raise UnsupportedFileTypeError()
+            raise UnsupportedFileTypeError() from e
         if "tamaño máximo" in msg:
-            raise FileTooLargeError()
+            raise FileTooLargeError() from e
         raise
 
     if not data.filename or not data.filename.strip():
@@ -90,13 +90,13 @@ async def ingest_document_service(
             timeout=_EXTRACTION_TIMEOUT_SECONDS,
         )
     except asyncio.TimeoutError:
-        logger.error(
+        logger.exception(
             "Text extraction timed out for '%s'", _sanitize_for_log(data.filename)
         )
         raise DocumentExtractionError() from None
     except Exception as e:
-        logger.error(
-            "Text extraction failed for '%s': %s", _sanitize_for_log(data.filename), e
+        logger.exception(
+            "Text extraction failed for '%s'", _sanitize_for_log(data.filename)
         )
         raise DocumentExtractionError() from e
     check_document_content(extracted_text)
@@ -157,7 +157,7 @@ def process_ingest_background(session: Session, document: Document, text: str) -
         document.chunk_count = chunk_count
         document.processing_error = None
     except Exception as e:
-        logger.error("Background ingest failed for '%s': %s", _sanitize_for_log(document.filename), e)
+        logger.exception("Background ingest failed for '%s'", _sanitize_for_log(document.filename))
         document.status = DocumentStatus.failed
         document.processing_error = str(e)
     session.add(document)
@@ -268,7 +268,7 @@ def delete_document_service(session: Session, document: Document) -> bool:
     try:
         delete_document_chunks(document.collection_id, document.id)
     except Exception as e:
-        logger.error("Failed to delete vector chunks for doc %s: %s", document.id, e)
+        logger.exception("Failed to delete vector chunks for doc %s", document.id)
         raise VectorStoreError() from e
 
     soft_delete(session, document)

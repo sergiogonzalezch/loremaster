@@ -99,9 +99,9 @@ def create_collection_service(
     session.add(collection)
     try:
         session.commit()
-    except IntegrityError:
+    except IntegrityError as e:
         session.rollback()
-        raise DuplicateCollectionNameError(name)
+        raise DuplicateCollectionNameError(name) from e
     session.refresh(collection)
     logger.info(
         "Collection '%s' created with id %s (owner: %s)", name, collection.id, owner_id
@@ -207,9 +207,9 @@ def update_collection_service(
     session.add(collection)
     try:
         session.commit()
-    except IntegrityError:
+    except IntegrityError as e:
         session.rollback()
-        raise DuplicateCollectionNameError(new_name)
+        raise DuplicateCollectionNameError(new_name) from e
     session.refresh(collection)
     logger.info("Collection '%s' updated (id %s)", collection.name, collection.id)
     return collection

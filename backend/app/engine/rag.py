@@ -176,7 +176,7 @@ def retrieve_context(
             score_threshold=settings.rag_score_threshold,
         )
     except Exception as e:
-        logger.error("Qdrant search failed for collection %s: %s", collection_id, e)
+        logger.exception("Qdrant search failed for collection %s", collection_id)
         raise RuntimeError("Vector search unavailable") from e
 
     rag_context = "\n\n---\n\n".join(context_chunks) if context_chunks else ""

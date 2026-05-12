@@ -81,7 +81,7 @@ async def upload_my_avatar(
     try:
         avatar_url = await upload_profile_image(session, user, file)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     return AvatarResponse(avatar_url=avatar_url, has_avatar=True)
 

@@ -135,9 +135,7 @@ def generate(
         session.refresh(generated_text)
     except SQLAlchemyError as e:
         session.rollback()
-        logger.error(
-            "DB commit failed after generation for entity %s: %s", entity.id, e
-        )
+        logger.exception("DB commit failed after generation for entity %s", entity.id)
         raise DatabaseError() from e
 
     logger.info(

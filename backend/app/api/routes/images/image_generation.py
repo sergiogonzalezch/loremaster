@@ -50,17 +50,17 @@ def build_prompt(
     """
     try:
         return build_prompt_service(session, entity, request.content_id)
-    except NoContextAvailableError:
+    except NoContextAvailableError as e:
         raise HTTPException(
             status_code=422,
             detail=(
                 "El contenido indicado no existe, no está confirmado "
                 "o no pertenece a esta entidad."
             ),
-        )
-    except Exception:
+        ) from e
+    except Exception as e:
         logger.exception("Error inesperado en build_prompt")
-        raise HTTPException(status_code=500, detail="Error interno del servidor.")
+        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
 
 
 @router.post(
@@ -89,24 +89,24 @@ def generate_images(
             request.batch_size,
             request.seed_base,
         )
-    except NoContextAvailableError:
+    except NoContextAvailableError as e:
         raise HTTPException(
             status_code=422,
             detail=(
                 "El contenido indicado no existe, no está confirmado "
                 "o no pertenece a esta entidad."
             ),
-        )
-    except ValueError:
+        ) from e
+    except ValueError as e:
         raise HTTPException(
             status_code=422,
             detail="batch_size debe estar entre 1 y 4.",
-        )
-    except DatabaseError:
-        raise HTTPException(status_code=500, detail="Error interno del servidor.")
-    except Exception:
+        ) from e
+    except DatabaseError as e:
+        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
+    except Exception as e:
         logger.exception("Error inesperado en generate_images")
-        raise HTTPException(status_code=500, detail="Error interno del servidor.")
+        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
 
 
 @router.patch(
@@ -125,10 +125,10 @@ def share_image(
         return share_image_service(
             session, entity, generation_id, image_id, request.shared
         )
-    except NoContextAvailableError:
-        raise HTTPException(status_code=404, detail="Imagen no encontrada.")
-    except DatabaseError:
-        raise HTTPException(status_code=500, detail="Error interno del servidor.")
+    except NoContextAvailableError as e:
+        raise HTTPException(status_code=404, detail="Imagen no encontrada.") from e
+    except DatabaseError as e:
+        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
 
 
 @router.delete(
@@ -144,16 +144,16 @@ def delete_image(
     """Elimina una imagen individual del batch (soft delete)."""
     try:
         delete_image_service(session, entity, generation_id, image_id)
-    except NoContextAvailableError:
+    except NoContextAvailableError as e:
         raise HTTPException(
             status_code=404,
             detail="Imagen no encontrada.",
-        )
-    except DatabaseError:
-        raise HTTPException(status_code=500, detail="Error interno del servidor.")
-    except Exception:
+        ) from e
+    except DatabaseError as e:
+        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
+    except Exception as e:
         logger.exception("Error inesperado en delete_image")
-        raise HTTPException(status_code=500, detail="Error interno del servidor.")
+        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
 
 
 @router.get(
@@ -168,14 +168,14 @@ def get_generation(
     """Obtiene una solicitud de generación con sus imágenes."""
     try:
         return get_generation_service(session, entity, generation_id)
-    except NoContextAvailableError:
+    except NoContextAvailableError as e:
         raise HTTPException(
             status_code=404,
             detail="Generación no encontrada.",
-        )
-    except Exception:
+        ) from e
+    except Exception as e:
         logger.exception("Error inesperado en get_generation")
-        raise HTTPException(status_code=500, detail="Error interno del servidor.")
+        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
 
 
 @router.get(
@@ -190,6 +190,6 @@ def list_generations(
     try:
         generations, total = list_generations_service(session, entity)
         return ImageGenerationListResponse(generations=generations, total=total)
-    except Exception:
+    except Exception as e:
         logger.exception("Error inesperado en list_generations")
-        raise HTTPException(status_code=500, detail="Error interno del servidor.")
+        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e

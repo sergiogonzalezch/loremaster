@@ -69,23 +69,23 @@ async def ingest(
     """
     try:
         document, text = await ingest_document_service(session, file, collection_id)
-    except UnsupportedFileTypeError:
-        raise HTTPException(status_code=400, detail="Unsupported file type")
-    except MissingFilenameError:
-        raise HTTPException(status_code=422, detail="Filename is required")
-    except FileTooLargeError:
-        raise HTTPException(status_code=400, detail="File too large")
+    except UnsupportedFileTypeError as e:
+        raise HTTPException(status_code=400, detail="Unsupported file type") from e
+    except MissingFilenameError as e:
+        raise HTTPException(status_code=422, detail="Filename is required") from e
+    except FileTooLargeError as e:
+        raise HTTPException(status_code=400, detail="File too large") from e
     except ContentNotAllowedError as e:
         log_moderation_event(session, "document", e.snippet)
-        raise HTTPException(status_code=422, detail=str(e))
-    except DocumentExtractionError:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    except DocumentExtractionError as e:
         raise HTTPException(
             status_code=422, detail="No se pudo extraer el texto del archivo."
-        )
+        ) from e
     except DuplicateDocumentError as e:
-        raise HTTPException(status_code=409, detail=str(e))
-    except DatabaseError:
-        raise HTTPException(status_code=500, detail="Error interno del servidor.")
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    except DatabaseError as e:
+        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
     background_tasks.add_task(process_ingest_background, session, document, text)
     return document
 
@@ -152,9 +152,9 @@ async def retry_ingest(
     try:
         document, text = retry_document_service(session, doc)
     except DocumentNotRetryableError as e:
-        raise HTTPException(status_code=409, detail=str(e))
-    except DatabaseError:
-        raise HTTPException(status_code=500, detail="Error interno del servidor.")
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    except DatabaseError as e:
+        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
     background_tasks.add_task(process_ingest_background, session, document, text)
     return document
 
@@ -168,10 +168,10 @@ def delete_document(
     """Elimina un documento: vectores en Qdrant y soft-delete en BD."""
     try:
         delete_document_service(session, doc)
-    except VectorStoreError:
+    except VectorStoreError as e:
         raise HTTPException(
             status_code=503, detail="El almacén de vectores no está disponible."
-        )
+        ) from e
     return Response(status_code=204)
 
 

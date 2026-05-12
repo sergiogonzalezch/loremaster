@@ -37,11 +37,11 @@ def get_jwks() -> dict:
                 response.raise_for_status()
                 _jwks_cache = response.json()
                 _jwks_cache_time = time.monotonic()
-            except httpx.HTTPError:
+            except httpx.HTTPError as e:
                 raise HTTPException(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                     detail="No se pudo obtener las claves de Clerk",
-                )
+                ) from e
         return _jwks_cache
 
 
@@ -66,10 +66,10 @@ def decode_clerk_token(token: str) -> dict:
             audience=settings.clerk_audience,
             issuer=clerk_issuer,
         )
-    except JWTError:
+    except JWTError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido"
-        )
+        ) from e
 
 
 @router.get("/verify")

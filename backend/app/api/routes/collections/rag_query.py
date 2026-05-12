@@ -55,13 +55,13 @@ def rag_query(
         )
     except ContentNotAllowedError as e:
         log_moderation_event(session, "input", e.snippet)
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=422, detail=str(e)) from e
     except NoContextAvailableError as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=422, detail=str(e)) from e
     except GeneratedContentBlockedError as e:
         log_moderation_event(session, "output", e.snippet)
-        raise HTTPException(status_code=422, detail=str(e))
-    except RuntimeError:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    except RuntimeError as e:
         raise HTTPException(
             status_code=503, detail="No fue posible generar el contenido solicitado."
-        )
+        ) from e

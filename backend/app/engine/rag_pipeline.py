@@ -40,14 +40,14 @@ def invoke_rag_pipeline(
     try:
         context, num_chunks = retrieve_context(collection_id, query, extra_context)
     except Exception as e:
-        logger.error("Vector store unavailable for collection %s: %s", collection_id, e)
+        logger.exception("Vector store unavailable for collection %s", collection_id)
         raise RuntimeError("Vector store unavailable") from e
 
     try:
         with _llm_semaphore:
             answer = chain.invoke({"context": context, "query": query})
     except Exception as e:
-        logger.error("LLM generation failed for collection %s: %s", collection_id, e)
+        logger.exception("LLM generation failed for collection %s", collection_id)
         raise RuntimeError("LLM service unavailable") from e
 
     logger.info(
@@ -87,7 +87,7 @@ def invoke_generation_pipeline(
     try:
         context, num_chunks = retrieve_context(collection_id, query, extra_context)
     except Exception as e:
-        logger.error("Vector store unavailable for collection %s: %s", collection_id, e)
+        logger.exception("Vector store unavailable for collection %s", collection_id)
         raise RuntimeError("Vector store unavailable") from e
 
     rendered_prompt = render_prompt(
@@ -102,11 +102,10 @@ def invoke_generation_pipeline(
         with _llm_semaphore:
             answer = generation_chain.invoke(rendered_prompt)
     except Exception as e:
-        logger.error(
-            "LLM generation failed for entity '%s' collection %s: %s",
+        logger.exception(
+            "LLM generation failed for entity '%s' collection %s",
             entity_name,
             collection_id,
-            e,
         )
         raise RuntimeError("LLM service unavailable") from e
 

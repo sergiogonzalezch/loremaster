@@ -53,8 +53,8 @@ def _verify_magic_bytes(content: bytes, expected_type: str) -> None:
     elif expected_type == "text/plain":
         try:
             content.decode("utf-8")
-        except UnicodeDecodeError:
-            raise ValueError("El archivo no es un texto válido")
+        except UnicodeDecodeError as e:
+            raise ValueError("El archivo no es un texto válido") from e
 
 
 def _strip_exif(data: bytes) -> bytes:
@@ -116,8 +116,8 @@ class FileValidator:
         try:
             img = Image.open(BytesIO(content))
             img.verify()
-        except Exception:
-            raise ValueError("El archivo no es una imagen válida")
+        except Exception as e:
+            raise ValueError("El archivo no es una imagen válida") from e
 
         content = _strip_exif(content)
 

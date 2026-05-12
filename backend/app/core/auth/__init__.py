@@ -49,11 +49,12 @@ def verify_token(token: str) -> dict:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido"
             )
-        return payload
-    except JWTError:
+    except JWTError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido"
-        )
+        ) from e
+    else:
+        return payload
 
 
 def hash_password(password: str) -> str:

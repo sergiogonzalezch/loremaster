@@ -105,8 +105,8 @@ def delete_entity(
     """Elimina una entidad y todos sus contenidos en cascada."""
     try:
         delete_entity_service(session, entity)
-    except DatabaseError:
-        raise HTTPException(status_code=500, detail="Error interno del servidor.")
+    except DatabaseError as e:
+        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
     return Response(status_code=204)
 
 

@@ -36,7 +36,6 @@ def _delete_vectors_with_retry(collection_id: str) -> bool:
     for attempt in range(1, _QDRANT_RETRY_ATTEMPTS + 1):
         try:
             delete_collection_vectors(collection_id)
-            return True
         except Exception as e:
             if attempt < _QDRANT_RETRY_ATTEMPTS:
                 logger.warning(
@@ -56,6 +55,8 @@ def _delete_vectors_with_retry(collection_id: str) -> bool:
                     collection_id,
                     exc_info=True,
                 )
+        else:
+            return True
     return False
 
 

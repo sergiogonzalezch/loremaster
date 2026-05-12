@@ -53,9 +53,9 @@ def create_entity_service(
     session.add(entity)
     try:
         session.commit()
-    except IntegrityError:
+    except IntegrityError as e:
         session.rollback()
-        raise DuplicateEntityNameError(name)
+        raise DuplicateEntityNameError(name) from e
     session.refresh(entity)
     logger.info("Entity '%s' created in collection %s", name, collection_id)
     return entity
@@ -148,9 +148,9 @@ def update_entity_service(
     session.add(entity)
     try:
         session.commit()
-    except IntegrityError:
+    except IntegrityError as e:
         session.rollback()
-        raise DuplicateEntityNameError(new_name)
+        raise DuplicateEntityNameError(new_name) from e
     session.refresh(entity)
     logger.info(
         "Entity '%s' updated in collection %s", entity.name, entity.collection_id

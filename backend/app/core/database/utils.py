@@ -68,7 +68,7 @@ def db_commit(session: Session, operation: str) -> None:
         session.commit()
     except SQLAlchemyError as e:
         session.rollback()
-        logger.error("DB commit failed during %s: %s", operation, e)
+        logger.exception("DB commit failed during %s", operation)
         raise DatabaseError() from e
 
 
