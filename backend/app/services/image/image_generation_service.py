@@ -406,6 +406,7 @@ def share_image_service(
     entity: Entity,
     generation_id: str,
     image_id: str,
+    *,
     shared: bool,
 ) -> ImageRecordResponse:
     """

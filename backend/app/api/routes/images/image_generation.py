@@ -123,7 +123,7 @@ def share_image(
     """Marca o desmarca una imagen como compartida públicamente."""
     try:
         return share_image_service(
-            session, entity, generation_id, image_id, request.shared
+            session, entity, generation_id, image_id, shared=request.shared
         )
     except NoContextAvailableError as e:
         raise HTTPException(status_code=404, detail="Imagen no encontrada.") from e

@@ -1,5 +1,6 @@
 """Endpoints de monitoreo y health check."""
 
+import httpx
 from fastapi import APIRouter
 
 from app.core.config import settings
@@ -10,8 +11,6 @@ router = APIRouter(tags=["health"])
 @router.get("/health")
 def health_check():
     """Endpoint de health check para monitoreo."""
-    import httpx
-
     status = {"status": "healthy", "services": {}}
 
     qdrant_url = settings.qdrant_url

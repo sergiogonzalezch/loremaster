@@ -33,8 +33,6 @@ from app.core.exceptions import (
     VectorStoreError,
 )
 from app.database import get_session
-
-logger = logging.getLogger(__name__)
 from app.models.db.collection import Collection
 from app.models.db.document import Document, DocumentStatus
 from app.models.schemas.document import DocumentResponse
@@ -47,6 +45,8 @@ from app.services.document.documents_service import (
     retry_document_service,
 )
 from app.services.moderation.moderation_service import log_moderation_event
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/collections", tags=["documents"])
 

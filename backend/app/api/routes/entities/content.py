@@ -193,7 +193,7 @@ def share_content(
     """
     try:
         result = content_service.share_content(
-            session, content_id, entity_id, collection_id, request.shared
+            session, content_id, entity_id, collection_id, shared=request.shared
         )
     except ContentNotShareableError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e

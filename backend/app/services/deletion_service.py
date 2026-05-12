@@ -4,6 +4,7 @@ from pathlib import Path
 
 from sqlmodel import Session, select
 
+from app.core.config import settings
 from app.core.database.soft_delete import soft_delete
 from app.engine.rag import delete_collection_vectors
 from app.models.db.collection import Collection
@@ -159,8 +160,6 @@ def _delete_image_file(storage_path: str | None) -> None:
     if not storage_path:
         return
     try:
-        from app.core.config import settings
-
         media_root_resolved = Path(settings.media_root).resolve()
         file_path = (media_root_resolved / storage_path).resolve()
         if not file_path.is_relative_to(media_root_resolved):
@@ -179,6 +178,7 @@ def _cascade_delete_images(
     session: Session,
     entity_id: str | None = None,
     collection_id: str | None = None,
+    *,
     delete_files: bool = True,
 ) -> int:
     """Elimina de forma suave los ImageRecord según los filtros indicados.

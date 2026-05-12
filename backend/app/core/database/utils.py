@@ -1,6 +1,6 @@
 import logging
-from typing import TypeVar
 from collections.abc import Sequence
+from typing import TypeVar
 
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError

@@ -203,6 +203,7 @@ def share_content(
     content_id: str,
     entity_id: str,
     collection_id: str,
+    *,
     shared: bool,
 ) -> EntityContentResponse | None:
     """Comparte o deja de compartir un contenido en el feed público.

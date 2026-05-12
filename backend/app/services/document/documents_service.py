@@ -14,6 +14,7 @@ from app.core.database.utils import db_commit, paginate_with_sort
 from app.core.exceptions import (
     DocumentExtractionError,
     DocumentNotRetryableError,
+    DuplicateDocumentError,
     FileTooLargeError,
     MissingFilenameError,
     UnsupportedFileTypeError,
@@ -117,8 +118,6 @@ async def ingest_document_service(
                 _sanitize_for_log(data.filename),
                 existing.id,
             )
-            from app.core.exceptions import DuplicateDocumentError
-
             raise DuplicateDocumentError(existing.id)
 
     document = Document(

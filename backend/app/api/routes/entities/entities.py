@@ -2,7 +2,7 @@ import contextlib
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.core.api.params import DateRangeParams, PaginationParams
 from app.core.auth.dependencies import get_current_user
@@ -55,7 +55,7 @@ def list_entities(
     pagination: Annotated[PaginationParams, Depends()],
     dates: Annotated[DateRangeParams, Depends()],
     name: str | None = Query(default=None),
-    type: EntityType | None = Query(default=None),
+    type: EntityType | None = Query(default=None),  # noqa: A002
     _: Collection = Depends(get_collection_or_404_owned),
     session: Session = Depends(get_session),
 ):
@@ -119,10 +119,6 @@ def bulk_delete_entities(
     session: Session = Depends(get_session),
 ):
     """Elimina múltiples entidades en cascada."""
-    from sqlmodel import select
-
-    from app.models.db.entity import Entity
-
     entities = session.exec(
         select(Entity).where(
             Entity.id.in_(request.ids),
@@ -132,7 +128,7 @@ def bulk_delete_entities(
     ).all()
 
     for entity in entities:
-        with contextlib.suppress(Exception):  # noqa: PERF203
+        with contextlib.suppress(Exception):
             delete_entity_service(session, entity)
 
     return Response(status_code=204)

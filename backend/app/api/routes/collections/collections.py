@@ -3,7 +3,7 @@ import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.core.api.params import DateRangeParams, PaginationParams
 from app.core.auth.dependencies import get_current_user
@@ -124,10 +124,6 @@ def bulk_delete_collections(
     session: Session = Depends(get_session),
 ):
     """Elimina múltiples colecciones en cascada."""
-    from sqlmodel import select
-
-    from app.models.db.collection import Collection
-
     collections = session.exec(
         select(Collection).where(
             Collection.id.in_(request.ids),
@@ -137,7 +133,7 @@ def bulk_delete_collections(
     ).all()
 
     for collection in collections:
-        with contextlib.suppress(Exception):  # noqa: PERF203
+        with contextlib.suppress(Exception):
             delete_collection_service(session, collection)
 
     return Response(status_code=204)
