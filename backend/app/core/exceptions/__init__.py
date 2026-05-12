@@ -1,5 +1,6 @@
 """Excepciones personalizadas del dominio de la aplicación."""
 
+
 class DuplicateEntityNameError(Exception):
     """Lanzada cuando ya existe una entidad con el mismo nombre en la colección."""
 

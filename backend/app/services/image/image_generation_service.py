@@ -287,7 +287,8 @@ def build_prompt_service(
 
     if content.category not in ALLOWED_IMAGE_CATEGORIES:
         raise ValueError(
-            f"Categoría '{content.category.value}' no soportada para generación de imágenes"
+            f"Categoría '{content.category.value}' no soportada para "
+            f"generación de imágenes"
         )
 
     build_result = build_visual_prompt(

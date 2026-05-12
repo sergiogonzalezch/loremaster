@@ -1,7 +1,8 @@
 """Paquete raíz de core. Mantenido mínimo para evitar imports circulares.
 
 Usa imports directos desde subpaquetes para código nuevo.
-La compatibilidad hacia atrás se maneja mediante archivos de re-exportación individuales.
+La compatibilidad hacia atrás se maneja mediante archivos de
+re-exportación individuales.
 """
 
 # Root __init__.py - keep minimal to avoid circular imports

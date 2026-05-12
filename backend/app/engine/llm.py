@@ -10,7 +10,8 @@ _SAFETY_INSTRUCTION = (
     "RESTRICCIONES ABSOLUTAS: Bajo ninguna circunstancia generes contenido que incluya "
     "material sexual explícito, instrucciones para actividades ilegales o dañinas, "
     "discurso de odio, acoso o contenido denigrante hacia personas o grupos. "
-    "Si la solicitud o el contexto contienen ese tipo de material, responde únicamente: "
+    "Si la solicitud o el contexto contienen ese tipo de material, "
+    "responde únicamente: "
     "'No puedo procesar esta solicitud.' y no generes ningún contenido adicional.\n\n"
 )
 """Instrucción de seguridad inyectada en todos los prompts del LLM."""

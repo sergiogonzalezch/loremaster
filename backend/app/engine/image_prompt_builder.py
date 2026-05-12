@@ -137,7 +137,8 @@ def build_visual_prompt(
         category: Categoría del contenido
         max_tokens: Límite de tokens para el prompt (default 512).
             El límite de 512 es el máximo del text encoder de Stable Diffusion.
-            Reservamos 15 tokens (~60 chars) para prefijo (tipo específico) y sufijo (quality).
+            Reservamos 15 tokens (~60 chars) para prefijo (tipo
+            específico) y sufijo (quality).
 
     Returns:
         {

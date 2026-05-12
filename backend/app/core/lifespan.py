@@ -18,7 +18,8 @@ _ALEMBIC_INI = Path(__file__).resolve().parent.parent.parent / "alembic.ini"
 
 
 def _run_migrations() -> None:
-    """Ejecuta las migraciones de Alembic heads-up usando la URL de la base de datos configurada."""
+    """Ejecuta las migraciones de Alembic heads-up usando la URL de la
+    base de datos configurada."""
     alembic_cfg = Config(str(_ALEMBIC_INI))
     alembic_cfg.set_main_option("sqlalchemy.url", settings.database_url)
     command.upgrade(alembic_cfg, "head")

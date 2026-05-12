@@ -60,8 +60,9 @@ def _delete_vectors_with_retry(collection_id: str) -> bool:
                 time.sleep(_QDRANT_RETRY_DELAY)
             else:
                 logger.exception(
-                    "Orphan vectors remain in Qdrant for collection %s after %d attempts"
-                    " — manual cleanup needed. collection_id=%s",
+                    "Orphan vectors remain in Qdrant for collection %s "
+                    "after %d attempts — manual cleanup needed. "
+                    "collection_id=%s",
                     collection_id,
                     _QDRANT_RETRY_ATTEMPTS,
                     collection_id,

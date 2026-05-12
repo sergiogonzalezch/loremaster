@@ -20,7 +20,8 @@ class User(SQLModel, SoftDeleteMixin, table=True):
         bio: Biografía pública del usuario.
         avatar_path: Ruta de la imagen de perfil.
         is_admin: Indica si el usuario tiene privilegios de administrador.
-        token_version: Versión del token (incrementada al hacer logout de todos los dispositivos).
+        token_version: Versión del token (incrementada al hacer logout
+            de todos los dispositivos).
         created_at: Fecha y hora de registro (UTC).
 
     """
