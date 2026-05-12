@@ -118,7 +118,9 @@ def admin_delete_user(
     try:
         delete_profile_image(session, user)
     except Exception:
-        logger.warning("Failed to delete avatar for user %s during admin deletion", user_id)
+        logger.warning(
+            "Failed to delete avatar for user %s during admin deletion", user_id
+        )
     user.is_deleted = True
     user.deleted_at = datetime.now(timezone.utc)
     session.add(user)

@@ -2,10 +2,14 @@ import logging
 import re
 
 PII_PATTERNS = {
-    "password": re.compile(r'(password|passwd|pwd)[=:]?\s*\S+', re.IGNORECASE),
-    "email": re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'),
-    "token": re.compile(r'(token|jwt|authorization)[=:]?\s*Bearer\s+\S+', re.IGNORECASE),
-    "secret": re.compile(r'(secret|api_key|apikey|client_secret)[=:]?\s*\S+', re.IGNORECASE),
+    "password": re.compile(r"(password|passwd|pwd)[=:]?\s*\S+", re.IGNORECASE),
+    "email": re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"),
+    "token": re.compile(
+        r"(token|jwt|authorization)[=:]?\s*Bearer\s+\S+", re.IGNORECASE
+    ),
+    "secret": re.compile(
+        r"(secret|api_key|apikey|client_secret)[=:]?\s*\S+", re.IGNORECASE
+    ),
 }
 
 
@@ -27,7 +31,7 @@ class PIIFilter(logging.Filter):
                     pass
 
             for pii_type, pattern in PII_PATTERNS.items():
-                msg_str = pattern.sub(f'[{pii_type.upper()}:REDACTED]', msg_str)
+                msg_str = pattern.sub(f"[{pii_type.upper()}:REDACTED]", msg_str)
 
             record.msg = msg_str
             record.args = ()

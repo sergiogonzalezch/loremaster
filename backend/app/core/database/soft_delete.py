@@ -4,6 +4,8 @@ from typing import Optional
 from sqlmodel import Session
 
 from app.core.database.utils import db_commit
+
+
 class SoftDeleteMixin:
     """Mixin que agrega campos de soft-delete a un modelo: is_deleted y deleted_at."""
 

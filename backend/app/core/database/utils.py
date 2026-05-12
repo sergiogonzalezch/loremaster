@@ -84,6 +84,3 @@ def get_active_by_id(
         model.is_deleted.is_(False),
     )
     return session.exec(stmt).first()
-
-
-
