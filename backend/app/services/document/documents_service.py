@@ -18,18 +18,18 @@ from app.core.exceptions import (
 )
 from app.core.config import settings
 from app.models.db.document import Document, DocumentStatus
+from app.core.database.soft_delete import soft_delete
+from app.core.database.utils import paginate_with_sort, db_commit
+from app.core.storage.validator import FileValidator, DOCUMENT_MIME_TYPES
+from app.domain.content_guard import check_document_content
+from app.engine.extractor import extract_text
+from app.engine.rag import ingest_chunks, delete_document_chunks
 
 
 def _sanitize_for_log(filename: str) -> str:
     """Elimina caracteres de control (CR/LF) que permiten log injection."""
     return re.sub(r"[\r\n]", "", filename)
 
-
-from app.core.database.utils import soft_delete, paginate_with_sort, db_commit
-from app.core.storage.validator import FileValidator, DOCUMENT_MIME_TYPES
-from app.domain.content_guard import check_document_content
-from app.engine.extractor import extract_text
-from app.engine.rag import ingest_chunks, delete_document_chunks
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +105,7 @@ async def ingest_document_service(
             select(Document).where(
                 Document.collection_id == collection_id,
                 Document.content_hash == content_hash,
-                Document.is_deleted == False,
+                Document.is_deleted.is_(False),
             )
         ).first()
         if existing:
@@ -196,7 +196,7 @@ def list_documents_service(
     """
     conditions = [
         Document.collection_id == collection_id,
-        Document.is_deleted == False,
+        Document.is_deleted.is_(False),
         Document.status != DocumentStatus.processing,
     ]
     if filename:

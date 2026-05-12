@@ -3,7 +3,7 @@ from typing import Optional
 
 from sqlmodel import Session
 
-
+from app.core.database.utils import db_commit
 class SoftDeleteMixin:
     """Mixin que agrega campos de soft-delete a un modelo: is_deleted y deleted_at."""
 
@@ -17,7 +17,6 @@ def soft_delete(session: Session, record) -> bool:
 
     Retorna True si la operación fue exitosa.
     """
-    from app.core.database.utils import db_commit
 
     now = datetime.now(timezone.utc)
     record.is_deleted = True

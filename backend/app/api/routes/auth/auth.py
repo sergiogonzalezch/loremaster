@@ -105,7 +105,7 @@ def login(request: LoginRequest, session: Session = Depends(get_session)):
     statement = select(User).where(
         (User.username == request.username_or_email)
         | (User.email == request.username_or_email),
-        User.is_deleted == False,
+        User.is_deleted.is_(False),
     )
     user = session.exec(statement).first()
 
@@ -159,7 +159,7 @@ def register(request: RegisterRequest, session: Session = Depends(get_session)):
         )
 
     existing_email = session.exec(
-        select(User).where(User.email == request.email, User.is_deleted == False)
+        select(User).where(User.email == request.email, User.is_deleted.is_(False))
     ).first()
     if existing_email:
         raise HTTPException(

@@ -5,8 +5,6 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlmodel import Session, select
 
-logger = logging.getLogger(__name__)
-
 from app.core.auth.dependencies import get_admin_user
 from app.core.database.utils import paginate_with_sort
 from app.core.api.params import PaginationParams
@@ -17,6 +15,8 @@ from app.models.db.collection import Collection
 from app.services.profile.profile_service import get_avatar_info, delete_profile_image
 from app.services.collection.collection_service import delete_collection_service
 from app.services.deletion_service import cascade_delete_collection
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -110,7 +110,7 @@ def admin_delete_user(
     collections = session.exec(
         select(Collection).where(
             Collection.owner_id == user_id,
-            Collection.is_deleted == False,
+            Collection.is_deleted.is_(False),
         )
     ).all()
     for collection in collections:

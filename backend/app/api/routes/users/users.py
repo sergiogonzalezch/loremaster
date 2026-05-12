@@ -49,7 +49,7 @@ def update_my_profile(
         existing = session.exec(
             select(User).where(
                 User.email == request.email,
-                User.is_deleted == False,
+                User.is_deleted.is_(False),
                 User.id != user.id,
             )
         ).first()
@@ -103,7 +103,7 @@ def get_public_profile(
 ):
     """Obtiene el perfil público de un usuario con sus contenidos e imágenes compartidos."""
     user = session.exec(
-        select(User).where(User.username == username, User.is_deleted == False)
+        select(User).where(User.username == username, User.is_deleted.is_(False))
     ).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")

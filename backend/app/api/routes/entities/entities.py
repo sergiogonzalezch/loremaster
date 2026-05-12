@@ -125,7 +125,7 @@ def bulk_delete_entities(
         select(Entity).where(
             Entity.id.in_(request.ids),
             Entity.collection_id == collection_id,
-            Entity.is_deleted == False,
+            Entity.is_deleted.is_(False),
         )
     ).all()
 

@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime, timezone
 from typing import TypeVar, Type, Optional, Sequence
 
 from sqlalchemy import func
@@ -8,7 +7,6 @@ from sqlalchemy.sql import Select
 from sqlmodel import Session, select, SQLModel
 
 from app.core.exceptions import DatabaseError
-from app.core.database.soft_delete import soft_delete
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +81,7 @@ def get_active_by_id(
     stmt = select(model).where(
         model.id == record_id,
         model.collection_id == collection_id,
-        model.is_deleted == False,
+        model.is_deleted.is_(False),
     )
     return session.exec(stmt).first()
 

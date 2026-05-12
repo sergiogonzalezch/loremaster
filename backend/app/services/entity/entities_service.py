@@ -90,7 +90,7 @@ def list_entities_service(
     """
     conditions = [
         Entity.collection_id == collection_id,
-        Entity.is_deleted == False,
+        Entity.is_deleted.is_(False),
     ]
     if name:
         conditions.append(Entity.name.ilike(f"%{name}%"))

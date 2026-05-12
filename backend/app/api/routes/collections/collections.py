@@ -4,8 +4,6 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlmodel import Session
 
-logger = logging.getLogger(__name__)
-
 from app.core.api.params import DateRangeParams, PaginationParams
 from app.core.database.dependencies import (
     get_collection_or_404_owned,
@@ -28,6 +26,8 @@ from app.services.collection.collection_service import (
     update_collection_service,
     delete_collection_service,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/collections", tags=["collections"])
 
@@ -130,7 +130,7 @@ def bulk_delete_collections(
         select(Collection).where(
             Collection.id.in_(request.ids),
             Collection.owner_id == current_user["sub"],
-            Collection.is_deleted == False,
+            Collection.is_deleted.is_(False),
         )
     ).all()
 

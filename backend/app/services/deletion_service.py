@@ -8,7 +8,7 @@ from app.models.db.collection import Collection
 from app.models.db.document import Document
 from app.models.db.entity import Entity
 from app.models.db.image_generation import ImageRecord
-from app.core.database.utils import soft_delete
+from app.core.database.soft_delete import soft_delete
 from app.engine.rag import delete_collection_vectors
 from app.services.cascade_service import (
     cascade_delete_by_entity,
@@ -107,7 +107,7 @@ def cascade_delete_collection(session: Session, collection: Collection) -> bool:
     docs = session.exec(
         select(Document).where(
             Document.collection_id == collection.id,
-            Document.is_deleted == False,
+            Document.is_deleted.is_(False),
         )
     ).all()
     for doc in docs:
@@ -119,7 +119,7 @@ def cascade_delete_collection(session: Session, collection: Collection) -> bool:
     entities = session.exec(
         select(Entity).where(
             Entity.collection_id == collection.id,
-            Entity.is_deleted == False,
+            Entity.is_deleted.is_(False),
         )
     ).all()
     for entity in entities:
@@ -195,7 +195,7 @@ def _cascade_delete_images(
     Raises:
         ValueError: Si no se proporciona al menos un filtro (entity_id o collection_id).
     """
-    conditions = [ImageRecord.is_deleted == False]
+    conditions = [ImageRecord.is_deleted.is_(False)]
     if entity_id is not None:
         conditions.append(ImageRecord.entity_id == entity_id)
     if collection_id is not None:

@@ -197,7 +197,7 @@ def document_events(
             try:
                 stmt = select(Document).where(
                     Document.collection_id == collection_id,
-                    Document.is_deleted == False,
+                    Document.is_deleted.is_(False),
                 )
                 docs = session.exec(stmt).all()
 
@@ -224,6 +224,6 @@ def document_events(
                 logging.exception("Error in SSE document events")
                 break
 
-        yield f"data: done\n\n"
+        yield "data: done\n\n"
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")

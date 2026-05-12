@@ -4,8 +4,6 @@ import logging
 import uuid as _uuid
 import os
 
-logger = logging.getLogger(__name__)
-
 from datetime import datetime, timezone
 from sqlmodel import Session, select
 
@@ -33,6 +31,8 @@ from app.models.schemas.image_generation import (
     ImageGenerationListItem,
 )
 
+logger = logging.getLogger(__name__)
+
 ALLOWED_IMAGE_CATEGORIES = {
     ContentCategory.extended_description,
     ContentCategory.backstory,
@@ -52,7 +52,7 @@ def _get_confirmed_content(
             EntityContent.entity_id == entity.id,
             EntityContent.collection_id == entity.collection_id,
             EntityContent.status == ContentStatus.confirmed,
-            EntityContent.is_deleted == False,
+            EntityContent.is_deleted.is_(False),
         )
     ).first()
 
@@ -419,7 +419,7 @@ def share_image_service(
             ImageRecord.id == image_id,
             ImageRecord.generation_id == generation_id,
             ImageRecord.entity_id == entity.id,
-            ImageRecord.is_deleted == False,
+            ImageRecord.is_deleted.is_(False),
         )
     ).first()
 
@@ -467,7 +467,7 @@ def delete_image_service(
             ImageRecord.id == image_id,
             ImageRecord.generation_id == generation_id,
             ImageRecord.entity_id == entity.id,
-            ImageRecord.is_deleted == False,
+            ImageRecord.is_deleted.is_(False),
         )
     ).first()
 
@@ -508,7 +508,7 @@ def get_generation_service(
         select(ImageGeneration).where(
             ImageGeneration.id == generation_id,
             ImageGeneration.entity_id == entity.id,
-            ImageGeneration.is_deleted == False,
+            ImageGeneration.is_deleted.is_(False),
         )
     ).first()
 
@@ -518,7 +518,7 @@ def get_generation_service(
     records = session.exec(
         select(ImageRecord).where(
             ImageRecord.generation_id == generation_id,
-            ImageRecord.is_deleted == False,
+            ImageRecord.is_deleted.is_(False),
         )
     ).all()
 
@@ -559,7 +559,7 @@ def list_generations_service(
         .where(
             ImageGeneration.entity_id == entity.id,
             ImageGeneration.collection_id == entity.collection_id,
-            ImageGeneration.is_deleted == False,
+            ImageGeneration.is_deleted.is_(False),
         )
         .order_by(ImageGeneration.created_at.desc())
     ).all()
@@ -570,7 +570,7 @@ def list_generations_service(
             select(ImageRecord)
             .where(
                 ImageRecord.generation_id == gen.id,
-                ImageRecord.is_deleted == False,
+                ImageRecord.is_deleted.is_(False),
             )
             .order_by(ImageRecord.seed.asc())
         ).all()

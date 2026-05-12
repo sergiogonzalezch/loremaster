@@ -3,8 +3,6 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
-logger = logging.getLogger(__name__)
-
 from app.core.auth.dependencies import get_current_user
 from app.core.database.dependencies import get_entity_or_404_owned
 from app.core.exceptions import (
@@ -30,6 +28,8 @@ from app.services.image.image_generation_service import (
     list_generations_service,
     share_image_service,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/collections", tags=["image-generation"])
 

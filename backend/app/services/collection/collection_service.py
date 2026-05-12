@@ -26,7 +26,7 @@ def _fetch_counts(
         select(Document.collection_id, func.count(Document.id))
         .where(
             Document.collection_id.in_(collection_ids),
-            Document.is_deleted == False,
+            Document.is_deleted.is_(False),
         )
         .group_by(Document.collection_id)
     ).all()
@@ -34,7 +34,7 @@ def _fetch_counts(
         select(Entity.collection_id, func.count(Entity.id))
         .where(
             Entity.collection_id.in_(collection_ids),
-            Entity.is_deleted == False,
+            Entity.is_deleted.is_(False),
         )
         .group_by(Entity.collection_id)
     ).all()
@@ -89,7 +89,7 @@ def create_collection_service(
         select(Collection).where(
             Collection.name == name,
             Collection.owner_id == owner_id,
-            Collection.is_deleted == False,
+            Collection.is_deleted.is_(False),
         )
     ).first()
     if existing:
@@ -134,7 +134,7 @@ def list_collections_service(
     Returns:
         Tupla de (lista de colecciones enriquecidas con counts, total de resultados).
     """
-    conditions = [Collection.is_deleted == False, Collection.owner_id == owner_id]
+    conditions = [Collection.is_deleted.is_(False), Collection.owner_id == owner_id]
     if name:
         conditions.append(Collection.name.ilike(f"%{name}%"))
     if created_after:
@@ -189,7 +189,7 @@ def update_collection_service(
             select(Collection).where(
                 Collection.name == new_name,
                 Collection.owner_id == collection.owner_id,
-                Collection.is_deleted == False,
+                Collection.is_deleted.is_(False),
                 Collection.id != collection.id,
             )
         ).first()

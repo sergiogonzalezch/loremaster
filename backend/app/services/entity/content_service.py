@@ -4,7 +4,8 @@ from typing import Literal, Optional
 
 from sqlmodel import Session, select
 
-from app.core.database.utils import soft_delete, paginate_with_sort, db_commit
+from app.core.database.soft_delete import soft_delete
+from app.core.database.utils import paginate_with_sort, db_commit
 from app.core.exceptions import (
     ContentDiscardedError,
     ContentNotShareableError,
@@ -47,7 +48,7 @@ def list_contents(
     conditions = [
         EntityContent.entity_id == entity_id,
         EntityContent.collection_id == collection_id,
-        EntityContent.is_deleted == False,
+        EntityContent.is_deleted.is_(False),
     ]
 
     if status == "active":
@@ -298,7 +299,7 @@ def _get_active_content(
             EntityContent.id == content_id,
             EntityContent.entity_id == entity_id,
             EntityContent.collection_id == collection_id,
-            EntityContent.is_deleted == False,
+            EntityContent.is_deleted.is_(False),
         )
     ).first()
 
@@ -328,7 +329,7 @@ def _discard_sibling_contents(
             EntityContent.category == category,
             EntityContent.id != exclude_id,
             EntityContent.status.in_(statuses),
-            EntityContent.is_deleted == False,
+            EntityContent.is_deleted.is_(False),
         )
     ).all()
     for s in siblings:

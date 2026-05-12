@@ -8,3 +8,15 @@ from app.models.db.entity_content import EntityContent
 from app.models.db.image_generation import ImageGeneration, ImageRecord
 from app.models.db.moderation_log import ModerationLog
 from app.models.db.user import User
+
+__all__ = [
+    "Collection",
+    "Document",
+    "Entity",
+    "GeneratedText",
+    "EntityContent",
+    "ImageGeneration",
+    "ImageRecord",
+    "ModerationLog",
+    "User",
+]

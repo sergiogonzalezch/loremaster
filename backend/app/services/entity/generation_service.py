@@ -64,7 +64,7 @@ def generate(
             EntityContent.collection_id == entity.collection_id,
             EntityContent.category == category,
             EntityContent.status == ContentStatus.pending,
-            EntityContent.is_deleted == False,
+            EntityContent.is_deleted.is_(False),
         )
     ).one()
     if pending_count >= settings.max_pending_contents:
@@ -121,7 +121,7 @@ def generate(
                 EntityContent.collection_id == entity.collection_id,
                 EntityContent.category == category,
                 EntityContent.status == ContentStatus.pending,
-                EntityContent.is_deleted == False,
+                EntityContent.is_deleted.is_(False),
             )
         ).one()
         if recount > settings.max_pending_contents:
