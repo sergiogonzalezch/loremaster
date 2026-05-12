@@ -12,19 +12,19 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 
 | Estado | Total |
 |---|---:|
-| **Resueltos** | **41** |
-| **Parcialmente resueltos** | **6** |
+| **Resueltos** | **42** |
+| **Parcialmente resueltos** | **5** |
 | **No resueltos** | **6** |
 | **No verificados / pendientes** | **0** |
 | **Total** | **53** |
 
-> **Nota:** 24 problemas resueltos en 8 fases + 3 hallazgos frontend verificados. Ver [Fases de Implementación](#fases-de-implementación).
+> **Nota:** 25 problemas resueltos en 9 fases + 3 hallazgos frontend verificados. Ver [Fases de Implementación](#fases-de-implementación).
 
 > **Conclusión:** Los problemas de mayor impacto (IDOR en documentos, path traversal, secretos por defecto, headers de seguridad, magic bytes, audit logs) fueron resueltos. Persisten **gaps críticos en validación de usuarios eliminados en Clerk**, **prompt injection**, **protección CSRF/storage de tokens**, y **rate limiting completo**.
 
 ---
 
-## Problemas Resueltos (41)
+## Problemas Resueltos (43)
 
 ### 🔴 Críticos (7)
 
@@ -38,13 +38,13 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 | **C-7** | JWT secret por defecto + sin protección contra alg-confusion | `backend/app/core/auth/__init__.py` | [Fase 1](AUDIT-FASE1-LOG.md) |
 | **C-8** | Postgres con credenciales hardcodeadas | `backend/docker-compose.prod.yml` | [Fase 3](AUDIT-FASE3-LOG.md) |
 
-### 🟠 Altos (8)
+### 🟠 Altos (9)
 
 | ID | Problema | Archivo(s) involucrado(s) | Referencia |
 |---|---|---|---|
 | **H-1** | `is_admin` viajaba dentro del JWT | `backend/app/api/routes/auth/auth.py` | [Fase 1](AUDIT-FASE1-LOG.md) |
 | **H-2** | `PATCH /users/me` aceptaba email sin validación ni unicidad | `backend/app/api/routes/users/users.py` | [Fase 1](AUDIT-FASE1-LOG.md) |
-| **H-3** | Admin delete no despublica avatares de perfil | `backend/app/api/routes/admin/admin.py` | [Fase 2](AUDIT-FASE2-LOG.md) |
+| **H-3** | Admin delete no despublica contenido/imágenes generadas | `backend/app/api/routes/admin/admin.py`, `backend/app/services/deletion_service.py` | [Fase 2](AUDIT-FASE2-LOG.md) + [Fase 9](AUDIT-FASE9-LOG.md) |
 | **H-6** | `validate_document` confiaba solo en `content_type` del cliente | `backend/app/core/storage/validator.py` | — |
 | **H-7** | `PdfReader` sin cap de páginas (PDF bombs) | `backend/app/engine/extractor.py` | — |
 | **H-9** | Sin headers de seguridad (HSTS, CSP, X-Frame-Options, etc.) | `backend/app/api/middlewares/security_headers.py` | — |
@@ -70,7 +70,7 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 | **M-18** | Validación cliente-only de avatar | `backend/app/core/storage/validator.py` | [Fase 2](AUDIT-FASE2-LOG.md) |
 | **M-16** | `rehype-sanitize` con schema default como barrera XSS | `frontend/src/components/MarkdownContent.tsx` | Verificado en frontend — schema default de rehype-sanitize elimina atributos de evento inline (onerror, onclick, etc.) |
 
-### 🟢 Bajos (9)
+### 🟢 Bajos (10)
 
 | ID | Problema | Archivo(s) involucrado(s) | Referencia |
 |---|---|---|---|
@@ -83,19 +83,20 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 | **L-7** | Sin `secrets.compare_digest` para comparaciones sensibles | `backend/app/core/auth/dependencies.py` | [Fase 5](AUDIT-FASE5-LOG.md) |
 | **L-8** | `scripts/make_admin.py` sin audit log | `backend/scripts/make_admin.py` | [Fase 4](AUDIT-FASE4-LOG.md) |
 | **L-9** | Frontend `<img src={url}>` sin allowlist de origen | `frontend/src/components/SafeImage.tsx`, `frontend/src/utils/strings.ts` | Resuelto — `isImageUrlAllowed()` valida que solo se carguen imágenes desde mismo origin, localhost, data URIs y blob URLs |
+| **L-10** | `/admin` solo gateado por `ProtectedRoute` sin verificación de rol admin | `frontend/src/components/AdminRoute.tsx`, `frontend/src/App.tsx` | [Fase 9](AUDIT-FASE9-LOG.md) |
 | **L-11** | Token revocation TTL no documentado | `backend/app/core/auth/__init__.py` | [Fase 6](AUDIT-FASE6-LOG.md) |
 | **L-12** | Logger global sin estructura/redacción de PII | `backend/app/core/logging.py` | [Fase 4](AUDIT-FASE4-LOG.md) |
 | **L-13** | Docker compose publica Qdrant/Redis al host | `backend/docker-compose.yml` | [Fase 6](AUDIT-FASE6-LOG.md) |
 
 ---
 
-## Problemas Parcialmente Resueltos (6)
+## Problemas Parcialmente Resueltos (5)
 
 ### 🟠 Altos (1)
 
 | ID | Problema | Qué está hecho | Qué falta |
 |---|---|---|---|
-| **H-3** | Feed público filtra por `is_deleted`, pero admin delete no despublica contenido/imágenes generadas | El feed público filtra por `User.is_deleted == False` (`filters.py:19`). Avatares se eliminan en cascada durante `admin_delete_user` ([Fase 2](AUDIT-FASE2-LOG.md)). | El contenido generado (imágenes de entidades) y el `media_router` permiten acceso directo sin verificar `is_shared`. |
+| **H-8** | Cero rate limiting | Existe `RateLimitMiddleware` aplicado a operaciones mutantes (POST/PUT/PATCH/DELETE). | No aplica a GET/HEAD, opera en memoria (no escala a múltiples workers), y no protege endpoints de lectura intensiva. |
 
 ### 🟡 Medios (4)
 
@@ -105,12 +106,6 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 | **M-2** | ReDoS / CPU-DoS en `content_guard.py` | Limite de 100KB agregado antes de normalizacion NFKD ([Fase 8](AUDIT-FASE8-LOG.md)). | Las 6 regex siguen existiendo; el limite mitiga pero no elimina el riesgo de bloqueo del worker. |
 | **M-4** | ComfyUI `download_image` reenvía `filename`/`subfolder` sin sanitizar | Ahora usa `_sanitize_filename` que elimina caracteres no alfanuméricos/guiones/puntos. | Mitiga pero no elimina completamente el riesgo histórico de ese endpoint. |
 | **M-12** | Default `environment="local"` en código (fail-open) | Se agregó log WARNING en startup cuando `environment == "local"` ([Fase 6](AUDIT-FASE6-LOG.md)). | El default sigue siendo `"local"` (fail-open). No se cambió para no romper el flujo de desarrollo local. |
-
-### 🟢 Bajos (1)
-
-| ID | Problema | Qué está hecho | Qué falta |
-|---|---|---|---|
-| **L-10** | `/admin` solo gateado por `ProtectedRoute` sin verificación de rol admin | La ruta `/admin` requiere autenticación. Las APIs de admin retornan 403 si el usuario no es admin. | El frontend permite que cualquier usuario autenticado navegue a `/admin` y vea la UI (aunque no pueda ejecutar acciones). Falta `AdminRoute` que verifique `is_admin`. |
 
 ---
 
@@ -179,7 +174,7 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 
 ## Fases de Implementación
 
-Los siguientes problemas fueron resueltos en 8 fases de implementación:
+Los siguientes problemas fueron resueltos en 9 fases de implementación:
 
 | Fase | Problemas | Log |
 |---|---|---|
@@ -191,7 +186,8 @@ Los siguientes problemas fueron resueltos en 8 fases de implementación:
 | **Fase 6** | M-9, L-11, L-13 | [`AUDIT-FASE6-LOG.md`](AUDIT-FASE6-LOG.md) |
 | **Fase 7** | M-3, L-3 | [`AUDIT-FASE7-LOG.md`](AUDIT-FASE7-LOG.md) |
 | **Fase 8** | M-1, M-2 | [`AUDIT-FASE8-LOG.md`](AUDIT-FASE8-LOG.md) |
+| **Fase 9** | L-10, H-3 (verificado) | [`AUDIT-FASE9-LOG.md`](AUDIT-FASE9-LOG.md) |
 
 ---
 
-*Actualizado el 2026-05-11 tras completar las 8 fases de implementación. Estado verificado contra código fuente y tests (`175 passed`).*
+*Actualizado el 2026-05-11 tras completar las 9 fases de implementación. Estado verificado contra código fuente y tests (`175 passed` backend, `121 passed` frontend).*
