@@ -57,6 +57,12 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verifica una contraseña en texto plano contra un hash bcrypt."""
+    """Verifica una contraseña en texto plano contra un hash bcrypt.
 
-    return bcrypt.checkpw(plain_password.encode(), hashed_password.encode())
+    Retorna False silenciosamente si el hash es inválido (M-6: timing-safe
+    dummy checks con hashes dummy no válidos).
+    """
+    try:
+        return bcrypt.checkpw(plain_password.encode(), hashed_password.encode())
+    except ValueError:
+        return False

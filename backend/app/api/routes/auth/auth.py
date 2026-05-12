@@ -109,7 +109,15 @@ def login(request: LoginRequest, session: Session = Depends(get_session)):
     )
     user = session.exec(statement).first()
 
-    if not user or not verify_password(request.password, user.hashed_password):
+    if user:
+        valid = verify_password(request.password, user.hashed_password)
+    else:
+        # Timing-safe dummy check: ejecuta bcrypt con hash dummy para
+        # igualar el tiempo de respuesta cuando el usuario no existe (M-6).
+        verify_password(request.password, "$2b$12$abcdefghijklmnopqrstuv")
+        valid = False
+
+    if not valid:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales incorrectas",
