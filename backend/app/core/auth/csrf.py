@@ -22,6 +22,7 @@ def validate_csrf(request: Request) -> None:
 
     Raises:
         HTTPException 403: Si falta el token o no coincide.
+
     """
     cookie_token = request.cookies.get(settings.cookie_csrf_name)
     header_token = request.headers.get("x-csrf-token")

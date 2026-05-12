@@ -1,3 +1,5 @@
+"""Enumeraciones para categorías de contenido y estados del ciclo de vida."""
+
 from enum import Enum
 
 
@@ -9,6 +11,7 @@ class ContentCategory(str, Enum):
         extended_description: Descripción detallada de apariencia, comportamiento, etc.
         scene: Escena narrativa ambientada en el mundo.
         chapter: Capítulo de una historia centrada en la entidad.
+
     """
 
     backstory = "backstory"
@@ -24,6 +27,7 @@ class ContentStatus(str, Enum):
         pending: Contenido recién generado, pendiente de revisión.
         confirmed: Contenido revisado y aprobado por el usuario.
         discarded: Contenido rechazado o descartado tras confirmación de otro.
+
     """
 
     pending = "pending"

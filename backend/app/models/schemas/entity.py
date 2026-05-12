@@ -1,3 +1,5 @@
+"""Esquemas Pydantic para entidades."""
+
 from datetime import datetime
 
 from pydantic import BaseModel, Field
@@ -12,6 +14,7 @@ class EntityRequest(BaseModel):
         type: Tipo de entidad (character, creature, faction, location, item).
         name: Nombre único dentro de la colección.
         description: Descripción inicial de referencia.
+
     """
 
     type: EntityType
@@ -29,6 +32,7 @@ class UpdateEntityRequest(BaseModel):
         type: Nuevo tipo (opcional).
         name: Nuevo nombre (opcional).
         description: Nueva descripción (opcional).
+
     """
 
     type: EntityType | None = None
@@ -47,6 +51,7 @@ class EntityResponse(BaseModel):
         description: Descripción.
         created_at: Fecha de creación.
         updated_at: Fecha de última modificación.
+
     """
 
     id: str

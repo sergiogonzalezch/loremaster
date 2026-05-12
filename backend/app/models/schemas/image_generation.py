@@ -1,3 +1,5 @@
+"""Esquemas Pydantic para generación de imágenes."""
+
 from datetime import datetime
 
 from pydantic import BaseModel, Field
@@ -8,6 +10,7 @@ class BuildPromptRequest(BaseModel):
 
     Attributes:
         content_id: ID del EntityContent confirmado a usar como base.
+
     """
 
     content_id: str
@@ -22,6 +25,7 @@ class GenerateImagesRequest(BaseModel):
         final_prompt: Prompt final enviado al motor.
         batch_size: Cantidad de imágenes a generar (1-4).
         seed_base: Semilla base para reproducibilidad del batch.
+
     """
 
     content_id: str
@@ -36,6 +40,7 @@ class DeleteImageRequest(BaseModel):
 
     Attributes:
         image_id: ID de la imagen a eliminar.
+
     """
 
     image_id: str
@@ -46,6 +51,7 @@ class ShareImageRequest(BaseModel):
 
     Attributes:
         shared: True para compartir, False para dejar de compartir.
+
     """
 
     shared: bool
@@ -61,6 +67,7 @@ class ImageResult(BaseModel):
         width: Ancho en píxeles.
         height: Alto en píxeles.
         generation_ms: Tiempo de generación.
+
     """
 
     id: str
@@ -77,6 +84,7 @@ class BuildPromptResponse(BaseModel):
     Attributes:
         auto_prompt: Prompt generado por el LLM.
         token_count: Número de tokens del prompt.
+
     """
 
     auto_prompt: str
@@ -93,6 +101,7 @@ class GenerateImagesResponse(BaseModel):
         batch_size: Cantidad de imágenes generadas.
         backend: Motor de generación utilizado.
         images: Lista de imágenes generadas.
+
     """
 
     generation_id: str
@@ -122,6 +131,7 @@ class ImageGenerationResponse(BaseModel):
         created_at: Fecha de creación.
         is_deleted: Si está eliminada.
         deleted_at: Fecha de eliminación.
+
     """
 
     id: str
@@ -161,6 +171,7 @@ class ImageRecordResponse(BaseModel):
         created_at: Fecha de creación.
         is_deleted: Si está eliminada.
         deleted_at: Fecha de eliminación.
+
     """
 
     id: str
@@ -199,6 +210,7 @@ class ImageGenerationListItem(BaseModel):
         created_at: Fecha de creación.
         is_deleted: Si está eliminada.
         images: Lista de imágenes generadas.
+
     """
 
     id: str
@@ -222,6 +234,7 @@ class ImageGenerationListResponse(BaseModel):
 
     Attributes:
         generations: Lista de solicitudes con sus imágenes.
+
     """
 
     generations: list[ImageGenerationListItem]

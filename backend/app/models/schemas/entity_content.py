@@ -1,3 +1,5 @@
+"""Esquemas Pydantic para contenidos de entidad."""
+
 from datetime import datetime
 
 from pydantic import BaseModel, Field, model_validator
@@ -25,6 +27,7 @@ class EntityContentResponse(BaseModel):
         created_at: Fecha de creación.
         confirmed_at: Fecha de confirmación.
         updated_at: Fecha de última modificación.
+
     """
 
     id: str
@@ -46,6 +49,7 @@ class EntityContentResponse(BaseModel):
 
     @model_validator(mode="after")
     def compute_was_edited(self) -> "EntityContentResponse":
+        """Calcula si el contenido fue editado comparando con el texto original."""
         if self.raw_content is not None:
             object.__setattr__(self, "was_edited", self.content != self.raw_content)
         return self
@@ -56,6 +60,7 @@ class GenerateContentRequest(BaseModel):
 
     Attributes:
         query: Consulta o prompt del usuario para la generación.
+
     """
 
     query: str = Field(..., min_length=5, max_length=2000)
@@ -66,6 +71,7 @@ class UpdateContentRequest(BaseModel):
 
     Attributes:
         content: Nuevo texto para el contenido.
+
     """
 
     content: str = Field(..., min_length=1, max_length=10000)
@@ -76,6 +82,7 @@ class ShareContentRequest(BaseModel):
 
     Attributes:
         shared: True para compartir, False para dejar de compartir.
+
     """
 
     shared: bool

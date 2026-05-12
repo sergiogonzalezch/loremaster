@@ -1,3 +1,5 @@
+"""Servicios de lógica de negocio para moderación de contenido."""
+
 import logging
 
 from sqlmodel import Session
@@ -14,6 +16,7 @@ def log_moderation_event(session: Session, layer: str, snippet: str) -> None:
         session: Sesión de base de datos activa.
         layer: Capa donde ocurrió el evento (ej. 'input', 'output', 'guard').
         snippet: Texto que activó la moderación (se trunca a 200 caracteres).
+
     """
     try:
         entry = ModerationLog(layer=layer, snippet=snippet[:200])

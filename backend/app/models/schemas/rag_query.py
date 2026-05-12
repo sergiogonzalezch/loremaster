@@ -1,3 +1,5 @@
+"""Esquemas Pydantic para consultas RAG."""
+
 from pydantic import BaseModel, Field
 
 
@@ -6,6 +8,7 @@ class RagQueryRequest(BaseModel):
 
     Attributes:
         query: Pregunta o consulta del usuario sobre el mundo fictional.
+
     """
 
     query: str = Field(
@@ -23,6 +26,7 @@ class RagQueryResponse(BaseModel):
         answer: Texto generado por el LLM con contexto de los documentos.
         query: Consulta original enviada por el usuario.
         sources_count: Número de fragmentos de contexto utilizados.
+
     """
 
     answer: str = Field(..., description="Texto generado en respuesta a la consulta.")

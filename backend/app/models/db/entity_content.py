@@ -1,3 +1,5 @@
+"""Modelo de base de datos para contenidos generados de entidades."""
+
 from datetime import datetime, timezone
 
 from sqlalchemy import Column, ForeignKey, String
@@ -27,6 +29,7 @@ class EntityContent(SQLModel, SoftDeleteMixin, table=True):
             confirmed_at: Fecha y hora de confirmación (UTC), o None.
             updated_at: Fecha y hora de última modificación (UTC).
             updated_by: UUID del último usuario que modificó (audit trail).
+
     """
 
     __tablename__ = "entity_contents"

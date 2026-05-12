@@ -1,3 +1,5 @@
+"""Rutas de colecciones para CRUD y listado."""
+
 import contextlib
 import logging
 from typing import Annotated
@@ -43,6 +45,7 @@ def create_collection(
 
     Returns:
         Colección creada con status 201.
+
     """
     try:
         return create_collection_service(

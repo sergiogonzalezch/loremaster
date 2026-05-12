@@ -47,8 +47,8 @@ class ComfyUIClient:
 
         Raises:
             httpx.HTTPStatusError: Si el workflow es inválido o ComfyUI rechaza la petición
-        """
 
+        """
         response = self._request(
             "POST",
             "prompt",
@@ -72,7 +72,6 @@ class ComfyUIClient:
         - outputs: {node_id: {"images": [...]}} si completado
         - error: mensaje de error si falló
         """
-
         response = self._request("GET", f"history/{prompt_id}")
         data = response.json()
 
@@ -107,6 +106,7 @@ class ComfyUIClient:
         Raises:
             TimeoutError: Si excede el timeout
             RuntimeError: Si la ejecución falla
+
         """
         start_time = time.time()
 
@@ -140,6 +140,7 @@ class ComfyUIClient:
 
         Returns:
             Bytes de la imagen
+
         """
         safe_filename = _sanitize_filename(filename)
         safe_subfolder = _sanitize_filename(subfolder)
@@ -158,6 +159,7 @@ class ComfyUIClient:
 
         Returns:
             Lista de dicts con: {"filename", "subfolder", "type", "node_id"}
+
         """
         outputs = history_result.get("outputs", {})
         images = []
@@ -190,6 +192,7 @@ def load_template(template_name: str) -> dict:
 
     Raises:
         FileNotFoundError: Si el template no existe
+
     """
     template_dir = Path(__file__).parent.parent / "domain" / "templates"
     template_path = template_dir / template_name
@@ -230,6 +233,7 @@ def inject_prompt(workflow: dict, prompt: str) -> dict:
 
     Raises:
         ValueError: Si el nodo 12 no existe en el template
+
     """
     workflow = json.loads(json.dumps(workflow))  # deep copy
 

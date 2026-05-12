@@ -1,3 +1,5 @@
+"""Modelo de base de datos para usuarios autenticados en la plataforma."""
+
 from datetime import datetime, timezone
 
 from sqlmodel import Field as SQLField
@@ -20,6 +22,7 @@ class User(SQLModel, SoftDeleteMixin, table=True):
         is_admin: Indica si el usuario tiene privilegios de administrador.
         token_version: Versión del token (incrementada al hacer logout de todos los dispositivos).
         created_at: Fecha y hora de registro (UTC).
+
     """
 
     __tablename__ = "users"

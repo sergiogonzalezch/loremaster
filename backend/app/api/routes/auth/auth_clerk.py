@@ -1,3 +1,5 @@
+"""Rutas de autenticación mediante Clerk."""
+
 import threading
 import time
 from typing import ClassVar
@@ -38,6 +40,7 @@ class JWKSManager:
 
         Raises:
             HTTPException(503): Si no se puede conectar con Clerk.
+
         """
         with cls._lock:
             if cls._cache is None or time.monotonic() - cls._cache_time > cls._TTL:
@@ -62,6 +65,7 @@ def get_jwks() -> dict:
 
     Raises:
         HTTPException(503): Si no se puede conectar con Clerk.
+
     """
     return JWKSManager.get_jwks()
 
@@ -77,6 +81,7 @@ def decode_clerk_token(token: str) -> dict:
 
     Raises:
         HTTPException(401): Si el token es inválido o ha expirado.
+
     """
     clerk_issuer = settings.clerk_jwks_url.replace("/.well-known/jwks.json", "")
     try:
@@ -104,6 +109,7 @@ def verify(
 
     Returns:
         Diccionario con valid=True y el user_id del token.
+
     """
     if not credentials:
         raise HTTPException(

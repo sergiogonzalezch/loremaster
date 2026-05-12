@@ -1,3 +1,5 @@
+"""Rutas públicas para feed de contenidos e imágenes compartidas."""
+
 from typing import Annotated
 
 from fastapi import APIRouter, Depends

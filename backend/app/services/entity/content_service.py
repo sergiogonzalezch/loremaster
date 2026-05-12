@@ -1,3 +1,5 @@
+"""Servicios de lógica de negocio para contenidos de entidad."""
+
 import logging
 from datetime import datetime, timezone
 from typing import Literal
@@ -44,6 +46,7 @@ def list_contents(
 
     Returns:
         Tupla de (lista de contenidos con GeneratedText, total de resultados).
+
     """
     conditions = [
         EntityContent.entity_id == entity_id,
@@ -95,12 +98,14 @@ def edit_content(
         entity_id: Identificador de la entidad.
         collection_id: Identificador de la colección.
         new_text: Nuevo texto para el contenido.
+        user_id: UUID del usuario que edita el contenido (opcional).
 
     Returns:
         Contenido actualizado con el GeneratedText asociado, o None si no existe.
 
     Raises:
         ContentDiscardedError: Si el contenido está descartado.
+
     """
     new_text = new_text.strip()
     check_user_input(new_text)  # M-3: validar contenido editable
@@ -137,6 +142,7 @@ def confirm_content(
 
     Returns:
         Contenido confirmado, o None si no existe o no está pending.
+
     """
     content = _get_pending_content(session, content_id, entity.id, entity.collection_id)
     if not content:
@@ -185,6 +191,7 @@ def discard_content(
 
     Returns:
         Contenido descartado con sus metadatos, o None si no existe.
+
     """
     content = _get_pending_content(session, content_id, entity_id, collection_id)
     if not content:
@@ -222,6 +229,7 @@ def share_content(
 
     Raises:
         ContentNotShareableError: Si el contenido no está confirmado.
+
     """
     content = _get_active_content(session, content_id, entity_id, collection_id)
     if not content:
@@ -254,6 +262,7 @@ def soft_delete_content(
 
     Returns:
         True si se eliminó, False si no se encontró el contenido.
+
     """
     content = _get_active_content(session, content_id, entity_id, collection_id)
     if not content:

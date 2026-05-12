@@ -1,3 +1,5 @@
+"""Rutas de contenidos de entidad para generación, edición y gestión."""
+
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response

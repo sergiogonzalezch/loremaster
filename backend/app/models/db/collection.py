@@ -1,3 +1,5 @@
+"""Modelo de base de datos para colecciones de documentos y entidades."""
+
 from datetime import datetime, timezone
 
 from sqlalchemy import Column, ForeignKey, String, UniqueConstraint
@@ -21,6 +23,7 @@ class Collection(SQLModel, SoftDeleteMixin, table=True):
         created_at: Fecha y hora de creación (UTC).
         updated_at: Fecha y hora de última modificación (UTC).
         updated_by: UUID del último usuario que modificó (audit trail).
+
     """
 
     __tablename__ = "collections"

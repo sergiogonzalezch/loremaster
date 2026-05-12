@@ -43,6 +43,7 @@ def _delete_vectors_with_retry(collection_id: str) -> bool:
     Returns:
         True si la eliminación fue exitosa; False si fallaron todos los intentos
         (vectores huérfanos que requieren limpieza manual).
+
     """
     for attempt in range(1, _QDRANT_RETRY_ATTEMPTS + 1):
         try:
@@ -79,6 +80,7 @@ def cascade_delete_entity(session: Session, entity: Entity) -> None:
     Args:
         session: Sesión de base de datos activa.
         entity: Instancia de la entidad a eliminar.
+
     """
     deleted_contents = cascade_delete_by_entity(
         session, entity.id, entity.collection_id
@@ -114,6 +116,7 @@ def cascade_delete_collection(session: Session, collection: Collection) -> bool:
         True si los vectores de Qdrant también fueron eliminados exitosamente;
         False si fallaron los reintentos y quedan vectores huérfanos
         (requieren limpieza manual).
+
     """
     docs = session.exec(
         select(Document).where(
@@ -166,6 +169,7 @@ def _delete_image_file(storage_path: str | None) -> None:
 
     Args:
         storage_path: Ruta relativa del archivo a eliminar dentro de media_root.
+
     """
     if not storage_path:
         return
@@ -204,6 +208,7 @@ def _cascade_delete_images(
 
     Raises:
         ValueError: Si no se proporciona al menos un filtro (entity_id o collection_id).
+
     """
     conditions = [ImageRecord.is_deleted.is_(False)]
     if entity_id is not None:
@@ -228,6 +233,7 @@ def _cascade_delete_images_by_entity(session: Session, entity_id: str) -> int:
 
     Returns:
         Número de ImageRecords eliminados de forma suave.
+
     """
     return _cascade_delete_images(session, entity_id=entity_id)
 
@@ -241,5 +247,6 @@ def _cascade_delete_images_by_collection(session: Session, collection_id: str) -
 
     Returns:
         Número de ImageRecords eliminados de forma suave.
+
     """
     return _cascade_delete_images(session, collection_id=collection_id)

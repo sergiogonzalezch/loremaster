@@ -1,3 +1,5 @@
+"""Rutas de administración para gestión de usuarios y contenido."""
+
 import logging
 from datetime import datetime, timezone
 from typing import Annotated

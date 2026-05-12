@@ -1,3 +1,5 @@
+"""Esquemas Pydantic para colecciones."""
+
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -9,6 +11,7 @@ class CreateCollectionRequest(BaseModel):
     Attributes:
         name: Nombre de la colección (1-255 caracteres).
         description: Descripción opcional del mundo o proyecto.
+
     """
 
     name: str = Field(..., min_length=1, max_length=255)
@@ -21,6 +24,7 @@ class UpdateCollectionRequest(BaseModel):
     Attributes:
         name: Nuevo nombre (opcional).
         description: Nueva descripción (opcional).
+
     """
 
     name: str | None = Field(default=None, min_length=1, max_length=255)
@@ -32,6 +36,7 @@ class BulkDeleteRequest(BaseModel):
 
     Attributes:
         ids: Lista de IDs a eliminar.
+
     """
 
     ids: list[str] = Field(..., min_length=1, max_length=100)
@@ -49,6 +54,7 @@ class CollectionResponse(BaseModel):
         updated_at: Fecha de última modificación.
         document_count: Número de documentos en la colección.
         entity_count: Número de entidades en la colección.
+
     """
 
     model_config = ConfigDict(from_attributes=True)

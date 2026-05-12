@@ -1,3 +1,5 @@
+"""Rutas de documentos para ingestión, listado y eliminación."""
+
 import logging
 import time
 from typing import Annotated

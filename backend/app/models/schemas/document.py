@@ -1,3 +1,5 @@
+"""Esquemas Pydantic para documentos."""
+
 from datetime import datetime
 
 from pydantic import BaseModel
@@ -17,6 +19,7 @@ class DocumentResponse(BaseModel):
         status: Estado del procesamiento.
         processing_error: Mensaje de error, si falló.
         created_at: Fecha de subida.
+
     """
 
     id: str

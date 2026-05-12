@@ -1,3 +1,5 @@
+"""Configuración de logging con filtrado de PII."""
+
 import contextlib
 import logging
 import re
@@ -22,6 +24,7 @@ class PIIFilter(logging.Filter):
     """
 
     def filter(self, record: logging.LogRecord) -> bool:
+        """Filtra PII del mensaje de log reemplazando datos sensibles."""
         if record.msg:
             msg_str = str(record.msg)
 
@@ -43,6 +46,7 @@ def configure_logging(level: str = "INFO") -> None:
 
     Args:
         level: Nivel de logging (DEBUG, INFO, WARNING, ERROR, CRITICAL).
+
     """
     handler = logging.StreamHandler()
     handler.addFilter(PIIFilter())

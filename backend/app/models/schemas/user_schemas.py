@@ -1,3 +1,5 @@
+"""Esquemas Pydantic para usuarios y perfiles."""
+
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
@@ -10,6 +12,7 @@ class UserResponse(BaseModel):
         id: Identificador único.
         username: Nombre de usuario.
         created_at: Fecha de registro.
+
     """
 
     model_config = ConfigDict(from_attributes=True)
@@ -31,6 +34,7 @@ class UserProfileResponse(BaseModel):
         avatar_url: URL de la imagen de perfil.
         is_admin: Si el usuario es administrador.
         created_at: Fecha de registro.
+
     """
 
     model_config = ConfigDict(from_attributes=True)
@@ -58,6 +62,7 @@ class UserAdminResponse(BaseModel):
         is_admin: Si el usuario es administrador.
         is_deleted: Si el usuario está eliminado (soft-delete).
         created_at: Fecha de registro.
+
     """
 
     model_config = ConfigDict(from_attributes=True)
@@ -80,6 +85,7 @@ class UpdateProfileRequest(BaseModel):
         display_name: Nuevo nombre visible (opcional).
         bio: Nueva biografía (opcional).
         email: Nuevo correo electrónico (opcional).
+
     """
 
     display_name: str | None = Field(default=None, max_length=100)
@@ -93,6 +99,7 @@ class AvatarResponse(BaseModel):
     Attributes:
         avatar_url: URL de la imagen o None si no hay avatar.
         has_avatar: Indica si el usuario tiene avatar configurado.
+
     """
 
     avatar_url: str | None

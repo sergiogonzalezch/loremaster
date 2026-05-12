@@ -1,3 +1,5 @@
+"""Mixins reutilizables para modelos de base de datos."""
+
 import uuid
 from datetime import datetime, timezone
 

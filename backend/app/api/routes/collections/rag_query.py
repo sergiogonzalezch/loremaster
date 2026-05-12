@@ -1,3 +1,5 @@
+"""Rutas de consulta RAG sobre documentos de una colección."""
+
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException

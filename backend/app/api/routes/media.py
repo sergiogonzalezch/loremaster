@@ -41,7 +41,7 @@ def serve_media(path: str, session: Session = Depends(get_session)):
 
     # Defensa en profundidad: asegurar que el archivo está bajo media_root
     if not file_path.is_relative_to(media_root_resolved):
-        logger.warning(f"Path traversal attempt: {path}")
+        logger.warning("Path traversal attempt: %s", path)
         raise HTTPException(status_code=403, detail="Acceso denegado.")
 
     # Clasificar el tipo de recurso por su ruta: users/{u}/img/{tipo}/...

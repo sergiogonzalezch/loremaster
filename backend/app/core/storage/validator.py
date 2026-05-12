@@ -46,6 +46,7 @@ def _verify_magic_bytes(content: bytes, expected_type: str) -> None:
 
     Raises:
         ValueError: Si los magic bytes no coinciden con el tipo esperado.
+
     """
     if expected_type == "application/pdf":
         if not content.startswith((b"%PDF", b"PK\x03\x04")):
@@ -68,6 +69,7 @@ def _strip_exif(data: bytes) -> bytes:
 
     Returns:
         Contenido binario sin metadatos EXIF.
+
     """
     try:
         img = Image.open(BytesIO(data))
@@ -100,6 +102,7 @@ class FileValidator:
 
         Raises:
             ValueError: Si no pasa alguna validación.
+
         """
         if file.content_type not in IMAGE_MIME_TYPES:
             raise ValueError(
@@ -151,6 +154,7 @@ class FileValidator:
 
         Raises:
             ValueError: Si no pasa alguna validación.
+
         """
         allowed = allowed_types or DOCUMENT_MIME_TYPES
         if file.content_type not in allowed:

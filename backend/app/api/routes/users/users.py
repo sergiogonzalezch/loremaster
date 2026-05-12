@@ -1,3 +1,5 @@
+"""Rutas de perfil de usuario y gestión de avatares."""
+
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 from sqlmodel import Session, select
 

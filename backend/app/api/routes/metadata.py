@@ -1,3 +1,5 @@
+"""Rutas de metadatos para categorías y límites del sistema."""
+
 from fastapi import APIRouter
 
 from app.core.config import settings

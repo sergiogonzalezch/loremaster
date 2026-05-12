@@ -1,3 +1,5 @@
+"""Modelo de base de datos para textos generados por el pipeline LLM."""
+
 from datetime import datetime, timezone
 
 from sqlalchemy import Column, ForeignKey, String
@@ -21,6 +23,7 @@ class GeneratedText(SQLModel, table=True):
         sources_count: Número de fragmentos de contexto utilizados.
         token_count: Estimación del número de tokens de la respuesta.
         created_at: Fecha y hora de generación (UTC).
+
     """
 
     __tablename__ = "generated_texts"

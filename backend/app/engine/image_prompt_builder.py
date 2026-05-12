@@ -61,6 +61,7 @@ def _extract_with_llm(
 
     Raises:
         RuntimeError: Si el LLM no está disponible.
+
     """
     instruction_key = (entity_type, category)
     llm_instruction = _llm_instruction_by_entity_category[instruction_key]
@@ -147,6 +148,7 @@ def build_visual_prompt(
 
     Raises:
         RuntimeError: Si el LLM no está disponible
+
     """
     tipo_especifico, llm_attributes = _extract_with_llm(
         content_text=confirmed_content,

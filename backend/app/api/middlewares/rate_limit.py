@@ -30,9 +30,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         requests_per_minute: Máximo de requests permitidos por ventana de 60s.
         requests: Dict que almacena timestamps de requests por user_id.
         lock: Lock de threading para acceso seguro al dict.
+
     """
 
     def __init__(self, app, requests_per_minute: int = 30):
+        """Inicializa el middleware con el límite de requests por minuto."""
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
         self.requests: dict[str, list[float]] = {}
@@ -51,6 +53,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         Returns:
             Response del siguiente handler, o 429 si excede el límite.
+
         """
         if request.url.path in ["/", "/health", "/docs", "/openapi.json", "/redoc"]:
             return await call_next(request)
@@ -91,6 +94,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         Returns:
             user_id si se puede extraer, None en caso contrario.
+
         """
         try:
             parts = token.split(".")
@@ -111,6 +115,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         Returns:
             True si el request está permitido, False si excede el límite.
+
         """
         now = time.time()
         window_start = now - 60

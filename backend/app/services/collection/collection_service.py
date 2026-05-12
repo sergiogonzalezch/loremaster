@@ -1,3 +1,5 @@
+"""Servicios de lógica de negocio para colecciones."""
+
 import logging
 from datetime import datetime, timezone
 from typing import Literal
@@ -55,6 +57,7 @@ def get_collection_with_counts_service(
 
     Returns:
         Diccionario con los datos de la colección más document_count y entity_count.
+
     """
     doc_counts, entity_counts = _fetch_counts(session, [collection.id])
     return {
@@ -82,6 +85,7 @@ def create_collection_service(
 
     Raises:
         DuplicateCollectionNameError: Si ya existe una colección con ese nombre.
+
     """
     name = name.strip()
     description = description.strip()
@@ -133,6 +137,7 @@ def list_collections_service(
 
     Returns:
         Tupla de (lista de colecciones enriquecidas con counts, total de resultados).
+
     """
     conditions = [Collection.is_deleted.is_(False), Collection.owner_id == owner_id]
     if name:
@@ -176,12 +181,14 @@ def update_collection_service(
         session: Sesión de base de datos activa.
         collection: Instancia de la colección a actualizar.
         request: Esquema con los campos a modificar.
+        user_id: UUID del usuario que realiza la actualización (opcional).
 
     Returns:
         Instancia de la colección actualizada.
 
     Raises:
         DuplicateCollectionNameError: Si el nuevo nombre ya está en uso.
+
     """
     new_name = request.name.strip() if request.name is not None else collection.name
     if new_name != collection.name:
@@ -225,6 +232,7 @@ def delete_collection_service(session: Session, collection: Collection) -> bool:
     Returns:
         True si los vectores de Qdrant fueron eliminados exitosamente;
         False si quedaron vectores huérfanos.
+
     """
     vectors_cleaned = cascade_delete_collection(session, collection)
     db_commit(session, f"delete_collection({collection.id})")

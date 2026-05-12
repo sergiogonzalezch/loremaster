@@ -1,3 +1,5 @@
+"""Servicios de lógica de negocio para entidades."""
+
 import logging
 from datetime import datetime, timezone
 from typing import Literal
@@ -39,6 +41,7 @@ def create_entity_service(
 
     Raises:
         DuplicateEntityNameError: Si ya existe una entidad con ese nombre.
+
     """
     name = request.name.strip()
     description = request.description.strip()
@@ -87,6 +90,7 @@ def list_entities_service(
 
     Returns:
         Tupla de (lista de entidades, total de resultados).
+
     """
     conditions = [
         Entity.collection_id == collection_id,
@@ -124,12 +128,14 @@ def update_entity_service(
         session: Sesión de base de datos activa.
         entity: Instancia de la entidad a actualizar.
         request: Esquema con los campos a modificar.
+        user_id: UUID del usuario que realiza la actualización (opcional).
 
     Returns:
         Instancia de la entidad actualizada.
 
     Raises:
         DuplicateEntityNameError: Si el nuevo nombre ya está en uso.
+
     """
     new_name = request.name.strip() if request.name is not None else entity.name
     if new_name != entity.name and _find_by_name(
@@ -167,6 +173,7 @@ def delete_entity_service(session: Session, entity: Entity) -> bool:
 
     Returns:
         True siempre (la eliminación en cascada se encarga de todo).
+
     """
     cascade_delete_entity(session, entity)
     db_commit(session, f"delete_entity({entity.id})")

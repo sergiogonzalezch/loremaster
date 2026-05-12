@@ -1,3 +1,5 @@
+"""Utilidades compartidas para respuestas paginadas."""
+
 import math
 from typing import Generic, TypeVar
 
@@ -14,6 +16,7 @@ class PaginationMeta(BaseModel):
         page: Página actual (1-indexed).
         page_size: Cantidad de elementos por página.
         total_pages: Total de páginas calculadas.
+
     """
 
     total: int
@@ -31,6 +34,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
 
     Type Parameters:
         T: Tipo de los elementos contenidos en data.
+
     """
 
     data: list[T]
@@ -40,6 +44,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
     def build(
         cls, items: list, total: int, page: int, page_size: int
     ) -> "PaginatedResponse":
+        """Construye una respuesta paginada a partir de los items y metadatos."""
         return cls(
             data=items,
             meta=PaginationMeta(

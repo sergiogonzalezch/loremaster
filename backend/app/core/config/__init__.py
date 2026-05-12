@@ -65,6 +65,7 @@ class Settings(BaseSettings):
         clerk_audience: Audience de Clerk.
 
         database_url: URL de conexión a la base de datos.
+
     """
 
     project_name: str = "Lore Master API"

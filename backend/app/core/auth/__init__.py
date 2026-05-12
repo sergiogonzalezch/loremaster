@@ -1,3 +1,5 @@
+"""Utilidades de autenticación JWT y hashing de contraseñas."""
+
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
@@ -25,7 +27,6 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     del usuario (el token contiene la versión y será rechazado al no coincidir).
     Ver politica de token_version en el modulo.
     """
-
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + (
         expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -36,7 +37,6 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
 
 def verify_token(token: str) -> dict:
     """Verifica y decodifica un token JWT, lanzando HTTPException si es inválido."""
-
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         if payload.get("sub") is None:
@@ -59,7 +59,6 @@ def verify_token(token: str) -> dict:
 
 def hash_password(password: str) -> str:
     """Genera un hash bcrypt para la contraseña proporcionada."""
-
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 

@@ -1,3 +1,5 @@
+"""Utilidades para soft-delete de registros en base de datos."""
+
 from datetime import datetime, timezone
 
 from sqlmodel import Session
@@ -13,12 +15,12 @@ class SoftDeleteMixin:
 
 
 def soft_delete(session: Session, record) -> bool:
-    """Marca un registro como eliminado (soft-delete) actualizando is_deleted,
-    deleted_at y updated_at, y hace commit en la sesión.
+    """Marca un registro como eliminado (soft-delete).
+
+    Actualiza is_deleted, deleted_at y updated_at, y hace commit en la sesión.
 
     Retorna True si la operación fue exitosa.
     """
-
     now = datetime.now(timezone.utc)
     record.is_deleted = True
     record.deleted_at = now

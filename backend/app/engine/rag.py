@@ -167,6 +167,7 @@ def retrieve_context(
 
     Raises:
         NoContextAvailableError: Si no hay contexto de ninguna fuente.
+
     """
     try:
         context_chunks = search_context(

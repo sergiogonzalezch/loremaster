@@ -28,6 +28,7 @@ def extract_text(content_bytes: bytes, content_type: str) -> str:
 
     Raises:
         ValueError: Si el tipo no es soportado, o si el PDF excede max_pdf_pages.
+
     """
     if content_type == "application/pdf":
         reader = PdfReader(io.BytesIO(content_bytes))

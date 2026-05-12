@@ -1,3 +1,5 @@
+"""Pipeline RAG para consultas y generación de contenido con contexto vectorial."""
+
 import logging
 import threading
 
@@ -28,6 +30,7 @@ def invoke_rag_pipeline(
     Raises:
         RuntimeError: Si Qdrant o el LLM no están disponibles.
         NoContextAvailableError: Si no hay contexto ni chunks ni extra_context.
+
     """
     logger.debug(
         "invoke_rag_pipeline: collection=%s threshold=%.2f top_k=%d query='%.80s'",
@@ -73,6 +76,7 @@ def invoke_generation_pipeline(
     Raises:
         RuntimeError: Si Qdrant o el LLM no están disponibles.
         NoContextAvailableError: Si no hay contexto ni chunks ni extra_context.
+
     """
     logger.debug(
         "invoke_generation_pipeline: collection=%s entity='%s' category=%s threshold=%.2f top_k=%d query='%.80s'",

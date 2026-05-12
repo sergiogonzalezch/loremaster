@@ -1,3 +1,5 @@
+"""Rutas de entidades para CRUD y listado dentro de colecciones."""
+
 import contextlib
 from typing import Annotated
 

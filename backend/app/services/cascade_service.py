@@ -29,6 +29,7 @@ def cascade_delete_by_entity(
 
     Returns:
         Número de EntityContents eliminados de forma suave.
+
     """
     contents = session.exec(
         select(EntityContent).where(
@@ -57,6 +58,7 @@ def cascade_delete_by_collection(
 
     Returns:
         Número de EntityContents eliminados de forma suave.
+
     """
     contents = session.exec(
         select(EntityContent).where(

@@ -1,3 +1,5 @@
+"""Modelos de base de datos para generación de imágenes y registros de imágenes."""
+
 from datetime import datetime, timezone
 
 from sqlalchemy import Column, ForeignKey, String
@@ -27,6 +29,7 @@ class ImageGeneration(SQLModel, SoftDeleteMixin, table=True):
         width: Ancho de las imágenes generadas.
         height: Alto de las imágenes generadas.
         created_at: Fecha y hora de la solicitud (UTC).
+
     """
 
     __tablename__ = "image_generations"
@@ -92,6 +95,7 @@ class ImageRecord(SQLModel, SoftDeleteMixin, table=True):
         generation_ms: Tiempo de generación en milisegundos.
         is_shared: Si la imagen ha sido compartida en el feed público.
         created_at: Fecha y hora de generación (UTC).
+
     """
 
     __tablename__ = "image_records"

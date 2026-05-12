@@ -34,6 +34,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         Returns:
             Response con headers de seguridad añadidos.
+
         """
         response = await call_next(request)
 

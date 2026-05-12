@@ -1,4 +1,4 @@
-# app/services/image_generation_service.py
+"""Servicios de lógica de negocio para generación de imágenes."""
 
 import logging
 import uuid as _uuid
@@ -279,6 +279,7 @@ def build_prompt_service(
     Raises:
         NoContextAvailableError: Si el contenido no existe o no está confirmado
         ValueError: Si la categoría no es soportada para generación de imágenes
+
     """
     content = _get_confirmed_content(session, entity, content_id)
     if not content:
@@ -318,6 +319,7 @@ def generate_images_service(
     Raises:
         NoContextAvailableError: Si el contenido no existe o no está confirmado
         ValueError: Si image_backend no es "mock" ni "comfyui"
+
     """
     content = _get_confirmed_content(session, entity, content_id)
     if not content:
@@ -414,6 +416,7 @@ def share_image_service(
 
     Raises:
         NoContextAvailableError: Si la imagen no existe o no pertenece a la entidad
+
     """
     record = session.exec(
         select(ImageRecord).where(
@@ -462,6 +465,7 @@ def delete_image_service(
 
     Raises:
         NoContextAvailableError: Si la imagen no existe o no pertenece a la entidad
+
     """
     record = session.exec(
         select(ImageRecord).where(
@@ -504,6 +508,7 @@ def get_generation_service(
 
     Raises:
         NoContextAvailableError: Si la generación no existe o no pertenece a la entidad
+
     """
     generation = session.exec(
         select(ImageGeneration).where(
@@ -554,6 +559,7 @@ def list_generations_service(
 
     Returns:
         (generations_list, total_count)
+
     """
     generations = session.exec(
         select(ImageGeneration)

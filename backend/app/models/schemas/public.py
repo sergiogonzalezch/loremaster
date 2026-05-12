@@ -1,3 +1,5 @@
+"""Esquemas Pydantic para feed público y perfiles públicos."""
+
 from datetime import datetime
 
 from pydantic import BaseModel
@@ -14,6 +16,7 @@ class SharedContentSummary(BaseModel):
         entity_type: Tipo de la entidad.
         confirmed_at: Fecha de confirmación (None si no confirmado).
         created_at: Fecha de creación del contenido.
+
     """
 
     id: str
@@ -38,6 +41,7 @@ class SharedImageSummary(BaseModel):
         entity_name: Nombre de la entidad asociada.
         entity_type: Tipo de la entidad.
         created_at: Fecha de generación.
+
     """
 
     id: str
@@ -61,6 +65,7 @@ class PublicProfileResponse(BaseModel):
         avatar_url: URL de la imagen de perfil.
         shared_contents: Lista de contenidos compartidos.
         shared_images: Lista de imágenes compartidas.
+
     """
 
     username: str
@@ -85,6 +90,7 @@ class PublicFeedItem(BaseModel):
         owner_display_name: Nombre visible del propietario.
         confirmed_at: Fecha de confirmación.
         created_at: Fecha de creación.
+
     """
 
     content_id: str
@@ -114,6 +120,7 @@ class PublicImageItem(BaseModel):
         owner_username: Nombre del propietario.
         owner_display_name: Nombre visible del propietario.
         created_at: Fecha de generación.
+
     """
 
     image_id: str

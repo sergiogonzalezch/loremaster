@@ -38,6 +38,7 @@ def get_current_user(
     Raises:
         HTTPException 401: Si no hay cookie, es inválido, el usuario fue eliminado
             o la versión del token no coincide (token revocado).
+
     """
     token = request.cookies.get(settings.cookie_access_name)
     if not token:
@@ -88,6 +89,7 @@ def get_admin_user(
 
     Raises:
         HTTPException 403: Si el usuario no es administrador o está eliminado.
+
     """
     user = session.get(User, current_user["sub"])
     if not user or user.is_deleted or not user.is_admin:

@@ -1,3 +1,5 @@
+"""Servicios de lógica de negocio para documentos."""
+
 import asyncio
 import hashlib
 import logging
@@ -61,6 +63,7 @@ async def ingest_document_service(
         FileTooLargeError: Si el archivo supera el límite.
         MissingFilenameError: Si el archivo no tiene nombre.
         DocumentExtractionError: Si falla la extracción de texto.
+
     """
     try:
         content = FileValidator.validate_document(
@@ -145,6 +148,7 @@ def process_ingest_background(session: Session, document: Document, text: str) -
         session: Sesión de base de datos activa.
         document: Instancia del documento a indexar.
         text: Texto extraído del documento.
+
     """
     try:
         chunk_count = ingest_chunks(
@@ -196,6 +200,7 @@ def list_documents_service(
 
     Returns:
         Tupla de (lista de documentos, total de resultados).
+
     """
     conditions = [
         Document.collection_id == collection_id,
@@ -240,6 +245,7 @@ def retry_document_service(
 
     Raises:
         DocumentNotRetryableError: Si el documento no es reintentable.
+
     """
     if document.status != DocumentStatus.failed or not document.raw_text:
         raise DocumentNotRetryableError
@@ -265,6 +271,7 @@ def delete_document_service(session: Session, document: Document) -> bool:
 
     Raises:
         VectorStoreError: Si falla la eliminación de vectores en Qdrant.
+
     """
     try:
         delete_document_chunks(document.collection_id, document.id)

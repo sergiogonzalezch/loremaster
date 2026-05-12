@@ -1,3 +1,5 @@
+"""Servicios de lógica de negocio para perfiles de usuario y avatares."""
+
 import contextlib
 import re
 import shutil
@@ -30,6 +32,7 @@ def get_avatar_info(user: User) -> dict:
 
     Returns:
         Diccionario con avatar_url y has_avatar.
+
     """
     return {
         "avatar_url": build_storage_url(user.avatar_path),
@@ -49,6 +52,7 @@ async def upload_profile_image(session: Session, user: User, file: UploadFile) -
 
     Returns:
         URL pública de la imagen subida.
+
     """
     if not re.match(r"^[A-Za-z0-9_-]{3,50}$", user.username):
         raise ValueError(
@@ -85,6 +89,7 @@ def delete_profile_image(session: Session, user: User) -> None:
     Args:
         session: Sesión de base de datos activa.
         user: Instancia del usuario.
+
     """
     if not user.avatar_path:
         return

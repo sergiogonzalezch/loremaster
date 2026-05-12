@@ -1,3 +1,5 @@
+"""Servicio de generación de contenido RAG para entidades."""
+
 import logging
 
 from sqlalchemy import func
@@ -49,6 +51,7 @@ def generate(
         InvalidCategoryError: Si la categoría no es válida para el tipo de entidad.
         PendingLimitExceededError: Si se alcanza el límite de contenidos pendientes.
         DatabaseError: Si falla el commit en base de datos.
+
     """
     query = query.strip()
     check_user_input(query)

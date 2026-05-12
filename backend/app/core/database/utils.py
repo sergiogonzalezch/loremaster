@@ -1,3 +1,5 @@
+"""Utilidades de base de datos para paginación, commit y consultas."""
+
 import logging
 from collections.abc import Sequence
 from typing import Literal, TypeVar

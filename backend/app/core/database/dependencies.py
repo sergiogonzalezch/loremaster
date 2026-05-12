@@ -1,3 +1,5 @@
+"""Dependencias de base de datos para obtener recursos con validación de permisos."""
+
 from fastapi import Depends, HTTPException
 from sqlmodel import Session
 

@@ -1,3 +1,5 @@
+"""Utilidades de almacenamiento de archivos para la aplicación."""
+
 import uuid
 from pathlib import Path
 
@@ -5,14 +7,17 @@ from app.core.config import settings
 
 
 def build_storage_path(*parts: str) -> Path:
-    """Construye una ruta de almacenamiento uniendo las partes proporcionadas
-    con la raíz de almacenamiento configurada."""
+    """Construye una ruta de almacenamiento.
+
+    Une las partes proporcionadas con la raíz de almacenamiento configurada.
+    """
     return Path(settings.media_root).joinpath(*parts)
 
 
 def save_file(content: bytes, relative_path: str) -> str:
-    """Guarda el contenido binario en la ruta relativa dentro del directorio de medios.
-    Crea los directorios padres si no existen.
+    """Guarda el contenido binario en la ruta relativa.
+
+    Crea los directorios padres si no existen dentro del directorio de medios.
 
     Retorna la ruta relativa donde se guardó el archivo.
     """
@@ -28,8 +33,10 @@ def save_file(content: bytes, relative_path: str) -> str:
 
 
 def build_storage_url(relative_path: str | None) -> str | None:
-    """Construye la URL pública para un archivo dado su ruta relativa.
-    Retorna None si la ruta es None o vacía."""
+    """Construye la URL pública para un archivo.
+
+    Retorna None si la ruta es None o vacía.
+    """
     if not relative_path:
         return None
     return f"{settings.storage_base_url.rstrip('/')}/{relative_path}"

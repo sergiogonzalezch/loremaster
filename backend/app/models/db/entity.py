@@ -1,3 +1,5 @@
+"""Modelo de base de datos para entidades dentro de colecciones."""
+
 from datetime import datetime, timezone
 from enum import Enum
 
@@ -16,6 +18,7 @@ class EntityType(str, Enum):
         faction: Organización, guild, reino o grupo.
         location: Lugar, ciudad, dungeon o región geográfica.
         item: Objeto, artefacto, arma o recurso.
+
     """
 
     character = "character"
@@ -37,6 +40,7 @@ class Entity(SQLModel, SoftDeleteMixin, table=True):
             created_at: Fecha y hora de creación (UTC).
             updated_at: Fecha y hora de última modificación (UTC).
             updated_by: UUID del último usuario que modificó (audit trail).
+
     """
 
     __tablename__ = "entities"

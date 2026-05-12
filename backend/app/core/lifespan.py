@@ -1,3 +1,5 @@
+"""Gestión del ciclo de vida de la aplicación FastAPI."""
+
 import asyncio
 import logging
 from contextlib import asynccontextmanager

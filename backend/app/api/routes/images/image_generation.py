@@ -1,3 +1,5 @@
+"""Rutas de generación de imágenes para entidades."""
+
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException

@@ -1,3 +1,5 @@
+"""Modelo de base de datos para documentos subidos a colecciones."""
+
 from datetime import datetime, timezone
 from enum import Enum
 
@@ -14,6 +16,7 @@ class DocumentStatus(str, Enum):
         processing: Documento siendo extraído y chunkeado.
         completed: Documento procesado exitosamente e indexado en Qdrant.
         failed: Error durante el procesamiento.
+
     """
 
     processing = "processing"
@@ -35,6 +38,7 @@ class Document(SQLModel, SoftDeleteMixin, table=True):
         processing_error: Mensaje de error si el procesamiento falló.
         raw_text: Texto extraído completo (almacenado en BD).
         created_at: Fecha y hora de subida (UTC).
+
     """
 
     __tablename__ = "documents"

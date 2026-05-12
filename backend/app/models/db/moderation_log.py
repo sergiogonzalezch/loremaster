@@ -1,3 +1,5 @@
+"""Modelo de base de datos para registro de eventos de moderación."""
+
 from datetime import datetime, timezone
 
 from sqlmodel import Field, SQLModel
@@ -14,6 +16,7 @@ class ModerationLog(SQLModel, table=True):
         layer: Capa donde ocurrió la evaluación (input, output, guard).
         snippet: Fragmento del texto evaluado (truncado a 200 chars).
         created_at: Fecha y hora del evento (UTC).
+
     """
 
     __tablename__ = "moderation_log"

@@ -27,6 +27,7 @@ class LoginRequest(BaseModel):
     Attributes:
         username_or_email: Nombre de usuario o correo electrónico.
         password: Contraseña del usuario.
+
     """
 
     username_or_email: str
@@ -43,6 +44,7 @@ class RegisterRequest(BaseModel):
         username: Nombre de usuario (3-50 caracteres alfanuméricos).
         email: Correo electrónico válido.
         password: Contraseña (mínimo 8 caracteres).
+
     """
 
     username: str = Field(..., min_length=3, max_length=50)
@@ -52,7 +54,7 @@ class RegisterRequest(BaseModel):
     @field_validator("username")
     @classmethod
     def validate_username(cls, v: str) -> str:
-        """Valida que el username no contenga caracteres peligrosos.
+        r"""Valida que el username no contenga caracteres peligrosos.
 
         Implementa C-5: prevención de path traversal via username.
         El patrón ^[A-Za-z0-9_-]{3,50}$ evita:
@@ -68,6 +70,7 @@ class RegisterRequest(BaseModel):
 
         Raises:
             ValueError: Si el username contiene caracteres no permitidos.
+
         """
         if not re.match(r"^[A-Za-z0-9_-]{3,50}$", v):
             raise ValueError(
@@ -85,6 +88,7 @@ class AuthSuccessResponse(BaseModel):
     Attributes:
         message: Mensaje de éxito.
         username: Nombre de usuario autenticado.
+
     """
 
     message: str = "Autenticación exitosa"
@@ -97,6 +101,7 @@ def _set_auth_cookies(response: Response, token: str) -> None:
     Args:
         response: Objeto Response de FastAPI.
         token: JWT firmado a almacenar en cookie HttpOnly.
+
     """
     csrf = generate_csrf_token()
     response.set_cookie(
@@ -123,6 +128,7 @@ def _clear_auth_cookies(response: Response) -> None:
 
     Args:
         response: Objeto Response de FastAPI.
+
     """
     response.delete_cookie(
         key=settings.cookie_access_name,
@@ -157,6 +163,7 @@ def login(
 
     Raises:
         HTTPException 401: Si las credenciales son incorrectas.
+
     """
     statement = select(User).where(
         (User.username == request.username_or_email)
@@ -210,6 +217,7 @@ def register(
 
     Raises:
         HTTPException 400: Si el username o email ya existen.
+
     """
     existing_username = session.exec(
         select(User).where(User.username == request.username)
@@ -264,6 +272,7 @@ def logout(
         response: Objeto Response para borrar cookies.
         current_user: Usuario autenticado.
         session: Sesión de base de datos.
+
     """
     user = session.get(User, current_user["sub"])
     if user and not user.is_deleted:
