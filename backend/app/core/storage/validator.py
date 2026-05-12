@@ -48,7 +48,7 @@ def _verify_magic_bytes(content: bytes, expected_type: str) -> None:
         ValueError: Si los magic bytes no coinciden con el tipo esperado.
     """
     if expected_type == "application/pdf":
-        if not (content.startswith(b"%PDF") or content.startswith(b"PK\x03\x04")):
+        if not content.startswith((b"%PDF", b"PK\x03\x04")):
             raise ValueError("El archivo no es un PDF válido")
     elif expected_type == "text/plain":
         try:

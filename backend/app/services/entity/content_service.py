@@ -108,7 +108,7 @@ def edit_content(
     if not content:
         return None
     if content.status == ContentStatus.discarded:
-        raise ContentDiscardedError()
+        raise ContentDiscardedError
     now = datetime.now(timezone.utc)
     content.content = new_text
     content.updated_at = now
@@ -226,7 +226,7 @@ def share_content(
     if not content:
         return None
     if content.status != ContentStatus.confirmed:
-        raise ContentNotShareableError()
+        raise ContentNotShareableError
     content.is_shared = shared
     session.add(content)
     db_commit(session, f"share_content({content_id})")

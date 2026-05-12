@@ -36,7 +36,7 @@ def _delete_vectors_with_retry(collection_id: str) -> bool:
     for attempt in range(1, _QDRANT_RETRY_ATTEMPTS + 1):
         try:
             delete_collection_vectors(collection_id)
-        except Exception as e:
+        except Exception as e:  # noqa: PERF203
             if attempt < _QDRANT_RETRY_ATTEMPTS:
                 logger.warning(
                     "Qdrant cleanup attempt %d/%d failed for collection %s: %s",
@@ -47,13 +47,12 @@ def _delete_vectors_with_retry(collection_id: str) -> bool:
                 )
                 time.sleep(_QDRANT_RETRY_DELAY)
             else:
-                logger.error(
+                logger.exception(
                     "Orphan vectors remain in Qdrant for collection %s after %d attempts"
                     " — manual cleanup needed. collection_id=%s",
                     collection_id,
                     _QDRANT_RETRY_ATTEMPTS,
                     collection_id,
-                    exc_info=True,
                 )
         else:
             return True

@@ -33,7 +33,7 @@ def serve_media(path: str, session: Session = Depends(get_session)):
     Los avatares de perfil (users/*/img/profile/*) son siempre públicos.
     """
     # Prevenir path traversal
-    if ".." in path or path.startswith("/") or path.startswith("\\"):
+    if ".." in path or path.startswith(("/", "\\")):
         raise HTTPException(status_code=400, detail="Ruta inválida.")
 
     media_root_resolved = Path(settings.media_root).resolve()
@@ -46,8 +46,8 @@ def serve_media(path: str, session: Session = Depends(get_session)):
 
     # Clasificar el tipo de recurso por su ruta: users/{u}/img/{tipo}/...
     parts = Path(path).parts
-    is_generation = len(parts) >= 4 and parts[2] == "img" and parts[3] == "generation"
-    is_profile = len(parts) >= 4 and parts[2] == "img" and parts[3] == "profile"
+    is_generation = len(parts) >= 4 and parts[2] == "img" and parts[3] == "generation"  # noqa: PLR2004
+    is_profile = len(parts) >= 4 and parts[2] == "img" and parts[3] == "profile"  # noqa: PLR2004
 
     if is_generation:
         record = session.exec(

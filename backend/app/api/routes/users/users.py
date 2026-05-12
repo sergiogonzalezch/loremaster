@@ -108,8 +108,8 @@ def get_public_profile(
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
 
-    content_conditions = _CONTENT_CONDITIONS + (Collection.owner_id == user.id,)
-    image_conditions = _IMAGE_CONDITIONS + (Collection.owner_id == user.id,)
+    content_conditions = (*_CONTENT_CONDITIONS, Collection.owner_id == user.id)
+    image_conditions = (*_IMAGE_CONDITIONS, Collection.owner_id == user.id)
 
     content_rows = session.exec(
         select(EntityContent, Entity)

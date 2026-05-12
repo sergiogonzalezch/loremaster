@@ -1,3 +1,4 @@
+import contextlib
 import logging
 from typing import Annotated
 
@@ -136,9 +137,7 @@ def bulk_delete_collections(
     ).all()
 
     for collection in collections:
-        try:
+        with contextlib.suppress(Exception):  # noqa: PERF203
             delete_collection_service(session, collection)
-        except Exception:
-            pass
 
     return Response(status_code=204)

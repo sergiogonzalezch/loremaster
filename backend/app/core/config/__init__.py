@@ -147,7 +147,7 @@ class Settings(BaseSettings):
                 "ALLOWED_ORIGINS no puede contener '*' cuando allow_credentials=True. "
                 "Especifica los orígenes concretos en .env"
             )
-        if self.environment != "local" and len(self.secret_key) < 32:
+        if self.environment != "local" and len(self.secret_key) < 32:  # noqa: PLR2004
             raise ValueError(
                 f"SECRET_KEY debe tener al menos 32 caracteres en entornos no locales. "
                 f"Actual: {len(self.secret_key)} caracteres"

@@ -50,7 +50,7 @@ def _truncate_to_tokens(text: str, max_tokens: int) -> str:
     words = text.split()
     result: list[str] = []
     for word in words:
-        candidate = " ".join(result + [word])
+        candidate = " ".join([*result, word])
         if _estimate_tokens(candidate) > max_tokens:
             break
         result.append(word)

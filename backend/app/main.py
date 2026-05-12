@@ -73,11 +73,10 @@ app = FastAPI(
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Maneja excepciones no capturadas retornando error 500 genérico."""
     logger.error(
-        "Unhandled exception on %s %s: %s",
+        "Unhandled exception on %s %s",
         request.method,
         request.url.path,
-        exc,
-        exc_info=True,
+        exc_info=exc,
     )
     return JSONResponse(
         status_code=500, content={"detail": "Error interno del servidor."}
@@ -86,7 +85,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(
-    request: Request, exc: RequestValidationError
+    request: Request, _exc: RequestValidationError
 ) -> JSONResponse:
     """Maneja errores de validación sin repetir el input del cliente (evita info leak)."""
     logger.warning("Validation error on %s %s", request.method, request.url.path)

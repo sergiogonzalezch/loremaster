@@ -69,7 +69,7 @@ def db_commit(session: Session, operation: str) -> None:
     except SQLAlchemyError as e:
         session.rollback()
         logger.exception("DB commit failed during %s", operation)
-        raise DatabaseError() from e
+        raise DatabaseError from e
 
 
 def get_active_by_id(

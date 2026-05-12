@@ -164,15 +164,15 @@ class ComfyUIClient:
 
         for node_id, node_output in outputs.items():
             if "images" in node_output:
-                for img in node_output["images"]:
-                    images.append(
-                        {
-                            "filename": img.get("filename"),
-                            "subfolder": img.get("subfolder", ""),
-                            "type": img.get("type", "output"),
-                            "node_id": node_id,
-                        }
-                    )
+                images.extend(
+                    {
+                        "filename": img.get("filename"),
+                        "subfolder": img.get("subfolder", ""),
+                        "type": img.get("type", "output"),
+                        "node_id": node_id,
+                    }
+                    for img in node_output["images"]
+                )
 
         return images
 

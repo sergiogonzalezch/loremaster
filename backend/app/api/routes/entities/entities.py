@@ -1,3 +1,4 @@
+import contextlib
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
@@ -55,7 +56,7 @@ def list_entities(
     dates: Annotated[DateRangeParams, Depends()],
     name: str | None = Query(default=None),
     type: EntityType | None = Query(default=None),
-    collection: Collection = Depends(get_collection_or_404_owned),
+    _: Collection = Depends(get_collection_or_404_owned),
     session: Session = Depends(get_session),
 ):
     """Lista las entidades de una colección con filtros y paginación."""
@@ -114,7 +115,7 @@ def delete_entity(
 def bulk_delete_entities(
     collection_id: str,
     request: BulkDeleteRequest,
-    collection: Collection = Depends(get_collection_or_404_owned),
+    _: Collection = Depends(get_collection_or_404_owned),
     session: Session = Depends(get_session),
 ):
     """Elimina múltiples entidades en cascada."""
@@ -131,9 +132,7 @@ def bulk_delete_entities(
     ).all()
 
     for entity in entities:
-        try:
+        with contextlib.suppress(Exception):  # noqa: PERF203
             delete_entity_service(session, entity)
-        except Exception:
-            pass
 
     return Response(status_code=204)

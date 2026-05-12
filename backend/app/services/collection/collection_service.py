@@ -39,8 +39,8 @@ def _fetch_counts(
         .group_by(Entity.collection_id)
     ).all()
     return (
-        {cid: cnt for cid, cnt in doc_rows},
-        {cid: cnt for cid, cnt in entity_rows},
+        dict(doc_rows),
+        dict(entity_rows),
     )
 
 

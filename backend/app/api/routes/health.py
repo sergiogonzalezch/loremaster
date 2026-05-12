@@ -19,7 +19,7 @@ def health_check():
         with httpx.Client(timeout=2.0) as client:
             resp = client.get(f"{qdrant_url}/ready")
             status["services"]["qdrant"] = (
-                "healthy" if resp.status_code == 200 else "unhealthy"
+                "healthy" if resp.status_code == 200 else "unhealthy"  # noqa: PLR2004
             )
     except Exception:
         status["services"]["qdrant"] = "unhealthy"
@@ -30,7 +30,7 @@ def health_check():
         with httpx.Client(timeout=2.0) as client:
             resp = client.get(f"{ollama_url}/api/tags")
             status["services"]["ollama"] = (
-                "healthy" if resp.status_code == 200 else "unhealthy"
+                "healthy" if resp.status_code == 200 else "unhealthy"  # noqa: PLR2004
             )
     except Exception:
         status["services"]["ollama"] = "unhealthy"

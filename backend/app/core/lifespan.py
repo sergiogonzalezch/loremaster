@@ -23,7 +23,7 @@ def _run_migrations() -> None:
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     """Contexto del ciclo de vida de la aplicación.
 
     Al iniciar: aplica migraciones, verifica conexión a Qdrant y Ollama.

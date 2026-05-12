@@ -282,7 +282,7 @@ def build_prompt_service(
     """
     content = _get_confirmed_content(session, entity, content_id)
     if not content:
-        raise NoContextAvailableError()
+        raise NoContextAvailableError
 
     if content.category not in ALLOWED_IMAGE_CATEGORIES:
         raise ValueError(
@@ -321,7 +321,7 @@ def generate_images_service(
     """
     content = _get_confirmed_content(session, entity, content_id)
     if not content:
-        raise NoContextAvailableError()
+        raise NoContextAvailableError
 
     check_user_input(auto_prompt)
     check_user_input(final_prompt)
@@ -424,7 +424,7 @@ def share_image_service(
     ).first()
 
     if not record:
-        raise NoContextAvailableError()
+        raise NoContextAvailableError
 
     record.is_shared = shared
     db_commit(session, f"share_image({image_id})")
@@ -472,7 +472,7 @@ def delete_image_service(
     ).first()
 
     if not record:
-        raise NoContextAvailableError()
+        raise NoContextAvailableError
 
     record.is_shared = False
     record.is_deleted = True
@@ -513,7 +513,7 @@ def get_generation_service(
     ).first()
 
     if not generation:
-        raise NoContextAvailableError()
+        raise NoContextAvailableError
 
     records = session.exec(
         select(ImageRecord).where(

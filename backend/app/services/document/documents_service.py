@@ -70,13 +70,13 @@ async def ingest_document_service(
     except ValueError as e:
         msg = str(e)
         if "Tipo de archivo" in msg:
-            raise UnsupportedFileTypeError() from e
+            raise UnsupportedFileTypeError from e
         if "tamaño máximo" in msg:
-            raise FileTooLargeError() from e
+            raise FileTooLargeError from e
         raise
 
     if not data.filename or not data.filename.strip():
-        raise MissingFilenameError()
+        raise MissingFilenameError
 
     logger.info(
         "Ingesting document '%s' into collection %s",
@@ -93,12 +93,12 @@ async def ingest_document_service(
         logger.exception(
             "Text extraction timed out for '%s'", _sanitize_for_log(data.filename)
         )
-        raise DocumentExtractionError() from None
+        raise DocumentExtractionError from None
     except Exception as e:
         logger.exception(
             "Text extraction failed for '%s'", _sanitize_for_log(data.filename)
         )
-        raise DocumentExtractionError() from e
+        raise DocumentExtractionError from e
     check_document_content(extracted_text)
 
     content_hash = hashlib.sha256(extracted_text.encode()).hexdigest()
@@ -241,7 +241,7 @@ def retry_document_service(
         DocumentNotRetryableError: Si el documento no es reintentable.
     """
     if document.status != DocumentStatus.failed or not document.raw_text:
-        raise DocumentNotRetryableError()
+        raise DocumentNotRetryableError
 
     raw_text = document.raw_text
     document.status = DocumentStatus.processing
@@ -269,7 +269,7 @@ def delete_document_service(session: Session, document: Document) -> bool:
         delete_document_chunks(document.collection_id, document.id)
     except Exception as e:
         logger.exception("Failed to delete vector chunks for doc %s", document.id)
-        raise VectorStoreError() from e
+        raise VectorStoreError from e
 
     soft_delete(session, document)
     db_commit(session, f"delete_document({document.id})")

@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import re
 
@@ -25,10 +26,8 @@ class PIIFilter(logging.Filter):
             msg_str = str(record.msg)
 
             if record.args:
-                try:
+                with contextlib.suppress(ValueError, TypeError):
                     msg_str = msg_str % record.args
-                except (ValueError, TypeError):
-                    pass
 
             for pii_type, pattern in PII_PATTERNS.items():
                 msg_str = pattern.sub(f"[{pii_type.upper()}:REDACTED]", msg_str)

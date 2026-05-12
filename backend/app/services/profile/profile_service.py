@@ -1,3 +1,4 @@
+import contextlib
 import re
 import shutil
 from pathlib import Path
@@ -95,10 +96,8 @@ def delete_profile_image(session: Session, user: User) -> None:
                 resolved.unlink()
             elif resolved.is_dir() and resolved.is_relative_to(media_root_resolved):
                 shutil.rmtree(resolved)
-        try:
+        with contextlib.suppress(OSError):
             profile_dir.rmdir()
-        except OSError:
-            pass
 
     user.avatar_path = None
     session.add(user)

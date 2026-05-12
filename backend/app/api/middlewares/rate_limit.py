@@ -94,7 +94,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         """
         try:
             parts = token.split(".")
-            if len(parts) >= 2:
+            if len(parts) >= 2:  # noqa: PLR2004
                 payload = json.loads(base64.urlsafe_b64decode(parts[1] + "=="))
                 return payload.get("sub")
         except (ValueError, KeyError, UnicodeDecodeError):

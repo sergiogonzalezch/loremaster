@@ -184,6 +184,6 @@ def retrieve_context(
     context = "\n\n---\n\n".join(parts)
 
     if not context.strip():
-        raise NoContextAvailableError()
+        raise NoContextAvailableError
 
     return context, len(context_chunks)
