@@ -12,19 +12,19 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 
 | Estado | Total |
 |---|---:|
-| **Resueltos** | **39** |
-| **Parcialmente resueltos** | **5** |
+| **Resueltos** | **41** |
+| **Parcialmente resueltos** | **6** |
 | **No resueltos** | **6** |
-| **No verificados / pendientes** | **3** |
+| **No verificados / pendientes** | **0** |
 | **Total** | **53** |
 
-> **Nota:** 24 problemas resueltos + 2 parciales en 8 fases de implementación (ver [Fases de Implementación](#fases-de-implementación)).
+> **Nota:** 24 problemas resueltos en 8 fases + 3 hallazgos frontend verificados. Ver [Fases de Implementación](#fases-de-implementación).
 
 > **Conclusión:** Los problemas de mayor impacto (IDOR en documentos, path traversal, secretos por defecto, headers de seguridad, magic bytes, audit logs) fueron resueltos. Persisten **gaps críticos en validación de usuarios eliminados en Clerk**, **prompt injection**, **protección CSRF/storage de tokens**, y **rate limiting completo**.
 
 ---
 
-## Problemas Resueltos (39)
+## Problemas Resueltos (41)
 
 ### 🔴 Críticos (7)
 
@@ -52,7 +52,7 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 | **H-11** | `requirements.txt` sin pin ni lockfile | `backend/requirements.txt` | — |
 | **H-12** | `python-jose` no pineado | `backend/requirements.txt` | — |
 
-### 🟡 Medios (12)
+### 🟡 Medios (13)
 
 | ID | Problema | Archivo(s) involucrado(s) | Referencia |
 |---|---|---|---|
@@ -68,6 +68,7 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 | **M-14** | Log injection con CR/LF + XSS vía filename | `backend/app/services/document/documents_service.py` | — |
 | **M-15** | `storage_path` filtrado en API pública | `backend/app/models/schemas/public.py`, `backend/app/models/schemas/user_schemas.py` | — |
 | **M-18** | Validación cliente-only de avatar | `backend/app/core/storage/validator.py` | [Fase 2](AUDIT-FASE2-LOG.md) |
+| **M-16** | `rehype-sanitize` con schema default como barrera XSS | `frontend/src/components/MarkdownContent.tsx` | Verificado en frontend — schema default de rehype-sanitize elimina atributos de evento inline (onerror, onclick, etc.) |
 
 ### 🟢 Bajos (9)
 
@@ -81,19 +82,21 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 | **L-6** | Aislamiento Qdrant por nombre prefijado | Reportado como limpio en auditoría original | — |
 | **L-7** | Sin `secrets.compare_digest` para comparaciones sensibles | `backend/app/core/auth/dependencies.py` | [Fase 5](AUDIT-FASE5-LOG.md) |
 | **L-8** | `scripts/make_admin.py` sin audit log | `backend/scripts/make_admin.py` | [Fase 4](AUDIT-FASE4-LOG.md) |
+| **L-9** | Frontend `<img src={url}>` sin allowlist de origen | `frontend/src/components/SafeImage.tsx`, `frontend/src/utils/strings.ts` | Resuelto — `isImageUrlAllowed()` valida que solo se carguen imágenes desde mismo origin, localhost, data URIs y blob URLs |
 | **L-11** | Token revocation TTL no documentado | `backend/app/core/auth/__init__.py` | [Fase 6](AUDIT-FASE6-LOG.md) |
 | **L-12** | Logger global sin estructura/redacción de PII | `backend/app/core/logging.py` | [Fase 4](AUDIT-FASE4-LOG.md) |
 | **L-13** | Docker compose publica Qdrant/Redis al host | `backend/docker-compose.yml` | [Fase 6](AUDIT-FASE6-LOG.md) |
 
 ---
 
-## Problemas Parcialmente Resueltos (5)
+## Problemas Parcialmente Resueltos (6)
 
-### 🟠 Altos (1)
+### 🟠 Altos (2)
 
 | ID | Problema | Qué está hecho | Qué falta |
 |---|---|---|---|
 | **H-3** | Feed público filtra por `is_deleted`, pero admin delete no despublica contenido/imágenes generadas | El feed público filtra por `User.is_deleted == False` (`filters.py:19`). Avatares se eliminan en cascada durante `admin_delete_user` ([Fase 2](AUDIT-FASE2-LOG.md)). | El contenido generado (imágenes de entidades) y el `media_router` permiten acceso directo sin verificar `is_shared`. |
+| **L-10** | `/admin` solo gateado por `ProtectedRoute` sin verificación de rol admin | La ruta `/admin` requiere autenticación. Las APIs de admin retornan 403 si el usuario no es admin. | El frontend permite que cualquier usuario autenticado navegue a `/admin` y vea la UI (aunque no pueda ejecutar acciones). Falta `AdminRoute` que verifique `is_admin`. |
 
 ### 🟡 Medios (4)
 
@@ -135,13 +138,13 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 
 ---
 
-## No Verificados / Pendientes (3)
+## No Verificados / Pendientes (0)
 
-| ID | Problema | Motivo |
-|---|---|---|
-| **M-16** | `rehype-sanitize` con schema default es la única barrera XSS | Requiere revisión profunda del frontend (React + rehype-sanitize). |
-| **L-9** | Frontend `<img src={url}>` sin allowlist de origen | Requiere revisión del código fuente del frontend. |
-| **L-10** | `<Route path="/admin">` solo gateado por `ProtectedRoute` | Requiere revisión del routing del frontend. |
+*Todos los hallazgos han sido verificados. Los 3 hallazgos previamente no verificados fueron evaluados:*
+
+- **M-16** ✅ Verificado — `rehype-sanitize` con schema default elimina atributos de evento inline; tests pasan
+- **L-9** ✅ Resuelto — `SafeImage` implementa `isImageUrlAllowed()` con allowlist de origen
+- **L-10** ⚠️ Parcial — `/admin` requiere auth pero no verifica rol admin en el frontend
 
 ---
 
