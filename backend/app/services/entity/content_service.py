@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timezone
-from typing import Literal, Optional
+from typing import Literal
 
 from sqlmodel import Session, select
 

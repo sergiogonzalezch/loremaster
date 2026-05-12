@@ -197,7 +197,7 @@ def load_template(template_name: str) -> dict:
     if not template_path.exists():
         raise FileNotFoundError(f"Template no encontrado: {template_path}")
 
-    with open(template_path, encoding="utf-8") as f:
+    with template_path.open(encoding="utf-8") as f:
         return json.load(f)
 
 

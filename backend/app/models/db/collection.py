@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-from typing import Optional
 
 from sqlalchemy import Column, ForeignKey, String, UniqueConstraint
 from sqlmodel import Field as SQLField

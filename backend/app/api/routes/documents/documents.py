@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Annotated, Optional
+from typing import Annotated
 
 from fastapi import (
     APIRouter,
@@ -33,6 +33,8 @@ from app.core.exceptions import (
     VectorStoreError,
 )
 from app.database import get_session
+
+logger = logging.getLogger(__name__)
 from app.models.db.collection import Collection
 from app.models.db.document import Document, DocumentStatus
 from app.models.schemas.document import DocumentResponse
@@ -221,7 +223,7 @@ def document_events(
                     break
 
             except Exception:
-                logging.exception("Error in SSE document events")
+                logger.exception("Error in SSE document events")
                 break
 
         yield "data: done\n\n"

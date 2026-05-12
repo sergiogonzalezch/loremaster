@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 
 import bcrypt
 from fastapi import HTTPException, status

@@ -1,5 +1,6 @@
 import logging
-from typing import Optional, Sequence, Type, TypeVar
+from typing import TypeVar
+from collections.abc import Sequence
 
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError

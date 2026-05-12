@@ -7,7 +7,7 @@ from app.core.config import settings
 def build_storage_path(*parts: str) -> Path:
     """Construye una ruta de almacenamiento uniendo las partes proporcionadas
     con la raíz de almacenamiento configurada."""
-    return Path(settings.media_root) / "/".join(parts)
+    return Path(settings.media_root).joinpath(*parts)
 
 
 def save_file(content: bytes, relative_path: str) -> str:
@@ -23,8 +23,7 @@ def save_file(content: bytes, relative_path: str) -> str:
             "Ruta de archivo inválida: intento de path traversal detectado"
         )
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "wb") as f:
-        f.write(content)
+    path.write_bytes(content)
     return relative_path
 
 
@@ -33,7 +32,7 @@ def build_storage_url(relative_path: str | None) -> str | None:
     Retorna None si la ruta es None o vacía."""
     if not relative_path:
         return None
-    return f"{settings.storage_base_url}/{relative_path}"
+    return f"{settings.storage_base_url.rstrip('/')}/{relative_path}"
 
 
 def generate_unique_filename(extension: str) -> str:

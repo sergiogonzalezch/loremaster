@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timezone
-from typing import Literal, Optional
+from typing import Literal
 
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError

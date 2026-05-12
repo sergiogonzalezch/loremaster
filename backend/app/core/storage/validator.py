@@ -13,7 +13,6 @@ Funcionalidades de seguridad:
 
 from io import BytesIO
 from pathlib import Path
-from typing import Set
 
 from fastapi import UploadFile
 from PIL import Image

@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-from typing import Optional
 
 from sqlmodel import Field as SQLField
 from sqlmodel import SQLModel

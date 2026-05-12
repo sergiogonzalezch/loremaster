@@ -3,7 +3,7 @@ import hashlib
 import logging
 import re
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Literal
 
 from fastapi import UploadFile
 from sqlmodel import Session, select

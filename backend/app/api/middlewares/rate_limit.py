@@ -11,7 +11,7 @@ import base64
 import json
 import threading
 import time
-from typing import Callable
+from collections.abc import Callable
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -97,8 +97,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             if len(parts) >= 2:
                 payload = json.loads(base64.urlsafe_b64decode(parts[1] + "=="))
                 return payload.get("sub")
-        except Exception:
-            pass
+        except (ValueError, KeyError, UnicodeDecodeError):
+            return None
         return None
 
     def _check_rate_limit(self, user_id: str) -> bool:
