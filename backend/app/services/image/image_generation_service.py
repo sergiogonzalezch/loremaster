@@ -487,14 +487,10 @@ def delete_image_service(
     # Bugfix: storage_path puede ser None en imágenes mock aunque el backend cambie
     if settings.image_backend != "mock" and record.storage_path:
         full_path = Path(settings.media_root) / record.storage_path
-        # L-3: evitar TOCTOU usando try/except en lugar de if exists()
-        if full_path:
-            try:
-                full_path.unlink()
-            except FileNotFoundError:
-                pass
-            except OSError:
-                pass
+        try:
+            full_path.unlink()
+        except (FileNotFoundError, OSError):
+            pass
 
     db_commit(session, f"delete_image({image_id})")
 

@@ -14,7 +14,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
 
 # Politica de token_version (L-11):
 # - token_version se incrementa en logout para invalidar tokens previos
-# - Tokens tienen TTL de ACCESS_TOKEN_EXPIRE_MINUTES (default 24h)
+# - Tokens tienen TTL de ACCESS_TOKEN_EXPIRE_MINUTES (default 60min)
 # - Recomendacion: usar refresh tokens de 7 dias con access tokens de 15-60 min
 #   en produccion para minimizar ventana de exposicion
 
@@ -22,7 +22,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
     """Crea un token de acceso JWT con fecha de expiración.
 
-    El token expira según ACCESS_TOKEN_EXPIRE_MINUTES (default 24h).
+    El token expira según ACCESS_TOKEN_EXPIRE_MINUTES (default 60min).
     Para revocar un token antes de su expiración, incrementar token_version
     del usuario (el token contiene la versión y será rechazado al no coincidir).
     Ver politica de token_version en el modulo.

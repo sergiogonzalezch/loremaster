@@ -70,11 +70,8 @@ export function useCollectionDocumentsStatus(
 
     const baseUrl = API_BASE_URL.replace("/api/v1", "");
     const eventUrl = `${baseUrl}/collections/${collectionId}/documents/events`;
-    const token = localStorage.getItem("token");
 
-    const eventSource = new EventSource(
-      token ? `${eventUrl}?auth=${encodeURIComponent(token)}` : eventUrl,
-    );
+    const eventSource = new EventSource(eventUrl);
     eventSourceRef.current = eventSource;
 
     eventSource.onmessage = async (event) => {
