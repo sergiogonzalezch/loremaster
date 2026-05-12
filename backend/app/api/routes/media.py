@@ -44,7 +44,7 @@ def serve_media(path: str):
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="Archivo no encontrado.")
 
-    # Inferir content type por extensión
+    # Lista blanca estricta de tipos de archivo permitidos (C-6)
     suffix = file_path.suffix.lower()
     media_types = {
         ".jpg": "image/jpeg",
@@ -53,13 +53,16 @@ def serve_media(path: str):
         ".webp": "image/webp",
         ".gif": "image/gif",
     }
-    media_type = media_types.get(suffix, "application/octet-stream")
+    if suffix not in media_types:
+        logger.warning("Blocked request for disallowed file type: %s", path)
+        raise HTTPException(status_code=404, detail="Archivo no encontrado.")
 
     return FileResponse(
         file_path,
-        media_type=media_type,
+        media_type=media_types[suffix],
         headers={
             "Cache-Control": "public, max-age=3600",
             "X-Content-Type-Options": "nosniff",
+            "Content-Disposition": f'inline; filename="{file_path.name}"',
         },
     )
