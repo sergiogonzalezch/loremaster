@@ -163,6 +163,14 @@ class Settings(BaseSettings):
                 f"ENVIRONMENT debe ser uno de: {', '.join(valid_envs)}. "
                 f"Valor recibido: '{self.environment}'"
             )
+        import os, warnings  # noqa: E401
+        if self.environment == "local" and not os.environ.get("ENVIRONMENT"):
+            warnings.warn(
+                "ENVIRONMENT no está definida en el entorno. "
+                "Ejecutando en modo 'local' con guardas de seguridad relajadas. "
+                "Define ENVIRONMENT=local explícitamente para confirmar la intención (M-12).",
+                stacklevel=2,
+            )
         return self
 
     model_config = SettingsConfigDict(
