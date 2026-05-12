@@ -13,12 +13,12 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 | Estado | Total |
 |---|---:|
 | **Resueltos** | **39** |
-| **Parcialmente resueltos** | **3** |
-| **No resueltos** | **9** |
+| **Parcialmente resueltos** | **5** |
+| **No resueltos** | **7** |
 | **No verificados / pendientes** | **3** |
 | **Total** | **53** |
 
-> **Nota:** 24 problemas fueron resueltos en 7 fases de implementación (ver [Fases de Implementación](#fases-de-implementación)).
+> **Nota:** 24 problemas resueltos + 2 parciales en 8 fases de implementación (ver [Fases de Implementación](#fases-de-implementación)).
 
 > **Conclusión:** Los problemas de mayor impacto (IDOR en documentos, path traversal, secretos por defecto, headers de seguridad, magic bytes, audit logs) fueron resueltos. Persisten **gaps críticos en validación de usuarios eliminados en Clerk**, **prompt injection**, **protección CSRF/storage de tokens**, y **rate limiting completo**.
 
@@ -87,7 +87,7 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 
 ---
 
-## Problemas Parcialmente Resueltos (3)
+## Problemas Parcialmente Resueltos (5)
 
 ### 🟠 Altos (1)
 
@@ -95,16 +95,18 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 |---|---|---|---|
 | **H-3** | Feed público filtra por `is_deleted`, pero admin delete no despublica contenido/imágenes generadas | El feed público filtra por `User.is_deleted == False` (`filters.py:19`). Avatares se eliminan en cascada durante `admin_delete_user` ([Fase 2](AUDIT-FASE2-LOG.md)). | El contenido generado (imágenes de entidades) y el `media_router` permiten acceso directo sin verificar `is_shared`. |
 
-### 🟡 Medios (2)
+### 🟡 Medios (4)
 
 | ID | Problema | Qué está hecho | Qué falta |
 |---|---|---|---|
+| **M-1** | `content_guard.py` es decorativo | Documentacion explicita de limitaciones agregada al modulo ([Fase 8](AUDIT-FASE8-LOG.md)). | Sigue sin detectar jailbreaks, leetspeak, base64, ROT13. Requiere reemplazo por solucion mas robusta. |
+| **M-2** | ReDoS / CPU-DoS en `content_guard.py` | Limite de 100KB agregado antes de normalizacion NFKD ([Fase 8](AUDIT-FASE8-LOG.md)). | Las 6 regex siguen existiendo; el limite mitiga pero no elimina el riesgo de bloqueo del worker. |
 | **M-4** | ComfyUI `download_image` reenvía `filename`/`subfolder` sin sanitizar | Ahora usa `_sanitize_filename` que elimina caracteres no alfanuméricos/guiones/puntos. | Mitiga pero no elimina completamente el riesgo histórico de ese endpoint. |
 | **M-12** | Default `environment="local"` en código (fail-open) | Se agregó log WARNING en startup cuando `environment == "local"` ([Fase 6](AUDIT-FASE6-LOG.md)). | El default sigue siendo `"local"` (fail-open). No se cambió para no romper el flujo de desarrollo local. |
 
 ---
 
-## Problemas No Resueltos (9)
+## Problemas No Resueltos (7)
 
 ### 🔴 Críticos (1)
 
@@ -121,12 +123,10 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 | **H-13** | JWT en `localStorage` | `frontend/src/utils/token.ts:9-14` | Cualquier XSS futuro exfiltra el token inmediatamente. |
 | **H-14** | Sin defensa CSRF planeada | — | Si se migra a cookies sin `SameSite=Strict` + token CSRF, todas las rutas mutantes quedan expuestas. |
 
-### 🟡 Medios (3)
+### 🟡 Medios (1)
 
 | ID | Problema | Archivo(s) involucrado(s) | Impacto |
 |---|---|---|---|
-| **M-1** | `content_guard.py` es decorativo | `backend/app/domain/content_guard.py:13-28` | 6 regex en denylist mínima; no detecta jailbreaks, leetspeak, base64, ROT13. |
-| **M-2** | ReDoS / CPU-DoS: 6 regex sobre texto normalizado | `backend/app/domain/content_guard.py:52-62` | Worker bloqueado aplicando regex sobre archivos de hasta 50MB normalizados con NFKD. |
 | **M-17** | Migración planeada a cookies sin pareja CSRF defensiva | — | Plan pendiente sin implementación. |
 
 ### 🟢 Bajos (0)
@@ -171,7 +171,7 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 
 ## Fases de Implementación
 
-Los siguientes problemas fueron resueltos en 7 fases de implementación:
+Los siguientes problemas fueron resueltos en 8 fases de implementación:
 
 | Fase | Problemas | Log |
 |---|---|---|
@@ -182,7 +182,8 @@ Los siguientes problemas fueron resueltos en 7 fases de implementación:
 | **Fase 5** | M-6, M-5, L-7 | [`AUDIT-FASE5-LOG.md`](AUDIT-FASE5-LOG.md) |
 | **Fase 6** | M-9, L-11, L-13 | [`AUDIT-FASE6-LOG.md`](AUDIT-FASE6-LOG.md) |
 | **Fase 7** | M-3, L-3 | [`AUDIT-FASE7-LOG.md`](AUDIT-FASE7-LOG.md) |
+| **Fase 8** | M-1, M-2 | [`AUDIT-FASE8-LOG.md`](AUDIT-FASE8-LOG.md) |
 
 ---
 
-*Actualizado el 2026-05-11 tras completar las 7 fases de implementación. Estado verificado contra código fuente y tests (`175 passed`).*
+*Actualizado el 2026-05-11 tras completar las 8 fases de implementación. Estado verificado contra código fuente y tests (`175 passed`).*

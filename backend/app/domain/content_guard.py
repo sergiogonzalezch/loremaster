@@ -2,12 +2,29 @@
 
 Aplica patrones de expresiones regulares para detectar contenido no permitido
 antes de procesarlo o tras generarlo.
+
+LIMITACIONES CONOCIDAS (M-1):
+- Este modulo es una primera linea de defensa, no una barrera exhaustiva.
+- No detecta: jailbreaks estructurales, leetspeak (e.g. "b0mb"), base64, ROT13,
+  inyeccion de prompts via delimitadores, o tecnicas de evasion avanzadas.
+- Requiere complemento con: validacion de esquemas de salida, rate limiting,
+  monitoreo de comportamiento anomalo, y revision humana para casos criticos.
+
+MITIGACION ReDoS (M-2):
+- Se aplica limite de longitud (100KB) antes de normalizar con NFKD.
+- Texto que exceda el limite se trunca para evitar bloqueo del worker.
 """
 
+import logging
 import re
 import unicodedata
 
 from app.core.exceptions import ContentNotAllowedError, GeneratedContentBlockedError
+
+logger = logging.getLogger(__name__)
+
+# Limite de longitud para prevenir ReDoS/CPU-DoS (M-2)
+_MAX_TEXT_LENGTH = 100_000  # 100 KB
 
 # Patrones aplicados a entrada de usuarios y documentos: bloquean cualquier mención de acciones dañinas.
 _BLOCKED_PATTERNS: tuple[re.Pattern[str], ...] = (
@@ -54,7 +71,15 @@ def _normalize(text: str) -> str:
 
     NFKD descompone ligaduras/caracteres de ancho completo; eliminar Mn quita diacríticos
     combinados de modo que é→e, ó→o, etc., habilitando coincidencia insensible a acentos.
+
+    Si el texto excede _MAX_TEXT_LENGTH, se trunca y se loguea una advertencia (M-2).
     """
+    if len(text) > _MAX_TEXT_LENGTH:
+        logger.warning(
+            "Texto excede limite de %d caracteres; truncando para validacion (M-2).",
+            _MAX_TEXT_LENGTH,
+        )
+        text = text[:_MAX_TEXT_LENGTH]
     return "".join(
         c
         for c in unicodedata.normalize("NFKD", text)
