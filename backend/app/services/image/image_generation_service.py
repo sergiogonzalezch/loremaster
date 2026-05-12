@@ -7,7 +7,6 @@ import os
 logger = logging.getLogger(__name__)
 
 from datetime import datetime, timezone
-from pathlib import Path
 from sqlmodel import Session, select
 
 from app.core.config import settings

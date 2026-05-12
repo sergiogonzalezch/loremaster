@@ -1,20 +1,7 @@
-import re
 import uuid
 from pathlib import Path
 
 from app.core.config import settings
-
-
-def sanitize_for_log(text: str) -> str:
-    """Elimina caracteres de control que permiten log injection.
-
-    Args:
-        text: Texto a sanitizar.
-
-    Returns:
-        Texto sin caracteres de control.
-    """
-    return re.sub(r"[\r\n\t]", "", text)
 
 
 def build_storage_path(*parts: str) -> Path:
@@ -52,15 +39,6 @@ def build_storage_url(relative_path: str | None) -> str | None:
 def generate_unique_filename(extension: str) -> str:
     """Genera un nombre de archivo único usando UUID4 con la extensión dada."""
     return f"{uuid.uuid4()}{extension.lower()}"
-
-
-def delete_directory(relative_path: str) -> None:
-    """Elimina el directorio que contiene la ruta relativa, incluyendo todos sus archivos."""
-    import shutil
-
-    path = Path(settings.media_root) / relative_path
-    if path.exists():
-        shutil.rmtree(path.parent)
 
 
 def build_generation_path(

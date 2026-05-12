@@ -88,38 +88,4 @@ def get_active_by_id(
     return session.exec(stmt).first()
 
 
-def list_active_by_collection(
-    session: Session,
-    model: Type[T],
-    collection_id: str,
-) -> list[T]:
-    """Lista todos los registros activos de un modelo para una colección."""
-    stmt = select(model).where(
-        model.collection_id == collection_id,
-        model.is_deleted == False,
-    )
-    return session.exec(stmt).all()
 
-
-def list_active_paginated(
-    session: Session,
-    model: Type[T],
-    collection_id: str,
-    skip: int,
-    limit: int,
-) -> tuple[list[T], int]:
-    """Lista registros activos de una colección con paginación.
-
-    Retorna una tupla (items, total).
-    """
-    base_filter = (
-        model.collection_id == collection_id,
-        model.is_deleted == False,
-    )
-    total = session.exec(
-        select(func.count()).select_from(select(model).where(*base_filter).subquery())
-    ).one()
-    items = session.exec(
-        select(model).where(*base_filter).offset(skip).limit(limit)
-    ).all()
-    return list(items), total

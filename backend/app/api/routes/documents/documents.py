@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import time
 from typing import Annotated, Optional
@@ -19,7 +18,6 @@ from sqlmodel import Session, select
 from app.core.api.params import DateRangeParams, PaginationParams
 from app.core.database.dependencies import (
     get_collection_or_404_owned,
-    get_document_or_404,
     get_document_or_404_owned,
 )
 from app.core.auth.dependencies import get_current_user

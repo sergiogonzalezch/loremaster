@@ -1,11 +1,8 @@
 import uuid
 from datetime import datetime, timezone
-from typing import Optional, TypeVar
+from typing import Optional
 
-from sqlalchemy import Column, String
-from sqlmodel import Field, SQLModel
-
-T = TypeVar("T", bound="TimestampedModel")
+from sqlmodel import Field
 
 
 def generate_id() -> str:
@@ -29,25 +26,3 @@ class SoftDeleteMixin:
 
     is_deleted: bool = Field(default=False)
     deleted_at: Optional[datetime] = Field(default=None)
-
-
-class TimestampedModel(SQLModel, TimestampMixin, table=True):
-    """Modelo base con timestamp de creación."""
-
-    pass
-
-
-class TimestampedSoftDeleteModel(TimestampedModel, SoftDeleteMixin, table=True):
-    """Modelo base con timestamp y soft-delete."""
-
-    pass
-
-
-class UUIDPrimaryKey:
-    """Mixin que agrega un campo id como clave primaria UUID."""
-
-    id: str = Field(
-        default_factory=generate_id,
-        primary_key=True,
-        max_length=36,
-    )

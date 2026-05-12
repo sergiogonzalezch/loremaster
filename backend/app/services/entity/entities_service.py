@@ -2,7 +2,6 @@ import logging
 from datetime import datetime, timezone
 from typing import Literal, Optional
 
-from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
