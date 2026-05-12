@@ -1,7 +1,7 @@
 # Registro de Implementacion — Fase 5 (Auditoria de Seguridad)
 
 **Fecha:** 2026-05-11
-**Referencia:** `docs/AUDIT-RESULTS-11-05-26.md`, `docs/PLAN-AUDIT-MEDIUM-LOW.md`
+**Referencia:** `./AUDIT-RESULTS-11-05-26.md`, `./PLAN-AUDIT-MEDIUM-LOW.md`
 **Estado:** Completada
 
 ---

@@ -1,7 +1,7 @@
 # Plan de Implementacion — Resolver Parciales Restantes
 
 **Fecha:** 2026-05-11
-**Referencia:** `docs/AUDIT-RESULTS-11-05-26.md`
+**Referencia:** `./AUDIT-RESULTS-11-05-26.md`
 **Estrategia:** Atacar los parciales que pueden resolverse completamente con cambios minimos. Los que requieren reescritura arquitectonica se mantienen como parciales documentados.
 
 ---

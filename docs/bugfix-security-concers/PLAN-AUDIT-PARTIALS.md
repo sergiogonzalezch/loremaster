@@ -1,7 +1,7 @@
 # Plan de Acción — Problemas Parcialmente Resueltos
 
 **Fecha:** 2026-05-11  
-**Referencia:** `docs/AUDIT-RESULTS-11-05-26.md`  
+**Referencia:** `./AUDIT-RESULTS-11-05-26.md`  
 **Problemas a cubrir:** 18 problemas parcialmente resueltos  
 
 ---

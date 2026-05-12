@@ -1,7 +1,7 @@
 # Registro de Implementación — Fase 2 (Auditoría de Seguridad)
 
 **Fecha:** 2026-05-11  
-**Referencia:** `docs/AUDIT-RESULTS-11-05-26.md`, `docs/PLAN-AUDIT-PARTIALS.md`, `docs/AUDIT-FASE1-LOG.md`  
+**Referencia:** `./AUDIT-RESULTS-11-05-26.md`, `./PLAN-AUDIT-PARTIALS.md`, `./AUDIT-FASE1-LOG.md`  
 **Estado:** ✅ Completada  
 
 ---

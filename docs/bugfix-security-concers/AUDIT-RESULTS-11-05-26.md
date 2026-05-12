@@ -1,7 +1,7 @@
 # Resultados de Auditoría de Seguridad — Lore Master
 
 **Fecha de validación:** 2026-05-12  
-**Auditoría original:** `docs/AUDIT-SECURITY.md` (2026-05-09)  
+**Auditoría original:** `./AUDIT-SECURITY.md` (2026-05-09)  
 **Branch:** `bugfix/security-concers`  
 
 ---

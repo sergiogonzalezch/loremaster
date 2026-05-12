@@ -1,7 +1,7 @@
 # Registro de Implementacion — Fase 9 (Auditoria de Seguridad)
 
 **Fecha:** 2026-05-11
-**Referencia:** `docs/AUDIT-RESULTS-11-05-26.md`, `docs/PLAN-AUDIT-PARTIALS-FINAL.md`
+**Referencia:** `./AUDIT-RESULTS-11-05-26.md`, `./PLAN-AUDIT-PARTIALS-FINAL.md`
 **Estado:** Completada
 
 ---

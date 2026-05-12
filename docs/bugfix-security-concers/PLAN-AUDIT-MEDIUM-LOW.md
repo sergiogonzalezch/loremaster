@@ -1,7 +1,7 @@
 # Plan de Implementacion — Problemas Medios y Bajos Pendientes
 
 **Fecha:** 2026-05-11
-**Referencia:** `docs/AUDIT-RESULTS-11-05-26.md`
+**Referencia:** `./AUDIT-RESULTS-11-05-26.md`
 **Estrategia:** Igual que fases anteriores: agrupar por dominio, cambios minimos, test suite completo despues de cada fase, documentar en log.
 
 ---

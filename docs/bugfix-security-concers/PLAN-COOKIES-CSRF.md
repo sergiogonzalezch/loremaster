@@ -323,7 +323,7 @@ En ambos casos, el token CSRF que implementas **sigue funcionando igual**.
 - [Owasp: Double Submit Cookie](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#double-submit-cookie)
 - [FastAPI: Response.set_cookie](https://fastapi.tiangolo.com/reference/response/#fastapi.Response.set_cookie)
 - [MDN: SameSite cookies](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite)
-- Hallazgos del audit: H-14, M-17, H-13 en `docs/AUDIT-RESULTS-11-05-26.md`
+- Hallazgos del audit: H-14, M-17, H-13 en `./AUDIT-RESULTS-11-05-26.md`
 
 ---
 

@@ -1,7 +1,7 @@
 # Registro de Implementacion — Fases 10-12 (Auditoria de Seguridad)
 
 **Fecha:** 2026-05-11
-**Referencia:** `docs/AUDIT-RESULTS-11-05-26.md`, `docs/PLAN-FASES-10-12.md`
+**Referencia:** `./AUDIT-RESULTS-11-05-26.md`, `./PLAN-FASES-10-12.md`
 **Estado:** Completada
 
 ---

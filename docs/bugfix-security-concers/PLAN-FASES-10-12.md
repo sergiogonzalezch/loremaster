@@ -1,7 +1,7 @@
 # Plan de Implementacion — Fases 10-12 (C-2, H-4, H-5, H-13)
 
 **Fecha:** 2026-05-11
-**Referencia:** `docs/AUDIT-RESULTS-11-05-26.md`
+**Referencia:** `./AUDIT-RESULTS-11-05-26.md`
 **Estrategia:** Cambios minimos, defensa en profundidad, tests pasan despues de cada fase.
 
 ---
