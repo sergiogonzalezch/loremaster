@@ -29,7 +29,7 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 ### 🔴 Críticos (8)
 
 | ID | Problema | Archivo(s) involucrado(s) | Referencia |
-|---|---|---|---|---|
+|---|---|---|---|
 | **C-1** | Import incorrecto de Clerk en producción | `backend/app/core/auth/dependencies.py` | — |
 | **C-2** | Producción salta verificación de usuario en BD | `backend/app/core/auth/dependencies.py` | [Fase 10](AUDIT-FASE10-12-LOG.md) |
 | **C-3** | IDOR cross-tenant en endpoints de documentos | `backend/app/core/database/dependencies.py`, `backend/app/api/routes/documents/documents.py` | [Fase 1](AUDIT-FASE1-LOG.md) |
@@ -42,7 +42,7 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 ### 🟠 Altos (13)
 
 | ID | Problema | Archivo(s) involucrado(s) | Referencia |
-|---|---|---|---|---|
+|---|---|---|---|
 | **H-1** | `is_admin` viajaba dentro del JWT | `backend/app/api/routes/auth/auth.py` | [Fase 1](AUDIT-FASE1-LOG.md) |
 | **H-2** | `PATCH /users/me` aceptaba email sin validación ni unicidad | `backend/app/api/routes/users/users.py` | [Fase 1](AUDIT-FASE1-LOG.md) |
 | **H-3** | Admin delete no despublica contenido/imágenes generadas | `backend/app/api/routes/admin/admin.py`, `backend/app/services/deletion_service.py` | [Fase 2](AUDIT-FASE2-LOG.md) + [Fase 9](AUDIT-FASE9-LOG.md) |
@@ -101,13 +101,13 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 ### 🟠 Altos (1)
 
 | ID | Problema | Qué está hecho | Qué falta |
-|---|---|---|---|---|---|
+|---|---|---|---|
 | **H-8** | Cero rate limiting | Existe `RateLimitMiddleware` aplicado a operaciones mutantes (POST/PUT/PATCH/DELETE). | No aplica a GET/HEAD, opera en memoria (no escala a múltiples workers), y no protege endpoints de lectura intensiva. |
 
 ### 🟡 Medios (4)
 
 | ID | Problema | Qué está hecho | Qué falta |
-|---|---|---|---|---|
+|---|---|---|---|
 | **M-1** | `content_guard.py` es decorativo | Documentacion explicita de limitaciones agregada al modulo ([Fase 8](AUDIT-FASE8-LOG.md)). | Sigue sin detectar jailbreaks, leetspeak, base64, ROT13. Requiere reemplazo por solucion mas robusta. |
 | **M-2** | ReDoS / CPU-DoS en `content_guard.py` | Limite de 100KB agregado antes de normalizacion NFKD ([Fase 8](AUDIT-FASE8-LOG.md)). | Las 6 regex siguen existiendo; el limite mitiga pero no elimina el riesgo de bloqueo del worker. |
 | **M-4** | ComfyUI `download_image` reenvía `filename`/`subfolder` sin sanitizar | Ahora usa `_sanitize_filename` que elimina caracteres no alfanuméricos/guiones/puntos. | Mitiga pero no elimina completamente el riesgo histórico de ese endpoint. |
@@ -129,7 +129,7 @@ Los únicos items que permanecen abiertos son defensas en profundidad (H-8 rate 
 
 - **M-16** ✅ Verificado — `rehype-sanitize` con schema default elimina atributos de evento inline; tests pasan
 - **L-9** ✅ Resuelto — `SafeImage` implementa `isImageUrlAllowed()` con allowlist de origen
-- **L-10** ⚠️ Parcial — `/admin` requiere auth pero no verifica rol admin en el frontend
+- **L-10** ✅ Resuelto — `AdminRoute` verifica rol admin en frontend ([Fase 9](AUDIT-FASE9-LOG.md))
 
 ---
 
