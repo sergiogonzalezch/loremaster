@@ -1,8 +1,5 @@
 """Condiciones de filtro reutilizables para consultas de contenido compartido e imágenes."""
 
-from sqlalchemy import and_
-from sqlalchemy.orm import Query
-
 from app.models.db.entity_content import EntityContent
 from app.models.db.image_generation import ImageGeneration, ImageRecord
 from app.models.db.entity import Entity
