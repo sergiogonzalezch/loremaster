@@ -3,6 +3,7 @@
 Carga variables de entorno desde archivo .env y valida valores críticos
 como CORS y secret_key en entornos no locales.
 """
+import os, warnings  # noqa: E401
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -163,7 +164,6 @@ class Settings(BaseSettings):
                 f"ENVIRONMENT debe ser uno de: {', '.join(valid_envs)}. "
                 f"Valor recibido: '{self.environment}'"
             )
-        import os, warnings  # noqa: E401
         if self.environment == "local" and not os.environ.get("ENVIRONMENT"):
             warnings.warn(
                 "ENVIRONMENT no está definida en el entorno. "
