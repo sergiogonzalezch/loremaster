@@ -14,7 +14,7 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 |---|---:|
 | **Resueltos** | **39** |
 | **Parcialmente resueltos** | **5** |
-| **No resueltos** | **7** |
+| **No resueltos** | **6** |
 | **No verificados / pendientes** | **3** |
 | **Total** | **53** |
 
@@ -106,7 +106,7 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 
 ---
 
-## Problemas No Resueltos (7)
+## Problemas No Resueltos (6)
 
 ### 🔴 Críticos (1)
 
