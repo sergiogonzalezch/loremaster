@@ -1,5 +1,6 @@
 import logging
 import time
+from pathlib import Path
 
 from sqlmodel import Session, select
 
@@ -149,10 +150,36 @@ def cascade_delete_collection(session: Session, collection: Collection) -> bool:
     return _delete_vectors_with_retry(collection.id)
 
 
+def _delete_image_file(storage_path: str | None) -> None:
+    """Elimina el archivo físico del disco si existe.
+
+    Args:
+        storage_path: Ruta relativa del archivo a eliminar dentro de media_root.
+    """
+    if not storage_path:
+        return
+    try:
+        from app.core.config import settings
+
+        media_root_resolved = Path(settings.media_root).resolve()
+        file_path = (media_root_resolved / storage_path).resolve()
+        if not file_path.is_relative_to(media_root_resolved):
+            logger.warning(
+                "Attempted to delete file outside media_root: %s", storage_path
+            )
+            return
+        if file_path.exists() and file_path.is_file():
+            file_path.unlink()
+            logger.info("Deleted file: %s", storage_path)
+    except Exception as e:
+        logger.warning("Failed to delete file %s: %s", storage_path, e)
+
+
 def _cascade_delete_images(
     session: Session,
     entity_id: str | None = None,
     collection_id: str | None = None,
+    delete_files: bool = True,
 ) -> int:
     """Elimina de forma suave los ImageRecord según los filtros indicados.
 
@@ -160,6 +187,7 @@ def _cascade_delete_images(
         session: Sesión de base de datos activa.
         entity_id: Si se proporciona, elimina imágenes de esta entidad.
         collection_id: Si se proporciona, elimina imágenes de esta colección.
+        delete_files: Si True, elimina también los archivos físicos del disco.
 
     Returns:
         Número de ImageRecords eliminados de forma suave.
@@ -175,6 +203,8 @@ def _cascade_delete_images(
 
     images = session.exec(select(ImageRecord).where(*conditions)).all()
     for img in images:
+        if delete_files:
+            _delete_image_file(img.storage_path)
         soft_delete(session, img)
     return len(images)
 

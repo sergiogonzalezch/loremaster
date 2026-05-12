@@ -9,8 +9,6 @@ Funcionalidades de seguridad:
     - Validación de extensión vs tipo MIME.
     - Límite de tamaño configurable.
 
-TODO:
-    - Añadir validación de magic bytes para imágenes (M-18).
 """
 
 from io import BytesIO
@@ -91,8 +89,8 @@ class FileValidator:
     def validate_image(file: UploadFile, max_bytes: int | None = None) -> bytes:
         """Valida que el archivo sea una imagen válida.
 
-        Verifica tipo MIME permitido, extensión válida, strip de EXIF
-        y tamaño máximo.
+        Verifica tipo MIME permitido, extensión válida, magic bytes de imagen,
+        strip de EXIF y tamaño máximo.
 
         Args:
             file: Archivo subido via UploadFile.
@@ -114,6 +112,14 @@ class FileValidator:
             raise ValueError(f"Extensión no permitida: {ext}")
 
         content = file.file.read()
+
+        # Validación de magic bytes / integridad de imagen (M-18)
+        try:
+            img = Image.open(BytesIO(content))
+            img.verify()
+        except Exception:
+            raise ValueError("El archivo no es una imagen válida")
+
         content = _strip_exif(content)
 
         if max_bytes and len(content) > max_bytes:

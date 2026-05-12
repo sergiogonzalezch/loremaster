@@ -14,12 +14,13 @@ from fastapi import (
     File,
 )
 from fastapi.responses import StreamingResponse
-from sqlmodel import Session, select, func
+from sqlmodel import Session, select
 
 from app.core.api.params import DateRangeParams, PaginationParams
 from app.core.database.dependencies import (
     get_collection_or_404_owned,
     get_document_or_404,
+    get_document_or_404_owned,
 )
 from app.core.auth.dependencies import get_current_user
 from app.core.exceptions import (
@@ -129,7 +130,7 @@ def get_documents(
 
 @router.get("/{collection_id}/documents/{doc_id}", response_model=DocumentResponse)
 def get_document(
-    doc: Document = Depends(get_document_or_404),
+    doc: Document = Depends(get_document_or_404_owned),
     _: dict = Depends(get_current_user),
 ):
     """Obtiene los datos de un documento específico."""
@@ -143,7 +144,7 @@ def get_document(
 )
 async def retry_ingest(
     background_tasks: BackgroundTasks,
-    doc: Document = Depends(get_document_or_404),
+    doc: Document = Depends(get_document_or_404_owned),
     _: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
@@ -160,7 +161,7 @@ async def retry_ingest(
 
 @router.delete("/{collection_id}/documents/{doc_id}", status_code=204)
 def delete_document(
-    doc: Document = Depends(get_document_or_404),
+    doc: Document = Depends(get_document_or_404_owned),
     _: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):

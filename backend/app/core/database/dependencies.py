@@ -77,6 +77,21 @@ def get_document_or_404(
     return doc
 
 
+def get_document_or_404_owned(
+    doc_id: str,
+    collection: Collection = Depends(get_collection_or_404_owned),
+    session: Session = Depends(get_session),
+) -> Document:
+    """Obtiene un documento verificando que la colección sea del usuario actual.
+
+    Lanza 404 si no existe o si la colección no pertenece al usuario.
+    """
+    doc = get_active_by_id(session, Document, doc_id, collection.id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Documento no encontrado.")
+    return doc
+
+
 def get_current_db_user(
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session),

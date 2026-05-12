@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.core.config import settings
+from app.core.logging import configure_logging
 from app.core.lifespan import lifespan
 from app.api.routes import (
     admin_router,
@@ -32,7 +33,7 @@ from app.api.routes import (
 from app.api.routes.media import router as media_router
 from app.api.middlewares import RateLimitMiddleware, SecurityHeadersMiddleware
 
-logging.basicConfig(level=settings.log_level)
+configure_logging(settings.log_level)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(

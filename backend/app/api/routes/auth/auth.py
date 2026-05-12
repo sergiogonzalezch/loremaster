@@ -172,7 +172,6 @@ def register(request: RegisterRequest, session: Session = Depends(get_session)):
         data={
             "sub": new_user.id,
             "username": new_user.username,
-            "is_admin": False,
             "version": new_user.token_version,
         }
     )

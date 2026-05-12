@@ -117,8 +117,8 @@ async def test_ingest_oversized_file_400(client, sample_collection):
 
 
 @pytest.mark.anyio
-async def test_get_doc_wrong_collection_404(client, db_session, sample_document):
-    """DOC-08: Documento solicitado desde colección incorrecta retorna 404."""
+async def test_get_doc_wrong_collection_403(client, db_session, sample_document):
+    """DOC-08: Documento solicitado desde colección de otro usuario retorna 403."""
     another = Collection(name="Other", description="Other col")
     db_session.add(another)
     db_session.commit()
@@ -127,7 +127,7 @@ async def test_get_doc_wrong_collection_404(client, db_session, sample_document)
     response = await client.get(
         f"/api/v1/collections/{another.id}/documents/{sample_document.id}"
     )
-    assert response.status_code == 404
+    assert response.status_code == 403
 
 
 @pytest.mark.anyio

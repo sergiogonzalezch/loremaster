@@ -83,8 +83,18 @@ def delete_profile_image(session: Session, user: User) -> None:
         return
 
     profile_dir = _get_profile_dir(user.username)
-    if profile_dir.exists():
-        shutil.rmtree(profile_dir)
+    if profile_dir.exists() and profile_dir.is_dir():
+        media_root_resolved = Path(settings.media_root).resolve()
+        for item in profile_dir.iterdir():
+            resolved = item.resolve()
+            if resolved.is_file() and resolved.is_relative_to(media_root_resolved):
+                resolved.unlink()
+            elif resolved.is_dir() and resolved.is_relative_to(media_root_resolved):
+                shutil.rmtree(resolved)
+        try:
+            profile_dir.rmdir()
+        except OSError:
+            pass
 
     user.avatar_path = None
     session.add(user)

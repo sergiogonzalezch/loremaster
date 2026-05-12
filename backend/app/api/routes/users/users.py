@@ -46,6 +46,17 @@ def update_my_profile(
     if request.bio is not None:
         user.bio = request.bio
     if request.email is not None:
+        existing = session.exec(
+            select(User).where(
+                User.email == request.email,
+                User.is_deleted == False,
+                User.id != user.id,
+            )
+        ).first()
+        if existing:
+            raise HTTPException(
+                status_code=409, detail="El correo electrónico ya está en uso."
+            )
         user.email = request.email
 
     session.add(user)
