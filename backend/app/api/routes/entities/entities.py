@@ -107,7 +107,9 @@ def delete_entity(
     try:
         delete_entity_service(session, entity)
     except DatabaseError as e:
-        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
+        raise HTTPException(
+            status_code=500, detail="Error interno del servidor."
+        ) from e
     return Response(status_code=204)
 
 

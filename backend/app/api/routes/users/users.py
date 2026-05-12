@@ -101,7 +101,10 @@ def get_public_profile(
     username: str,
     session: Session = Depends(get_session),
 ):
-    """Obtiene el perfil público de un usuario con sus contenidos e imágenes compartidos."""
+    """Obtiene el perfil público de un usuario.
+
+    Incluye sus contenidos e imágenes compartidos.
+    """
     user = session.exec(
         select(User).where(User.username == username, User.is_deleted.is_(False))
     ).first()

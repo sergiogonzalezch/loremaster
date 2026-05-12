@@ -3,6 +3,7 @@
 Carga variables de entorno desde archivo .env y valida valores críticos
 como CORS y secret_key en entornos no locales.
 """
+
 import os
 import warnings
 

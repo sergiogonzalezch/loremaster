@@ -37,7 +37,8 @@ async def lifespan(_app: FastAPI):
         raise
 
     try:
-        from app.engine.rag import ping_qdrant
+        # Lazy import para evitar circularidad en startup (rag importa modelos).
+        from app.engine.rag import ping_qdrant  # noqa: PLC0415
 
         await asyncio.to_thread(ping_qdrant)
         logger.info("Qdrant connection OK (%s)", settings.qdrant_url)

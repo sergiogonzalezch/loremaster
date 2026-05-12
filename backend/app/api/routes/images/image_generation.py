@@ -60,7 +60,9 @@ def build_prompt(
         ) from e
     except Exception as e:
         logger.exception("Error inesperado en build_prompt")
-        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
+        raise HTTPException(
+            status_code=500, detail="Error interno del servidor."
+        ) from e
 
 
 @router.post(
@@ -103,10 +105,14 @@ def generate_images(
             detail="batch_size debe estar entre 1 y 4.",
         ) from e
     except DatabaseError as e:
-        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
+        raise HTTPException(
+            status_code=500, detail="Error interno del servidor."
+        ) from e
     except Exception as e:
         logger.exception("Error inesperado en generate_images")
-        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
+        raise HTTPException(
+            status_code=500, detail="Error interno del servidor."
+        ) from e
 
 
 @router.patch(
@@ -128,7 +134,9 @@ def share_image(
     except NoContextAvailableError as e:
         raise HTTPException(status_code=404, detail="Imagen no encontrada.") from e
     except DatabaseError as e:
-        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
+        raise HTTPException(
+            status_code=500, detail="Error interno del servidor."
+        ) from e
 
 
 @router.delete(
@@ -150,10 +158,14 @@ def delete_image(
             detail="Imagen no encontrada.",
         ) from e
     except DatabaseError as e:
-        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
+        raise HTTPException(
+            status_code=500, detail="Error interno del servidor."
+        ) from e
     except Exception as e:
         logger.exception("Error inesperado en delete_image")
-        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
+        raise HTTPException(
+            status_code=500, detail="Error interno del servidor."
+        ) from e
 
 
 @router.get(
@@ -175,7 +187,9 @@ def get_generation(
         ) from e
     except Exception as e:
         logger.exception("Error inesperado en get_generation")
-        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
+        raise HTTPException(
+            status_code=500, detail="Error interno del servidor."
+        ) from e
 
 
 @router.get(
@@ -192,4 +206,6 @@ def list_generations(
         return ImageGenerationListResponse(generations=generations, total=total)
     except Exception as e:
         logger.exception("Error inesperado en list_generations")
-        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
+        raise HTTPException(
+            status_code=500, detail="Error interno del servidor."
+        ) from e

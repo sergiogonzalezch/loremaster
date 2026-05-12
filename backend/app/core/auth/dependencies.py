@@ -44,7 +44,8 @@ def get_current_user(
         raise HTTPException(status_code=401, detail="No autorizado")
 
     if settings.environment == "production":
-        from app.api.routes.auth.auth_clerk import decode_clerk_token
+        # Lazy import: Clerk no es requerido en entornos locales (C-1).
+        from app.api.routes.auth.auth_clerk import decode_clerk_token  # noqa: PLC0415
 
         payload = decode_clerk_token(token)
         user = session.get(User, payload.get("sub"))

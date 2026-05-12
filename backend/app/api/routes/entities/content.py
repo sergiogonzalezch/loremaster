@@ -64,7 +64,9 @@ def generate_content(
         log_moderation_event(session, "output", e.snippet)
         raise HTTPException(status_code=422, detail=str(e)) from e
     except DatabaseError as e:
-        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
+        raise HTTPException(
+            status_code=500, detail="Error interno del servidor."
+        ) from e
     except RuntimeError as e:
         raise HTTPException(
             status_code=503, detail="No fue posible generar el contenido solicitado."
@@ -126,7 +128,9 @@ def edit_content(
     except ContentDiscardedError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
     except DatabaseError as e:
-        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
+        raise HTTPException(
+            status_code=500, detail="Error interno del servidor."
+        ) from e
     if not result:
         raise HTTPException(status_code=404, detail="Contenido no encontrado.")
     return result
@@ -145,7 +149,9 @@ def confirm_content(
     try:
         result = content_service.confirm_content(session, content_id, entity)
     except DatabaseError as e:
-        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
+        raise HTTPException(
+            status_code=500, detail="Error interno del servidor."
+        ) from e
     if not result:
         raise HTTPException(status_code=404, detail="Contenido no encontrado.")
     session.refresh(entity)
@@ -169,7 +175,9 @@ def discard_content(
             session, content_id, entity_id, collection_id
         )
     except DatabaseError as e:
-        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
+        raise HTTPException(
+            status_code=500, detail="Error interno del servidor."
+        ) from e
     if not result:
         raise HTTPException(status_code=404, detail="Contenido no encontrado.")
     return result
@@ -198,7 +206,9 @@ def share_content(
     except ContentNotShareableError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
     except DatabaseError as e:
-        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
+        raise HTTPException(
+            status_code=500, detail="Error interno del servidor."
+        ) from e
     if not result:
         raise HTTPException(status_code=404, detail="Contenido no encontrado.")
     return result
@@ -221,7 +231,9 @@ def delete_content(
             session, content_id, entity_id, collection_id
         )
     except DatabaseError as e:
-        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
+        raise HTTPException(
+            status_code=500, detail="Error interno del servidor."
+        ) from e
     if not deleted:
         raise HTTPException(status_code=404, detail="Contenido no encontrado.")
     return Response(status_code=204)

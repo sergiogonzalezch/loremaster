@@ -85,7 +85,9 @@ async def ingest(
     except DuplicateDocumentError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
     except DatabaseError as e:
-        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
+        raise HTTPException(
+            status_code=500, detail="Error interno del servidor."
+        ) from e
     background_tasks.add_task(process_ingest_background, session, document, text)
     return document
 
@@ -154,7 +156,9 @@ async def retry_ingest(
     except DocumentNotRetryableError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
     except DatabaseError as e:
-        raise HTTPException(status_code=500, detail="Error interno del servidor.") from e
+        raise HTTPException(
+            status_code=500, detail="Error interno del servidor."
+        ) from e
     background_tasks.add_task(process_ingest_background, session, document, text)
     return document
 

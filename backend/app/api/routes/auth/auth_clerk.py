@@ -1,5 +1,6 @@
 import threading
 import time
+from typing import ClassVar
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -14,10 +15,43 @@ from app.models.db.user import User
 router = APIRouter(prefix="/auth/clerk", tags=["auth"])
 security = HTTPBearer(auto_error=False)
 
-_jwks_cache: dict | None = None
-_jwks_cache_time: float = 0.0
-_jwks_lock = threading.Lock()
-_JWKS_TTL = 3600  # 1 hora; Clerk rota claves ocasionalmente
+
+class JWKSManager:
+    """Gestiona la caché de claves JWKS de Clerk con TTL y thread-safety.
+
+    Utiliza un :class:`httpx.Client` compartido para reutilizar conexiones
+    y reduce la sobrecarga de crear un cliente nuevo en cada refresco.
+    """
+
+    _TTL: ClassVar[int] = 3600  # 1 hora; Clerk rota claves ocasionalmente
+    _lock: ClassVar[threading.Lock] = threading.Lock()
+    _cache: ClassVar[dict | None] = None
+    _cache_time: ClassVar[float] = 0.0
+    _client: ClassVar[httpx.Client] = httpx.Client(timeout=10.0)
+
+    @classmethod
+    def get_jwks(cls) -> dict:
+        """Obtiene las claves públicas JWKS de Clerk con caché de 1 hora.
+
+        Returns:
+            Diccionario con las claves JWKS.
+
+        Raises:
+            HTTPException(503): Si no se puede conectar con Clerk.
+        """
+        with cls._lock:
+            if cls._cache is None or time.monotonic() - cls._cache_time > cls._TTL:
+                try:
+                    response = cls._client.get(settings.clerk_jwks_url)
+                    response.raise_for_status()
+                    cls._cache = response.json()
+                    cls._cache_time = time.monotonic()
+                except httpx.HTTPError as exc:
+                    raise HTTPException(
+                        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                        detail="No se pudo obtener las claves de Clerk",
+                    ) from exc
+            return cls._cache
 
 
 def get_jwks() -> dict:
@@ -29,20 +63,7 @@ def get_jwks() -> dict:
     Raises:
         HTTPException(503): Si no se puede conectar con Clerk.
     """
-    global _jwks_cache, _jwks_cache_time
-    with _jwks_lock:
-        if _jwks_cache is None or time.monotonic() - _jwks_cache_time > _JWKS_TTL:
-            try:
-                response = httpx.get(settings.clerk_jwks_url, timeout=10.0)
-                response.raise_for_status()
-                _jwks_cache = response.json()
-                _jwks_cache_time = time.monotonic()
-            except httpx.HTTPError as e:
-                raise HTTPException(
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail="No se pudo obtener las claves de Clerk",
-                ) from e
-        return _jwks_cache
+    return JWKSManager.get_jwks()
 
 
 def decode_clerk_token(token: str) -> dict:
@@ -66,10 +87,10 @@ def decode_clerk_token(token: str) -> dict:
             audience=settings.clerk_audience,
             issuer=clerk_issuer,
         )
-    except JWTError as e:
+    except JWTError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido"
-        ) from e
+        ) from exc
 
 
 @router.get("/verify")

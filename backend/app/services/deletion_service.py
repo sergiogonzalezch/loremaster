@@ -1,3 +1,13 @@
+"""Orquestación de eliminaciones completas (soft-delete + físico).
+
+Coordina:
+1. Soft-delete en base de datos (colecciones, documentos, entidades, imágenes).
+2. Borrado físico de archivos de imagen en disco.
+3. Eliminación de vectores en Qdrant (con reintentos).
+
+Importa funciones de cascade_service para la fase de soft-delete en cascada.
+"""
+
 import logging
 import time
 from pathlib import Path

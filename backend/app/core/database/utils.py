@@ -1,6 +1,6 @@
 import logging
 from collections.abc import Sequence
-from typing import TypeVar
+from typing import Literal, TypeVar
 
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
@@ -38,7 +38,7 @@ def paginate_with_sort(
     page: int = 1,
     page_size: int = 20,
     order_col=None,
-    order: str = "desc",
+    order: Literal["asc", "desc"] = "desc",
 ) -> tuple[list[T], int]:
     """Pagina y ordena una consulta por modelo y condiciones dadas.
 
@@ -78,7 +78,11 @@ def get_active_by_id(
     record_id: str,
     collection_id: str,
 ) -> T | None:
-    """Obtiene un registro activo por ID y collection_id, sin soft-deleted."""
+    """Obtiene un registro activo por ID y collection_id, sin soft-deleted.
+
+    Nota: esta utility está acoplada a modelos que poseen `collection_id`.
+    No es aplicable a modelos globales como User o ModerationLog.
+    """
     stmt = select(model).where(
         model.id == record_id,
         model.collection_id == collection_id,

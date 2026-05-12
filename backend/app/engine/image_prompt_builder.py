@@ -15,6 +15,7 @@ from app.domain.image_prompt_rules import (
     _TYPE_EXTRACT_PROMPT,
     _llm_instruction_by_entity_category,
 )
+from app.engine.llm import llm
 from app.models.db.entity import EntityType
 from app.models.enums import ContentCategory
 
@@ -22,20 +23,11 @@ logger = logging.getLogger(__name__)
 
 _llm_semaphore = threading.Semaphore(settings.max_concurrent_llm_calls)
 
-generation_chain = None
+_generation_chain = llm | StrOutputParser()
+"""Cadena de generación de prompts visuales (prompt → LLM → parser)."""
 
 QUALITY_SUFFIX = "high quality, masterpiece, sharp focus, professional digital art"
 """Sufijo de calidad añadido a todos los prompts visuales."""
-
-
-def _get_generation_chain():
-    """Inicializa lazy la cadena de generación del LLM."""
-    global generation_chain
-    if generation_chain is None:
-        from app.engine.llm import llm
-
-        generation_chain = llm | StrOutputParser()
-    return generation_chain
 
 
 def _estimate_tokens(text: str) -> int:
@@ -84,7 +76,7 @@ def _extract_with_llm(
 
     try:
         with _llm_semaphore:
-            chain = _get_generation_chain()
+            chain = _generation_chain
 
             tipo_result = chain.invoke(
                 f"{type_prompt}\n\nTEXT:\n---\n{content_text}\n---"

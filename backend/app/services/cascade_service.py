@@ -1,3 +1,10 @@
+"""Operaciones de soft-delete en cascada.
+
+Este módulo contiene funciones que propagan soft-delete a entidades hijas
+(EntityContent) cuando se elimina una entidad o colección padre.
+No realiza borrado físico de archivos ni vectores.
+"""
+
 import logging
 
 from sqlmodel import Session, select

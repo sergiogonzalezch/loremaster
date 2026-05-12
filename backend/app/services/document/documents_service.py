@@ -156,7 +156,9 @@ def process_ingest_background(session: Session, document: Document, text: str) -
         document.chunk_count = chunk_count
         document.processing_error = None
     except Exception as e:
-        logger.exception("Background ingest failed for '%s'", _sanitize_for_log(document.filename))
+        logger.exception(
+            "Background ingest failed for '%s'", _sanitize_for_log(document.filename)
+        )
         document.status = DocumentStatus.failed
         document.processing_error = str(e)
     session.add(document)
