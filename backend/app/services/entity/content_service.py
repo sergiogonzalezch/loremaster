@@ -9,6 +9,7 @@ from app.core.exceptions import (
     ContentDiscardedError,
     ContentNotShareableError,
 )
+from app.domain.content_guard import check_user_input
 from app.models.db.entity import Entity
 from app.models.db.entity_content import EntityContent
 from app.models.schemas.entity_content import EntityContentResponse
@@ -101,6 +102,7 @@ def edit_content(
         ContentDiscardedError: Si el contenido está descartado.
     """
     new_text = new_text.strip()
+    check_user_input(new_text)  # M-3: validar contenido editable
     content = _get_active_content(session, content_id, entity_id, collection_id)
     if not content:
         return None

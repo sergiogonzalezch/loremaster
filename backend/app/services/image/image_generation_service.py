@@ -481,9 +481,12 @@ def delete_image_service(
     # Bugfix: storage_path puede ser None en imágenes mock aunque el backend cambie
     if settings.image_backend != "mock" and record.storage_path:
         full_path = os.path.join(settings.media_root, record.storage_path)
-        if full_path and os.path.exists(full_path):
+        # L-3: evitar TOCTOU usando try/except en lugar de if exists()
+        if full_path:
             try:
                 os.remove(full_path)
+            except FileNotFoundError:
+                pass
             except OSError:
                 pass
 
