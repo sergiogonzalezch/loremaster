@@ -71,6 +71,22 @@ def get_current_user(
     return payload
 
 
+def get_current_user_optional(
+    request: Request,
+    session: Session = Depends(get_session),
+) -> dict | None:
+    """Variante permisiva de get_current_user: retorna None si no hay sesión.
+
+    Usada en endpoints que sirven contenido público pero ofrecen acceso
+    extendido a usuarios autenticados (p.ej. /media para imágenes propias
+    no compartidas).
+    """
+    try:
+        return get_current_user(request, session)
+    except HTTPException:
+        return None
+
+
 def get_admin_user(
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session),

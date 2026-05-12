@@ -1,13 +1,12 @@
 """Router para servir archivos multimedia.
 
 Reemplaza el mount de StaticFiles para proteger contra path traversal.
-Las imágenes son accesibles públicamente (no requieren auth) para que
-los navegadores puedan cargarlas via <img src=...>.
 
-NOTA DE SEGURIDAD: Para producción, considerar:
-- Signed URLs con expiración
-- Cookies HttpOnly para auth en requests de recursos estáticos
-- CDN con autenticación
+Control de acceso por tipo de recurso:
+- Imágenes generadas (users/*/img/generation/*):
+    - is_shared=True  → público (feed)
+    - is_shared=False → solo el owner autenticado (cookie HttpOnly)
+- Avatares de perfil (users/*/img/profile/*) → siempre públicos
 """
 
 import logging
@@ -17,8 +16,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from sqlmodel import Session, select
 
+from app.core.auth.dependencies import get_current_user_optional
 from app.core.config import settings
 from app.database import get_session
+from app.models.db.collection import Collection
 from app.models.db.image_generation import ImageRecord
 
 router = APIRouter(prefix="", tags=["media"])
@@ -26,11 +27,15 @@ logger = logging.getLogger(__name__)
 
 
 @router.get("/media/{path:path}")
-def serve_media(path: str, session: Session = Depends(get_session)):
+def serve_media(
+    path: str,
+    session: Session = Depends(get_session),
+    current_user: dict | None = Depends(get_current_user_optional),
+):
     """Sirve archivos multimedia (imágenes, avatares).
 
-    Valida path traversal y verifica is_shared en BD para imágenes generadas.
-    Los avatares de perfil (users/*/img/profile/*) son siempre públicos.
+    Valida path traversal. Para imágenes generadas aplica auth + ownership
+    cuando is_shared=False. Los avatares de perfil son públicos.
     """
     # Prevenir path traversal
     if ".." in path or path.startswith(("/", "\\")):
@@ -57,12 +62,24 @@ def serve_media(path: str, session: Session = Depends(get_session)):
         record = session.exec(
             select(ImageRecord).where(
                 ImageRecord.storage_path == path,
-                ImageRecord.is_shared.is_(True),
                 ImageRecord.is_deleted.is_(False),
             )
         ).first()
         if not record:
             raise HTTPException(status_code=404, detail="Archivo no encontrado.")
+        if not record.is_shared:
+            # Imagen privada: solo accesible para el owner autenticado
+            if not current_user:
+                raise HTTPException(status_code=404, detail="Archivo no encontrado.")
+            owned = session.exec(
+                select(Collection).where(
+                    Collection.id == record.collection_id,
+                    Collection.owner_id == current_user["sub"],
+                    Collection.is_deleted.is_(False),
+                )
+            ).first()
+            if not owned:
+                raise HTTPException(status_code=404, detail="Archivo no encontrado.")
     elif not is_profile:
         raise HTTPException(status_code=404, detail="Archivo no encontrado.")
 
