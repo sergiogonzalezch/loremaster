@@ -48,7 +48,17 @@ def get_current_user(
     if settings.environment == "production":
         from app.api.routes.auth.auth_clerk import decode_clerk_token
 
-        return decode_clerk_token(credentials.credentials)
+        payload = decode_clerk_token(credentials.credentials)
+        user = session.get(User, payload.get("sub"))
+        if not user or user.is_deleted:
+            raise HTTPException(status_code=401, detail="No autorizado")
+        # Verificar token_version si existe en el token de Clerk (custom claim)
+        if "version" in payload:
+            if not hmac.compare_digest(
+                str(user.token_version), str(payload.get("version", 0))
+            ):
+                raise HTTPException(status_code=401, detail="Sesión inválida")
+        return payload
 
     payload = verify_token(credentials.credentials)
 

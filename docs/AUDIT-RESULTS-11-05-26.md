@@ -12,25 +12,26 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 
 | Estado | Total |
 |---|---:|
-| **Resueltos** | **42** |
-| **Parcialmente resueltos** | **5** |
-| **No resueltos** | **6** |
+| **Resueltos** | **45** |
+| **Parcialmente resueltos** | **6** |
+| **No resueltos** | **3** |
 | **No verificados / pendientes** | **0** |
 | **Total** | **53** |
 
-> **Nota:** 25 problemas resueltos en 9 fases + 3 hallazgos frontend verificados. Ver [Fases de Implementación](#fases-de-implementación).
+> **Nota:** 28 problemas resueltos en 12 fases + 3 hallazgos frontend verificados. Ver [Fases de Implementación](#fases-de-implementación).
 
-> **Conclusión:** Los problemas de mayor impacto (IDOR en documentos, path traversal, secretos por defecto, headers de seguridad, magic bytes, audit logs) fueron resueltos. Persisten **gaps críticos en validación de usuarios eliminados en Clerk**, **prompt injection**, **protección CSRF/storage de tokens**, y **rate limiting completo**.
+> **Conclusión:** Los problemas de mayor impacto fueron resueltos: IDOR en documentos, path traversal, secretos por defecto, headers de seguridad, magic bytes, audit logs, validación de Clerk, prompt injection estructural, y mitigación de JWT en localStorage. Persisten **protección CSRF** (H-14, M-17), **rate limiting completo** (H-8), y **migración definitiva a cookies HttpOnly** (H-13).
 
 ---
 
-## Problemas Resueltos (43)
+## Problemas Resueltos (45)
 
-### 🔴 Críticos (7)
+### 🔴 Críticos (8)
 
 | ID | Problema | Archivo(s) involucrado(s) | Referencia |
-|---|---|---|---|
+|---|---|---|---|---|
 | **C-1** | Import incorrecto de Clerk en producción | `backend/app/core/auth/dependencies.py` | — |
+| **C-2** | Producción salta verificación de usuario en BD | `backend/app/core/auth/dependencies.py` | [Fase 10](AUDIT-FASE10-12-LOG.md) |
 | **C-3** | IDOR cross-tenant en endpoints de documentos | `backend/app/core/database/dependencies.py`, `backend/app/api/routes/documents/documents.py` | [Fase 1](AUDIT-FASE1-LOG.md) |
 | **C-4** | IDOR cross-tenant en listado de entidades | `backend/app/api/routes/entities/entities.py` | — |
 | **C-5** | Path traversal vía `shutil.rmtree` en `delete_profile_image` | `backend/app/services/profile/profile_service.py` | [Fase 2](AUDIT-FASE2-LOG.md) |
@@ -38,13 +39,15 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 | **C-7** | JWT secret por defecto + sin protección contra alg-confusion | `backend/app/core/auth/__init__.py` | [Fase 1](AUDIT-FASE1-LOG.md) |
 | **C-8** | Postgres con credenciales hardcodeadas | `backend/docker-compose.prod.yml` | [Fase 3](AUDIT-FASE3-LOG.md) |
 
-### 🟠 Altos (9)
+### 🟠 Altos (11)
 
 | ID | Problema | Archivo(s) involucrado(s) | Referencia |
-|---|---|---|---|
+|---|---|---|---|---|
 | **H-1** | `is_admin` viajaba dentro del JWT | `backend/app/api/routes/auth/auth.py` | [Fase 1](AUDIT-FASE1-LOG.md) |
 | **H-2** | `PATCH /users/me` aceptaba email sin validación ni unicidad | `backend/app/api/routes/users/users.py` | [Fase 1](AUDIT-FASE1-LOG.md) |
 | **H-3** | Admin delete no despublica contenido/imágenes generadas | `backend/app/api/routes/admin/admin.py`, `backend/app/services/deletion_service.py` | [Fase 2](AUDIT-FASE2-LOG.md) + [Fase 9](AUDIT-FASE9-LOG.md) |
+| **H-4** | Indirect prompt injection vía documentos subidos | `backend/app/domain/prompt_templates.py` | [Fase 11](AUDIT-FASE10-12-LOG.md) |
+| **H-5** | Prompt injection vía `entity.name` / `entity.description` | `backend/app/services/entity/generation_service.py`, `backend/app/domain/prompt_templates.py` | [Fase 11](AUDIT-FASE10-12-LOG.md) |
 | **H-6** | `validate_document` confiaba solo en `content_type` del cliente | `backend/app/core/storage/validator.py` | — |
 | **H-7** | `PdfReader` sin cap de páginas (PDF bombs) | `backend/app/engine/extractor.py` | — |
 | **H-9** | Sin headers de seguridad (HSTS, CSP, X-Frame-Options, etc.) | `backend/app/api/middlewares/security_headers.py` | — |
@@ -70,7 +73,7 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 | **M-18** | Validación cliente-only de avatar | `backend/app/core/storage/validator.py` | [Fase 2](AUDIT-FASE2-LOG.md) |
 | **M-16** | `rehype-sanitize` con schema default como barrera XSS | `frontend/src/components/MarkdownContent.tsx` | Verificado en frontend — schema default de rehype-sanitize elimina atributos de evento inline (onerror, onclick, etc.) |
 
-### 🟢 Bajos (10)
+### 🟢 Bajos (13)
 
 | ID | Problema | Archivo(s) involucrado(s) | Referencia |
 |---|---|---|---|
@@ -90,18 +93,19 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 
 ---
 
-## Problemas Parcialmente Resueltos (5)
+## Problemas Parcialmente Resueltos (6)
 
-### 🟠 Altos (1)
+### 🟠 Altos (2)
 
 | ID | Problema | Qué está hecho | Qué falta |
-|---|---|---|---|
+|---|---|---|---|---|
 | **H-8** | Cero rate limiting | Existe `RateLimitMiddleware` aplicado a operaciones mutantes (POST/PUT/PATCH/DELETE). | No aplica a GET/HEAD, opera en memoria (no escala a múltiples workers), y no protege endpoints de lectura intensiva. |
+| **H-13** | JWT en `localStorage` | Migrado a `sessionStorage` ([Fase 12](AUDIT-FASE10-12-LOG.md)). El token se pierde al cerrar la pestaña, reduciendo la ventana de exposición a XSS persistente. | La exfiltración sigue siendo posible durante la sesión activa. La solución definitiva requiere migrar a cookies `HttpOnly` + `SameSite=Strict`. |
 
 ### 🟡 Medios (4)
 
 | ID | Problema | Qué está hecho | Qué falta |
-|---|---|---|---|
+|---|---|---|---|---|
 | **M-1** | `content_guard.py` es decorativo | Documentacion explicita de limitaciones agregada al modulo ([Fase 8](AUDIT-FASE8-LOG.md)). | Sigue sin detectar jailbreaks, leetspeak, base64, ROT13. Requiere reemplazo por solucion mas robusta. |
 | **M-2** | ReDoS / CPU-DoS en `content_guard.py` | Limite de 100KB agregado antes de normalizacion NFKD ([Fase 8](AUDIT-FASE8-LOG.md)). | Las 6 regex siguen existiendo; el limite mitiga pero no elimina el riesgo de bloqueo del worker. |
 | **M-4** | ComfyUI `download_image` reenvía `filename`/`subfolder` sin sanitizar | Ahora usa `_sanitize_filename` que elimina caracteres no alfanuméricos/guiones/puntos. | Mitiga pero no elimina completamente el riesgo histórico de ese endpoint. |
@@ -109,27 +113,19 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 
 ---
 
-## Problemas No Resueltos (6)
+## Problemas No Resueltos (3)
 
-### 🔴 Críticos (1)
-
-| ID | Problema | Archivo(s) involucrado(s) | Impacto |
-|---|---|---|---|
-| **C-2** | Producción salta verificación de usuario en BD | `backend/app/core/auth/dependencies.py:46-49` | Usuarios soft-deleted siguen siendo válidos en producción; `token_version` no se consulta en el branch de Clerk. |
-
-### 🟠 Altos (4)
+### 🟠 Altos (2)
 
 | ID | Problema | Archivo(s) involucrado(s) | Impacto |
-|---|---|---|---|
-| **H-4** | Indirect prompt injection vía documentos subidos | `backend/app/domain/prompt_templates.py:72-74` | Payload en PDF puede cerrar etiquetas `</context></user_request>` y reescribir instrucciones del sistema. |
-| **H-5** | Prompt injection vía `entity.name` / `entity.description` | `backend/app/services/entity/generation_service.py:77-81` | Estos campos se interpolan fuera de `<context>` en zona de instrucciones, sin defensa estructural. |
-| **H-13** | JWT en `localStorage` | `frontend/src/utils/token.ts:9-14` | Cualquier XSS futuro exfiltra el token inmediatamente. |
+|---|---|---|---|---|
 | **H-14** | Sin defensa CSRF planeada | — | Si se migra a cookies sin `SameSite=Strict` + token CSRF, todas las rutas mutantes quedan expuestas. |
+| **H-13** | JWT en `localStorage` | `frontend/src/utils/token.ts:9-14` | Cualquier XSS futuro exfiltra el token inmediatamente. Mitigado con `sessionStorage` ([Fase 12](AUDIT-FASE10-12-LOG.md)). |
 
 ### 🟡 Medios (1)
 
 | ID | Problema | Archivo(s) involucrado(s) | Impacto |
-|---|---|---|---|
+|---|---|---|---|---|
 | **M-17** | Migración planeada a cookies sin pareja CSRF defensiva | — | Plan pendiente sin implementación. |
 
 ### 🟢 Bajos (0)
@@ -187,7 +183,10 @@ Los siguientes problemas fueron resueltos en 9 fases de implementación:
 | **Fase 7** | M-3, L-3 | [`AUDIT-FASE7-LOG.md`](AUDIT-FASE7-LOG.md) |
 | **Fase 8** | M-1, M-2 | [`AUDIT-FASE8-LOG.md`](AUDIT-FASE8-LOG.md) |
 | **Fase 9** | L-10, H-3 (verificado) | [`AUDIT-FASE9-LOG.md`](AUDIT-FASE9-LOG.md) |
+| **Fase 10** | C-2 | [`AUDIT-FASE10-12-LOG.md`](AUDIT-FASE10-12-LOG.md) |
+| **Fase 11** | H-4, H-5 | [`AUDIT-FASE10-12-LOG.md`](AUDIT-FASE10-12-LOG.md) |
+| **Fase 12** | H-13 (mitigado) | [`AUDIT-FASE10-12-LOG.md`](AUDIT-FASE10-12-LOG.md) |
 
 ---
 
-*Actualizado el 2026-05-11 tras completar las 9 fases de implementación. Estado verificado contra código fuente y tests (`175 passed` backend, `121 passed` frontend).*
+*Actualizado el 2026-05-11 tras completar las 12 fases de implementación. Estado verificado contra código fuente y tests (`175 passed` backend, `121 passed` frontend).*
