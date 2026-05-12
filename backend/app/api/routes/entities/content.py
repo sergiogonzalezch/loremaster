@@ -19,7 +19,6 @@ from app.core.exceptions import (
 from app.database import get_session
 from app.models.db.entity import Entity
 from app.models.schemas.entity import EntityResponse
-from app.models.db.entity_content import EntityContent
 from app.models.schemas.entity_content import (
     EntityContentResponse,
     GenerateContentRequest,

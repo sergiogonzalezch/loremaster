@@ -5,9 +5,7 @@ from sqlmodel import Session
 
 from app.core.api.params import DateRangeParams, PaginationParams
 from app.core.database.dependencies import (
-    get_collection_or_404,
     get_collection_or_404_owned,
-    get_entity_or_404,
     get_entity_or_404_owned,
 )
 from app.core.auth.dependencies import get_current_user

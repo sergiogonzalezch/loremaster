@@ -6,7 +6,6 @@ from datetime import datetime
 from typing import Literal, Optional
 
 from fastapi import UploadFile
-from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.core.exceptions import (
