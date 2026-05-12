@@ -63,11 +63,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         auth_header = request.headers.get("Authorization")
-
+        token = None
         if auth_header and auth_header.startswith("Bearer "):
             token = auth_header[7:]
-            user_id = self._extract_user_from_token(token)
         else:
+            token = request.cookies.get(settings.cookie_access_name)
+
+        user_id = self._extract_user_from_token(token) if token else None
+        if not user_id:
             user_id = request.client.host if request.client else "anonymous"
 
         if user_id and not self._check_rate_limit(user_id):

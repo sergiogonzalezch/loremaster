@@ -13,21 +13,24 @@ NOTA DE SEGURIDAD: Para producción, considerar:
 import logging
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
+from sqlmodel import Session, select
 
 from app.core.config import settings
+from app.database import get_session
+from app.models.db.image_generation import ImageRecord
 
 router = APIRouter(prefix="", tags=["media"])
 logger = logging.getLogger(__name__)
 
 
 @router.get("/media/{path:path}")
-def serve_media(path: str):
+def serve_media(path: str, session: Session = Depends(get_session)):
     """Sirve archivos multimedia (imágenes, avatares).
 
-    Valida que el path no intente path traversal (..) y que
-    el archivo exista dentro del directorio de medios.
+    Valida path traversal y verifica is_shared en BD para imágenes generadas.
+    Los avatares de perfil (users/*/img/profile/*) son siempre públicos.
     """
     # Prevenir path traversal
     if ".." in path or path.startswith("/") or path.startswith("\\"):
@@ -40,6 +43,24 @@ def serve_media(path: str):
     if not file_path.is_relative_to(media_root_resolved):
         logger.warning(f"Path traversal attempt: {path}")
         raise HTTPException(status_code=403, detail="Acceso denegado.")
+
+    # Clasificar el tipo de recurso por su ruta: users/{u}/img/{tipo}/...
+    parts = Path(path).parts
+    is_generation = len(parts) >= 4 and parts[2] == "img" and parts[3] == "generation"
+    is_profile = len(parts) >= 4 and parts[2] == "img" and parts[3] == "profile"
+
+    if is_generation:
+        record = session.exec(
+            select(ImageRecord).where(
+                ImageRecord.storage_path == path,
+                ImageRecord.is_shared.is_(True),
+                ImageRecord.is_deleted.is_(False),
+            )
+        ).first()
+        if not record:
+            raise HTTPException(status_code=404, detail="Archivo no encontrado.")
+    elif not is_profile:
+        raise HTTPException(status_code=404, detail="Archivo no encontrado.")
 
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="Archivo no encontrado.")

@@ -40,8 +40,8 @@ logger = logging.getLogger(__name__)
 if settings.environment == "local":
     logger.warning(
         "WARNING: Ejecutando en entorno 'local'. "
-        "Algunas guardas de seguridad estan relajadas. "
-        "No usar en produccion (M-12)."
+        "Guardas de seguridad relajadas (CSP, HTTPS, validaciones estrictas). "
+        "Para produccion: definir ENVIRONMENT=production en .env (M-12)."
     )
 
 

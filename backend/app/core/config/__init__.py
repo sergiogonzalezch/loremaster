@@ -111,7 +111,7 @@ class Settings(BaseSettings):
     max_pdf_pages: int = 100  # H-7: Prevención de PDF bombs
 
     # Auth (JWT)
-    secret_key: str = "your-secret-key"  # C-7: Validar min_length=32 en prod
+    secret_key: str  # C-7: Requerida. Generar con: python -c "import secrets; print(secrets.token_hex(32))"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
 
@@ -136,8 +136,7 @@ class Settings(BaseSettings):
 
         Verifica que:
         - CORS no use '*' cuando allow_credentials=True.
-        - SECRET_KEY no sea el valor por defecto en producción (C-7).
-        - SECRET_KEY tenga al menos 32 caracteres en no-local.
+        - SECRET_KEY tenga al menos 32 caracteres en entornos no locales (C-7).
         - ALLOWED_ORIGINS use HTTPS en producción.
         - ENVIRONMENT sea un valor válido.
         """
@@ -145,11 +144,6 @@ class Settings(BaseSettings):
             raise ValueError(
                 "ALLOWED_ORIGINS no puede contener '*' cuando allow_credentials=True. "
                 "Especifica los orígenes concretos en .env"
-            )
-        if self.secret_key == "your-secret-key" and self.environment != "local":
-            raise ValueError(
-                "SECRET_KEY no puede ser el valor por defecto en entornos no locales. "
-                "Define SECRET_KEY en .env"
             )
         if self.environment != "local" and len(self.secret_key) < 32:
             raise ValueError(

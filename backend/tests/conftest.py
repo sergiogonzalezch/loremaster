@@ -4,6 +4,7 @@ import sys
 from collections.abc import Generator
 
 os.environ.setdefault("ENVIRONMENT", "test")
+os.environ.setdefault("SECRET_KEY", "test-secret-key-for-testing-only-not-for-prod")
 
 import pytest
 from typing import AsyncGenerator

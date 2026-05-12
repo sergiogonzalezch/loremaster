@@ -9,6 +9,7 @@ Headers agregados:
     - Referrer-Policy: strict-origin-when-cross-origin
     - Permissions-Policy: restricciones de geolocalización, micrófono, cámara
     - Strict-Transport-Security: HSTS (solo en HTTPS)
+    - Content-Security-Policy: diferenciado por protocolo (H-9)
 """
 
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -47,5 +48,31 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             response.headers["Strict-Transport-Security"] = (
                 "max-age=31536000; includeSubDomains"
             )
+            csp = (
+                "default-src 'self'; "
+                "script-src 'self'; "
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                "font-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; "
+                "img-src 'self' data: blob:; "
+                "connect-src 'self'; "
+                "frame-ancestors 'none'; "
+                "base-uri 'self'; "
+                "form-action 'self'; "
+                "object-src 'none';"
+            )
+        else:
+            csp = (
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline'; "
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                "font-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; "
+                "img-src 'self' data: blob: http:; "
+                "connect-src 'self' http://localhost:* ws://localhost:*; "
+                "frame-ancestors 'none'; "
+                "base-uri 'self'; "
+                "form-action 'self'; "
+                "object-src 'none';"
+            )
+        response.headers["Content-Security-Policy"] = csp
 
         return response

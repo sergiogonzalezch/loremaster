@@ -79,7 +79,9 @@ async def ingest_document_service(
         raise MissingFilenameError()
 
     logger.info(
-        "Ingesting document '%s' into collection %s", data.filename, collection_id
+        "Ingesting document '%s' into collection %s",
+        _sanitize_for_log(data.filename),
+        collection_id,
     )
     loop = asyncio.get_running_loop()
     try:
@@ -112,7 +114,7 @@ async def ingest_document_service(
             logger.warning(
                 "Duplicate document detected in collection %s: '%s' (existing: %s)",
                 collection_id,
-                data.filename,
+                _sanitize_for_log(data.filename),
                 existing.id,
             )
             from app.core.exceptions import DuplicateDocumentError
@@ -129,7 +131,7 @@ async def ingest_document_service(
         raw_text=extracted_text,
     )
     session.add(document)
-    db_commit(session, f"ingest_document({data.filename})")
+    db_commit(session, f"ingest_document({_sanitize_for_log(data.filename)})")
     session.refresh(document)
     return document, extracted_text
 
@@ -155,7 +157,7 @@ def process_ingest_background(session: Session, document: Document, text: str) -
         document.chunk_count = chunk_count
         document.processing_error = None
     except Exception as e:
-        logger.error("Background ingest failed for '%s': %s", document.filename, e)
+        logger.error("Background ingest failed for '%s': %s", _sanitize_for_log(document.filename), e)
         document.status = DocumentStatus.failed
         document.processing_error = str(e)
     session.add(document)
