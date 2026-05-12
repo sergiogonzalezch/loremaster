@@ -4,9 +4,9 @@
 
 import { apiFetch } from "./apiClient";
 
-interface TokenResponse {
-  access_token: string;
-  token_type: string;
+interface AuthSuccessResponse {
+  message: string;
+  username: string;
 }
 
 interface LoginCredentials {
@@ -20,19 +20,19 @@ interface RegisterCredentials {
   password: string;
 }
 
-/** Inicia sesión y retorna el token JWT. */
-export function login(credentials: LoginCredentials): Promise<TokenResponse> {
-  return apiFetch<TokenResponse>("/auth/login", {
+/** Inicia sesión y setea cookies de autenticación (HttpOnly + CSRF). */
+export function login(credentials: LoginCredentials): Promise<AuthSuccessResponse> {
+  return apiFetch<AuthSuccessResponse>("/auth/login", {
     method: "POST",
     body: JSON.stringify(credentials),
   });
 }
 
-/** Registra un nuevo usuario y retorna el token JWT. */
+/** Registra un nuevo usuario y setea cookies de autenticación. */
 export function register(
   credentials: RegisterCredentials,
-): Promise<TokenResponse> {
-  return apiFetch<TokenResponse>("/auth/register", {
+): Promise<AuthSuccessResponse> {
+  return apiFetch<AuthSuccessResponse>("/auth/register", {
     method: "POST",
     body: JSON.stringify(credentials),
   });

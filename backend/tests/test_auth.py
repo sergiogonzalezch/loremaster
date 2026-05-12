@@ -4,7 +4,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlmodel import Session, select
 from app.core.auth import create_access_token, hash_password
 from app.database import get_session
-from app.main import app
+from app.main import app, _csrf_for_unsafe
 from app.models.db.user import User
 
 
@@ -21,8 +21,7 @@ async def test_register_with_email(client, db_session):
     )
     assert response.status_code == 200
     data = response.json()
-    assert "access_token" in data
-    assert data["token_type"] == "bearer"
+    assert data["username"] == "newuser"
 
     user = db_session.exec(select(User).where(User.username == "newuser")).first()
     assert user is not None
@@ -90,7 +89,7 @@ async def test_login_with_username(client, db_session):
         json={"username_or_email": "testuser2", "password": "password123"},
     )
     assert response.status_code == 200
-    assert "access_token" in response.json()
+    assert response.json()["username"] == "testuser2"
 
 
 @pytest.mark.anyio
@@ -109,7 +108,7 @@ async def test_login_with_email(client, db_session):
         json={"username_or_email": "test3@example.com", "password": "password123"},
     )
     assert response.status_code == 200
-    assert "access_token" in response.json()
+    assert response.json()["username"] == "testuser3"
 
 
 @pytest.mark.anyio
@@ -195,6 +194,7 @@ async def auth_client(db_session: Session) -> AsyncGenerator[AsyncClient, None]:
         yield db_session
 
     app.dependency_overrides[get_session] = _get_test_session
+    app.dependency_overrides[_csrf_for_unsafe] = lambda: None
 
     async with AsyncClient(
         transport=ASGITransport(app=app),
@@ -212,8 +212,8 @@ async def auth_client(db_session: Session) -> AsyncGenerator[AsyncClient, None]:
 
 @pytest.mark.anyio
 async def test_logout_invalidates_token(auth_client, db_session):
-    """AUTH-11: POST /auth/logout incrementa token_version; el token previo retorna 401."""
-    # Register
+    """AUTH-11: POST /auth/logout incrementa token_version; la cookie previa retorna 401."""
+    # Register — setea cookies de autenticación
     reg = await auth_client.post(
         "/api/v1/auth/register",
         json={
@@ -223,27 +223,17 @@ async def test_logout_invalidates_token(auth_client, db_session):
         },
     )
     assert reg.status_code == 200
-    token = reg.json()["access_token"]
 
-    # Protected endpoint with valid token → 200
-    me = await auth_client.get(
-        "/api/v1/users/me",
-        headers={"Authorization": f"Bearer {token}"},
-    )
+    # Protected endpoint con cookie → 200
+    me = await auth_client.get("/api/v1/users/me")
     assert me.status_code == 200
 
-    # Logout
-    lo = await auth_client.post(
-        "/api/v1/auth/logout",
-        headers={"Authorization": f"Bearer {token}"},
-    )
+    # Logout — borra cookies e invalida token_version
+    lo = await auth_client.post("/api/v1/auth/logout")
     assert lo.status_code == 204
 
-    # Same token now rejected
-    me_after = await auth_client.get(
-        "/api/v1/users/me",
-        headers={"Authorization": f"Bearer {token}"},
-    )
+    # Misma cookie ahora rechazada (token_version cambió)
+    me_after = await auth_client.get("/api/v1/users/me")
     assert me_after.status_code == 401
 
 
@@ -270,8 +260,8 @@ async def test_token_version_mismatch_returns_401(auth_client, db_session):
         }
     )
 
-    response = await auth_client.get(
-        "/api/v1/users/me",
-        headers={"Authorization": f"Bearer {stale_token}"},
-    )
+    # Setear cookie con token stale
+    auth_client.cookies.set("access_token", stale_token)
+
+    response = await auth_client.get("/api/v1/users/me")
     assert response.status_code == 401

@@ -1,32 +1,31 @@
 /**
- * Gestión del token JWT en sessionStorage.
+ * DEPRECADO — Ya no se usa para autenticación.
  *
- * NOTA DE SEGURIDAD (H-13):
- * sessionStorage mitiga la exposición persistente a XSS (el token se pierde al
- * cerrar la pestaña), pero NO elimina el riesgo de exfiltración durante la sesión.
- * La solución definitiva es migrar a cookies HttpOnly + SameSite=Strict,
- * lo cual requiere cambios en backend (setear cookie) y frontend (quitar
- * manejo manual de Authorization header).
+ * El token JWT ahora se transporta via cookie HttpOnly (H-13, H-14, M-17).
+ * Este módulo se mantiene temporalmente por compatibilidad con código
+ * legacy, pero no debe usarse en nuevo código.
+ *
+ * TODO: Eliminar tras verificar que ningún otro módulo lo importa.
  */
 
 const TOKEN_KEY = "lm_auth_token";
 
-/** Obtiene el token JWT almacenado, o null si no existe. */
+/** @deprecated El token ya no se almacena en sessionStorage. */
 export function getToken(): string | null {
   return sessionStorage.getItem(TOKEN_KEY);
 }
 
-/** Almacena un token JWT en sessionStorage. */
+/** @deprecated El backend setea la cookie HttpOnly directamente. */
 export function setToken(token: string): void {
   sessionStorage.setItem(TOKEN_KEY, token);
 }
 
-/** Elimina el token JWT de sessionStorage. */
+/** @deprecated El backend borra la cookie en logout. */
 export function removeToken(): void {
   sessionStorage.removeItem(TOKEN_KEY);
 }
 
-/** Verifica si existe un token JWT almacenado. */
+/** @deprecated Usar el estado del AuthContext en su lugar. */
 export function isAuthenticated(): boolean {
   return getToken() !== null;
 }

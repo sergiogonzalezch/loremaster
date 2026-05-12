@@ -45,7 +45,7 @@ if "app.engine.rag" not in sys.modules:
 
 from app.core.auth.dependencies import get_current_user
 from app.database import get_session
-from app.main import app
+from app.main import app, _csrf_for_unsafe
 from app.models.db.collection import Collection
 from app.models.db.document import Document, DocumentStatus
 from app.models.db.entity import Entity, EntityType
@@ -94,6 +94,7 @@ async def client(db_session: Session) -> AsyncGenerator[AsyncClient, None]:
 
     app.dependency_overrides[get_session] = _get_test_session
     app.dependency_overrides[get_current_user] = _stub_user
+    app.dependency_overrides[_csrf_for_unsafe] = lambda: None
 
     async with AsyncClient(
         transport=ASGITransport(app=app),

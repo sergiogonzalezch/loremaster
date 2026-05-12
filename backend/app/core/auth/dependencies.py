@@ -7,8 +7,7 @@ Provee funciones de dependencia para proteger endpoints:
 
 import hmac
 
-from fastapi import Depends, HTTPException
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Depends, HTTPException, Request
 from sqlmodel import Session
 
 from app.core.config import settings
@@ -16,39 +15,38 @@ from app.core.auth import verify_token
 from app.database import get_session
 from app.models.db.user import User
 
-security = HTTPBearer(auto_error=False)
-
 
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    request: Request,
     session: Session = Depends(get_session),
 ) -> dict:
-    """Obtiene el usuario autenticado desde el token JWT.
+    """Obtiene el usuario autenticado desde la cookie HttpOnly.
 
-    En entornos locales, verifica el token JWT firmado con SECRET_KEY,
-    valida que el usuario exista y no esté eliminado, y comprueba
-    la versión del token (token_version) para invalidación.
+    Lee el JWT de la cookie 'access_token' en lugar del header Authorization.
+    Valida firma, existencia de usuario, soft-delete y token_version.
 
     En producción (environment="production"), delega la verificación
-    a Clerk (C-1).
+    a Clerk (C-1) pero sigue leyendo de la cookie local.
 
     Args:
-        credentials: Credenciales del header Authorization: Bearer.
+        request: Objeto Request para acceder a cookies.
         session: Sesión de base de datos.
 
     Returns:
         Payload del JWT con sub (user_id), username, version, etc.
 
     Raises:
-        HTTPException 401: Si no hay token, es inválido, el usuario fue eliminado
+        HTTPException 401: Si no hay cookie, es inválido, el usuario fue eliminado
             o la versión del token no coincide (token revocado).
     """
-    if not credentials:
+    token = request.cookies.get(settings.cookie_access_name)
+    if not token:
         raise HTTPException(status_code=401, detail="No autorizado")
+
     if settings.environment == "production":
         from app.api.routes.auth.auth_clerk import decode_clerk_token
 
-        payload = decode_clerk_token(credentials.credentials)
+        payload = decode_clerk_token(token)
         user = session.get(User, payload.get("sub"))
         if not user or user.is_deleted:
             raise HTTPException(status_code=401, detail="No autorizado")
@@ -60,7 +58,7 @@ def get_current_user(
                 raise HTTPException(status_code=401, detail="Sesión inválida")
         return payload
 
-    payload = verify_token(credentials.credentials)
+    payload = verify_token(token)
 
     user = session.get(User, payload["sub"])
     if not user or user.is_deleted:

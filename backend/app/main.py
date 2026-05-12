@@ -7,7 +7,7 @@ servicio de archivos estáticos e incluye todos los routers de la API.
 import logging
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.core.logging import configure_logging
 from app.core.lifespan import lifespan
+from app.core.auth.csrf import validate_csrf
 from app.api.routes import (
     admin_router,
     auth_clerk_router,
@@ -43,11 +44,25 @@ if settings.environment == "local":
         "No usar en produccion (M-12)."
     )
 
+
+def _csrf_for_unsafe(request: Request) -> None:
+    """Valida CSRF solo para métodos mutantes (POST, PUT, PATCH, DELETE).
+
+    Exime los endpoints de autenticación (/api/v1/auth/*) porque
+    el usuario aún no tiene sesión activa al hacer login/register.
+    """
+    if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+        if request.url.path.startswith("/api/v1/auth/"):
+            return
+        validate_csrf(request)
+
+
 app = FastAPI(
     title=settings.project_name,
     version=settings.api_version,
     description="API for lore management and knowledge base",
     lifespan=lifespan,
+    dependencies=[Depends(_csrf_for_unsafe)],
     docs_url=None if settings.environment == "production" else "/docs",
     redoc_url=None if settings.environment == "production" else "/redoc",
     openapi_url=None if settings.environment == "production" else "/openapi.json",
@@ -85,7 +100,7 @@ app.add_middleware(
     allow_origins=settings.allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
+    allow_headers=["Content-Type", "Authorization", "X-CSRF-Token"],
 )
 
 app.add_middleware(

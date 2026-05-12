@@ -5,10 +5,15 @@
  * y redirección automática al login en caso de 401.
  */
 
-import { getToken, removeToken } from "../utils/token";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
 
-const BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
+/** Lee el token CSRF de las cookies del navegador. */
+function getCsrfToken(): string | null {
+  const match = document.cookie.match(
+    new RegExp("(^| )" + "csrf_token" + "=([^;]+)"),
+  );
+  return match ? decodeURIComponent(match[2]) : null;
+}
 
 const HTTP_STATUS_MESSAGES: Partial<Record<number, string>> = {
   400: "La solicitud contiene datos inválidos.",
@@ -46,10 +51,11 @@ export class ApiAbortError extends Error {
 /**
  * Ejecuta una petición fetch contra la API del backend.
  *
- * Agrega automáticamente el header Authorization con el token JWT
- * y el Content-Type cuando el body no es FormData.
+ * El token JWT se transporta automaticamente via cookie HttpOnly.
+ * Para mutaciones (POST/PUT/PATCH/DELETE) agrega el header X-CSRF-Token.
+ * Usa credentials="include" para enviar cookies cross-origin.
  *
- * En respuesta 401 elimina el token y redirige al login.
+ * En respuesta 401 redirige al login.
  * En respuestas de error extrae el mensaje del body o usa uno por código HTTP.
  *
  * @param endpoint - Ruta relativa de la API (ej: `/collections/`)
@@ -68,14 +74,23 @@ export async function apiFetch<T>(
   if (!(options.body instanceof FormData)) {
     headers["Content-Type"] = "application/json";
   }
-  const token = getToken();
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+
+  // CSRF token para mutaciones (POST/PUT/PATCH/DELETE)
+  const method = options.method?.toUpperCase() ?? "GET";
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+    const csrf = getCsrfToken();
+    if (csrf) {
+      headers["X-CSRF-Token"] = csrf;
+    }
   }
 
   let response: Response;
   try {
-    response = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers });
+    response = await fetch(`${BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+      credentials: "include",
+    });
   } catch (err) {
     if (err instanceof DOMException && err.name === "AbortError") {
       throw new ApiAbortError();
@@ -84,7 +99,6 @@ export async function apiFetch<T>(
   }
 
   if (response.status === 401) {
-    removeToken();
     const isAlreadyOnLogin = window.location.pathname === "/login";
     if (!isAlreadyOnLogin) {
       // 401 fuera de /login = sesión expirada o token inválido
@@ -92,7 +106,6 @@ export async function apiFetch<T>(
       throw new ApiError(401, "Sesión expirada. Inicia sesión de nuevo.");
     }
     // 401 en /login = credenciales incorrectas (login fallido)
-    // Mostrar mensaje del backend o fallback descriptivo
     let message = "Usuario o contraseña incorrectos.";
     try {
       const body = await response.json();

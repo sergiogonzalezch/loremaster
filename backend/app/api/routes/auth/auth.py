@@ -6,12 +6,14 @@ de tokens via token_version.
 """
 
 import re
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from sqlmodel import Session, select
 
 from app.core.auth import create_access_token, hash_password, verify_password
+from app.core.auth.csrf import generate_csrf_token
 from app.core.auth.dependencies import get_current_user
+from app.core.config import settings
 from app.database import get_session
 from app.models.db.user import User
 
@@ -73,31 +75,84 @@ class RegisterRequest(BaseModel):
         return v
 
 
-class TokenResponse(BaseModel):
-    """Respuesta con token JWT de acceso.
+class AuthSuccessResponse(BaseModel):
+    """Respuesta de autenticación exitosa.
+
+    El token JWT se transporta via cookie HttpOnly (H-13).
+    No se incluye en el body de la respuesta.
 
     Attributes:
-        access_token: Token JWT firmado.
-        token_type: Tipo de token (siempre "bearer").
+        message: Mensaje de éxito.
+        username: Nombre de usuario autenticado.
     """
 
-    access_token: str
-    token_type: str = "bearer"
+    message: str = "Autenticación exitosa"
+    username: str
 
 
-@router.post("/login", response_model=TokenResponse)
-def login(request: LoginRequest, session: Session = Depends(get_session)):
+def _set_auth_cookies(response: Response, token: str) -> None:
+    """Setea las cookies de autenticación (access_token + csrf_token).
+
+    Args:
+        response: Objeto Response de FastAPI.
+        token: JWT firmado a almacenar en cookie HttpOnly.
+    """
+    csrf = generate_csrf_token()
+    response.set_cookie(
+        key=settings.cookie_access_name,
+        value=token,
+        httponly=True,
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
+        path=settings.cookie_path,
+        domain=settings.cookie_domain,
+    )
+    response.set_cookie(
+        key=settings.cookie_csrf_name,
+        value=csrf,
+        secure=settings.cookie_secure,
+        samesite=settings.cookie_samesite,
+        path=settings.cookie_path,
+        domain=settings.cookie_domain,
+    )
+
+
+def _clear_auth_cookies(response: Response) -> None:
+    """Borra las cookies de autenticación.
+
+    Args:
+        response: Objeto Response de FastAPI.
+    """
+    response.delete_cookie(
+        key=settings.cookie_access_name,
+        path=settings.cookie_path,
+        domain=settings.cookie_domain,
+    )
+    response.delete_cookie(
+        key=settings.cookie_csrf_name,
+        path=settings.cookie_path,
+        domain=settings.cookie_domain,
+    )
+
+
+@router.post("/login", response_model=AuthSuccessResponse)
+def login(
+    request: LoginRequest,
+    response: Response,
+    session: Session = Depends(get_session),
+):
     """Autentica un usuario con username/email y contraseña.
 
     Busca el usuario por username o email, verifica la contraseña
-    con bcrypt, y genera un token JWT.
+    con bcrypt, y setea cookies de autenticación (HttpOnly + CSRF).
 
     Args:
         request: Credenciales de login.
+        response: Objeto Response para setear cookies.
         session: Sesión de base de datos.
 
     Returns:
-        TokenResponse con el JWT de acceso.
+        AuthSuccessResponse con mensaje y username.
 
     Raises:
         HTTPException 401: Si las credenciales son incorrectas.
@@ -130,21 +185,27 @@ def login(request: LoginRequest, session: Session = Depends(get_session)):
             "version": user.token_version,
         }
     )
-    return {"access_token": token}
+    _set_auth_cookies(response, token)
+    return {"username": user.username}
 
 
-@router.post("/register", response_model=TokenResponse)
-def register(request: RegisterRequest, session: Session = Depends(get_session)):
-    """Registra un nuevo usuario y devuelve un token JWT.
+@router.post("/register", response_model=AuthSuccessResponse)
+def register(
+    request: RegisterRequest,
+    response: Response,
+    session: Session = Depends(get_session),
+):
+    """Registra un nuevo usuario y setea cookies de autenticación.
 
     Valida que el username y email no estén en uso por usuarios activos.
 
     Args:
         request: Datos de registro validados.
+        response: Objeto Response para setear cookies.
         session: Sesión de base de datos.
 
     Returns:
-        TokenResponse con el JWT de acceso.
+        AuthSuccessResponse con mensaje y username.
 
     Raises:
         HTTPException 400: Si el username o email ya existen.
@@ -183,21 +244,24 @@ def register(request: RegisterRequest, session: Session = Depends(get_session)):
             "version": new_user.token_version,
         }
     )
-    return {"access_token": token}
+    _set_auth_cookies(response, token)
+    return {"username": new_user.username}
 
 
 @router.post("/logout", status_code=204)
 def logout(
+    response: Response,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> None:
-    """Invalida el token del usuario incrementando su token_version.
+    """Invalida la sesión del usuario y borra las cookies.
 
-    Requiere autenticación. El usuario no podrá usar tokens previos
-    ya que el token_version en el JWT ya no coincidirá.
+    Incrementa token_version en BD para invalidar tokens previos
+    y borra las cookies de autenticación del navegador.
 
     Args:
-        current_user: Usuario autenticado (del token JWT).
+        response: Objeto Response para borrar cookies.
+        current_user: Usuario autenticado.
         session: Sesión de base de datos.
     """
     user = session.get(User, current_user["sub"])
@@ -205,3 +269,4 @@ def logout(
         user.token_version += 1
         session.add(user)
         session.commit()
+    _clear_auth_cookies(response)

@@ -62,8 +62,8 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      const { access_token } = await login(loginForm);
-      contextLogin(access_token);
+      await login(loginForm);
+      contextLogin();
       navigate("/", { replace: true });
     } catch (err) {
       const { text } = parseApiError(err);
