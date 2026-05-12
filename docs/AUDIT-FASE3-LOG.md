@@ -123,4 +123,6 @@ Los 3 problemas que pasaron de "parcialmente resueltos" a "resueltos" son: **C-6
 
 ---
 
+> **Nota de resolución (2026-05-11):** Los 3 problemas atacados en esta fase fueron verificados como **resueltos** y están reflejados en [`AUDIT-RESULTS-11-05-26.md`](AUDIT-RESULTS-11-05-26.md).
+
 *Documento generado el 2026-05-11 tras la validación exitosa de la Fase 3.*

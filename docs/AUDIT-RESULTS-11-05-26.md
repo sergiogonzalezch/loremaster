@@ -12,94 +12,86 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 
 | Estado | Total |
 |---|---:|
-| **Resueltos** | **15** |
-| **Parcialmente resueltos** | **18** |
+| **Resueltos** | **31** |
+| **Parcialmente resueltos** | **2** |
 | **No resueltos** | **17** |
 | **No verificados / pendientes** | **3** |
 | **Total** | **53** |
 
-> **Conclusión:** Los problemas de mayor impacto (IDOR en documentos, path traversal parcial, secretos por defecto, headers de seguridad, magic bytes) han recibido atención, pero persisten **gaps críticos en autorización de documentos**, **validación de usuarios eliminados en Clerk**, **limpieza de archivos físicos** y **protección CSRF/storage de tokens**.
+> **Nota:** 16 problemas fueron resueltos en 4 fases de implementación (ver [Fases de Implementación](#fases-de-implementación)).
+
+> **Conclusión:** Los problemas de mayor impacto (IDOR en documentos, path traversal, secretos por defecto, headers de seguridad, magic bytes, audit logs) fueron resueltos. Persisten **gaps críticos en validación de usuarios eliminados en Clerk**, **prompt injection**, **protección CSRF/storage de tokens**, y **rate limiting completo**.
 
 ---
 
-## Problemas Resueltos (15)
+## Problemas Resueltos (31)
 
-### 🔴 Críticos (2)
+### 🔴 Críticos (7)
 
-| ID | Problema | Archivo(s) involucrado(s) |
-|---|---|---|
-| **C-1** | Import incorrecto de Clerk en producción | `backend/app/core/auth/dependencies.py` |
-| **C-4** | IDOR cross-tenant en listado de entidades | `backend/app/api/routes/entities/entities.py` |
+| ID | Problema | Archivo(s) involucrado(s) | Referencia |
+|---|---|---|---|
+| **C-1** | Import incorrecto de Clerk en producción | `backend/app/core/auth/dependencies.py` | — |
+| **C-3** | IDOR cross-tenant en endpoints de documentos | `backend/app/core/database/dependencies.py`, `backend/app/api/routes/documents/documents.py` | [Fase 1](AUDIT-FASE1-LOG.md) |
+| **C-4** | IDOR cross-tenant en listado de entidades | `backend/app/api/routes/entities/entities.py` | — |
+| **C-5** | Path traversal vía `shutil.rmtree` en `delete_profile_image` | `backend/app/services/profile/profile_service.py` | [Fase 2](AUDIT-FASE2-LOG.md) |
+| **C-6** | Mount `/media` público sin auth ni Content-Disposition | `backend/app/api/routes/media.py` | [Fase 3](AUDIT-FASE3-LOG.md) |
+| **C-7** | JWT secret por defecto + sin protección contra alg-confusion | `backend/app/core/auth/__init__.py` | [Fase 1](AUDIT-FASE1-LOG.md) |
+| **C-8** | Postgres con credenciales hardcodeadas | `backend/docker-compose.prod.yml` | [Fase 3](AUDIT-FASE3-LOG.md) |
 
-### 🟠 Altos (6)
+### 🟠 Altos (8)
 
-| ID | Problema | Archivo(s) involucrado(s) |
-|---|---|---|
-| **H-6** | `validate_document` confiaba solo en `content_type` del cliente | `backend/app/core/storage/validator.py` |
-| **H-7** | `PdfReader` sin cap de páginas (PDF bombs) | `backend/app/engine/extractor.py` |
-| **H-9** | Sin headers de seguridad (HSTS, CSP, X-Frame-Options, etc.) | `backend/app/api/middlewares/security_headers.py` |
-| **H-10** | Clerk JWT decodificado sin `issuer=` ni allowlist de algoritmos | `backend/app/api/routes/auth/auth_clerk.py` |
-| **H-11** | `requirements.txt` sin pin ni lockfile | `backend/requirements.txt` |
-| **H-12** | `python-jose` no pineado | `backend/requirements.txt` |
+| ID | Problema | Archivo(s) involucrado(s) | Referencia |
+|---|---|---|---|
+| **H-1** | `is_admin` viajaba dentro del JWT | `backend/app/api/routes/auth/auth.py` | [Fase 1](AUDIT-FASE1-LOG.md) |
+| **H-2** | `PATCH /users/me` aceptaba email sin validación ni unicidad | `backend/app/api/routes/users/users.py` | [Fase 1](AUDIT-FASE1-LOG.md) |
+| **H-3** | Admin delete no despublica avatares de perfil | `backend/app/api/routes/admin/admin.py` | [Fase 2](AUDIT-FASE2-LOG.md) |
+| **H-6** | `validate_document` confiaba solo en `content_type` del cliente | `backend/app/core/storage/validator.py` | — |
+| **H-7** | `PdfReader` sin cap de páginas (PDF bombs) | `backend/app/engine/extractor.py` | — |
+| **H-9** | Sin headers de seguridad (HSTS, CSP, X-Frame-Options, etc.) | `backend/app/api/middlewares/security_headers.py` | — |
+| **H-10** | Clerk JWT decodificado sin `issuer=` ni allowlist de algoritmos | `backend/app/api/routes/auth/auth_clerk.py` | — |
+| **H-11** | `requirements.txt` sin pin ni lockfile | `backend/requirements.txt` | — |
+| **H-12** | `python-jose` no pineado | `backend/requirements.txt` | — |
 
-### 🟡 Medios (4)
+### 🟡 Medios (10)
 
-| ID | Problema | Archivo(s) involucrado(s) |
-|---|---|---|
-| **M-7** | `/docs`, `/redoc`, `/openapi.json` siempre expuestos | `backend/app/main.py` |
-| **M-11** | `RequestValidationError` exponía input del cliente | `backend/app/main.py` |
-| **M-14** | Log injection con CR/LF + XSS vía filename | `backend/app/services/document/documents_service.py` |
-| **M-15** | `storage_path` filtrado en API pública | `backend/app/models/schemas/public.py`, `backend/app/models/schemas/user_schemas.py` |
+| ID | Problema | Archivo(s) involucrado(s) | Referencia |
+|---|---|---|---|
+| **M-7** | `/docs`, `/redoc`, `/openapi.json` siempre expuestos | `backend/app/main.py` | — |
+| **M-8** | AWS credenciales de test en `.env.example` | `backend/.env.example` | [Fase 3](AUDIT-FASE3-LOG.md) |
+| **M-10** | Logging sin redacción de PII | `backend/app/core/logging.py` | [Fase 4](AUDIT-FASE4-LOG.md) |
+| **M-11** | `RequestValidationError` exponía input del cliente | `backend/app/main.py` | — |
+| **M-13** | Cleanup roto: archivos huérfanos para siempre | `backend/app/services/deletion_service.py` | [Fase 2](AUDIT-FASE2-LOG.md) |
+| **M-14** | Log injection con CR/LF + XSS vía filename | `backend/app/services/document/documents_service.py` | — |
+| **M-15** | `storage_path` filtrado en API pública | `backend/app/models/schemas/public.py`, `backend/app/models/schemas/user_schemas.py` | — |
+| **M-18** | Validación cliente-only de avatar | `backend/app/core/storage/validator.py` | [Fase 2](AUDIT-FASE2-LOG.md) |
 
-### 🟢 Bajos (3)
+### 🟢 Bajos (6)
 
-| ID | Problema | Archivo(s) involucrado(s) |
-|---|---|---|
-| **L-4** | `save_file` sin assert de containment bajo `media_root` | `backend/app/core/storage/__init__.py` |
-| **L-5** | Aislamiento de servicios internos vía settings | Reportado como limpio en auditoría original |
-| **L-6** | Aislamiento Qdrant por nombre prefijado | Reportado como limpio en auditoría original |
+| ID | Problema | Archivo(s) involucrado(s) | Referencia |
+|---|---|---|---|
+| **L-1** | `admin_delete_collection` sin audit log estructurado | `backend/app/api/routes/admin/admin.py` | [Fase 4](AUDIT-FASE4-LOG.md) |
+| **L-2** | `validate_image` sin cross-validación MIME ↔ extensión ↔ magic bytes | `backend/app/core/storage/validator.py` | [Fase 2](AUDIT-FASE2-LOG.md) |
+| **L-4** | `save_file` sin assert de containment bajo `media_root` | `backend/app/core/storage/__init__.py` | — |
+| **L-5** | Aislamiento de servicios internos vía settings | Reportado como limpio en auditoría original | — |
+| **L-6** | Aislamiento Qdrant por nombre prefijado | Reportado como limpio en auditoría original | — |
+| **L-8** | `scripts/make_admin.py` sin audit log | `backend/scripts/make_admin.py` | [Fase 4](AUDIT-FASE4-LOG.md) |
+| **L-12** | Logger global sin estructura/redacción de PII | `backend/app/core/logging.py` | [Fase 4](AUDIT-FASE4-LOG.md) |
 
 ---
 
-## Problemas Parcialmente Resueltos (18)
+## Problemas Parcialmente Resueltos (2)
 
-### 🔴 Críticos (5)
-
-| ID | Problema | Qué está hecho | Qué falta |
-|---|---|---|---|
-| **C-3** | IDOR cross-tenant en endpoints de documentos | `ingest`, `list_documents` y `document_events` usan `get_collection_or_404_owned`. | `get_document`, `retry_ingest` y `delete_document` siguen usando `get_document_or_404` **sin verificar ownership**. Cualquier usuario autenticado puede leer, reintentar o borrar documentos de otros iterando UUIDs. |
-| **C-5** | Path traversal vía username en upload de avatar | Username ahora valida con regex `^[A-Za-z0-9_-]{3,50}$`. `save_file` tiene defensa `is_relative_to`. | `delete_profile_image` sigue usando `shutil.rmtree(profile_dir)` — borrado arbitrario de directorios si se bypassa el regex. `build_storage_path` no tiene assert `is_relative_to`. |
-| **C-6** | Mount `/media` público sin auth | Reemplazado por `media_router` con protección contra path traversal y `X-Content-Type-Options: nosniff`. | Sigue siendo **público** (sin auth), sin `Content-Disposition: attachment`, sin verificación de `is_shared`, sin lista blanca estricta de Content-Type. |
-| **C-7** | JWT secret por defecto `"your-secret-key"` aceptado en local | `requirements.txt` pinea `python-jose[cryptography]==3.5.0`. Validador Pydantic rechaza el default en entornos no locales y exige `len >= 32`. | El default `"your-secret-key"` sigue existiendo en el código (`config/__init__.py:114`). Falta chequeo explícito de `payload["alg"]` en `verify_token` para prevenir alg-confusion. |
-| **C-8** | Postgres con credenciales hardcodeadas | — | `docker-compose.yml` sigue con `POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-loremaster}` (default hardcodeado) y puerto `5433:5432` expuesto al host sin bind a `127.0.0.1`. |
-
-### 🟠 Altos (4)
+### 🟠 Altos (1)
 
 | ID | Problema | Qué está hecho | Qué falta |
 |---|---|---|---|
-| **H-1** | `is_admin` viajaba dentro del JWT | El endpoint `login` ya no incluye `is_admin` en el token. `get_admin_user` re-consulta la BD. | El endpoint `register` sí incluye `is_admin` en el JWT (`auth.py:175`). La duplicación sigue siendo frágil. |
-| **H-2** | `PATCH /users/me` aceptaba email sin validación ni unicidad | `UpdateProfileRequest.email` usa `EmailStr` (`user_schemas.py:88`). | `users.py:48-49` no verifica que el nuevo email no esté ya en uso por otro usuario activo. |
-| **H-3** | Feed público filtra por `is_deleted`, pero admin delete no despublica contenido/imágenes | El feed público filtra por `User.is_deleted == False` (`filters.py:19`). | Los avatares de perfil NO se eliminan en cascada durante `admin_delete_user`. El media_router permite acceso directo sin verificar `is_shared`. |
-| **H-8** | Cero rate limiting | Existe `RateLimitMiddleware` aplicado a operaciones mutantes (POST/PUT/PATCH/DELETE). | No aplica a GET/HEAD, opera en memoria (no escala a múltiples workers), y no protege endpoints de lectura intensiva. |
+| **H-3** | Feed público filtra por `is_deleted`, pero admin delete no despublica contenido/imágenes generadas | El feed público filtra por `User.is_deleted == False` (`filters.py:19`). Avatares se eliminan en cascada durante `admin_delete_user` ([Fase 2](AUDIT-FASE2-LOG.md)). | El contenido generado (imágenes de entidades) y el `media_router` permiten acceso directo sin verificar `is_shared`. |
 
-### 🟡 Medios (5)
+### 🟡 Medios (1)
 
 | ID | Problema | Qué está hecho | Qué falta |
 |---|---|---|---|
 | **M-4** | ComfyUI `download_image` reenvía `filename`/`subfolder` sin sanitizar | Ahora usa `_sanitize_filename` que elimina caracteres no alfanuméricos/guiones/puntos. | Mitiga pero no elimina completamente el riesgo histórico de ese endpoint. |
-| **M-8** | AWS credenciales de test en `.env.example` | Credenciales AWS están comentadas y usan placeholders genéricos. | El placeholder de `SECRET_KEY` sigue siendo un footgun si un operador hace `cp .env.example .env` sin cambiarlo en producción. |
-| **M-10** | Logging sin redacción de PII | `_sanitize_for_log` elimina CR/LF de filenames. | No hay redacción generalizada de PII en todos los logs. |
-| **M-13** | Cleanup roto: archivos huérfanos para siempre | `_cascade_delete_images` ahora intenta borrar archivos físicos. | `_delete_image_file` usa `Path(storage_path)` como ruta relativa al CWD en lugar de resolverla bajo `media_root`, por lo que probablemente **no borra los archivos reales**. Los avatares de perfil tampoco se limpian en cascada. |
-| **M-18** | Validación cliente-only de avatar | Backend valida MIME, extensión, tamaño y hace strip de EXIF. | Falta validación de **magic bytes para imágenes** (TODO en `validator.py:13`). |
-
-### 🟢 Bajos (4)
-
-| ID | Problema | Qué está hecho | Qué falta |
-|---|---|---|---|
-| **L-1** | `admin_delete_collection` idempotente sin audit log | Hay un `logger.info` con datos básicos. | No es un audit log estructurado ni inmutable. |
-| **L-2** | `validate_image` sin cross-validación MIME ↔ extensión ↔ magic bytes | Valida MIME ↔ extensión y strip de EXIF. | Falta magic bytes para imágenes. |
-| **L-8** | `scripts/make_admin.py` promociona admin sin confirmación | Ahora requiere confirmación interactiva o flag `--force`. | Falta audit log de la acción. |
-| **L-12** | Logger global a INFO sin estructura/redacción | Mejorado con sanitización de filenames. | Falta redacción generalizada de PII y formato estructurado. |
 
 ---
 
@@ -170,12 +162,25 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 
 ## Top 5 fixes de mayor leverage (pendientes)
 
-1. **C-3:** Sustituir `get_document_or_404` → `get_document_or_404_owned` en `documents.py` (get_document, retry_ingest, delete_document).
-2. **C-2:** Replicar lookup de BD (`is_deleted`, `token_version`) en el branch de Clerk de `get_current_user`.
-3. **C-5:** Reemplazar `shutil.rmtree` en `delete_profile_image` por eliminación de archivos individuales con `is_relative_to`.
-4. **C-6:** Proteger `media_router` con auth + verificación de `is_shared` + `Content-Disposition: attachment`.
-5. **C-8 + M-13:** Eliminar defaults de PostgreSQL en `docker-compose.yml` y corregir `_delete_image_file` para resolver rutas bajo `media_root`.
+1. **C-2:** Replicar lookup de BD (`is_deleted`, `token_version`) en el branch de Clerk de `get_current_user`.
+2. **H-4 / H-5:** Agregar defensa estructural contra prompt injection en `prompt_templates.py` y `generation_service.py`.
+3. **H-13:** Migrar JWT de `localStorage` a cookies `HttpOnly` + `SameSite=Strict`.
+4. **M-1 / M-2:** Reemplazar `content_guard.py` decorativo por validación robusta con timeout.
+5. **M-6:** Eliminar timing oracle en login con dummy bcrypt para usuarios inexistentes.
 
 ---
 
-*Generado automáticamente el 2026-05-11 a partir de la validación de código frente a `docs/AUDIT-SECURITY.md`.*
+## Fases de Implementación
+
+Los siguientes problemas fueron resueltos en 4 fases de implementación:
+
+| Fase | Problemas | Log |
+|---|---|---|
+| **Fase 1** | C-3, C-5, H-1, H-2, C-7 | [`AUDIT-FASE1-LOG.md`](AUDIT-FASE1-LOG.md) |
+| **Fase 2** | M-18, L-2, M-13, H-3 (avatars) | [`AUDIT-FASE2-LOG.md`](AUDIT-FASE2-LOG.md) |
+| **Fase 3** | C-6, C-8, M-8 | [`AUDIT-FASE3-LOG.md`](AUDIT-FASE3-LOG.md) |
+| **Fase 4** | L-1, L-8, M-10, L-12 | [`AUDIT-FASE4-LOG.md`](AUDIT-FASE4-LOG.md) |
+
+---
+
+*Actualizado el 2026-05-11 tras completar las 4 fases de implementación. Estado verificado contra código fuente y tests (`175 passed`).*

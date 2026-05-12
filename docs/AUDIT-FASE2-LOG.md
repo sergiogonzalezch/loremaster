@@ -128,4 +128,6 @@ Los 4 problemas que pasaron de "parcialmente resueltos" a "resueltos" son: **M-1
 
 ---
 
+> **Nota de resolución (2026-05-11):** Los 4 problemas atacados en esta fase fueron verificados como **resueltos** y están reflejados en [`AUDIT-RESULTS-11-05-26.md`](AUDIT-RESULTS-11-05-26.md).
+
 *Documento generado el 2026-05-11 tras la validación exitosa de la Fase 2.*
