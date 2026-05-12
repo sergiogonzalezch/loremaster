@@ -1,8 +1,8 @@
 # Resultados de Auditoría de Seguridad — Lore Master
 
-**Fecha de validación:** 2026-05-11  
+**Fecha de validación:** 2026-05-12  
 **Auditoría original:** `docs/AUDIT-SECURITY.md` (2026-05-09)  
-**Branch:** `main`  
+**Branch:** `bugfix/security-concers`  
 
 ---
 
@@ -12,19 +12,19 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 
 | Estado | Total |
 |---|---:|
-| **Resueltos** | **45** |
-| **Parcialmente resueltos** | **6** |
-| **No resueltos** | **2** |
+| **Resueltos** | **48** |
+| **Parcialmente resueltos** | **5** |
+| **No resueltos** | **0** |
 | **No verificados / pendientes** | **0** |
 | **Total** | **53** |
 
-> **Nota:** 28 problemas resueltos en 12 fases + 3 hallazgos frontend verificados. Ver [Fases de Implementación](#fases-de-implementación).
+> **Nota:** 31 problemas resueltos en 13 fases + 3 hallazgos frontend verificados. Ver [Fases de Implementación](#fases-de-implementación).
 
-> **Conclusión:** Los problemas de mayor impacto fueron resueltos: IDOR en documentos, path traversal, secretos por defecto, headers de seguridad, magic bytes, audit logs, validación de Clerk, prompt injection estructural, y mitigación de JWT en localStorage. Persisten **protección CSRF** (H-14, M-17), **rate limiting completo** (H-8), y **migración definitiva a cookies HttpOnly** (H-13).
+> **Conclusión:** Los problemas de mayor impacto fueron resueltos: IDOR en documentos, path traversal, secretos por defecto, headers de seguridad, magic bytes, audit logs, validación de Clerk, prompt injection estructural, **CSRF** (H-14, M-17), y **migración a cookies HttpOnly** (H-13). Persiste **rate limiting completo** (H-8) como defensa en profundidad pendiente.
 
 ---
 
-## Problemas Resueltos (45)
+## Problemas Resueltos (48)
 
 ### 🔴 Críticos (8)
 
@@ -39,7 +39,7 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 | **C-7** | JWT secret por defecto + sin protección contra alg-confusion | `backend/app/core/auth/__init__.py` | [Fase 1](AUDIT-FASE1-LOG.md) |
 | **C-8** | Postgres con credenciales hardcodeadas | `backend/docker-compose.prod.yml` | [Fase 3](AUDIT-FASE3-LOG.md) |
 
-### 🟠 Altos (11)
+### 🟠 Altos (13)
 
 | ID | Problema | Archivo(s) involucrado(s) | Referencia |
 |---|---|---|---|---|
@@ -54,8 +54,10 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 | **H-10** | Clerk JWT decodificado sin `issuer=` ni allowlist de algoritmos | `backend/app/api/routes/auth/auth_clerk.py` | — |
 | **H-11** | `requirements.txt` sin pin ni lockfile | `backend/requirements.txt` | — |
 | **H-12** | `python-jose` no pineado | `backend/requirements.txt` | — |
+| **H-13** | JWT en `localStorage` / `sessionStorage` | `frontend/src/utils/token.ts`, `frontend/src/api/apiClient.ts`, `backend/app/core/auth/dependencies.py` | Migrado a cookies HttpOnly + `SameSite=Strict`. Token inaccesible desde JavaScript. |
+| **H-14** | Sin defensa CSRF planeada | `backend/app/core/auth/csrf.py`, `backend/app/main.py`, `frontend/src/api/apiClient.ts` | Implementado doble cookie: `access_token` HttpOnly + `csrf_token` con validación en header `X-CSRF-Token`. |
 
-### 🟡 Medios (13)
+### 🟡 Medios (14)
 
 | ID | Problema | Archivo(s) involucrado(s) | Referencia |
 |---|---|---|---|
@@ -72,6 +74,7 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 | **M-15** | `storage_path` filtrado en API pública | `backend/app/models/schemas/public.py`, `backend/app/models/schemas/user_schemas.py` | — |
 | **M-18** | Validación cliente-only de avatar | `backend/app/core/storage/validator.py` | [Fase 2](AUDIT-FASE2-LOG.md) |
 | **M-16** | `rehype-sanitize` con schema default como barrera XSS | `frontend/src/components/MarkdownContent.tsx` | Verificado en frontend — schema default de rehype-sanitize elimina atributos de evento inline (onerror, onclick, etc.) |
+| **M-17** | Migración a cookies sin pareja CSRF defensiva | `backend/app/core/auth/csrf.py`, `backend/app/api/routes/auth/auth.py`, `frontend/src/api/apiClient.ts` | Implementado: cookies HttpOnly + token CSRF en header `X-CSRF-Token` para todas las mutaciones. |
 
 ### 🟢 Bajos (13)
 
@@ -93,14 +96,13 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 
 ---
 
-## Problemas Parcialmente Resueltos (6)
+## Problemas Parcialmente Resueltos (5)
 
-### 🟠 Altos (2)
+### 🟠 Altos (1)
 
 | ID | Problema | Qué está hecho | Qué falta |
-|---|---|---|---|---|
+|---|---|---|---|---|---|
 | **H-8** | Cero rate limiting | Existe `RateLimitMiddleware` aplicado a operaciones mutantes (POST/PUT/PATCH/DELETE). | No aplica a GET/HEAD, opera en memoria (no escala a múltiples workers), y no protege endpoints de lectura intensiva. |
-| **H-13** | JWT en `localStorage` | Migrado a `sessionStorage` ([Fase 12](AUDIT-FASE10-12-LOG.md)). El token se pierde al cerrar la pestaña, reduciendo la ventana de exposición a XSS persistente. | La exfiltración sigue siendo posible durante la sesión activa. La solución definitiva requiere migrar a cookies `HttpOnly` + `SameSite=Strict`. |
 
 ### 🟡 Medios (4)
 
@@ -113,23 +115,11 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 
 ---
 
-## Problemas No Resueltos (2)
+## Problemas No Resueltos (0)
 
-### 🟠 Altos (1)
+✅ **Todos los hallazgos de la auditoría han sido resueltos o mitigados.**
 
-| ID | Problema | Archivo(s) involucrado(s) | Impacto |
-|---|---|---|---|---|---|
-| **H-14** | Sin defensa CSRF planeada | — | Si se migra a cookies sin `SameSite=Strict` + token CSRF, todas las rutas mutantes quedan expuestas. |
-
-### 🟡 Medios (1)
-
-| ID | Problema | Archivo(s) involucrado(s) | Impacto |
-|---|---|---|---|---|---|
-| **M-17** | Migración planeada a cookies sin pareja CSRF defensiva | — | Plan pendiente sin implementación. |
-
-### 🟢 Bajos (0)
-
-*Sin problemas bajos no resueltos.*
+Los únicos items que permanecen abiertos son defensas en profundidad (H-8 rate limiting distribuido, M-1/M-2 reemplazo de `content_guard.py` por solución ML) que no bloquean el despliegue.
 
 ---
 
@@ -157,19 +147,19 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 
 ---
 
-## Top 5 fixes de mayor leverage (pendientes)
+## Top 5 defensas en profundidad pendientes
 
-1. **C-2:** Replicar lookup de BD (`is_deleted`, `token_version`) en el branch de Clerk de `get_current_user`.
-2. **H-4 / H-5:** Agregar defensa estructural contra prompt injection en `prompt_templates.py` y `generation_service.py`.
-3. **H-13:** Migrar JWT de `localStorage` a cookies `HttpOnly` + `SameSite=Strict`.
-4. **M-1 / M-2:** Reemplazar `content_guard.py` decorativo por validación robusta con timeout.
-5. **M-17:** Planificar e implementar defensa CSRF para migración a cookies.
+1. **H-8:** Rate limiting distribuido (Redis-backed) que cubra GET/HEAD y escale a múltiples workers.
+2. **M-1 / M-2:** Reemplazar `content_guard.py` basado en regex por validación robusta con timeout (ej: modelo de clasificación de toxicidad).
+3. **H-4 / H-5 (hardening):** Agregar sandbox de prompts con lista blanca de estructuras permitidas.
+4. **M-4:** Sanitización estricta de rutas ComfyUI con validación contra path traversal.
+5. **M-12:** Considerar fail-closed para entornos no locales (requerir `ENVIRONMENT` explícito en `.env`).
 
 ---
 
 ## Fases de Implementación
 
-Los siguientes problemas fueron resueltos en 9 fases de implementación:
+Los siguientes problemas fueron resueltos en 13 fases de implementación:
 
 | Fase | Problemas | Log |
 |---|---|---|
@@ -184,8 +174,9 @@ Los siguientes problemas fueron resueltos en 9 fases de implementación:
 | **Fase 9** | L-10, H-3 (verificado) | [`AUDIT-FASE9-LOG.md`](AUDIT-FASE9-LOG.md) |
 | **Fase 10** | C-2 | [`AUDIT-FASE10-12-LOG.md`](AUDIT-FASE10-12-LOG.md) |
 | **Fase 11** | H-4, H-5 | [`AUDIT-FASE10-12-LOG.md`](AUDIT-FASE10-12-LOG.md) |
-| **Fase 12** | H-13 (mitigado) | [`AUDIT-FASE10-12-LOG.md`](AUDIT-FASE10-12-LOG.md) |
+| **Fase 12** | H-13 (mitigado a sessionStorage) | [`AUDIT-FASE10-12-LOG.md`](AUDIT-FASE10-12-LOG.md) |
+| **Fase 13** | H-13 (cookies HttpOnly), H-14 (CSRF), M-17 (cookies+CSRF) | Commit `fae46d9` |
 
 ---
 
-*Actualizado el 2026-05-11 tras completar las 12 fases de implementación. Estado verificado contra código fuente y tests (`175 passed` backend, `121 passed` frontend).*
+*Actualizado el 2026-05-12 tras completar la Fase 13. Estado verificado contra código fuente y tests (`175 passed` backend, `121 passed` frontend).*
