@@ -36,6 +36,13 @@ from app.api.middlewares import RateLimitMiddleware, SecurityHeadersMiddleware
 configure_logging(settings.log_level)
 logger = logging.getLogger(__name__)
 
+if settings.environment == "local":
+    logger.warning(
+        "WARNING: Ejecutando en entorno 'local'. "
+        "Algunas guardas de seguridad estan relajadas. "
+        "No usar en produccion (M-12)."
+    )
+
 app = FastAPI(
     title=settings.project_name,
     version=settings.api_version,

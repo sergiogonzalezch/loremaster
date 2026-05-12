@@ -12,19 +12,19 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 
 | Estado | Total |
 |---|---:|
-| **Resueltos** | **34** |
-| **Parcialmente resueltos** | **2** |
-| **No resueltos** | **14** |
+| **Resueltos** | **37** |
+| **Parcialmente resueltos** | **3** |
+| **No resueltos** | **11** |
 | **No verificados / pendientes** | **3** |
 | **Total** | **53** |
 
-> **Nota:** 19 problemas fueron resueltos en 5 fases de implementación (ver [Fases de Implementación](#fases-de-implementación)).
+> **Nota:** 22 problemas fueron resueltos en 6 fases de implementación (ver [Fases de Implementación](#fases-de-implementación)).
 
 > **Conclusión:** Los problemas de mayor impacto (IDOR en documentos, path traversal, secretos por defecto, headers de seguridad, magic bytes, audit logs) fueron resueltos. Persisten **gaps críticos en validación de usuarios eliminados en Clerk**, **prompt injection**, **protección CSRF/storage de tokens**, y **rate limiting completo**.
 
 ---
 
-## Problemas Resueltos (34)
+## Problemas Resueltos (37)
 
 ### 🔴 Críticos (7)
 
@@ -52,12 +52,13 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 | **H-11** | `requirements.txt` sin pin ni lockfile | `backend/requirements.txt` | — |
 | **H-12** | `python-jose` no pineado | `backend/requirements.txt` | — |
 
-### 🟡 Medios (10)
+### 🟡 Medios (11)
 
 | ID | Problema | Archivo(s) involucrado(s) | Referencia |
 |---|---|---|---|
 | **M-7** | `/docs`, `/redoc`, `/openapi.json` siempre expuestos | `backend/app/main.py` | — |
 | **M-8** | AWS credenciales de test en `.env.example` | `backend/.env.example` | [Fase 3](AUDIT-FASE3-LOG.md) |
+| **M-9** | CORS no exige HTTPS en entorno `demo` | `backend/app/core/config/__init__.py` | [Fase 6](AUDIT-FASE6-LOG.md) |
 | **M-10** | Logging sin redacción de PII | `backend/app/core/logging.py` | [Fase 4](AUDIT-FASE4-LOG.md) |
 | **M-11** | `RequestValidationError` exponía input del cliente | `backend/app/main.py` | — |
 | **M-13** | Cleanup roto: archivos huérfanos para siempre | `backend/app/services/deletion_service.py` | [Fase 2](AUDIT-FASE2-LOG.md) |
@@ -67,7 +68,7 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 | **M-15** | `storage_path` filtrado en API pública | `backend/app/models/schemas/public.py`, `backend/app/models/schemas/user_schemas.py` | — |
 | **M-18** | Validación cliente-only de avatar | `backend/app/core/storage/validator.py` | [Fase 2](AUDIT-FASE2-LOG.md) |
 
-### 🟢 Bajos (6)
+### 🟢 Bajos (8)
 
 | ID | Problema | Archivo(s) involucrado(s) | Referencia |
 |---|---|---|---|
@@ -78,11 +79,13 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 | **L-6** | Aislamiento Qdrant por nombre prefijado | Reportado como limpio en auditoría original | — |
 | **L-7** | Sin `secrets.compare_digest` para comparaciones sensibles | `backend/app/core/auth/dependencies.py` | [Fase 5](AUDIT-FASE5-LOG.md) |
 | **L-8** | `scripts/make_admin.py` sin audit log | `backend/scripts/make_admin.py` | [Fase 4](AUDIT-FASE4-LOG.md) |
+| **L-11** | Token revocation TTL no documentado | `backend/app/core/auth/__init__.py` | [Fase 6](AUDIT-FASE6-LOG.md) |
 | **L-12** | Logger global sin estructura/redacción de PII | `backend/app/core/logging.py` | [Fase 4](AUDIT-FASE4-LOG.md) |
+| **L-13** | Docker compose publica Qdrant/Redis al host | `backend/docker-compose.yml` | [Fase 6](AUDIT-FASE6-LOG.md) |
 
 ---
 
-## Problemas Parcialmente Resueltos (2)
+## Problemas Parcialmente Resueltos (3)
 
 ### 🟠 Altos (1)
 
@@ -90,15 +93,16 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 |---|---|---|---|
 | **H-3** | Feed público filtra por `is_deleted`, pero admin delete no despublica contenido/imágenes generadas | El feed público filtra por `User.is_deleted == False` (`filters.py:19`). Avatares se eliminan en cascada durante `admin_delete_user` ([Fase 2](AUDIT-FASE2-LOG.md)). | El contenido generado (imágenes de entidades) y el `media_router` permiten acceso directo sin verificar `is_shared`. |
 
-### 🟡 Medios (1)
+### 🟡 Medios (2)
 
 | ID | Problema | Qué está hecho | Qué falta |
 |---|---|---|---|
 | **M-4** | ComfyUI `download_image` reenvía `filename`/`subfolder` sin sanitizar | Ahora usa `_sanitize_filename` que elimina caracteres no alfanuméricos/guiones/puntos. | Mitiga pero no elimina completamente el riesgo histórico de ese endpoint. |
+| **M-12** | Default `environment="local"` en código (fail-open) | Se agregó log WARNING en startup cuando `environment == "local"` ([Fase 6](AUDIT-FASE6-LOG.md)). | El default sigue siendo `"local"` (fail-open). No se cambió para no romper el flujo de desarrollo local. |
 
 ---
 
-## Problemas No Resueltos (14)
+## Problemas No Resueltos (11)
 
 ### 🔴 Críticos (1)
 
@@ -115,24 +119,20 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 | **H-13** | JWT en `localStorage` | `frontend/src/utils/token.ts:9-14` | Cualquier XSS futuro exfiltra el token inmediatamente. |
 | **H-14** | Sin defensa CSRF planeada | — | Si se migra a cookies sin `SameSite=Strict` + token CSRF, todas las rutas mutantes quedan expuestas. |
 
-### 🟡 Medios (6)
+### 🟡 Medios (4)
 
 | ID | Problema | Archivo(s) involucrado(s) | Impacto |
 |---|---|---|---|
 | **M-1** | `content_guard.py` es decorativo | `backend/app/domain/content_guard.py:13-28` | 6 regex en denylist mínima; no detecta jailbreaks, leetspeak, base64, ROT13. |
 | **M-2** | ReDoS / CPU-DoS: 6 regex sobre texto normalizado | `backend/app/domain/content_guard.py:52-62` | Worker bloqueado aplicando regex sobre archivos de hasta 50MB normalizados con NFKD. |
 | **M-3** | Prompt injection vía `confirmed_content` editable | `backend/app/services/entity/content_service.py:103` | `edit_content` NO ejecuta `check_user_input` sobre el nuevo texto antes de guardarlo. |
-| **M-9** | CORS no exige HTTPS cuando `environment != "local"` | `backend/app/core/config/__init__.py:151-157` | Solo exige HTTPS en `production`; `demo` queda sin validación. |
-| **M-12** | Default `environment="local"` en código (fail-open) | `backend/app/core/config/__init__.py:69` | Olvidar setear `production` deja todas las guardas de seguridad desactivadas. |
 | **M-17** | Migración planeada a cookies sin pareja CSRF defensiva | — | Plan pendiente sin implementación. |
 
-### 🟢 Bajos (3)
+### 🟢 Bajos (1)
 
 | ID | Problema | Archivo(s) involucrado(s) | Impacto |
 |---|---|---|---|
 | **L-3** | TOCTOU en `delete_image_service` | `backend/app/services/image/image_generation_service.py:484-488` | `if os.path.exists(full_path): os.remove(full_path)` es vulnerable a race condition. |
-| **L-11** | Token revocation TTL no documentado | — | `token_version` existe pero sin política de TTL formal ni documentación. |
-| **L-13** | Docker compose publica Qdrant 6333 y Redis 6379 al host | `backend/docker-compose.yml` | Exposición de servicios internos en entorno de desarrollo (bajo riesgo, pero persistente). |
 
 ---
 
@@ -172,7 +172,7 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 
 ## Fases de Implementación
 
-Los siguientes problemas fueron resueltos en 5 fases de implementación:
+Los siguientes problemas fueron resueltos en 6 fases de implementación:
 
 | Fase | Problemas | Log |
 |---|---|---|
@@ -181,7 +181,8 @@ Los siguientes problemas fueron resueltos en 5 fases de implementación:
 | **Fase 3** | C-6, C-8, M-8 | [`AUDIT-FASE3-LOG.md`](AUDIT-FASE3-LOG.md) |
 | **Fase 4** | L-1, L-8, M-10, L-12 | [`AUDIT-FASE4-LOG.md`](AUDIT-FASE4-LOG.md) |
 | **Fase 5** | M-6, M-5, L-7 | [`AUDIT-FASE5-LOG.md`](AUDIT-FASE5-LOG.md) |
+| **Fase 6** | M-9, L-11, L-13 | [`AUDIT-FASE6-LOG.md`](AUDIT-FASE6-LOG.md) |
 
 ---
 
-*Actualizado el 2026-05-11 tras completar las 5 fases de implementación. Estado verificado contra código fuente y tests (`175 passed`).*
+*Actualizado el 2026-05-11 tras completar las 6 fases de implementación. Estado verificado contra código fuente y tests (`175 passed`).*

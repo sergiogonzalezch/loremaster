@@ -148,12 +148,12 @@ class Settings(BaseSettings):
                 f"SECRET_KEY debe tener al menos 32 caracteres en entornos no locales. "
                 f"Actual: {len(self.secret_key)} caracteres"
             )
-        if self.environment == "production":
+        if self.environment in ("production", "demo"):
             for origin in self.allowed_origins:
                 if not origin.startswith("https://"):
                     raise ValueError(
-                        f"ALLOWED_ORIGINS en producción debe usar HTTPS: '{origin}'. "
-                        f"Cambia a https:// para entorno production"
+                        f"ALLOWED_ORIGINS en {self.environment} debe usar HTTPS: '{origin}'. "
+                        f"Cambia a https:// para entorno {self.environment}"
                     )
         valid_envs = {"local", "demo", "production", "test"}
         if self.environment not in valid_envs:
