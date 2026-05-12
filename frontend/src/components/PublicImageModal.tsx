@@ -3,6 +3,7 @@ import { Modal, Button } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { formatDate } from "../utils/formatters";
 import { ENTITY_TYPE_LABELS } from "../utils/constants";
+import SafeImage from "./SafeImage";
 
 const MEDIA_BASE = (
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1"
@@ -86,7 +87,7 @@ export default function PublicImageModal({
       <Modal.Body>
         <div className="text-center">
           {resolvedUrl ? (
-            <img
+            <SafeImage
               src={resolvedUrl}
               alt={`${entityName} seed ${seed}`}
               className="img-fluid rounded"
