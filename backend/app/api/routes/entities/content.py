@@ -18,6 +18,7 @@ from app.core.exceptions import (
 )
 from app.database import get_session
 from app.models.db.entity import Entity
+from app.models.enums import ContentCategory
 from app.models.schemas.entity import EntityResponse
 from app.models.schemas.entity_content import (
     EntityContentResponse,
@@ -25,7 +26,6 @@ from app.models.schemas.entity_content import (
     ShareContentRequest,
     UpdateContentRequest,
 )
-from app.models.enums import ContentCategory
 from app.models.shared import PaginatedResponse
 from app.services.entity import content_service, generation_service
 from app.services.moderation.moderation_service import log_moderation_event
@@ -79,7 +79,7 @@ def list_contents(
     entity_id: str,
     collection_id: str,
     pagination: Annotated[PaginationParams, Depends()],
-    category: Optional[ContentCategory] = Query(default=None),
+    category: ContentCategory | None = Query(default=None),
     status: Literal["active", "pending", "confirmed", "discarded", "all"] = Query(
         default="active"
     ),

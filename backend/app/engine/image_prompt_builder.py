@@ -10,14 +10,13 @@ import threading
 from langchain_core.output_parsers import StrOutputParser
 
 from app.core.config import settings
-from app.models.enums import ContentCategory
-from app.models.db.entity import EntityType
-
 from app.domain.image_prompt_rules import (
-    _llm_instruction_by_entity_category,
-    _TYPE_EXTRACT_PROMPT,
     _ATTRIBUTE_EXTRACT_SUFFIX,
+    _TYPE_EXTRACT_PROMPT,
+    _llm_instruction_by_entity_category,
 )
+from app.models.db.entity import EntityType
+from app.models.enums import ContentCategory
 
 logger = logging.getLogger(__name__)
 

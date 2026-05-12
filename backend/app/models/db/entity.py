@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from enum import Enum
 
 from sqlalchemy import Column, ForeignKey, String, UniqueConstraint
-from sqlmodel import SQLModel, Field
+from sqlmodel import Field, SQLModel
 
 from app.core.database.soft_delete import SoftDeleteMixin
 

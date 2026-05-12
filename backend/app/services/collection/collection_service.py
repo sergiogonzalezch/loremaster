@@ -6,12 +6,12 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
+from app.core.database.utils import db_commit, paginate_with_sort
 from app.core.exceptions import DuplicateCollectionNameError
-from app.core.database.utils import paginate_with_sort, db_commit
 from app.models.db.collection import Collection
-from app.models.schemas.collection import UpdateCollectionRequest
 from app.models.db.document import Document
 from app.models.db.entity import Entity
+from app.models.schemas.collection import UpdateCollectionRequest
 from app.services.deletion_service import cascade_delete_collection
 
 logger = logging.getLogger(__name__)
@@ -114,9 +114,9 @@ def list_collections_service(
     owner_id: str,
     page: int = 1,
     page_size: int = 20,
-    name: Optional[str] = None,
-    created_after: Optional[datetime] = None,
-    created_before: Optional[datetime] = None,
+    name: str | None = None,
+    created_after: datetime | None = None,
+    created_before: datetime | None = None,
     order: Literal["asc", "desc"] = "desc",
 ) -> tuple[list[dict], int]:
     """Lista las colecciones de un usuario con paginación y filtros.
@@ -168,7 +168,7 @@ def update_collection_service(
     session: Session,
     collection: Collection,
     request: UpdateCollectionRequest,
-    user_id: Optional[str] = None,
+    user_id: str | None = None,
 ) -> Collection:
     """Actualiza el nombre y/o descripción de una colección.
 

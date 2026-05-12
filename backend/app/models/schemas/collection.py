@@ -57,8 +57,8 @@ class CollectionResponse(BaseModel):
     id: str
     name: str
     description: str
-    owner_id: Optional[str] = None
+    owner_id: str | None = None
     created_at: datetime
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
     document_count: int = 0
     entity_count: int = 0

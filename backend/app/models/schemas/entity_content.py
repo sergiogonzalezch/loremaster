@@ -34,16 +34,16 @@ class EntityContentResponse(BaseModel):
     generated_text_id: str
     category: ContentCategory
     content: str
-    raw_content: Optional[str] = None
+    raw_content: str | None = None
     was_edited: bool = False
-    query: Optional[str] = None
+    query: str | None = None
     sources_count: int = 0
     token_count: int = 0
     status: ContentStatus
     is_shared: bool = False
     created_at: datetime
-    confirmed_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    confirmed_at: datetime | None = None
+    updated_at: datetime | None = None
 
     @model_validator(mode="after")
     def compute_was_edited(self) -> "EntityContentResponse":

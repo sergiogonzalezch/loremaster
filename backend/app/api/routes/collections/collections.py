@@ -5,26 +5,26 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlmodel import Session
 
 from app.core.api.params import DateRangeParams, PaginationParams
+from app.core.auth.dependencies import get_current_user
 from app.core.database.dependencies import (
     get_collection_or_404_owned,
 )
-from app.core.auth.dependencies import get_current_user
 from app.core.exceptions import DatabaseError, DuplicateCollectionNameError
 from app.database import get_session
 from app.models.db.collection import Collection
 from app.models.schemas.collection import (
+    BulkDeleteRequest,
+    CollectionResponse,
     CreateCollectionRequest,
     UpdateCollectionRequest,
-    CollectionResponse,
-    BulkDeleteRequest,
 )
 from app.models.shared import PaginatedResponse
 from app.services.collection.collection_service import (
     create_collection_service,
+    delete_collection_service,
     get_collection_with_counts_service,
     list_collections_service,
     update_collection_service,
-    delete_collection_service,
 )
 
 logger = logging.getLogger(__name__)
@@ -55,7 +55,7 @@ def create_collection(
 def get_collections(
     pagination: Annotated[PaginationParams, Depends()],
     dates: Annotated[DateRangeParams, Depends()],
-    name: Optional[str] = Query(default=None),
+    name: str | None = Query(default=None),
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
@@ -123,8 +123,9 @@ def bulk_delete_collections(
     session: Session = Depends(get_session),
 ):
     """Elimina múltiples colecciones en cascada."""
-    from app.models.db.collection import Collection
     from sqlmodel import select
+
+    from app.models.db.collection import Collection
 
     collections = session.exec(
         select(Collection).where(

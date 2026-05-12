@@ -12,10 +12,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.core.config import settings
-from app.core.logging import configure_logging
-from app.core.lifespan import lifespan
-from app.core.auth.csrf import validate_csrf
+from app.api.middlewares import RateLimitMiddleware, SecurityHeadersMiddleware
 from app.api.routes import (
     admin_router,
     auth_clerk_router,
@@ -32,7 +29,10 @@ from app.api.routes import (
     users_router,
 )
 from app.api.routes.media import router as media_router
-from app.api.middlewares import RateLimitMiddleware, SecurityHeadersMiddleware
+from app.core.auth.csrf import validate_csrf
+from app.core.config import settings
+from app.core.lifespan import lifespan
+from app.core.logging import configure_logging
 
 configure_logging(settings.log_level)
 logger = logging.getLogger(__name__)

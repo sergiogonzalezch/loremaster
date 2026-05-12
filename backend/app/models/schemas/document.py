@@ -26,5 +26,5 @@ class DocumentResponse(BaseModel):
     file_type: str
     chunk_count: int
     status: DocumentStatus
-    processing_error: Optional[str] = None
+    processing_error: str | None = None
     created_at: datetime

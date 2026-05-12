@@ -29,7 +29,7 @@ class GenerateImagesRequest(BaseModel):
     auto_prompt: str
     final_prompt: str
     batch_size: int = Field(default=4, ge=1, le=4)
-    seed_base: Optional[int] = None
+    seed_base: int | None = None
 
 
 class DeleteImageRequest(BaseModel):
@@ -65,7 +65,7 @@ class ImageResult(BaseModel):
     """
 
     id: str
-    image_url: Optional[str] = None
+    image_url: str | None = None
     seed: int
     width: int
     height: int
@@ -128,7 +128,7 @@ class ImageGenerationResponse(BaseModel):
     id: str
     entity_id: str
     collection_id: str
-    content_id: Optional[str] = None
+    content_id: str | None = None
     category: str
     auto_prompt: str
     final_prompt: str
@@ -139,7 +139,7 @@ class ImageGenerationResponse(BaseModel):
     height: int
     created_at: datetime
     is_deleted: bool
-    deleted_at: Optional[datetime] = None
+    deleted_at: datetime | None = None
 
 
 class ImageRecordResponse(BaseModel):
@@ -169,9 +169,9 @@ class ImageRecordResponse(BaseModel):
     entity_id: str
     collection_id: str
     seed: int
-    storage_path: Optional[str] = None
-    image_url: Optional[str] = None
-    filename: Optional[str] = None
+    storage_path: str | None = None
+    image_url: str | None = None
+    filename: str | None = None
     extension: str
     width: int
     height: int
@@ -179,7 +179,7 @@ class ImageRecordResponse(BaseModel):
     is_shared: bool = False
     created_at: datetime
     is_deleted: bool
-    deleted_at: Optional[datetime] = None
+    deleted_at: datetime | None = None
 
 
 class ImageGenerationListItem(BaseModel):
@@ -205,7 +205,7 @@ class ImageGenerationListItem(BaseModel):
     id: str
     entity_id: str
     collection_id: str
-    content_id: Optional[str] = None
+    content_id: str | None = None
     category: str
     auto_prompt: str
     final_prompt: str

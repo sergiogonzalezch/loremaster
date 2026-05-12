@@ -2,8 +2,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import bcrypt
-from jose import JWTError, jwt
 from fastapi import HTTPException, status
+from jose import JWTError, jwt
 
 from app.core.config import settings
 
@@ -18,7 +18,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
 #   en produccion para minimizar ventana de exposicion
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
     """Crea un token de acceso JWT con fecha de expiración.
 
     El token expira según ACCESS_TOKEN_EXPIRE_MINUTES (default 24h).

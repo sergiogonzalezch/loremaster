@@ -4,8 +4,8 @@ from typing import Optional
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import jwt, JWTError
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
 from sqlmodel import Session
 
 from app.core.config import settings
@@ -15,7 +15,7 @@ from app.models.db.user import User
 router = APIRouter(prefix="/auth/clerk", tags=["auth"])
 security = HTTPBearer(auto_error=False)
 
-_jwks_cache: Optional[dict] = None
+_jwks_cache: dict | None = None
 _jwks_cache_time: float = 0.0
 _jwks_lock = threading.Lock()
 _JWKS_TTL = 3600  # 1 hora; Clerk rota claves ocasionalmente

@@ -6,21 +6,21 @@ from fastapi import (
     APIRouter,
     BackgroundTasks,
     Depends,
+    File,
     HTTPException,
     Query,
     Response,
     UploadFile,
-    File,
 )
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session, select
 
 from app.core.api.params import DateRangeParams, PaginationParams
+from app.core.auth.dependencies import get_current_user
 from app.core.database.dependencies import (
     get_collection_or_404_owned,
     get_document_or_404_owned,
 )
-from app.core.auth.dependencies import get_current_user
 from app.core.exceptions import (
     ContentNotAllowedError,
     DatabaseError,
@@ -38,11 +38,11 @@ from app.models.db.document import Document, DocumentStatus
 from app.models.schemas.document import DocumentResponse
 from app.models.shared import PaginatedResponse
 from app.services.document.documents_service import (
-    ingest_document_service,
-    process_ingest_background,
-    list_documents_service,
-    retry_document_service,
     delete_document_service,
+    ingest_document_service,
+    list_documents_service,
+    process_ingest_background,
+    retry_document_service,
 )
 from app.services.moderation.moderation_service import log_moderation_event
 
@@ -95,9 +95,9 @@ def get_documents(
     collection_id: str,
     pagination: Annotated[PaginationParams, Depends()],
     dates: Annotated[DateRangeParams, Depends()],
-    filename: Optional[str] = Query(default=None),
-    file_type: Optional[str] = Query(default=None),
-    status: Optional[DocumentStatus] = Query(default=None),
+    filename: str | None = Query(default=None),
+    file_type: str | None = Query(default=None),
+    status: DocumentStatus | None = Query(default=None),
     _: Collection = Depends(get_collection_or_404_owned),
     __: dict = Depends(get_current_user),
     session: Session = Depends(get_session),

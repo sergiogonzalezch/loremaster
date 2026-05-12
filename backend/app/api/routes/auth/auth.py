@@ -6,6 +6,7 @@ de tokens via token_version.
 """
 
 import re
+
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from sqlmodel import Session, select

@@ -8,6 +8,9 @@ from typing import Literal, Optional
 from fastapi import UploadFile
 from sqlmodel import Session, select
 
+from app.core.config import settings
+from app.core.database.soft_delete import soft_delete
+from app.core.database.utils import db_commit, paginate_with_sort
 from app.core.exceptions import (
     DocumentExtractionError,
     DocumentNotRetryableError,
@@ -16,14 +19,11 @@ from app.core.exceptions import (
     UnsupportedFileTypeError,
     VectorStoreError,
 )
-from app.core.config import settings
-from app.models.db.document import Document, DocumentStatus
-from app.core.database.soft_delete import soft_delete
-from app.core.database.utils import paginate_with_sort, db_commit
-from app.core.storage.validator import FileValidator, DOCUMENT_MIME_TYPES
+from app.core.storage.validator import DOCUMENT_MIME_TYPES, FileValidator
 from app.domain.content_guard import check_document_content
 from app.engine.extractor import extract_text
-from app.engine.rag import ingest_chunks, delete_document_chunks
+from app.engine.rag import delete_document_chunks, ingest_chunks
+from app.models.db.document import Document, DocumentStatus
 
 
 def _sanitize_for_log(filename: str) -> str:
@@ -170,11 +170,11 @@ def list_documents_service(
     collection_id: str,
     page: int = 1,
     page_size: int = 20,
-    filename: Optional[str] = None,
-    file_type: Optional[str] = None,
-    status: Optional[DocumentStatus] = None,
-    created_after: Optional[datetime] = None,
-    created_before: Optional[datetime] = None,
+    filename: str | None = None,
+    file_type: str | None = None,
+    status: DocumentStatus | None = None,
+    created_after: datetime | None = None,
+    created_before: datetime | None = None,
     order: Literal["asc", "desc"] = "desc",
 ) -> tuple[list[Document], int]:
     """Lista los documentos de una colección con paginación y filtros.

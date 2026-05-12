@@ -2,7 +2,8 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy import Column, ForeignKey, String
-from sqlmodel import SQLModel, Field as SQLField
+from sqlmodel import Field as SQLField
+from sqlmodel import SQLModel
 
 from app.core.database.soft_delete import SoftDeleteMixin
 
@@ -52,7 +53,7 @@ class ImageGeneration(SQLModel, SoftDeleteMixin, table=True):
             index=True,
         )
     )
-    content_id: Optional[str] = SQLField(
+    content_id: str | None = SQLField(
         sa_column=Column(
             String(36),
             ForeignKey("entity_contents.id"),
@@ -127,9 +128,9 @@ class ImageRecord(SQLModel, SoftDeleteMixin, table=True):
     )
 
     seed: int = SQLField(default=42)
-    storage_path: Optional[str] = SQLField(default=None, max_length=500)
-    image_url: Optional[str] = SQLField(default=None, max_length=500)
-    filename: Optional[str] = SQLField(default=None, max_length=255)
+    storage_path: str | None = SQLField(default=None, max_length=500)
+    image_url: str | None = SQLField(default=None, max_length=500)
+    filename: str | None = SQLField(default=None, max_length=255)
     extension: str = SQLField(default="png", max_length=10)
     width: int = SQLField(default=1024)
     height: int = SQLField(default=1024)

@@ -3,7 +3,8 @@
 Carga variables de entorno desde archivo .env y valida valores críticos
 como CORS y secret_key en entornos no locales.
 """
-import os, warnings  # noqa: E401
+import os  # noqa: E401
+import warnings
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict

@@ -1,10 +1,10 @@
 import logging
-from typing import TypeVar, Type, Optional, Sequence
+from typing import Optional, Sequence, Type, TypeVar
 
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import Select
-from sqlmodel import Session, select, SQLModel
+from sqlmodel import Session, SQLModel, select
 
 from app.core.exceptions import DatabaseError
 
@@ -32,7 +32,7 @@ def paginate(
 
 def paginate_with_sort(
     session: Session,
-    model: Type[T],
+    model: type[T],
     conditions: Sequence,
     page: int = 1,
     page_size: int = 20,
@@ -73,10 +73,10 @@ def db_commit(session: Session, operation: str) -> None:
 
 def get_active_by_id(
     session: Session,
-    model: Type[T],
+    model: type[T],
     record_id: str,
     collection_id: str,
-) -> Optional[T]:
+) -> T | None:
     """Obtiene un registro activo por ID y collection_id, sin soft-deleted."""
     stmt = select(model).where(
         model.id == record_id,

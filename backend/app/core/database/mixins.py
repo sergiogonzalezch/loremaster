@@ -25,4 +25,4 @@ class SoftDeleteMixin:
     """Mixin que agrega campos is_deleted y deleted_at para soft-delete."""
 
     is_deleted: bool = Field(default=False)
-    deleted_at: Optional[datetime] = Field(default=None)
+    deleted_at: datetime | None = Field(default=None)

@@ -22,7 +22,7 @@ class SharedContentSummary(BaseModel):
     category: str
     entity_name: str
     entity_type: str
-    confirmed_at: Optional[datetime] = None
+    confirmed_at: datetime | None = None
     created_at: datetime
 
 
@@ -43,7 +43,7 @@ class SharedImageSummary(BaseModel):
 
     id: str
     generation_id: str
-    image_url: Optional[str] = None
+    image_url: str | None = None
     seed: int
     auto_prompt: str
     final_prompt: str
@@ -65,9 +65,9 @@ class PublicProfileResponse(BaseModel):
     """
 
     username: str
-    display_name: Optional[str] = None
-    bio: Optional[str] = None
-    avatar_url: Optional[str] = None
+    display_name: str | None = None
+    bio: str | None = None
+    avatar_url: str | None = None
     shared_contents: list[SharedContentSummary] = []
     shared_images: list[SharedImageSummary] = []
 
@@ -95,8 +95,8 @@ class PublicFeedItem(BaseModel):
     entity_name: str
     entity_type: str
     owner_username: str
-    owner_display_name: Optional[str] = None
-    confirmed_at: Optional[datetime] = None
+    owner_display_name: str | None = None
+    confirmed_at: datetime | None = None
     created_at: datetime
 
 
@@ -119,12 +119,12 @@ class PublicImageItem(BaseModel):
 
     image_id: str
     generation_id: str
-    image_url: Optional[str] = None
+    image_url: str | None = None
     seed: int
     auto_prompt: str
     final_prompt: str
     entity_name: str
     entity_type: str
     owner_username: str
-    owner_display_name: Optional[str] = None
+    owner_display_name: str | None = None
     created_at: datetime

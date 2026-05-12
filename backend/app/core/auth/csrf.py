@@ -7,7 +7,7 @@ y el frontend lo devuelve en el header X-CSRF-Token en cada mutación.
 
 import secrets
 
-from fastapi import Request, HTTPException
+from fastapi import HTTPException, Request
 
 from app.core.config import settings
 

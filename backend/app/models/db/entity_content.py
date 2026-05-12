@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from sqlalchemy import Column, ForeignKey, String
-from sqlmodel import SQLModel, Field
+from sqlmodel import Field, SQLModel
 
 from app.core.database.soft_delete import SoftDeleteMixin
 from app.models.enums import ContentCategory, ContentStatus

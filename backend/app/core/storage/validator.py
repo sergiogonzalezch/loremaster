@@ -18,15 +18,15 @@ from typing import Set
 from fastapi import UploadFile
 from PIL import Image
 
-IMAGE_EXTENSIONS: Set[str] = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
-IMAGE_MIME_TYPES: Set[str] = {
+IMAGE_EXTENSIONS: set[str] = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+IMAGE_MIME_TYPES: set[str] = {
     "image/jpeg",
     "image/jpg",
     "image/png",
     "image/webp",
     "image/gif",
 }
-DOCUMENT_MIME_TYPES: Set[str] = {"text/plain", "application/pdf"}
+DOCUMENT_MIME_TYPES: set[str] = {"text/plain", "application/pdf"}
 
 MAGIC_BYTES: dict[bytes, str] = {
     b"%PDF": "application/pdf",
@@ -133,7 +133,7 @@ class FileValidator:
     @staticmethod
     def validate_document(
         file: UploadFile,
-        allowed_types: Set[str] | None = None,
+        allowed_types: set[str] | None = None,
         max_bytes: int | None = None,
     ) -> bytes:
         """Valida que el archivo sea un documento permitido.

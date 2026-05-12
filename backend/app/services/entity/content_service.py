@@ -5,7 +5,7 @@ from typing import Literal, Optional
 from sqlmodel import Session, select
 
 from app.core.database.soft_delete import soft_delete
-from app.core.database.utils import paginate_with_sort, db_commit
+from app.core.database.utils import db_commit, paginate_with_sort
 from app.core.exceptions import (
     ContentDiscardedError,
     ContentNotShareableError,
@@ -13,9 +13,9 @@ from app.core.exceptions import (
 from app.domain.content_guard import check_user_input
 from app.models.db.entity import Entity
 from app.models.db.entity_content import EntityContent
-from app.models.schemas.entity_content import EntityContentResponse
 from app.models.db.generated_text import GeneratedText
 from app.models.enums import ContentCategory, ContentStatus
+from app.models.schemas.entity_content import EntityContentResponse
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ def list_contents(
     session: Session,
     entity_id: str,
     collection_id: str,
-    category: Optional[ContentCategory] = None,
+    category: ContentCategory | None = None,
     status: Literal["active", "pending", "confirmed", "discarded", "all"] = "active",
     page: int = 1,
     page_size: int = 20,

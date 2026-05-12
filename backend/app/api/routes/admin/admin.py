@@ -5,16 +5,16 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlmodel import Session, select
 
+from app.core.api.params import PaginationParams
 from app.core.auth.dependencies import get_admin_user
 from app.core.database.utils import paginate_with_sort
-from app.core.api.params import PaginationParams
 from app.database import get_session
+from app.models.db.collection import Collection
 from app.models.db.user import User
 from app.models.schemas.user_schemas import UserAdminResponse
-from app.models.db.collection import Collection
-from app.services.profile.profile_service import get_avatar_info, delete_profile_image
 from app.services.collection.collection_service import delete_collection_service
 from app.services.deletion_service import cascade_delete_collection
+from app.services.profile.profile_service import delete_profile_image, get_avatar_info
 
 logger = logging.getLogger(__name__)
 

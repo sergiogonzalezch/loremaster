@@ -18,5 +18,5 @@ class PaginationParams:
 class DateRangeParams:
     """Parámetros de rango de fechas para filtrado."""
 
-    created_after: Optional[datetime] = Query(default=None)
-    created_before: Optional[datetime] = Query(default=None)
+    created_after: datetime | None = Query(default=None)
+    created_before: datetime | None = Query(default=None)

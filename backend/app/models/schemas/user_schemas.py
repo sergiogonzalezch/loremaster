@@ -38,10 +38,10 @@ class UserProfileResponse(BaseModel):
 
     id: str
     username: str
-    email: Optional[str] = None
-    display_name: Optional[str] = None
-    bio: Optional[str] = None
-    avatar_url: Optional[str] = None
+    email: str | None = None
+    display_name: str | None = None
+    bio: str | None = None
+    avatar_url: str | None = None
     is_admin: bool = False
     created_at: datetime
 
@@ -65,10 +65,10 @@ class UserAdminResponse(BaseModel):
 
     id: str
     username: str
-    email: Optional[str] = None
-    display_name: Optional[str] = None
-    bio: Optional[str] = None
-    avatar_url: Optional[str] = None
+    email: str | None = None
+    display_name: str | None = None
+    bio: str | None = None
+    avatar_url: str | None = None
     is_admin: bool
     is_deleted: bool
     created_at: datetime
@@ -83,9 +83,9 @@ class UpdateProfileRequest(BaseModel):
         email: Nuevo correo electrónico (opcional).
     """
 
-    display_name: Optional[str] = Field(default=None, max_length=100)
-    bio: Optional[str] = Field(default=None, max_length=500)
-    email: Optional[EmailStr] = Field(default=None, max_length=255)
+    display_name: str | None = Field(default=None, max_length=100)
+    bio: str | None = Field(default=None, max_length=500)
+    email: EmailStr | None = Field(default=None, max_length=255)
 
 
 class AvatarResponse(BaseModel):

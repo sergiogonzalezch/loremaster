@@ -1,10 +1,10 @@
 # app/services/image_generation_service.py
 
 import logging
-import uuid as _uuid
 import os
-
+import uuid as _uuid
 from datetime import datetime, timezone
+
 from sqlmodel import Session, select
 
 from app.core.config import settings
@@ -21,14 +21,14 @@ from app.engine.comfyui_client import (
 from app.engine.image_prompt_builder import build_visual_prompt
 from app.models.db.entity import Entity
 from app.models.db.entity_content import EntityContent
-from app.models.enums import ContentCategory, ContentStatus
 from app.models.db.image_generation import ImageGeneration, ImageRecord
+from app.models.enums import ContentCategory, ContentStatus
 from app.models.schemas.image_generation import (
     BuildPromptResponse,
     GenerateImagesResponse,
-    ImageResult,
-    ImageRecordResponse,
     ImageGenerationListItem,
+    ImageRecordResponse,
+    ImageResult,
 )
 
 logger = logging.getLogger(__name__)

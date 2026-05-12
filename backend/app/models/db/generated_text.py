@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from sqlalchemy import Column, ForeignKey, String
-from sqlmodel import SQLModel, Field
+from sqlmodel import Field, SQLModel
 
 
 class GeneratedText(SQLModel, table=True):

@@ -1,9 +1,9 @@
 from datetime import datetime, timezone
-from typing import Optional
 from enum import Enum
+from typing import Optional
 
 from sqlalchemy import Column, ForeignKey, String, Text
-from sqlmodel import SQLModel, Field
+from sqlmodel import Field, SQLModel
 
 from app.core.database.soft_delete import SoftDeleteMixin
 
@@ -55,11 +55,11 @@ class Document(SQLModel, SoftDeleteMixin, table=True):
     )
     filename: str = Field(max_length=255)
     file_type: str = Field(max_length=100)
-    content_hash: Optional[str] = Field(default=None, max_length=64)
+    content_hash: str | None = Field(default=None, max_length=64)
     chunk_count: int = Field(default=0)
     status: DocumentStatus = Field(default=DocumentStatus.processing, max_length=50)
-    processing_error: Optional[str] = Field(
+    processing_error: str | None = Field(
         sa_column=Column(Text, nullable=True), default=None
     )
-    raw_text: Optional[str] = Field(sa_column=Column(Text, nullable=True), default=None)
+    raw_text: str | None = Field(sa_column=Column(Text, nullable=True), default=None)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

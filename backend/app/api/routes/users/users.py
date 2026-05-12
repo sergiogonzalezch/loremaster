@@ -1,29 +1,29 @@
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 from sqlmodel import Session, select
 
-from app.core.database.dependencies import get_current_db_user
 from app.core.api.filters import _CONTENT_CONDITIONS, _IMAGE_CONDITIONS
-from app.models.schemas.user_schemas import (
-    AvatarResponse,
-    UpdateProfileRequest,
-    UserProfileResponse,
-)
-from app.models.schemas.public import (
-    PublicProfileResponse,
-    SharedContentSummary,
-    SharedImageSummary,
-)
-from app.models.db.user import User
-from app.services.profile.profile_service import (
-    delete_profile_image,
-    get_avatar_info,
-    upload_profile_image,
-)
+from app.core.database.dependencies import get_current_db_user
 from app.database import get_session
 from app.models.db.collection import Collection
 from app.models.db.entity import Entity
 from app.models.db.entity_content import EntityContent
 from app.models.db.image_generation import ImageGeneration, ImageRecord
+from app.models.db.user import User
+from app.models.schemas.public import (
+    PublicProfileResponse,
+    SharedContentSummary,
+    SharedImageSummary,
+)
+from app.models.schemas.user_schemas import (
+    AvatarResponse,
+    UpdateProfileRequest,
+    UserProfileResponse,
+)
+from app.services.profile.profile_service import (
+    delete_profile_image,
+    get_avatar_info,
+    upload_profile_image,
+)
 
 router = APIRouter(prefix="/users", tags=["users"])
 

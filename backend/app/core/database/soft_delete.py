@@ -10,7 +10,7 @@ class SoftDeleteMixin:
     """Mixin que agrega campos de soft-delete a un modelo: is_deleted y deleted_at."""
 
     is_deleted: bool = False
-    deleted_at: Optional[datetime] = None
+    deleted_at: datetime | None = None
 
 
 def soft_delete(session: Session, record) -> bool:

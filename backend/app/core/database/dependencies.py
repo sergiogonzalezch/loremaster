@@ -1,8 +1,8 @@
 from fastapi import Depends, HTTPException
 from sqlmodel import Session
 
-from app.core.database.utils import get_active_by_id
 from app.core.auth.dependencies import get_current_user
+from app.core.database.utils import get_active_by_id
 from app.database import get_session
 from app.models.db.collection import Collection
 from app.models.db.document import Document

@@ -4,21 +4,21 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlmodel import Session
 
 from app.core.api.params import DateRangeParams, PaginationParams
+from app.core.auth.dependencies import get_current_user
 from app.core.database.dependencies import (
     get_collection_or_404_owned,
     get_entity_or_404_owned,
 )
-from app.core.auth.dependencies import get_current_user
 from app.core.exceptions import DatabaseError, DuplicateEntityNameError
 from app.database import get_session
 from app.models.db.collection import Collection
 from app.models.db.entity import Entity, EntityType
+from app.models.schemas.collection import BulkDeleteRequest
 from app.models.schemas.entity import (
     CreateEntityRequest,
-    UpdateEntityRequest,
     EntityResponse,
+    UpdateEntityRequest,
 )
-from app.models.schemas.collection import BulkDeleteRequest
 from app.models.shared import PaginatedResponse
 from app.services.entity.entities_service import (
     create_entity_service,
@@ -53,8 +53,8 @@ def list_entities(
     collection_id: str,
     pagination: Annotated[PaginationParams, Depends()],
     dates: Annotated[DateRangeParams, Depends()],
-    name: Optional[str] = Query(default=None),
-    type: Optional[EntityType] = Query(default=None),
+    name: str | None = Query(default=None),
+    type: EntityType | None = Query(default=None),
     collection: Collection = Depends(get_collection_or_404_owned),
     session: Session = Depends(get_session),
 ):
@@ -118,8 +118,9 @@ def bulk_delete_entities(
     session: Session = Depends(get_session),
 ):
     """Elimina múltiples entidades en cascada."""
-    from app.models.db.entity import Entity
     from sqlmodel import select
+
+    from app.models.db.entity import Entity
 
     entities = session.exec(
         select(Entity).where(

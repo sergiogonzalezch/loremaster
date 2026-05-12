@@ -1,8 +1,9 @@
 """Configuración del modelo LLM (Ollama) y cadena de procesamiento para RAG."""
 
-from langchain_ollama import OllamaLLM
-from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import PromptTemplate
+from langchain_ollama import OllamaLLM
+
 from app.core.config import settings
 
 _SAFETY_INSTRUCTION = (

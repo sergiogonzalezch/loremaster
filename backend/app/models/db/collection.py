@@ -2,7 +2,8 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy import Column, ForeignKey, String, UniqueConstraint
-from sqlmodel import SQLModel, Field as SQLField
+from sqlmodel import Field as SQLField
+from sqlmodel import SQLModel
 
 from app.core.database.soft_delete import SoftDeleteMixin
 
@@ -35,7 +36,7 @@ class Collection(SQLModel, SoftDeleteMixin, table=True):
     )
     name: str = SQLField(index=True, max_length=255)
     description: str = SQLField(default="", max_length=2000)
-    owner_id: Optional[str] = SQLField(
+    owner_id: str | None = SQLField(
         sa_column=Column(
             String(36),
             ForeignKey("users.id"),
@@ -44,5 +45,5 @@ class Collection(SQLModel, SoftDeleteMixin, table=True):
         )
     )
     created_at: datetime = SQLField(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: Optional[datetime] = SQLField(default=None)
-    updated_by: Optional[str] = SQLField(default=None, max_length=36)
+    updated_at: datetime | None = SQLField(default=None)
+    updated_by: str | None = SQLField(default=None, max_length=36)

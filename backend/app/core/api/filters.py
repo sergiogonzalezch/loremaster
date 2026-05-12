@@ -1,9 +1,9 @@
 """Condiciones de filtro reutilizables para consultas de contenido compartido e imágenes."""
 
+from app.models.db.collection import Collection
+from app.models.db.entity import Entity
 from app.models.db.entity_content import EntityContent
 from app.models.db.image_generation import ImageGeneration, ImageRecord
-from app.models.db.entity import Entity
-from app.models.db.collection import Collection
 from app.models.db.user import User
 from app.models.enums import ContentStatus
 

@@ -5,8 +5,8 @@ from typing import Literal, Optional
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
+from app.core.database.utils import db_commit, paginate_with_sort
 from app.core.exceptions import DuplicateEntityNameError
-from app.core.database.utils import paginate_with_sort, db_commit
 from app.models.db.entity import Entity, EntityType
 from app.models.schemas.entity import CreateEntityRequest, UpdateEntityRequest
 from app.services.deletion_service import cascade_delete_entity
@@ -66,10 +66,10 @@ def list_entities_service(
     collection_id: str,
     page: int = 1,
     page_size: int = 20,
-    name: Optional[str] = None,
-    entity_type: Optional[EntityType] = None,
-    created_after: Optional[datetime] = None,
-    created_before: Optional[datetime] = None,
+    name: str | None = None,
+    entity_type: EntityType | None = None,
+    created_after: datetime | None = None,
+    created_before: datetime | None = None,
     order: Literal["asc", "desc"] = "desc",
 ) -> tuple[list[Entity], int]:
     """Lista las entidades de una colección con paginación y filtros.
@@ -116,7 +116,7 @@ def update_entity_service(
     session: Session,
     entity: Entity,
     request: UpdateEntityRequest,
-    user_id: Optional[str] = None,
+    user_id: str | None = None,
 ) -> Entity:
     """Actualiza los campos de una entidad existente.
 

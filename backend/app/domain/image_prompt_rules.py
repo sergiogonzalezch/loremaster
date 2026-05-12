@@ -4,8 +4,8 @@ Estas instrucciones guían al LLM para extraer atributos visuales del texto
 sin resumir, omitir o filtrar — solo extraer lo que el texto menciona explícitamente.
 """
 
-from app.models.enums import ContentCategory
 from app.models.db.entity import EntityType
+from app.models.enums import ContentCategory
 
 # === CONSTANTES REUTILIZABLES ===
 

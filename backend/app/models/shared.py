@@ -33,7 +33,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
         T: Tipo de los elementos contenidos en data.
     """
 
-    data: List[T]
+    data: list[T]
     meta: PaginationMeta
 
     @classmethod
