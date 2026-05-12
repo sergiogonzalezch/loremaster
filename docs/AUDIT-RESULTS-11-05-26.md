@@ -14,7 +14,7 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 |---|---:|
 | **Resueltos** | **45** |
 | **Parcialmente resueltos** | **6** |
-| **No resueltos** | **3** |
+| **No resueltos** | **2** |
 | **No verificados / pendientes** | **0** |
 | **Total** | **53** |
 
@@ -113,19 +113,18 @@ La validación del código fuente frente a los 53 hallazgos reportados en la aud
 
 ---
 
-## Problemas No Resueltos (3)
+## Problemas No Resueltos (2)
 
-### 🟠 Altos (2)
+### 🟠 Altos (1)
 
 | ID | Problema | Archivo(s) involucrado(s) | Impacto |
-|---|---|---|---|---|
+|---|---|---|---|---|---|
 | **H-14** | Sin defensa CSRF planeada | — | Si se migra a cookies sin `SameSite=Strict` + token CSRF, todas las rutas mutantes quedan expuestas. |
-| **H-13** | JWT en `localStorage` | `frontend/src/utils/token.ts:9-14` | Cualquier XSS futuro exfiltra el token inmediatamente. Mitigado con `sessionStorage` ([Fase 12](AUDIT-FASE10-12-LOG.md)). |
 
 ### 🟡 Medios (1)
 
 | ID | Problema | Archivo(s) involucrado(s) | Impacto |
-|---|---|---|---|---|
+|---|---|---|---|---|---|
 | **M-17** | Migración planeada a cookies sin pareja CSRF defensiva | — | Plan pendiente sin implementación. |
 
 ### 🟢 Bajos (0)
