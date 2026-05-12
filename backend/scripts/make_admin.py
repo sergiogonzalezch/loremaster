@@ -51,6 +51,7 @@ def main():
         session.commit()
 
         print(f"User '{username}' is now an admin.")
+        print(f"audit action=make_admin username={username} promoted_by={os.environ.get('USER', 'unknown')}")
 
 
 if __name__ == "__main__":

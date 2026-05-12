@@ -68,7 +68,7 @@ def list_all_users(
 @router.delete("/collections/{collection_id}", status_code=204)
 def admin_delete_collection(
     collection_id: str,
-    _: dict = Depends(get_admin_user),
+    current_admin: dict = Depends(get_admin_user),
     session: Session = Depends(get_session),
 ):
     """Elimina una colección en nombre de un usuario (solo administradores).
@@ -81,7 +81,12 @@ def admin_delete_collection(
         return Response(status_code=204)
     owner_id = collection.owner_id
     delete_collection_service(session, collection)
-    logger.info("Admin delete collection %s (owner: %s)", collection_id, owner_id)
+    logger.info(
+        "audit action=admin_delete_collection collection_id=%s owner_id=%s admin_id=%s",
+        collection_id,
+        owner_id,
+        current_admin["sub"],
+    )
     return Response(status_code=204)
 
 
@@ -118,5 +123,9 @@ def admin_delete_user(
     user.deleted_at = datetime.now(timezone.utc)
     session.add(user)
     session.commit()
-    logger.info("Admin delete user %s (by: %s)", user_id, current_admin["sub"])
+    logger.info(
+        "audit action=admin_delete_user user_id=%s admin_id=%s",
+        user_id,
+        current_admin["sub"],
+    )
     return Response(status_code=204)
