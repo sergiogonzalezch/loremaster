@@ -217,7 +217,7 @@ def _generate_comfyui_images(
             logger.warning(
                 "ComfyUI falló en iteración %d/%d: %s",
                 i + 1,
-                batch_size,
+                params.batch_size,
                 exc,
             )
             continue

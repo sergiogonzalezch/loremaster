@@ -17,10 +17,10 @@ from app.models.db.user import User
 from app.models.schemas.public import PublicFeedItem, PublicImageItem
 from app.models.shared import PaginatedResponse
 
-public_router = APIRouter(prefix="/public", tags=["public"])
+router = APIRouter(prefix="/public", tags=["public"])
 
 
-@public_router.get("/feed", response_model=PaginatedResponse[PublicFeedItem])
+@router.get("/feed", response_model=PaginatedResponse[PublicFeedItem])
 def get_public_feed(
     pagination: Annotated[PaginationParams, Depends()],
     session: Annotated[Session, Depends(get_session)],
@@ -56,7 +56,7 @@ def get_public_feed(
     return PaginatedResponse.build(items, total, pagination.page, pagination.page_size)
 
 
-@public_router.get("/images", response_model=PaginatedResponse[PublicImageItem])
+@router.get("/images", response_model=PaginatedResponse[PublicImageItem])
 def get_public_images(
     pagination: Annotated[PaginationParams, Depends()],
     session: Annotated[Session, Depends(get_session)],

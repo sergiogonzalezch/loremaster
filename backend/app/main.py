@@ -87,7 +87,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(
     request: Request,
-    _exc: RequestValidationError,
+    _: RequestValidationError,
 ) -> JSONResponse:
     """Maneja errores de validación sin repetir el input del cliente (evita info leak)."""
     logger.warning("Validation error on %s %s", request.method, request.url.path)
