@@ -11,6 +11,7 @@ from fastapi import Depends, HTTPException, Request
 from sqlmodel import Session
 
 from app.core.auth import verify_token
+from app.core.auth.clerk import decode_clerk_token
 from app.core.config import settings
 from app.database import get_session
 from app.models.db.user import User
