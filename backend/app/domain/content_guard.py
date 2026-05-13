@@ -23,7 +23,7 @@ from app.core.exceptions import ContentNotAllowedError, GeneratedContentBlockedE
 
 logger = logging.getLogger(__name__)
 
-# Sustituciones leetspeak comunes para evasión de filtros (M-1)
+# Sustituciones leetspeak comunes para evasión de filtros
 # 0→o, 1→i, 3→e, 4→a, 5→s, 6→g, @→a, $→s
 _LEET_TABLE = str.maketrans("013456@$", "oieasgas")
 
