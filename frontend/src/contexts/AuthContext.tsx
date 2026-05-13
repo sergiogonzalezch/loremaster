@@ -25,6 +25,8 @@ interface AuthUser {
 /** Valor expuesto por el contexto de autenticación. */
 interface AuthContextValue {
   user: AuthUser | null;
+  /** true mientras se verifica la sesión inicial (evita redirect prematuro en refresh) */
+  loading: boolean;
   login: () => void;
   logout: () => void;
 }
@@ -42,13 +44,15 @@ export const AuthContext = createContext<AuthContextValue | null>(null);
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const logout = useCallback(() => {
     void logoutApi().catch(() => {});
     setUser(null);
   }, []);
 
-  // Verificar sesión activa al montar (lee cookie HttpOnly automaticamente)
+  // Verifica la sesión activa al montar (lee la cookie HttpOnly automáticamente).
+  // loading=true hasta que finalice para que ProtectedRoute no redirija antes de tiempo.
   useEffect(() => {
     getMyProfile()
       .then((profile) => {
@@ -59,8 +63,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       })
       .catch(() => {
-        // 401 = no hay sesión activa; mantener user en null
         setUser(null);
+      })
+      .finally(() => {
+        setLoading(false);
       });
   }, []);
 
@@ -81,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
