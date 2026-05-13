@@ -16,7 +16,7 @@ def extract_text(content_bytes: bytes, content_type: str) -> str:
 
     Soporta 'application/pdf' y 'text/plain'. Lanza ValueError para tipos no soportados.
 
-    Para PDFs, implementa H-7: validación de límite de páginas para prevenir
+    Para PDFs, valida el límite de páginas para prevenir
     PDF bombs (archivos PDF con miles de páginas que causan OOM).
 
     Args:
