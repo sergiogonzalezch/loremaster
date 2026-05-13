@@ -35,7 +35,7 @@ class RegisterRequest(BaseModel):
     @field_validator("username")
     @classmethod
     def validate_username(cls, v: str) -> str:
-        r"""Valida que el username no contenga caracteres peligrosos (C-5)."""
+        r"""Valida que el username no contenga caracteres peligrosos."""
         if not re.match(r"^[A-Za-z0-9_-]{3,50}$", v):
             msg = "El nombre de usuario debe contener solo letras, números, guiones bajos y guiones"
             raise ValueError(
