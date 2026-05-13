@@ -3,6 +3,7 @@
 import logging
 import threading
 
+import httpx
 from langchain_core.output_parsers import StrOutputParser
 
 from app.core.config import settings
@@ -16,6 +17,10 @@ logger = logging.getLogger(__name__)
 _llm_semaphore = threading.Semaphore(settings.max_concurrent_llm_calls)
 
 generation_chain = llm | StrOutputParser()
+
+# Errores transitorios de red/transporte que indican un servicio caído (Qdrant, Ollama).
+# Errores de programación (TypeError, ValueError de validación) deben burbujear sin capturar.
+_TRANSPORT_ERRORS = (httpx.HTTPError, ConnectionError, OSError)
 
 
 def invoke_rag_pipeline(
@@ -42,14 +47,14 @@ def invoke_rag_pipeline(
 
     try:
         context, num_chunks = retrieve_context(collection_id, query, extra_context)
-    except Exception as e:
+    except _TRANSPORT_ERRORS as e:
         logger.exception("Vector store unavailable for collection %s", collection_id)
         raise RuntimeError("Vector store unavailable") from e
 
     try:
         with _llm_semaphore:
             answer = chain.invoke({"context": context, "query": query})
-    except Exception as e:
+    except _TRANSPORT_ERRORS as e:
         logger.exception("LLM generation failed for collection %s", collection_id)
         raise RuntimeError("LLM service unavailable") from e
 
@@ -90,7 +95,7 @@ def invoke_generation_pipeline(
 
     try:
         context, num_chunks = retrieve_context(collection_id, query, extra_context)
-    except Exception as e:
+    except _TRANSPORT_ERRORS as e:
         logger.exception("Vector store unavailable for collection %s", collection_id)
         raise RuntimeError("Vector store unavailable") from e
 
@@ -105,7 +110,7 @@ def invoke_generation_pipeline(
     try:
         with _llm_semaphore:
             answer = generation_chain.invoke(rendered_prompt)
-    except Exception as e:
+    except _TRANSPORT_ERRORS as e:
         logger.exception(
             "LLM generation failed for entity '%s' collection %s",
             entity_name,

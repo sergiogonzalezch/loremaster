@@ -1,5 +1,6 @@
 import importlib
 
+import httpx
 import pytest
 
 
@@ -53,7 +54,7 @@ async def test_rag_query_llm_unavailable_503(
 
     class BrokenChain:
         def invoke(self, payload: dict):
-            raise Exception("LLM down")
+            raise httpx.ConnectError("LLM down")
 
     monkeypatch.setattr("app.engine.rag_pipeline.chain", BrokenChain())
 
@@ -71,7 +72,7 @@ async def test_rag_query_qdrant_unavailable_503(
     """GEN-05: Si retrieve_context lanza excepción (Qdrant caído), retorna 503."""
 
     def _qdrant_down(*args, **kwargs):
-        raise Exception("Qdrant connection refused")
+        raise httpx.ConnectError("Qdrant connection refused")
 
     monkeypatch.setattr("app.engine.rag_pipeline.retrieve_context", _qdrant_down)
 

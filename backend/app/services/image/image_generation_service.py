@@ -2,6 +2,7 @@
 
 import logging
 import uuid as _uuid
+from contextlib import suppress
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -487,10 +488,8 @@ def delete_image_service(
     # Bugfix: storage_path puede ser None en imágenes mock aunque el backend cambie
     if settings.image_backend != "mock" and record.storage_path:
         full_path = Path(settings.media_root) / record.storage_path
-        try:
+        with suppress(FileNotFoundError, OSError):
             full_path.unlink()
-        except (FileNotFoundError, OSError):
-            pass
 
     db_commit(session, f"delete_image({image_id})")
 

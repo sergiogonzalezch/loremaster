@@ -74,7 +74,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     allowed_origins: list[str] = ["http://localhost:3000"]
 
-    # LLM (Ollama)
+    # LLM (Ollama)  # noqa: ERA001
     ollama_model: str = "llama3.2:latest"
     ollama_base_url: str = "http://localhost:11434"
 
@@ -114,12 +114,12 @@ class Settings(BaseSettings):
     rag_score_threshold: float = 0.3
     max_pdf_pages: int = 100  # H-7: Prevención de PDF bombs
 
-    # Auth (JWT)
+    # Auth (JWT)  # noqa: ERA001
     secret_key: str  # C-7: Requerida. Generar con: python -c "import secrets; print(secrets.token_hex(32))"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
 
-    # Cookies (H-13, H-14, M-17)
+    # Cookies (H-13, H-14, M-17)  # noqa: ERA001
     cookie_access_name: str = "access_token"
     cookie_csrf_name: str = "csrf_token"
     cookie_secure: bool = False  # True en producción/demo (HTTPS)
@@ -127,7 +127,7 @@ class Settings(BaseSettings):
     cookie_domain: str | None = None
     cookie_path: str = "/api/v1"
 
-    # Clerk (production)
+    # Clerk (production)  # noqa: ERA001
     clerk_jwks_url: str = "https://your-org.clerk.accounts.dev/.well-known/jwks.json"
     clerk_audience: str = "your-audience-id"
 
