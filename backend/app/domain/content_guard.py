@@ -83,10 +83,10 @@ _OUTPUT_BLOCKED_PATTERNS: tuple[re.Pattern[str], ...] = (
 
 
 def _normalize(text: str) -> str:
-    """Normaliza texto para comparación robusta contra evasiones comunes (M-1, M-2).
+    """Normaliza texto para comparación robusta contra evasiones comunes.
 
     Pasos:
-    1. Trunca a _MAX_TEXT_LENGTH para prevenir ReDoS (M-2).
+    1. Trunca a _MAX_TEXT_LENGTH para prevenir ReDoS.
     2. NFKD + elimina diacríticos: é→e, ó→o, caracteres de ancho completo.
     3. Lowercase.
     4. Sustituye leetspeak (_LEET_TABLE): 0→o, 1→i, 3→e, @→a, $→s, etc.
