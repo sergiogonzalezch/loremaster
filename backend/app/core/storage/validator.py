@@ -120,7 +120,7 @@ class FileValidator:
 
         content = file.file.read()
 
-        # Validación de magic bytes / integridad de imagen (M-18)
+        # Validación de magic bytes / integridad de imagen
         try:
             img = Image.open(BytesIO(content))
             img.verify()
