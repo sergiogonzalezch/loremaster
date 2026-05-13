@@ -77,7 +77,18 @@ def list_contents(
         order_col=EntityContent.created_at,
         order=order,
     )
-    return [_to_response(session, item) for item in items], total
+
+    gt_ids = [item.generated_text_id for item in items if item.generated_text_id]
+    gt_map: dict[str, GeneratedText] = {}
+    if gt_ids:
+        gt_map = {
+            gt.id: gt
+            for gt in session.exec(
+                select(GeneratedText).where(GeneratedText.id.in_(gt_ids))
+            ).all()
+        }
+
+    return [_to_response(item, gt_map.get(item.generated_text_id)) for item in items], total
 
 
 def edit_content(
@@ -122,7 +133,8 @@ def edit_content(
     session.add(content)
     db_commit(session, f"edit_content({content_id})")
     session.refresh(content)
-    return _to_response(session, content)
+    gt = session.get(GeneratedText, content.generated_text_id)
+    return _to_response(content, gt)
 
 
 def confirm_content(
@@ -202,7 +214,8 @@ def discard_content(
     db_commit(session, f"discard_content({content_id})")
     session.refresh(content)
     logger.info("EntityContent %s discarded", content_id)
-    return _to_response(session, content)
+    gt = session.get(GeneratedText, content.generated_text_id)
+    return _to_response(content, gt)
 
 
 def share_content(
@@ -241,7 +254,8 @@ def share_content(
     db_commit(session, f"share_content({content_id})")
     session.refresh(content)
     logger.info("EntityContent %s is_shared=%s", content_id, shared)
-    return _to_response(session, content)
+    gt = session.get(GeneratedText, content.generated_text_id)
+    return _to_response(content, gt)
 
 
 def soft_delete_content(
@@ -277,8 +291,7 @@ def soft_delete_content(
 # ── Private helpers ───────────────────────────────────────────────────────────
 
 
-def _to_response(session: Session, content: EntityContent) -> EntityContentResponse:
-    gt = session.get(GeneratedText, content.generated_text_id)
+def _to_response(content: EntityContent, gt: GeneratedText | None) -> EntityContentResponse:
     return EntityContentResponse(
         id=content.id,
         entity_id=content.entity_id,
