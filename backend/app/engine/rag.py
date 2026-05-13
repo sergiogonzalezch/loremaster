@@ -42,7 +42,8 @@ def _ensure_qdrant_collection(collection_id: str) -> None:
         _qdrant_client.create_collection(
             collection_name=name,
             vectors_config=VectorParams(
-                size=settings.embedding_dims, distance=Distance.COSINE,
+                size=settings.embedding_dims,
+                distance=Distance.COSINE,
             ),
         )
         if not _collection_exists(name):

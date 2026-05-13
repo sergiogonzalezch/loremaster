@@ -64,7 +64,8 @@ def build_prompt(
     except Exception as e:
         logger.exception("Error inesperado en build_prompt")
         raise HTTPException(
-            status_code=500, detail="Error interno del servidor.",
+            status_code=500,
+            detail="Error interno del servidor.",
         ) from e
 
 
@@ -109,12 +110,14 @@ def generate_images(
         ) from e
     except DatabaseError as e:
         raise HTTPException(
-            status_code=500, detail="Error interno del servidor.",
+            status_code=500,
+            detail="Error interno del servidor.",
         ) from e
     except Exception as e:
         logger.exception("Error inesperado en generate_images")
         raise HTTPException(
-            status_code=500, detail="Error interno del servidor.",
+            status_code=500,
+            detail="Error interno del servidor.",
         ) from e
 
 
@@ -132,13 +135,18 @@ def share_image(
     """Marca o desmarca una imagen como compartida públicamente."""
     try:
         return share_image_service(
-            session, entity, generation_id, image_id, shared=request.shared,
+            session,
+            entity,
+            generation_id,
+            image_id,
+            shared=request.shared,
         )
     except NoContextAvailableError as e:
         raise HTTPException(status_code=404, detail="Imagen no encontrada.") from e
     except DatabaseError as e:
         raise HTTPException(
-            status_code=500, detail="Error interno del servidor.",
+            status_code=500,
+            detail="Error interno del servidor.",
         ) from e
 
 
@@ -162,12 +170,14 @@ def delete_image(
         ) from e
     except DatabaseError as e:
         raise HTTPException(
-            status_code=500, detail="Error interno del servidor.",
+            status_code=500,
+            detail="Error interno del servidor.",
         ) from e
     except Exception as e:
         logger.exception("Error inesperado en delete_image")
         raise HTTPException(
-            status_code=500, detail="Error interno del servidor.",
+            status_code=500,
+            detail="Error interno del servidor.",
         ) from e
 
 
@@ -191,7 +201,8 @@ def get_generation(
     except Exception as e:
         logger.exception("Error inesperado en get_generation")
         raise HTTPException(
-            status_code=500, detail="Error interno del servidor.",
+            status_code=500,
+            detail="Error interno del servidor.",
         ) from e
 
 
@@ -210,5 +221,6 @@ def list_generations(
     except Exception as e:
         logger.exception("Error inesperado en list_generations")
         raise HTTPException(
-            status_code=500, detail="Error interno del servidor.",
+            status_code=500,
+            detail="Error interno del servidor.",
         ) from e

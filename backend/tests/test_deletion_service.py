@@ -1,5 +1,3 @@
-import pytest
-
 import app.services.deletion_service as deletion_service
 
 

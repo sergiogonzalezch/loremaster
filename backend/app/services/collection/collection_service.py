@@ -2,8 +2,6 @@
 
 import logging
 from datetime import datetime, timezone
-from typing import Literal
-
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
@@ -21,7 +19,8 @@ logger = logging.getLogger(__name__)
 
 
 def _fetch_counts(
-    session: Session, collection_ids: list[str],
+    session: Session,
+    collection_ids: list[str],
 ) -> tuple[dict[str, int], dict[str, int]]:
     if not collection_ids:
         return {}, {}
@@ -48,7 +47,8 @@ def _fetch_counts(
 
 
 def get_collection_with_counts_service(
-    session: Session, collection: Collection,
+    session: Session,
+    collection: Collection,
 ) -> dict:
     """Enriquece una colección con recuentos de documentos y entidades.
 
@@ -69,7 +69,10 @@ def get_collection_with_counts_service(
 
 
 def create_collection_service(
-    session: Session, owner_id: str, name: str, description: str = "",
+    session: Session,
+    owner_id: str,
+    name: str,
+    description: str = "",
 ) -> Collection:
     """Crea una nueva colección para un usuario.
 
@@ -109,7 +112,10 @@ def create_collection_service(
         raise DuplicateCollectionNameError(name) from e
     session.refresh(collection)
     logger.info(
-        "Collection '%s' created with id %s (owner: %s)", name, collection.id, owner_id,
+        "Collection '%s' created with id %s (owner: %s)",
+        name,
+        collection.id,
+        owner_id,
     )
     return collection
 

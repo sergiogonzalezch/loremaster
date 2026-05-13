@@ -91,7 +91,9 @@ def list_contents(
             ).all()
         }
 
-    return [_to_response(item, gt_map.get(item.generated_text_id)) for item in items], total
+    return [
+        _to_response(item, gt_map.get(item.generated_text_id)) for item in items
+    ], total
 
 
 def edit_content(
@@ -294,7 +296,9 @@ def soft_delete_content(
 # ── Private helpers ───────────────────────────────────────────────────────────
 
 
-def _to_response(content: EntityContent, gt: GeneratedText | None) -> EntityContentResponse:
+def _to_response(
+    content: EntityContent, gt: GeneratedText | None
+) -> EntityContentResponse:
     return EntityContentResponse(
         id=content.id,
         entity_id=content.entity_id,

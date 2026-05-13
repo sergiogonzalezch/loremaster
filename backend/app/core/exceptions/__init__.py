@@ -23,7 +23,9 @@ class ContentNotAllowedError(Exception):
     """Lanzada cuando el contenido no pasa la validación de moderación."""
 
     def __init__(
-        self, message: str = "Contenido no permitido.", snippet: str = "",
+        self,
+        message: str = "Contenido no permitido.",
+        snippet: str = "",
     ) -> None:
         """Inicializa la excepción con mensaje y fragmento del contenido."""
         self.snippet = snippet[:200]

@@ -215,7 +215,10 @@ def _generate_comfyui_images(
             output_images = client.get_output_images(result)
         except (httpx.HTTPError, TimeoutError, ValueError) as exc:
             logger.warning(
-                "ComfyUI falló en iteración %d/%d: %s", i + 1, batch_size, exc,
+                "ComfyUI falló en iteración %d/%d: %s",
+                i + 1,
+                batch_size,
+                exc,
             )
             continue
 
@@ -389,8 +392,7 @@ def generate_images_service(
 
     else:
         raise ValueError(
-            f"Backend '{params.backend}' no soportado. "
-            "Usar: 'mock' o 'comfyui'",
+            f"Backend '{params.backend}' no soportado. " "Usar: 'mock' o 'comfyui'",
         )
 
     db_commit(session, f"generate_images({entity.id})")

@@ -66,5 +66,6 @@ def rag_query(
         raise HTTPException(status_code=422, detail=str(e)) from e
     except RuntimeError as e:
         raise HTTPException(
-            status_code=503, detail="No fue posible generar el contenido solicitado.",
+            status_code=503,
+            detail="No fue posible generar el contenido solicitado.",
         ) from e

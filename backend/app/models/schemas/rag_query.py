@@ -32,5 +32,6 @@ class RagQueryResponse(BaseModel):
     answer: str = Field(..., description="Texto generado en respuesta a la consulta.")
     query: str = Field(..., description="Consulta original enviada por el usuario.")
     sources_count: int = Field(
-        ..., description="Número de fragmentos de contexto usados.",
+        ...,
+        description="Número de fragmentos de contexto usados.",
     )

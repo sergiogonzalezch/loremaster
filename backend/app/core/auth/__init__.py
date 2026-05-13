@@ -41,17 +41,20 @@ def verify_token(token: str) -> dict:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         if payload.get("sub") is None:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido",
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token inválido",
             )
         # Protección contra alg-confusion (CVE-2024-33663)
         token_alg = payload.get("alg")
         if token_alg is not None and token_alg != ALGORITHM:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido",
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token inválido",
             )
     except JWTError as e:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido",
         ) from e
     else:
         return payload

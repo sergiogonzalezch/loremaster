@@ -49,7 +49,10 @@ def create_collection(
     """
     try:
         return create_collection_service(
-            session, current_user["sub"], request.name, request.description,
+            session,
+            current_user["sub"],
+            request.name,
+            request.description,
         )
     except DuplicateCollectionNameError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
@@ -65,7 +68,11 @@ def get_collections(
 ):
     """Lista las colecciones del usuario autenticado con filtros y paginación."""
     items, total = list_collections_service(
-        session, current_user["sub"], pagination, dates, name,
+        session,
+        current_user["sub"],
+        pagination,
+        dates,
+        name,
     )
     return PaginatedResponse.build(items, total, pagination.page, pagination.page_size)
 
@@ -89,7 +96,10 @@ def update_collection(
     """Actualiza el nombre o descripción de una colección."""
     try:
         return update_collection_service(
-            session, collection, request, current_user["sub"],
+            session,
+            collection,
+            request,
+            current_user["sub"],
         )
     except DuplicateCollectionNameError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
@@ -105,7 +115,8 @@ def delete_collection(
         vectors_cleaned = delete_collection_service(session, collection)
     except DatabaseError as e:
         raise HTTPException(
-            status_code=500, detail="Error interno del servidor.",
+            status_code=500,
+            detail="Error interno del servidor.",
         ) from e
     if not vectors_cleaned:
         logger.warning(

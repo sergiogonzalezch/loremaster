@@ -3,8 +3,6 @@
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Literal
-
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
@@ -35,7 +33,9 @@ def _find_by_name(session: Session, collection_id: str, name: str) -> Entity | N
 
 
 def create_entity_service(
-    session: Session, request: CreateEntityRequest, collection_id: str,
+    session: Session,
+    request: CreateEntityRequest,
+    collection_id: str,
 ) -> Entity:
     """Crea una nueva entidad dentro de una colección.
 
@@ -140,7 +140,9 @@ def update_entity_service(
     """
     new_name = request.name.strip() if request.name is not None else entity.name
     if new_name != entity.name and _find_by_name(
-        session, entity.collection_id, new_name,
+        session,
+        entity.collection_id,
+        new_name,
     ):
         raise DuplicateEntityNameError(new_name)
     if request.type is not None:
@@ -160,7 +162,9 @@ def update_entity_service(
         raise DuplicateEntityNameError(new_name) from e
     session.refresh(entity)
     logger.info(
-        "Entity '%s' updated in collection %s", entity.name, entity.collection_id,
+        "Entity '%s' updated in collection %s",
+        entity.name,
+        entity.collection_id,
     )
     return entity
 

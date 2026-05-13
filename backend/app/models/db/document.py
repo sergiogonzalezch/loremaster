@@ -62,7 +62,8 @@ class Document(SQLModel, SoftDeleteMixin, table=True):
     chunk_count: int = Field(default=0)
     status: DocumentStatus = Field(default=DocumentStatus.processing, max_length=50)
     processing_error: str | None = Field(
-        sa_column=Column(Text, nullable=True), default=None,
+        sa_column=Column(Text, nullable=True),
+        default=None,
     )
     raw_text: str | None = Field(sa_column=Column(Text, nullable=True), default=None)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

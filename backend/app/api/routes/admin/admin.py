@@ -104,7 +104,8 @@ def admin_delete_user(
     """
     if user_id == current_admin["sub"]:
         raise HTTPException(
-            status_code=403, detail="No puedes eliminar tu propia cuenta",
+            status_code=403,
+            detail="No puedes eliminar tu propia cuenta",
         )
     user = session.get(User, user_id)
     if not user or user.is_deleted:
@@ -121,7 +122,8 @@ def admin_delete_user(
         delete_profile_image(session, user)
     except OSError:
         logger.warning(
-            "Failed to delete avatar for user %s during admin deletion", user_id,
+            "Failed to delete avatar for user %s during admin deletion",
+            user_id,
         )
     user.is_deleted = True
     user.deleted_at = datetime.now(timezone.utc)

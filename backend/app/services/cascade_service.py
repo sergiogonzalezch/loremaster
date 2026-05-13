@@ -41,7 +41,9 @@ def cascade_delete_by_entity(
     for c in contents:
         soft_delete(session, c)
     logger.info(
-        "Soft-deleted %d EntityContent(s) [entity_id=%s]", len(contents), entity_id,
+        "Soft-deleted %d EntityContent(s) [entity_id=%s]",
+        len(contents),
+        entity_id,
     )
     return len(contents)
 

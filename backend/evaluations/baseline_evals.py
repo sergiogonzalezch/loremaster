@@ -1485,13 +1485,11 @@ def main() -> None:
     _ok(f"Coleccion creada: '{collection_name}' (id={cid[:8]}...)")
 
     # ── Ingestar documento semilla ──────────────────────────────────────────
-    seed_ok = True
     if not args.no_seed:
         ingested, err = ingest_seed(api, cid, SEED_DOC_PATH)
         if not ingested:
             _warn(f"Seed no ingestado: {err}")
             _warn("Los casos RAG y de generacion pueden fallar por falta de contexto")
-            seed_ok = False
         else:
             _ok(f"Documento semilla enviado ({SEED_DOC_PATH.name})")
             print("  Esperando procesamiento del documento...", end=" ", flush=True)
@@ -1500,7 +1498,6 @@ def main() -> None:
                 print("listo.")
             else:
                 print(f"\n  [!!] {err}")
-                seed_ok = False
     else:
         _warn("Ingestion del seed omitida (--no-seed)")
 

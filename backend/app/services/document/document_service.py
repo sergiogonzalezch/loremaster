@@ -5,9 +5,6 @@ import hashlib
 import logging
 import re
 from dataclasses import dataclass
-from datetime import datetime
-from typing import Literal
-
 from fastapi import UploadFile
 from sqlmodel import Session, select
 
@@ -104,12 +101,14 @@ async def ingest_document_service(
         )
     except asyncio.TimeoutError:
         logger.exception(
-            "Text extraction timed out for '%s'", _sanitize_for_log(data.filename),
+            "Text extraction timed out for '%s'",
+            _sanitize_for_log(data.filename),
         )
         raise DocumentExtractionError from None
     except Exception as e:
         logger.exception(
-            "Text extraction failed for '%s'", _sanitize_for_log(data.filename),
+            "Text extraction failed for '%s'",
+            _sanitize_for_log(data.filename),
         )
         raise DocumentExtractionError from e
     check_document_content(extracted_text)
@@ -170,7 +169,8 @@ def process_ingest_background(session: Session, document: Document, text: str) -
         document.processing_error = None
     except Exception as e:
         logger.exception(
-            "Background ingest failed for '%s'", _sanitize_for_log(document.filename),
+            "Background ingest failed for '%s'",
+            _sanitize_for_log(document.filename),
         )
         document.status = DocumentStatus.failed
         document.processing_error = str(e)
@@ -230,7 +230,8 @@ def list_documents_service(
 
 
 def retry_document_service(
-    session: Session, document: Document,
+    session: Session,
+    document: Document,
 ) -> tuple[Document, str]:
     """Reinicia el procesamiento de un documento que falló.
 

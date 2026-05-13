@@ -91,7 +91,10 @@ class ComfyUIClient:
         return {"status": "running", "outputs": {}}
 
     def get_history_until_complete(
-        self, prompt_id: str, timeout: int = 300, poll_interval: float = 2.0,
+        self,
+        prompt_id: str,
+        timeout: int = 300,
+        poll_interval: float = 2.0,
     ) -> dict:
         """Espera hasta que la ejecución complete (polling).
 
@@ -129,7 +132,10 @@ class ComfyUIClient:
             time.sleep(poll_interval)
 
     def download_image(
-        self, filename: str, subfolder: str = "", folder_type: str = "output",
+        self,
+        filename: str,
+        subfolder: str = "",
+        folder_type: str = "output",
     ) -> bytes:
         """Descarga una imagen generada.
 
