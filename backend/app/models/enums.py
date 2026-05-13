@@ -1,9 +1,9 @@
 """Enumeraciones para categorías de contenido y estados del ciclo de vida."""
 
-from enum import Enum
+from enum import StrEnum
 
 
-class ContentCategory(str, Enum):
+class ContentCategory(StrEnum):
     """Categorías de contenido que pueden generarse para una entidad.
 
     Attributes:
