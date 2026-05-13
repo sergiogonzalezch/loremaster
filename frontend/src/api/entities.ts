@@ -75,3 +75,14 @@ export function deleteEntity(
 ): Promise<void> {
   return apiDelete<void>(`/collections/${collectionId}/entities/${entityId}`);
 }
+
+/** Elimina múltiples entidades en cascada (máx. 100 IDs). */
+export function bulkDeleteEntities(
+  collectionId: string,
+  ids: string[],
+): Promise<void> {
+  return apiPost<void>(
+    `/collections/${collectionId}/entities/bulk-delete`,
+    { ids },
+  );
+}

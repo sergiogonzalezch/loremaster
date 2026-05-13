@@ -10,7 +10,7 @@ import {
   Modal,
   Table,
 } from "react-bootstrap";
-import { getEntities, createEntity, deleteEntity } from "../../api";
+import { getEntities, createEntity, deleteEntity, bulkDeleteEntities } from "../../api";
 import { OrderSelect, PageSizeSelect } from "../../components/FilterBar";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import ConfirmModal from "../../components/ConfirmModal";
@@ -49,6 +49,9 @@ export default function EntitiesTab({ collectionId }: Props) {
     },
     onError: (e) => setError(parseApiError(e, "Error al eliminar entidad")),
   });
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
   const [nameFilter, setNameFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState<"" | EntityType>("");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
@@ -90,6 +93,41 @@ export default function EntitiesTab({ collectionId }: Props) {
   useEffect(() => {
     fetchEntities();
   }, [fetchEntities]);
+
+  const allOnPageSelected =
+    entities.length > 0 && entities.every((e) => selectedIds.has(e.id));
+
+  function toggleSelectAll() {
+    if (allOnPageSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(entities.map((e) => e.id)));
+    }
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function handleBulkDelete() {
+    setBulkDeleting(true);
+    try {
+      await bulkDeleteEntities(collectionId, [...selectedIds]);
+      setSelectedIds(new Set());
+      setShowBulkConfirm(false);
+      await fetchEntities();
+    } catch (e) {
+      setError(parseApiError(e, "Error al eliminar las entidades seleccionadas"));
+      setShowBulkConfirm(false);
+    } finally {
+      setBulkDeleting(false);
+    }
+  }
 
   /**
    * Crea una nueva entidad en la colección con los datos del formulario.
@@ -162,7 +200,19 @@ export default function EntitiesTab({ collectionId }: Props) {
         </Card.Body>
       </Card>
 
-      <div className="d-flex justify-content-end mb-3">
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          {selectedIds.size > 0 && (
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => setShowBulkConfirm(true)}
+              disabled={bulkDeleting}
+            >
+              Eliminar seleccionadas ({selectedIds.size})
+            </Button>
+          )}
+        </div>
         <Button variant="warning" onClick={() => setShowCreate(true)}>
           + Nueva entidad
         </Button>
@@ -190,6 +240,13 @@ export default function EntitiesTab({ collectionId }: Props) {
         <Table striped hover responsive className="lm-table">
           <thead>
             <tr>
+              <th style={{ width: 40 }}>
+                <Form.Check
+                  type="checkbox"
+                  checked={allOnPageSelected}
+                  onChange={toggleSelectAll}
+                />
+              </th>
               <th>Nombre</th>
               <th>Tipo</th>
               <th>Descripción</th>
@@ -200,6 +257,13 @@ export default function EntitiesTab({ collectionId }: Props) {
           <tbody>
             {entities.map((entity) => (
               <tr key={entity.id}>
+                <td>
+                  <Form.Check
+                    type="checkbox"
+                    checked={selectedIds.has(entity.id)}
+                    onChange={() => toggleSelect(entity.id)}
+                  />
+                </td>
                 <td>
                   <span
                     className="text-primary fw-semibold"
@@ -261,6 +325,15 @@ export default function EntitiesTab({ collectionId }: Props) {
         onConfirm={deleteConfirm.handleConfirm}
         onCancel={deleteConfirm.cancel}
         loading={deleteConfirm.deleting}
+      />
+
+      <ConfirmModal
+        show={showBulkConfirm}
+        title="Eliminar entidades seleccionadas"
+        message={`¿Eliminar ${selectedIds.size} entidad${selectedIds.size !== 1 ? "es" : ""}? También se eliminarán todos sus drafts.`}
+        onConfirm={handleBulkDelete}
+        onCancel={() => setShowBulkConfirm(false)}
+        loading={bulkDeleting}
       />
 
       <Modal show={showCreate} onHide={() => setShowCreate(false)} centered>

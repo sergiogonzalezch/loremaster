@@ -59,3 +59,8 @@ export function updateCollection(
 export function deleteCollection(id: string): Promise<void> {
   return apiDelete<void>(`/collections/${id}`);
 }
+
+/** Elimina múltiples colecciones en cascada (máx. 100 IDs). */
+export function bulkDeleteCollections(ids: string[]): Promise<void> {
+  return apiPost<void>("/collections/bulk-delete", { ids });
+}

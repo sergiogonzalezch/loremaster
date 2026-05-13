@@ -16,6 +16,7 @@ import {
   createCollection,
   updateCollection,
   deleteCollection,
+  bulkDeleteCollections,
 } from "../api";
 import { ApiAbortError } from "../api/apiClient";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -45,6 +46,10 @@ export default function CollectionsPage() {
     variant: "warning" | "danger";
     text: string;
   } | null>(null);
+
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
 
   const deleteConfirm = useDeleteConfirm<Collection>({
     onDelete: async (col) => {
@@ -164,6 +169,30 @@ export default function CollectionsPage() {
     );
   }, [collections, navigate]);
 
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function handleBulkDelete() {
+    setBulkDeleting(true);
+    try {
+      await bulkDeleteCollections([...selectedIds]);
+      setSelectedIds(new Set());
+      setShowBulkConfirm(false);
+      await fetchCollections();
+    } catch (e) {
+      setError(parseApiError(e, "Error al eliminar las colecciones seleccionadas"));
+      setShowBulkConfirm(false);
+    } finally {
+      setBulkDeleting(false);
+    }
+  }
+
   /**
    * Abre el modal de edición cargando los datos de la colección seleccionada.
    *
@@ -229,6 +258,15 @@ export default function CollectionsPage() {
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h2 className="mb-0">Colecciones</h2>
         <div className="d-flex gap-2 align-items-center">
+          {selectedIds.size > 0 && (
+            <Button
+              variant="danger"
+              onClick={() => setShowBulkConfirm(true)}
+              disabled={bulkDeleting}
+            >
+              Eliminar seleccionadas ({selectedIds.size})
+            </Button>
+          )}
           <Button variant="warning" onClick={() => setShowCreate(true)}>
             + Nueva colección
           </Button>
@@ -361,7 +399,16 @@ export default function CollectionsPage() {
                 >
                   <Card.Body>
                     <div className="d-flex align-items-start justify-content-between gap-2 mb-1">
-                      <Card.Title className="mb-0">{col.name}</Card.Title>
+                      <div className="d-flex align-items-start gap-2">
+                        <Form.Check
+                          type="checkbox"
+                          checked={selectedIds.has(col.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={() => toggleSelect(col.id)}
+                          className="mt-1 flex-shrink-0"
+                        />
+                        <Card.Title className="mb-0">{col.name}</Card.Title>
+                      </div>
                     </div>
                     <Card.Text
                       className="text-muted"
@@ -456,6 +503,15 @@ export default function CollectionsPage() {
         onConfirm={deleteConfirm.handleConfirm}
         onCancel={deleteConfirm.cancel}
         loading={deleteConfirm.deleting}
+      />
+
+      <ConfirmModal
+        show={showBulkConfirm}
+        title="Eliminar colecciones seleccionadas"
+        message={`¿Eliminar ${selectedIds.size} colección${selectedIds.size !== 1 ? "es" : ""}? Se eliminarán todos sus documentos y entidades.`}
+        onConfirm={handleBulkDelete}
+        onCancel={() => setShowBulkConfirm(false)}
+        loading={bulkDeleting}
       />
 
       <Modal show={!!editTarget} onHide={() => setEditTarget(null)} centered>
