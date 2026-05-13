@@ -90,6 +90,7 @@ select = [
     "D",        # pydocstyle
 ]
 ignore = [
+    "B008",  # Depends() en defaults — patrón estándar de FastAPI
     "D100",  # docstring en módulo opcional
     "D104",  # docstring en __init__.py
     "D203",  # one-blank-line-before-class — conflicto con D211
