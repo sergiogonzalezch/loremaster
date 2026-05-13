@@ -63,7 +63,7 @@ def get_current_user(
     user = session.get(User, payload["sub"])
     if not user or user.is_deleted:
         raise HTTPException(status_code=401, detail="No autorizado")
-    # Timing-safe comparison para token_version (L-7)
+    # Timing-safe comparison para token_version
     if not hmac.compare_digest(str(user.token_version), str(payload.get("version", 0))):
         raise HTTPException(status_code=401, detail="Sesión inválida")
 
