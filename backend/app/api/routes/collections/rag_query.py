@@ -1,6 +1,7 @@
 """Rutas de consulta RAG sobre documentos de una colección."""
 
 import logging
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
@@ -27,8 +28,8 @@ router = APIRouter(prefix="/collections", tags=["rag-query"])
 def rag_query(
     request: RagQueryRequest,
     collection_id: str,
-    _: Collection = Depends(get_collection_or_404_owned),
-    session: Session = Depends(get_session),
+    _: Annotated[Collection, Depends(get_collection_or_404_owned)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Ejecuta una consulta RAG sobre los documentos de la colección.
 

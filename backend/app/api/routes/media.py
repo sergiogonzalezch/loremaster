@@ -11,6 +11,7 @@ Control de acceso por tipo de recurso:
 
 import logging
 from pathlib import Path
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
@@ -99,8 +100,8 @@ def _check_generation_access(
 @router.get("/media/{path:path}")
 def serve_media(
     path: str,
-    session: Session = Depends(get_session),
-    current_user: dict | None = Depends(get_current_user_optional),
+    session: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[dict | None, Depends(get_current_user_optional)],
 ):
     """Sirve archivos multimedia (imágenes, avatares).
 

@@ -6,6 +6,7 @@ de tokens via token_version.
 """
 
 import re
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, EmailStr, Field, field_validator
@@ -146,7 +147,7 @@ def _clear_auth_cookies(response: Response) -> None:
 def login(
     request: LoginRequest,
     response: Response,
-    session: Session = Depends(get_session),
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Autentica un usuario con username/email y contraseña.
 
@@ -201,7 +202,7 @@ def login(
 def register(
     request: RegisterRequest,
     response: Response,
-    session: Session = Depends(get_session),
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Registra un nuevo usuario y setea cookies de autenticación.
 
@@ -260,8 +261,8 @@ def register(
 @router.post("/logout", status_code=204)
 def logout(
     response: Response,
-    current_user: dict = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    current_user: Annotated[dict, Depends(get_current_user)],
+    session: Annotated[Session, Depends(get_session)],
 ) -> None:
     """Invalida la sesión del usuario y borra las cookies.
 

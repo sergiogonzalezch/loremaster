@@ -43,8 +43,8 @@ router = APIRouter(prefix="/collections", tags=["entity-content"])
 def generate_content(
     category: ContentCategory,
     request: GenerateContentRequest,
-    entity: Entity = Depends(get_entity_or_404_owned),
-    session: Session = Depends(get_session),
+    entity: Annotated[Entity, Depends(get_entity_or_404_owned)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Genera contenido RAG para una entidad usando el pipeline LLM.
 
@@ -83,12 +83,10 @@ def list_contents(
     entity_id: str,
     collection_id: str,
     pagination: Annotated[PaginationParams, Depends()],
-    category: ContentCategory | None = Query(default=None),
-    status: Literal["active", "pending", "confirmed", "discarded", "all"] = Query(
-        default="active",
-    ),
-    _: Entity = Depends(get_entity_or_404_owned),
-    session: Session = Depends(get_session),
+    _: Annotated[Entity, Depends(get_entity_or_404_owned)],
+    session: Annotated[Session, Depends(get_session)],
+    category: Annotated[ContentCategory | None, Query()] = None,
+    status: Annotated[Literal["active", "pending", "confirmed", "discarded", "all"], Query()] = "active",
 ):
     """Lista los contenidos de una entidad con filtros y paginación."""
     items, total = content_service.list_contents(
@@ -107,9 +105,9 @@ def edit_content(
     collection_id: str,
     content_id: str,
     request: UpdateContentRequest,
-    _: Entity = Depends(get_entity_or_404_owned),
-    current_user: dict = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    _: Annotated[Entity, Depends(get_entity_or_404_owned)],
+    current_user: Annotated[dict, Depends(get_current_user)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Edita el texto de un contenido activo (pending o confirmed)."""
     try:
@@ -141,8 +139,8 @@ def edit_content(
 )
 def confirm_content(
     content_id: str,
-    entity: Entity = Depends(get_entity_or_404_owned),
-    session: Session = Depends(get_session),
+    entity: Annotated[Entity, Depends(get_entity_or_404_owned)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Confirma un contenido pending y descarta sus hermanos de la misma categoría."""
     try:
@@ -165,8 +163,8 @@ def discard_content(
     entity_id: str,
     collection_id: str,
     content_id: str,
-    _: Entity = Depends(get_entity_or_404_owned),
-    session: Session = Depends(get_session),
+    _: Annotated[Entity, Depends(get_entity_or_404_owned)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Descarta un contenido pendiente."""
     try:
@@ -191,8 +189,8 @@ def share_content(
     collection_id: str,
     content_id: str,
     request: ShareContentRequest,
-    _: Entity = Depends(get_entity_or_404_owned),
-    session: Session = Depends(get_session),
+    _: Annotated[Entity, Depends(get_entity_or_404_owned)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Comparte o deja de compartir un contenido en el feed público.
 
@@ -221,8 +219,8 @@ def delete_content(
     entity_id: str,
     collection_id: str,
     content_id: str,
-    _: Entity = Depends(get_entity_or_404_owned),
-    session: Session = Depends(get_session),
+    _: Annotated[Entity, Depends(get_entity_or_404_owned)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Elimina suavemente un contenido de entidad."""
     try:

@@ -2,7 +2,7 @@
 
 import threading
 import time
-from typing import ClassVar
+from typing import Annotated, ClassVar
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -100,8 +100,8 @@ def decode_clerk_token(token: str) -> dict:
 
 @router.get("/verify")
 def verify(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    session: Session = Depends(get_session),
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Verifica la validez de un token Bearer de Clerk.
 

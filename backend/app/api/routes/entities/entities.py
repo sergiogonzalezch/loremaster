@@ -40,8 +40,8 @@ router = APIRouter(prefix="/collections", tags=["entities"])
 def create_entity(
     collection_id: str,
     request: CreateEntityRequest,
-    _: Collection = Depends(get_collection_or_404_owned),
-    session: Session = Depends(get_session),
+    _: Annotated[Collection, Depends(get_collection_or_404_owned)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Crea una nueva entidad (character, creature, faction, location o item)."""
     try:
@@ -57,10 +57,10 @@ def list_entities(
     collection_id: str,
     pagination: Annotated[PaginationParams, Depends()],
     dates: Annotated[DateRangeParams, Depends()],
-    name: str | None = Query(default=None),
-    type: EntityType | None = Query(default=None),  # noqa: A002
-    _: Collection = Depends(get_collection_or_404_owned),
-    session: Session = Depends(get_session),
+    _: Annotated[Collection, Depends(get_collection_or_404_owned)],
+    session: Annotated[Session, Depends(get_session)],
+    name: Annotated[str | None, Query()] = None,
+    type: Annotated[EntityType | None, Query()] = None,  # noqa: A002
 ):
     """Lista las entidades de una colección con filtros y paginación."""
     entities, total = list_entities_service(
@@ -74,7 +74,7 @@ def list_entities(
 
 @router.get("/{collection_id}/entities/{entity_id}", response_model=EntityResponse)
 def get_entity(
-    entity: Entity = Depends(get_entity_or_404_owned),
+    entity: Annotated[Entity, Depends(get_entity_or_404_owned)],
 ):
     """Obtiene los datos de una entidad específica."""
     return entity
@@ -83,9 +83,9 @@ def get_entity(
 @router.patch("/{collection_id}/entities/{entity_id}", response_model=EntityResponse)
 def update_entity(
     request: UpdateEntityRequest,
-    entity: Entity = Depends(get_entity_or_404_owned),
-    current_user: dict = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    entity: Annotated[Entity, Depends(get_entity_or_404_owned)],
+    current_user: Annotated[dict, Depends(get_current_user)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Actualiza los campos de una entidad existente."""
     try:
@@ -96,8 +96,8 @@ def update_entity(
 
 @router.delete("/{collection_id}/entities/{entity_id}", status_code=204)
 def delete_entity(
-    entity: Entity = Depends(get_entity_or_404_owned),
-    session: Session = Depends(get_session),
+    entity: Annotated[Entity, Depends(get_entity_or_404_owned)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Elimina una entidad y todos sus contenidos en cascada."""
     try:
@@ -113,8 +113,8 @@ def delete_entity(
 def bulk_delete_entities(
     collection_id: str,
     request: BulkDeleteRequest,
-    _: Collection = Depends(get_collection_or_404_owned),
-    session: Session = Depends(get_session),
+    _: Annotated[Collection, Depends(get_collection_or_404_owned)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Elimina múltiples entidades en cascada."""
     entities = session.exec(

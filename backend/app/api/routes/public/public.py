@@ -23,7 +23,7 @@ public_router = APIRouter(prefix="/public", tags=["public"])
 @public_router.get("/feed", response_model=PaginatedResponse[PublicFeedItem])
 def get_public_feed(
     pagination: Annotated[PaginationParams, Depends()],
-    session: Session = Depends(get_session),
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Obtiene el feed público de contenidos compartidos por todos los usuarios.
 
@@ -59,7 +59,7 @@ def get_public_feed(
 @public_router.get("/images", response_model=PaginatedResponse[PublicImageItem])
 def get_public_images(
     pagination: Annotated[PaginationParams, Depends()],
-    session: Session = Depends(get_session),
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Obtiene el feed público de imágenes compartidas por todos los usuarios.
 

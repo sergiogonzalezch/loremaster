@@ -60,10 +60,10 @@ router = APIRouter(prefix="/collections", tags=["documents"])
 async def ingest(
     collection_id: str,
     background_tasks: BackgroundTasks,
-    file: UploadFile = File(...),
-    _: Collection = Depends(get_collection_or_404_owned),
-    __: dict = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    file: Annotated[UploadFile, File(...)],
+    _: Annotated[Collection, Depends(get_collection_or_404_owned)],
+    __: Annotated[dict, Depends(get_current_user)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Ingesta un documento en la colección y dispara el procesamiento en segundo plano.
 
@@ -102,12 +102,12 @@ def get_documents(
     collection_id: str,
     pagination: Annotated[PaginationParams, Depends()],
     dates: Annotated[DateRangeParams, Depends()],
-    filename: str | None = Query(default=None),
-    file_type: str | None = Query(default=None),
-    status: DocumentStatus | None = Query(default=None),
-    _: Collection = Depends(get_collection_or_404_owned),
-    __: dict = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    _: Annotated[Collection, Depends(get_collection_or_404_owned)],
+    __: Annotated[dict, Depends(get_current_user)],
+    session: Annotated[Session, Depends(get_session)],
+    filename: Annotated[str | None, Query()] = None,
+    file_type: Annotated[str | None, Query()] = None,
+    status: Annotated[DocumentStatus | None, Query()] = None,
 ):
     """Lista los documentos de una colección con filtros y paginación.
 
@@ -127,8 +127,8 @@ def get_documents(
 
 @router.get("/{collection_id}/documents/{doc_id}", response_model=DocumentResponse)
 def get_document(
-    doc: Document = Depends(get_document_or_404_owned),
-    _: dict = Depends(get_current_user),
+    doc: Annotated[Document, Depends(get_document_or_404_owned)],
+    _: Annotated[dict, Depends(get_current_user)],
 ):
     """Obtiene los datos de un documento específico."""
     return doc
@@ -141,9 +141,9 @@ def get_document(
 )
 async def retry_ingest(
     background_tasks: BackgroundTasks,
-    doc: Document = Depends(get_document_or_404_owned),
-    _: dict = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    doc: Annotated[Document, Depends(get_document_or_404_owned)],
+    _: Annotated[dict, Depends(get_current_user)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Reinicia el procesamiento de un documento que falló."""
     try:
@@ -160,9 +160,9 @@ async def retry_ingest(
 
 @router.delete("/{collection_id}/documents/{doc_id}", status_code=204)
 def delete_document(
-    doc: Document = Depends(get_document_or_404_owned),
-    _: dict = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    doc: Annotated[Document, Depends(get_document_or_404_owned)],
+    _: Annotated[dict, Depends(get_current_user)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Elimina un documento: vectores en Qdrant y soft-delete en BD."""
     try:
@@ -177,9 +177,9 @@ def delete_document(
 @router.get("/{collection_id}/documents/events")
 def document_events(
     collection_id: str,
-    _: Collection = Depends(get_collection_or_404_owned),
-    __: dict = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    _: Annotated[Collection, Depends(get_collection_or_404_owned)],
+    __: Annotated[dict, Depends(get_current_user)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Stream de eventos SSE para notificaciones de cambio de estado de documentos.
 

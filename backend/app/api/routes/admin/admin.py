@@ -26,8 +26,8 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 @router.get("/users")
 def list_all_users(
     pagination: Annotated[PaginationParams, Depends()],
-    _: dict = Depends(get_admin_user),
-    session: Session = Depends(get_session),
+    _: Annotated[dict, Depends(get_admin_user)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Lista todos los usuarios (solo administradores).
 
@@ -70,8 +70,8 @@ def list_all_users(
 @router.delete("/collections/{collection_id}", status_code=204)
 def admin_delete_collection(
     collection_id: str,
-    current_admin: dict = Depends(get_admin_user),
-    session: Session = Depends(get_session),
+    current_admin: Annotated[dict, Depends(get_admin_user)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Elimina una colección en nombre de un usuario (solo administradores).
 
@@ -95,8 +95,8 @@ def admin_delete_collection(
 @router.delete("/users/{user_id}", status_code=204)
 def admin_delete_user(
     user_id: str,
-    current_admin: dict = Depends(get_admin_user),
-    session: Session = Depends(get_session),
+    current_admin: Annotated[dict, Depends(get_admin_user)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Elimina un usuario y todas sus colecciones (solo administradores).
 

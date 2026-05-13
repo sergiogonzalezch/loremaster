@@ -1,6 +1,7 @@
 """Rutas de generación de imágenes para entidades."""
 
 import logging
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
@@ -42,8 +43,8 @@ router = APIRouter(prefix="/collections", tags=["image-generation"])
 )
 def build_prompt(
     request: BuildPromptRequest,
-    entity: Entity = Depends(get_entity_or_404_owned),
-    session: Session = Depends(get_session),
+    entity: Annotated[Entity, Depends(get_entity_or_404_owned)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Genera un prompt visual a partir de un contenido confirmado.
 
@@ -74,9 +75,9 @@ def build_prompt(
 )
 def generate_images(
     request: GenerateImagesRequest,
-    entity: Entity = Depends(get_entity_or_404_owned),
-    session: Session = Depends(get_session),
-    current_user: dict = Depends(get_current_user),
+    entity: Annotated[Entity, Depends(get_entity_or_404_owned)],
+    session: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[dict, Depends(get_current_user)],
 ):
     """Genera un batch de imágenes usando ComfyUI o mock.
 
@@ -125,8 +126,8 @@ def share_image(
     generation_id: str,
     image_id: str,
     request: ShareImageRequest,
-    entity: Entity = Depends(get_entity_or_404_owned),
-    session: Session = Depends(get_session),
+    entity: Annotated[Entity, Depends(get_entity_or_404_owned)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Marca o desmarca una imagen como compartida públicamente."""
     try:
@@ -148,8 +149,8 @@ def share_image(
 def delete_image(
     generation_id: str,
     image_id: str,
-    entity: Entity = Depends(get_entity_or_404_owned),
-    session: Session = Depends(get_session),
+    entity: Annotated[Entity, Depends(get_entity_or_404_owned)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Elimina una imagen individual del batch (soft delete)."""
     try:
@@ -176,8 +177,8 @@ def delete_image(
 )
 def get_generation(
     generation_id: str,
-    entity: Entity = Depends(get_entity_or_404_owned),
-    session: Session = Depends(get_session),
+    entity: Annotated[Entity, Depends(get_entity_or_404_owned)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Obtiene una solicitud de generación con sus imágenes."""
     try:
@@ -199,8 +200,8 @@ def get_generation(
     response_model=ImageGenerationListResponse,
 )
 def list_generations(
-    entity: Entity = Depends(get_entity_or_404_owned),
-    session: Session = Depends(get_session),
+    entity: Annotated[Entity, Depends(get_entity_or_404_owned)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Lista todas las solicitudes de generación de imágenes de una entidad."""
     try:

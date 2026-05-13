@@ -1,5 +1,7 @@
 """Rutas de perfil de usuario y gestión de avatares."""
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 from sqlmodel import Session, select
 
@@ -31,7 +33,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("/me", response_model=UserProfileResponse)
-def get_my_profile(user: User = Depends(get_current_db_user)):
+def get_my_profile(user: Annotated[User, Depends(get_current_db_user)]):
     """Obtiene el perfil del usuario autenticado."""
     return user
 
@@ -39,8 +41,8 @@ def get_my_profile(user: User = Depends(get_current_db_user)):
 @router.patch("/me", response_model=UserProfileResponse)
 def update_my_profile(
     request: UpdateProfileRequest,
-    user: User = Depends(get_current_db_user),
-    session: Session = Depends(get_session),
+    user: Annotated[User, Depends(get_current_db_user)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Actualiza el perfil del usuario autenticado (display_name, bio, email)."""
     if request.display_name is not None:
@@ -68,16 +70,16 @@ def update_my_profile(
 
 
 @router.get("/me/avatar", response_model=AvatarResponse)
-def get_my_avatar(user: User = Depends(get_current_db_user)):
+def get_my_avatar(user: Annotated[User, Depends(get_current_db_user)]):
     """Obtiene la información del avatar del usuario autenticado."""
     return get_avatar_info(user)
 
 
 @router.post("/me/avatar", response_model=AvatarResponse)
 async def upload_my_avatar(
-    user: User = Depends(get_current_db_user),
-    session: Session = Depends(get_session),
-    file: UploadFile = File(...),
+    user: Annotated[User, Depends(get_current_db_user)],
+    session: Annotated[Session, Depends(get_session)],
+    file: Annotated[UploadFile, File(...)],
 ):
     """Sube o reemplaza la imagen de perfil del usuario autenticado."""
     try:
@@ -90,8 +92,8 @@ async def upload_my_avatar(
 
 @router.delete("/me/avatar", status_code=204)
 def delete_my_avatar(
-    user: User = Depends(get_current_db_user),
-    session: Session = Depends(get_session),
+    user: Annotated[User, Depends(get_current_db_user)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Elimina la imagen de perfil del usuario autenticado."""
     delete_profile_image(session, user)
@@ -101,7 +103,7 @@ def delete_my_avatar(
 @router.get("/{username}/profile", response_model=PublicProfileResponse)
 def get_public_profile(
     username: str,
-    session: Session = Depends(get_session),
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Obtiene el perfil público de un usuario.
 

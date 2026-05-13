@@ -38,8 +38,8 @@ router = APIRouter(prefix="/collections", tags=["collections"])
 @router.post("/", response_model=CollectionResponse, status_code=201)
 def create_collection(
     request: CreateCollectionRequest,
-    current_user: dict = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    current_user: Annotated[dict, Depends(get_current_user)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Crea una nueva colección para el usuario autenticado.
 
@@ -59,9 +59,9 @@ def create_collection(
 def get_collections(
     pagination: Annotated[PaginationParams, Depends()],
     dates: Annotated[DateRangeParams, Depends()],
-    name: str | None = Query(default=None),
-    current_user: dict = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    current_user: Annotated[dict, Depends(get_current_user)],
+    session: Annotated[Session, Depends(get_session)],
+    name: Annotated[str | None, Query()] = None,
 ):
     """Lista las colecciones del usuario autenticado con filtros y paginación."""
     items, total = list_collections_service(
@@ -72,8 +72,8 @@ def get_collections(
 
 @router.get("/{collection_id}", response_model=CollectionResponse)
 def get_collection(
-    collection: Collection = Depends(get_collection_or_404_owned),
-    session: Session = Depends(get_session),
+    collection: Annotated[Collection, Depends(get_collection_or_404_owned)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Obtiene los datos de una colección con recuentos de documentos y entidades."""
     return get_collection_with_counts_service(session, collection)
@@ -82,9 +82,9 @@ def get_collection(
 @router.patch("/{collection_id}", response_model=CollectionResponse)
 def update_collection(
     request: UpdateCollectionRequest,
-    collection: Collection = Depends(get_collection_or_404_owned),
-    current_user: dict = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    collection: Annotated[Collection, Depends(get_collection_or_404_owned)],
+    current_user: Annotated[dict, Depends(get_current_user)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Actualiza el nombre o descripción de una colección."""
     try:
@@ -97,8 +97,8 @@ def update_collection(
 
 @router.delete("/{collection_id}", status_code=204)
 def delete_collection(
-    collection: Collection = Depends(get_collection_or_404_owned),
-    session: Session = Depends(get_session),
+    collection: Annotated[Collection, Depends(get_collection_or_404_owned)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Elimina una colección y todos sus contenidos en cascada."""
     try:
@@ -119,8 +119,8 @@ def delete_collection(
 @router.post("/bulk-delete", status_code=204)
 def bulk_delete_collections(
     request: BulkDeleteRequest,
-    current_user: dict = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    current_user: Annotated[dict, Depends(get_current_user)],
+    session: Annotated[Session, Depends(get_session)],
 ):
     """Elimina múltiples colecciones en cascada."""
     collections = session.exec(
