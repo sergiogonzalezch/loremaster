@@ -124,7 +124,7 @@ def edit_content(
 
     """
     new_text = new_text.strip()
-    check_user_input(new_text)  # M-3: validar contenido editable
+    check_user_input(new_text)  # validar contenido editable
     content = _get_active_content(session, content_id, entity_id, collection_id)
     if not content:
         return None
