@@ -4,8 +4,8 @@ Provee validación de tipos MIME, magic bytes, extensión y sanitización
 para archivos de imagen y documentos.
 
 Funcionalidades de seguridad:
-    - Validación de magic bytes para PDFs (H-6).
-    - Strip de metadatos EXIF en imágenes (L-2).
+    - Validación de magic bytes para PDFs.
+    - Strip de metadatos EXIF en imágenes.
     - Validación de extensión vs tipo MIME.
     - Límite de tamaño configurable.
 
