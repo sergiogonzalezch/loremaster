@@ -19,7 +19,7 @@ def authenticate_user(session: Session, username_or_email: str, password: str) -
     if user:
         valid = verify_password(password, user.hashed_password)
     else:
-        # Timing-safe dummy check: iguala el tiempo de respuesta cuando el usuario no existe (M-6).
+        # Timing-safe dummy check: iguala el tiempo de respuesta cuando el usuario no existe.
         verify_password(password, "$2b$12$abcdefghijklmnopqrstuv")
         valid = False
 
