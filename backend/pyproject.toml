@@ -1,0 +1,110 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "loremaster-backend"
+version = "1.0.0"
+description = "Lore Master API — RAG-based tool for collaborative world-building"
+requires-python = ">=3.11"
+dependencies = [
+    # Web framework
+    "fastapi==0.115.7",
+    "uvicorn[standard]==0.34.0",
+    "python-multipart==0.0.20",
+    "httpx==0.28.1",
+
+    # Database / ORM
+    "sqlmodel==0.0.24",
+    "alembic==1.16.5",
+
+    # Settings & validation
+    "pydantic-settings==2.10.1",
+    "email-validator==2.2.0",
+    "python-dotenv==1.0.1",
+
+    # Auth
+    "python-jose[cryptography]==3.5.0",
+    "bcrypt==5.0.0",
+
+    # LLM / RAG
+    "langchain==1.2.14",
+    "langchain-community==0.4.1",
+    "langchain-huggingface==1.2.1",
+    "langchain-text-splitters==1.1.1",
+    "langchain-ollama==1.1.0",
+    "sentence-transformers==5.3.0",
+    "qdrant-client==1.17.1",
+
+    # File processing
+    "pypdf==6.9.2",
+    "Pillow==10.4.0",
+
+    # Cache
+    "redis==7.4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.0.3",
+    "pytest-asyncio==1.3.0",
+    "black",
+    "ruff>=0.6.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+# ---------------------------------------------------------------------------
+# pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+# ---------------------------------------------------------------------------
+# black
+# ---------------------------------------------------------------------------
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+# ---------------------------------------------------------------------------
+# ruff
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes
+    "I",        # isort
+    "B",        # flake8-bugbear
+    "A",        # flake8-builtins (sombra de builtins)
+    "BLE",      # flake8-blind-except
+    "UP",       # pyupgrade
+    "N",        # pep8-naming
+    "EM",       # flake8-errmsg (mensajes de excepción)
+    "C90",      # mccabe complexity
+    "D",        # pydocstyle
+]
+ignore = [
+    "D100",  # docstring en módulo opcional
+    "D104",  # docstring en __init__.py
+    "D203",  # one-blank-line-before-class — conflicto con D211
+    "D212",  # multi-line-summary-first-line — conflicto con D213
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["D", "S"]
+"alembic/versions/*.py" = ["D", "N999"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
