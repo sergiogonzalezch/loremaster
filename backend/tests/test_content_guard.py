@@ -91,7 +91,6 @@ def test_fullwidth_unicode_blocked(text):
 def test_diacritic_porn_blocked():
     """Diacríticos combinados son normalizados (NFKD) y el término bloqueado."""
     # p + o + r + n with combining accent — NFKD strips diacritics
-    check_user_input.__module__  # ensure import
     with pytest.raises(ContentNotAllowedError):
         check_user_input("pórn video")  # ó with combining accent → o after NFKD
 
