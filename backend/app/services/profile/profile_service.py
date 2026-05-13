@@ -36,6 +36,7 @@ def _get_profile_dir(username: str) -> Path:
 
 
 def get_avatar_info(user: User) -> dict:
+    """Retorna la URL del avatar y si el usuario tiene uno asignado."""
     return {
         "avatar_url": build_storage_url(user.avatar_path),
         "has_avatar": user.avatar_path is not None,
