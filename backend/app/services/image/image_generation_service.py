@@ -266,7 +266,8 @@ def _generate_comfyui_images(
             )
 
     if not images_result:
-        raise RuntimeError("No se generaron imágenes desde ComfyUI")
+        msg = "No se generaron imágenes desde ComfyUI"
+        raise RuntimeError(msg)
 
     return generation_id, images_result
 
@@ -294,9 +295,12 @@ def build_prompt_service(
         raise NoContextAvailableError
 
     if content.category not in ALLOWED_IMAGE_CATEGORIES:
-        raise ValueError(
+        msg = (
             f"Categoría '{content.category.value}' no soportada para "
-            f"generación de imágenes",
+            f"generación de imágenes"
+        )
+        raise ValueError(
+            msg,
         )
 
     build_result = build_visual_prompt(
@@ -391,8 +395,9 @@ def generate_images_service(
         )
 
     else:
+        msg = f"Backend '{params.backend}' no soportado. " "Usar: 'mock' o 'comfyui'"
         raise ValueError(
-            f"Backend '{params.backend}' no soportado. " "Usar: 'mock' o 'comfyui'",
+            msg,
         )
 
     db_commit(session, f"generate_images({entity.id})")

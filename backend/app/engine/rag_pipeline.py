@@ -57,14 +57,16 @@ def invoke_rag_pipeline(
         context, num_chunks = retrieve_context(collection_id, query, extra_context)
     except _TRANSPORT_ERRORS as e:
         logger.exception("Vector store unavailable for collection %s", collection_id)
-        raise RuntimeError("Vector store unavailable") from e
+        msg = "Vector store unavailable"
+        raise RuntimeError(msg) from e
 
     try:
         with _llm_semaphore:
             answer = chain.invoke({"context": context, "query": query})
     except _TRANSPORT_ERRORS as e:
         logger.exception("LLM generation failed for collection %s", collection_id)
-        raise RuntimeError("LLM service unavailable") from e
+        msg = "LLM service unavailable"
+        raise RuntimeError(msg) from e
 
     logger.info(
         "RAG response generated for collection %s using %d chunk(s)",
@@ -103,7 +105,8 @@ def invoke_generation_pipeline(
         context, num_chunks = retrieve_context(collection_id, query, extra_context)
     except _TRANSPORT_ERRORS as e:
         logger.exception("Vector store unavailable for collection %s", collection_id)
-        raise RuntimeError("Vector store unavailable") from e
+        msg = "Vector store unavailable"
+        raise RuntimeError(msg) from e
 
     rendered_prompt = render_prompt(
         category=entity_ctx.category,
@@ -122,7 +125,8 @@ def invoke_generation_pipeline(
             entity_ctx.name,
             collection_id,
         )
-        raise RuntimeError("LLM service unavailable") from e
+        msg = "LLM service unavailable"
+        raise RuntimeError(msg) from e
 
     logger.info(
         "Generation pipeline completed for entity '%s' (category=%s) using %d chunk(s)",

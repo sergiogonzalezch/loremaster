@@ -47,9 +47,12 @@ def _ensure_qdrant_collection(collection_id: str) -> None:
             ),
         )
         if not _collection_exists(name):
-            raise RuntimeError(
+            msg = (
                 f"Qdrant collection '{name}' could not be created. "
-                "Check Qdrant connectivity and configuration.",
+                "Check Qdrant connectivity and configuration."
+            )
+            raise RuntimeError(
+                msg,
             )
 
 
@@ -179,7 +182,8 @@ def retrieve_context(
         )
     except Exception as e:
         logger.exception("Qdrant search failed for collection %s", collection_id)
-        raise RuntimeError("Vector search unavailable") from e
+        msg = "Vector search unavailable"
+        raise RuntimeError(msg) from e
 
     rag_context = "\n\n---\n\n".join(context_chunks) if context_chunks else ""
     parts = [p for p in (extra_context, rag_context) if p]

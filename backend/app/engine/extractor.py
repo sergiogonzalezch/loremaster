@@ -33,12 +33,14 @@ def extract_text(content_bytes: bytes, content_type: str) -> str:
     if content_type == "application/pdf":
         reader = PdfReader(io.BytesIO(content_bytes))
         if len(reader.pages) > settings.max_pdf_pages:
+            msg = f"El PDF excede el límite de {settings.max_pdf_pages} páginas"
             raise ValueError(
-                f"El PDF excede el límite de {settings.max_pdf_pages} páginas",
+                msg,
             )
         return "\n".join(
             page.extract_text() or "" for page in reader.pages[: settings.max_pdf_pages]
         )
     if content_type == "text/plain":
         return content_bytes.decode("utf-8", errors="ignore")
-    raise ValueError(f"Unsupported content type: {content_type}")
+    msg = f"Unsupported content type: {content_type}"
+    raise ValueError(msg)

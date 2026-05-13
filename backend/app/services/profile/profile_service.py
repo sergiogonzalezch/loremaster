@@ -135,8 +135,9 @@ def get_public_profile(session: Session, username: str) -> PublicProfileResponse
 async def upload_profile_image(session: Session, user: User, file: UploadFile) -> str:
     """Sube o reemplaza la imagen de perfil de un usuario."""
     if not re.match(r"^[A-Za-z0-9_-]{3,50}$", user.username):
+        msg = f"Username inválido para construcción de ruta: {user.username!r}"
         raise ValueError(
-            f"Username inválido para construcción de ruta: {user.username!r}",
+            msg,
         )
 
     max_bytes = int(settings.profile_image_max_size_mb * 1024 * 1024)

@@ -60,9 +60,11 @@ class ComfyUIClient:
             return data["prompt_id"]
 
         if "node_errors" in data:
-            raise RuntimeError(f"Errores en nodos:{data['node_errors']}")
+            msg = f"Errores en nodos:{data['node_errors']}"
+            raise RuntimeError(msg)
 
-        raise RuntimeError(f"Respuesta inesperada de ComfyUI: {data}")
+        msg = f"Respuesta inesperada de ComfyUI: {data}"
+        raise RuntimeError(msg)
 
     def get_history(self, prompt_id: str) -> dict:
         """Obtiene el estado y resultados de una ejecución.
@@ -116,8 +118,9 @@ class ComfyUIClient:
         while True:
             elapsed = time.time() - start_time
             if elapsed > timeout:
+                msg = f"Timeout después de {timeout}s esperando generación ComfyUI"
                 raise TimeoutError(
-                    f"Timeout después de {timeout}s esperando generación ComfyUI",
+                    msg,
                 )
             result = self.get_history(prompt_id)
             status = result.get("status", "queued")
@@ -126,8 +129,9 @@ class ComfyUIClient:
                 return result
 
             if status == "failed":
+                msg = f"Generación falló: {result.get('error','Unknown error')}"
                 raise RuntimeError(
-                    f"Generación falló: {result.get('error','Unknown error')}",
+                    msg,
                 )
             time.sleep(poll_interval)
 
@@ -204,7 +208,8 @@ def load_template(template_name: str) -> dict:
     template_path = template_dir / template_name
 
     if not template_path.exists():
-        raise FileNotFoundError(f"Template no encontrado: {template_path}")
+        msg = f"Template no encontrado: {template_path}"
+        raise FileNotFoundError(msg)
 
     with template_path.open(encoding="utf-8") as f:
         return json.load(f)
@@ -245,9 +250,12 @@ def inject_prompt(workflow: dict, prompt: str) -> dict:
 
     node = workflow.get("12")
     if node is None:
-        raise ValueError(
+        msg = (
             "Nodo 12 (PrimitiveStringMultiline) no encontrado en el template. "
-            "Verificar que el template esté en formato API (ver Sección 0).",
+            "Verificar que el template esté en formato API (ver Sección 0)."
+        )
+        raise ValueError(
+            msg,
         )
 
     node["inputs"]["value"] = prompt

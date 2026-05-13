@@ -159,7 +159,7 @@ def delete_image(
     image_id: str,
     entity: Annotated[Entity, Depends(get_entity_or_404_owned)],
     session: Annotated[Session, Depends(get_session)],
-):
+) -> None:
     """Elimina una imagen individual del batch (soft delete)."""
     try:
         delete_image_service(session, entity, generation_id, image_id)

@@ -98,7 +98,8 @@ TEXT TO ANALYZE:
             result = chain.invoke(attributes_prompt)
     except Exception as e:
         logger.exception("LLM extraction failed")
-        raise RuntimeError("LLM service unavailable") from e
+        msg = "LLM service unavailable"
+        raise RuntimeError(msg) from e
 
     if not result or not result.strip():
         logger.warning(

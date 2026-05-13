@@ -71,9 +71,12 @@ def generate(
         ),
     ).one()
     if pending_count >= settings.max_pending_contents:
-        raise PendingLimitExceededError(
+        msg = (
             f"La entidad ya tiene {pending_count} contenidos pendientes en la categoría '{category}' "
-            f"(máximo {settings.max_pending_contents}). Confirma o descarta alguno antes de generar uno nuevo.",
+            f"(máximo {settings.max_pending_contents}). Confirma o descarta alguno antes de generar uno nuevo."
+        )
+        raise PendingLimitExceededError(
+            msg,
         )
 
     extra_context = ""
@@ -131,9 +134,12 @@ def generate(
         ).one()
         if recount > settings.max_pending_contents:
             session.rollback()
-            raise PendingLimitExceededError(
+            msg = (
                 f"La entidad ya tiene {recount - 1} contenidos pendientes en la categoría '{category}' "
-                f"(máximo {settings.max_pending_contents}). Confirma o descarta alguno antes de generar uno nuevo.",
+                f"(máximo {settings.max_pending_contents}). Confirma o descarta alguno antes de generar uno nuevo."
+            )
+            raise PendingLimitExceededError(
+                msg,
             )
         session.commit()
         session.refresh(content)

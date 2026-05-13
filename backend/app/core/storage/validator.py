@@ -50,12 +50,14 @@ def _verify_magic_bytes(content: bytes, expected_type: str) -> None:
     """
     if expected_type == "application/pdf":
         if not content.startswith((b"%PDF", b"PK\x03\x04")):
-            raise ValueError("El archivo no es un PDF válido")
+            msg = "El archivo no es un PDF válido"
+            raise ValueError(msg)
     elif expected_type == "text/plain":
         try:
             content.decode("utf-8")
         except UnicodeDecodeError as e:
-            raise ValueError("El archivo no es un texto válido") from e
+            msg = "El archivo no es un texto válido"
+            raise ValueError(msg) from e
 
 
 def _strip_exif(data: bytes) -> bytes:
@@ -105,13 +107,17 @@ class FileValidator:
 
         """
         if file.content_type not in IMAGE_MIME_TYPES:
-            raise ValueError(
+            msg = (
                 f"Tipo de archivo no permitido: {file.content_type}. "
-                f"Solo se permiten imágenes: {', '.join(sorted(IMAGE_EXTENSIONS))}",
+                f"Solo se permiten imágenes: {', '.join(sorted(IMAGE_EXTENSIONS))}"
+            )
+            raise ValueError(
+                msg,
             )
         ext = Path(file.filename or "image.jpg").suffix.lower()
         if ext not in IMAGE_EXTENSIONS:
-            raise ValueError(f"Extensión no permitida: {ext}")
+            msg = f"Extensión no permitida: {ext}"
+            raise ValueError(msg)
 
         content = file.file.read()
 
@@ -120,13 +126,15 @@ class FileValidator:
             img = Image.open(BytesIO(content))
             img.verify()
         except Exception as e:
-            raise ValueError("El archivo no es una imagen válida") from e
+            msg = "El archivo no es una imagen válida"
+            raise ValueError(msg) from e
 
         content = _strip_exif(content)
 
         if max_bytes and len(content) > max_bytes:
+            msg = f"El archivo excede el tamaño máximo de {max_bytes // (1024*1024)}MB"
             raise ValueError(
-                f"El archivo excede el tamaño máximo de {max_bytes // (1024*1024)}MB",
+                msg,
             )
 
         file.file.seek(0)
@@ -158,12 +166,14 @@ class FileValidator:
         """
         allowed = allowed_types or DOCUMENT_MIME_TYPES
         if file.content_type not in allowed:
-            raise ValueError(f"Tipo de archivo no permitido: {file.content_type}")
+            msg = f"Tipo de archivo no permitido: {file.content_type}"
+            raise ValueError(msg)
 
         content = file.file.read()
         if max_bytes and len(content) > max_bytes:
+            msg = f"El archivo excede el tamaño máximo de {max_bytes // (1024*1024)}MB"
             raise ValueError(
-                f"El archivo excede el tamaño máximo de {max_bytes // (1024*1024)}MB",
+                msg,
             )
         _verify_magic_bytes(content, file.content_type)
 
