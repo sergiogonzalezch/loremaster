@@ -8,12 +8,13 @@ Conecta directamente a la base de datos configurada en DATABASE_URL
 y actualiza el campo is_admin del usuario indicado.
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from sqlmodel import Session, select
+
 from app.database import engine
 from app.models.db.user import User
 
@@ -31,7 +32,7 @@ def main():
     if not force:
         response = input(
             f"WARNING: You are about to make '{username}' an admin. "
-            "This grants full system access. Continue? (yes/no): "
+            "This grants full system access. Continue? (yes/no): ",
         )
         if response.lower() != "yes":
             print("Aborted.")
@@ -39,7 +40,7 @@ def main():
 
     with Session(engine) as session:
         user = session.exec(
-            select(User).where(User.username == username, not User.is_deleted)
+            select(User).where(User.username == username, not User.is_deleted),
         ).first()
 
         if not user:
@@ -52,7 +53,7 @@ def main():
 
         print(f"User '{username}' is now an admin.")
         print(
-            f"audit action=make_admin username={username} promoted_by={os.environ.get('USER', 'unknown')}"
+            f"audit action=make_admin username={username} promoted_by={os.environ.get('USER', 'unknown')}",
         )
 
 

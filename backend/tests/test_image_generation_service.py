@@ -3,6 +3,9 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from sqlalchemy.orm import Session
+from sqlmodel import select
+
 from app.core.exceptions import NoContextAvailableError
 from app.models.db.entity import Entity, EntityType
 from app.models.db.entity_content import EntityContent
@@ -15,8 +18,6 @@ from app.services.image.image_generation_service import (
     generate_images_service,
     get_generation_service,
 )
-from sqlalchemy.orm import Session
-from sqlmodel import select
 
 
 @pytest.fixture
@@ -178,8 +179,9 @@ def test_ig_07_generate_persists_generation_record(
         batch_size=2,
     )
 
-    from app.models.db.image_generation import ImageGeneration
     from sqlmodel import select
+
+    from app.models.db.image_generation import ImageGeneration
 
     gen_record = db_session.exec(
         select(ImageGeneration).where(ImageGeneration.id == result.generation_id),

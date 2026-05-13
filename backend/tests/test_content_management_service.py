@@ -1,9 +1,10 @@
 import pytest
+from sqlmodel import select
+
 from app.models.db.entity_content import EntityContent
 from app.models.db.generated_text import GeneratedText
 from app.models.enums import ContentCategory, ContentStatus
 from app.services.entity.content_service import _discard_sibling_contents
-from sqlmodel import select
 
 
 @pytest.mark.anyio

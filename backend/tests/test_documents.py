@@ -1,9 +1,10 @@
 import importlib
 
 import pytest
+from sqlmodel import select
+
 from app.models.db.collection import Collection
 from app.models.db.document import Document, DocumentStatus
-from sqlmodel import select
 
 
 @pytest.mark.anyio

@@ -6,17 +6,18 @@ Create Date: 2026-05-10 23:36:51.159329
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
 import sqlmodel
 
+from alembic import op
+
 # revision identifiers, used by Alembic.
 revision: str = "e011b055990d"
-down_revision: Union[str, Sequence[str], None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -27,7 +28,7 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("layer", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column(
-            "snippet", sqlmodel.sql.sqltypes.AutoString(length=200), nullable=False
+            "snippet", sqlmodel.sql.sqltypes.AutoString(length=200), nullable=False,
         ),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
@@ -38,7 +39,7 @@ def upgrade() -> None:
         sa.Column("deleted_at", sa.DateTime(), nullable=True),
         sa.Column("id", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=False),
         sa.Column(
-            "username", sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False
+            "username", sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False,
         ),
         sa.Column(
             "hashed_password",
@@ -47,11 +48,11 @@ def upgrade() -> None:
         ),
         sa.Column("email", sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True),
         sa.Column(
-            "display_name", sqlmodel.sql.sqltypes.AutoString(length=100), nullable=True
+            "display_name", sqlmodel.sql.sqltypes.AutoString(length=100), nullable=True,
         ),
         sa.Column("bio", sqlmodel.sql.sqltypes.AutoString(length=500), nullable=True),
         sa.Column(
-            "avatar_path", sqlmodel.sql.sqltypes.AutoString(length=500), nullable=True
+            "avatar_path", sqlmodel.sql.sqltypes.AutoString(length=500), nullable=True,
         ),
         sa.Column("is_admin", sa.Boolean(), nullable=False),
         sa.Column("token_version", sa.Integer(), nullable=False),
@@ -61,7 +62,7 @@ def upgrade() -> None:
     )
     with op.batch_alter_table("users", schema=None) as batch_op:
         batch_op.create_index(
-            batch_op.f("ix_users_username"), ["username"], unique=True
+            batch_op.f("ix_users_username"), ["username"], unique=True,
         )
 
     op.create_table(
@@ -71,13 +72,13 @@ def upgrade() -> None:
         sa.Column("id", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=False),
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
         sa.Column(
-            "description", sqlmodel.sql.sqltypes.AutoString(length=2000), nullable=False
+            "description", sqlmodel.sql.sqltypes.AutoString(length=2000), nullable=False,
         ),
         sa.Column("owner_id", sa.String(length=36), nullable=True),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.Column(
-            "updated_by", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=True
+            "updated_by", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=True,
         ),
         sa.ForeignKeyConstraint(
             ["owner_id"],
@@ -89,7 +90,7 @@ def upgrade() -> None:
     with op.batch_alter_table("collections", schema=None) as batch_op:
         batch_op.create_index(batch_op.f("ix_collections_name"), ["name"], unique=False)
         batch_op.create_index(
-            batch_op.f("ix_collections_owner_id"), ["owner_id"], unique=False
+            batch_op.f("ix_collections_owner_id"), ["owner_id"], unique=False,
         )
 
     op.create_table(
@@ -99,13 +100,13 @@ def upgrade() -> None:
         sa.Column("id", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=False),
         sa.Column("collection_id", sa.String(length=36), nullable=False),
         sa.Column(
-            "filename", sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False
+            "filename", sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False,
         ),
         sa.Column(
-            "file_type", sqlmodel.sql.sqltypes.AutoString(length=100), nullable=False
+            "file_type", sqlmodel.sql.sqltypes.AutoString(length=100), nullable=False,
         ),
         sa.Column(
-            "content_hash", sqlmodel.sql.sqltypes.AutoString(length=64), nullable=True
+            "content_hash", sqlmodel.sql.sqltypes.AutoString(length=64), nullable=True,
         ),
         sa.Column("chunk_count", sa.Integer(), nullable=False),
         sa.Column(
@@ -124,7 +125,7 @@ def upgrade() -> None:
     )
     with op.batch_alter_table("documents", schema=None) as batch_op:
         batch_op.create_index(
-            batch_op.f("ix_documents_collection_id"), ["collection_id"], unique=False
+            batch_op.f("ix_documents_collection_id"), ["collection_id"], unique=False,
         )
 
     op.create_table(
@@ -147,12 +148,12 @@ def upgrade() -> None:
         ),
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(length=200), nullable=False),
         sa.Column(
-            "description", sqlmodel.sql.sqltypes.AutoString(length=2000), nullable=False
+            "description", sqlmodel.sql.sqltypes.AutoString(length=2000), nullable=False,
         ),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.Column(
-            "updated_by", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=True
+            "updated_by", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=True,
         ),
         sa.ForeignKeyConstraint(
             ["collection_id"],
@@ -163,7 +164,7 @@ def upgrade() -> None:
     )
     with op.batch_alter_table("entities", schema=None) as batch_op:
         batch_op.create_index(
-            batch_op.f("ix_entities_collection_id"), ["collection_id"], unique=False
+            batch_op.f("ix_entities_collection_id"), ["collection_id"], unique=False,
         )
         batch_op.create_index(batch_op.f("ix_entities_type"), ["type"], unique=False)
 
@@ -173,10 +174,10 @@ def upgrade() -> None:
         sa.Column("entity_id", sa.String(length=36), nullable=False),
         sa.Column("collection_id", sa.String(length=36), nullable=False),
         sa.Column(
-            "category", sqlmodel.sql.sqltypes.AutoString(length=50), nullable=False
+            "category", sqlmodel.sql.sqltypes.AutoString(length=50), nullable=False,
         ),
         sa.Column(
-            "query", sqlmodel.sql.sqltypes.AutoString(length=2000), nullable=False
+            "query", sqlmodel.sql.sqltypes.AutoString(length=2000), nullable=False,
         ),
         sa.Column(
             "raw_content",
@@ -203,7 +204,7 @@ def upgrade() -> None:
             unique=False,
         )
         batch_op.create_index(
-            batch_op.f("ix_generated_texts_entity_id"), ["entity_id"], unique=False
+            batch_op.f("ix_generated_texts_entity_id"), ["entity_id"], unique=False,
         )
 
     op.create_table(
@@ -226,7 +227,7 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column(
-            "content", sqlmodel.sql.sqltypes.AutoString(length=10000), nullable=False
+            "content", sqlmodel.sql.sqltypes.AutoString(length=10000), nullable=False,
         ),
         sa.Column(
             "status",
@@ -238,7 +239,7 @@ def upgrade() -> None:
         sa.Column("confirmed_at", sa.DateTime(), nullable=True),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
         sa.Column(
-            "updated_by", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=True
+            "updated_by", sqlmodel.sql.sqltypes.AutoString(length=36), nullable=True,
         ),
         sa.ForeignKeyConstraint(
             ["collection_id"],
@@ -261,7 +262,7 @@ def upgrade() -> None:
             unique=False,
         )
         batch_op.create_index(
-            batch_op.f("ix_entity_contents_entity_id"), ["entity_id"], unique=False
+            batch_op.f("ix_entity_contents_entity_id"), ["entity_id"], unique=False,
         )
         batch_op.create_index(
             batch_op.f("ix_entity_contents_generated_text_id"),
@@ -278,10 +279,10 @@ def upgrade() -> None:
         sa.Column("collection_id", sa.String(length=36), nullable=False),
         sa.Column("content_id", sa.String(length=36), nullable=True),
         sa.Column(
-            "category", sqlmodel.sql.sqltypes.AutoString(length=50), nullable=False
+            "category", sqlmodel.sql.sqltypes.AutoString(length=50), nullable=False,
         ),
         sa.Column(
-            "auto_prompt", sqlmodel.sql.sqltypes.AutoString(length=1000), nullable=False
+            "auto_prompt", sqlmodel.sql.sqltypes.AutoString(length=1000), nullable=False,
         ),
         sa.Column(
             "final_prompt",
@@ -291,7 +292,7 @@ def upgrade() -> None:
         sa.Column("prompt_token_count", sa.Integer(), nullable=False),
         sa.Column("batch_size", sa.Integer(), nullable=False),
         sa.Column(
-            "backend", sqlmodel.sql.sqltypes.AutoString(length=20), nullable=False
+            "backend", sqlmodel.sql.sqltypes.AutoString(length=20), nullable=False,
         ),
         sa.Column("width", sa.Integer(), nullable=False),
         sa.Column("height", sa.Integer(), nullable=False),
@@ -317,10 +318,10 @@ def upgrade() -> None:
             unique=False,
         )
         batch_op.create_index(
-            batch_op.f("ix_image_generations_content_id"), ["content_id"], unique=False
+            batch_op.f("ix_image_generations_content_id"), ["content_id"], unique=False,
         )
         batch_op.create_index(
-            batch_op.f("ix_image_generations_entity_id"), ["entity_id"], unique=False
+            batch_op.f("ix_image_generations_entity_id"), ["entity_id"], unique=False,
         )
 
     op.create_table(
@@ -333,16 +334,16 @@ def upgrade() -> None:
         sa.Column("collection_id", sa.String(length=36), nullable=False),
         sa.Column("seed", sa.Integer(), nullable=False),
         sa.Column(
-            "storage_path", sqlmodel.sql.sqltypes.AutoString(length=500), nullable=True
+            "storage_path", sqlmodel.sql.sqltypes.AutoString(length=500), nullable=True,
         ),
         sa.Column(
-            "image_url", sqlmodel.sql.sqltypes.AutoString(length=500), nullable=True
+            "image_url", sqlmodel.sql.sqltypes.AutoString(length=500), nullable=True,
         ),
         sa.Column(
-            "filename", sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True
+            "filename", sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True,
         ),
         sa.Column(
-            "extension", sqlmodel.sql.sqltypes.AutoString(length=10), nullable=False
+            "extension", sqlmodel.sql.sqltypes.AutoString(length=10), nullable=False,
         ),
         sa.Column("width", sa.Integer(), nullable=False),
         sa.Column("height", sa.Integer(), nullable=False),
@@ -370,7 +371,7 @@ def upgrade() -> None:
             unique=False,
         )
         batch_op.create_index(
-            batch_op.f("ix_image_records_entity_id"), ["entity_id"], unique=False
+            batch_op.f("ix_image_records_entity_id"), ["entity_id"], unique=False,
         )
         batch_op.create_index(
             batch_op.f("ix_image_records_generation_id"),

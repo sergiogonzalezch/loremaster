@@ -1,10 +1,11 @@
 import pytest
+from sqlmodel import select
+
 from app.models.db.document import Document
 from app.models.db.entity import Entity
 from app.models.db.entity_content import EntityContent
 from app.models.db.generated_text import GeneratedText
 from app.models.enums import ContentStatus
-from sqlmodel import select
 
 
 @pytest.mark.anyio

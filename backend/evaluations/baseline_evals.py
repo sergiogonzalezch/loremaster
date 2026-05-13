@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
-"""
-Baseline Evaluation -- Loremaster
+"""Baseline Evaluation -- Loremaster
 Ejecuta el golden dataset contra la API en ejecucion y reporta PASS/FAIL por caso.
 
 Prerequisitos:
@@ -32,7 +30,6 @@ import json
 import sys
 import time
 from pathlib import Path
-from typing import Optional
 
 import httpx
 
@@ -75,7 +72,7 @@ def _err(msg: str) -> None:
 
 def _result_line(case_id: str, status: str, duration_ms: int, desc: str) -> None:
     icon = {"PASS": "OK ", "FAIL": "XX ", "SKIP": "-- ", "ERROR": "EE "}.get(
-        status, "?? "
+        status, "?? ",
     )
     print(f"  [{icon}] {case_id:<12} {status:<5}  {duration_ms:>6}ms  {desc[:52]}")
 
@@ -165,7 +162,7 @@ def check_fields(body: dict, fields: dict) -> list[Result]:
 # --------------------------------------------------------------------------- #
 
 
-def create_collection(api: APIClient, name: str) -> tuple[Optional[str], str]:
+def create_collection(api: APIClient, name: str) -> tuple[str | None, str]:
     """Crea una colección para la evaluación. Retorna (collection_id, error_msg)."""
     resp = api.post("/collections/", json={"name": name, "description": "Eval run"})
     if resp.status_code == 201:
@@ -203,8 +200,8 @@ def wait_for_docs(api: APIClient, cid: str) -> tuple[bool, str]:
 
 
 def create_entity(
-    api: APIClient, cid: str, etype: str, name: str, description: str = ""
-) -> tuple[Optional[str], str]:
+    api: APIClient, cid: str, etype: str, name: str, description: str = "",
+) -> tuple[str | None, str]:
     resp = api.post(
         f"/collections/{cid}/entities",
         json={"type": etype, "name": name, "description": description},
@@ -215,8 +212,8 @@ def create_entity(
 
 
 def generate_content(
-    api: APIClient, cid: str, eid: str, category: str, query: str
-) -> tuple[Optional[str], str]:
+    api: APIClient, cid: str, eid: str, category: str, query: str,
+) -> tuple[str | None, str]:
     resp = api.post(
         f"/collections/{cid}/entities/{eid}/generate/{category}",
         json={"query": query},
@@ -227,7 +224,7 @@ def generate_content(
 
 
 def confirm_content(
-    api: APIClient, cid: str, eid: str, content_id: str
+    api: APIClient, cid: str, eid: str, content_id: str,
 ) -> tuple[bool, str]:
     resp = api.post(f"/collections/{cid}/entities/{eid}/contents/{content_id}/confirm")
     if resp.status_code == 200:
@@ -236,7 +233,7 @@ def confirm_content(
 
 
 def discard_content(
-    api: APIClient, cid: str, eid: str, content_id: str
+    api: APIClient, cid: str, eid: str, content_id: str,
 ) -> tuple[bool, str]:
     resp = api.patch(f"/collections/{cid}/entities/{eid}/contents/{content_id}/discard")
     if resp.status_code == 200:
@@ -249,7 +246,7 @@ def list_contents(api: APIClient, cid: str, eid: str, **params) -> httpx.Respons
 
 
 def get_contents_by_status(
-    api: APIClient, cid: str, eid: str, status: str = "all", category: str = None
+    api: APIClient, cid: str, eid: str, status: str = "all", category: str = None,
 ) -> list[dict]:
     params: dict = {"page_size": 50, "status": status}
     if category:
@@ -261,8 +258,8 @@ def get_contents_by_status(
 
 
 def get_latest_pending(
-    api: APIClient, cid: str, eid: str, category: str = None
-) -> Optional[dict]:
+    api: APIClient, cid: str, eid: str, category: str = None,
+) -> dict | None:
     items = get_contents_by_status(api, cid, eid, "pending", category)
     return items[0] if items else None
 
@@ -277,9 +274,8 @@ def apply_setup(
     cid: str,
     setup: dict,
     entity_cache: dict,
-) -> tuple[Optional[str], Optional[str], str]:
-    """
-    Crea entidad + genera/confirma/descarta contenido segun el setup.
+) -> tuple[str | None, str | None, str]:
+    """Crea entidad + genera/confirma/descarta contenido segun el setup.
     Retorna (entity_id, last_content_id, error_msg).
     """
     if not setup:
@@ -289,7 +285,7 @@ def apply_setup(
     ename = setup.get("entity_name") or setup.get("entity")
     edesc = setup.get("entity_description", "")
 
-    entity_id: Optional[str] = None
+    entity_id: str | None = None
     if ename:
         if ename in entity_cache:
             entity_id = entity_cache[ename]
@@ -299,7 +295,7 @@ def apply_setup(
                 return None, None, f"setup.create_entity: {err}"
             entity_cache[ename] = entity_id
 
-    content_id: Optional[str] = None
+    content_id: str | None = None
     gen_cat = setup.get("generate_category")
     gen_query = setup.get("generate_query", "Query de setup para evaluacion baseline")
     gen_n = setup.get("generate_n", 1)
@@ -352,7 +348,7 @@ def _run_rag_query(api: APIClient, cid: str, case: dict) -> Result:
                 (
                     sc >= exp["sources_count_gte"],
                     f"sources_count {sc} < {exp['sources_count_gte']}",
-                )
+                ),
             )
         if "sources_count_lte" in exp:
             sc = body.get("sources_count", 0)
@@ -360,7 +356,7 @@ def _run_rag_query(api: APIClient, cid: str, case: dict) -> Result:
                 (
                     sc <= exp["sources_count_lte"],
                     f"sources_count {sc} > {exp['sources_count_lte']}",
-                )
+                ),
             )
         if "answer_min_length" in exp:
             alen = len(body.get("answer", ""))
@@ -368,27 +364,27 @@ def _run_rag_query(api: APIClient, cid: str, case: dict) -> Result:
                 (
                     alen >= exp["answer_min_length"],
                     f"answer len {alen} < {exp['answer_min_length']}",
-                )
+                ),
             )
         if "answer_contains_any" in exp:
             answer = body.get("answer", "").lower()
             found = any(kw.lower() in answer for kw in exp["answer_contains_any"])
             checks.append(
-                (found, f"answer sin ninguno de {exp['answer_contains_any']}")
+                (found, f"answer sin ninguno de {exp['answer_contains_any']}"),
             )
 
     return check_all(checks)
 
 
 def _run_entity_crud(
-    api: APIClient, cid: str, case: dict, entity_cache: dict
+    api: APIClient, cid: str, case: dict, entity_cache: dict,
 ) -> Result:
     action = case.get("action", "create")
     inp = case.get("input", {})
     setup = case.get("setup", {})
     exp = case.get("expected", {})
 
-    entity_id: Optional[str] = None
+    entity_id: str | None = None
 
     if setup:
         entity_id, _, err = apply_setup(api, cid, setup, entity_cache)
@@ -412,7 +408,7 @@ def _run_entity_crud(
                 checks += check_fields(body, exp["fields"])
         return check_all(checks)
 
-    elif action == "read":
+    if action == "read":
         eid = entity_id or inp.get("entity_id", "00000000-0000-0000-0000-000000000000")
         resp = api.get(f"/collections/{cid}/entities/{eid}")
         checks = [check_status(resp.status_code, exp["http_status"])]
@@ -424,13 +420,13 @@ def _run_entity_crud(
                 checks.append((field in body, f"falta campo '{field}'"))
         return check_all(checks)
 
-    elif action == "update":
+    if action == "update":
         if not entity_id:
             return fail("no entity_id para update")
         resp = api.patch(f"/collections/{cid}/entities/{entity_id}", json=inp)
         return check_status(resp.status_code, exp["http_status"])
 
-    elif action == "delete":
+    if action == "delete":
         if not entity_id:
             return fail("no entity_id para delete")
         resp = api.delete(f"/collections/{cid}/entities/{entity_id}")
@@ -441,7 +437,7 @@ def _run_entity_crud(
             checks.append(check_status(gr.status_code, after.get("http_status", 404)))
         return check_all(checks)
 
-    elif action == "list":
+    if action == "list":
         params: dict = {}
         if "type_filter" in inp:
             params["type"] = inp["type_filter"]
@@ -454,7 +450,7 @@ def _run_entity_crud(
                     (
                         len(items) >= exp["count_gte"],
                         f"count {len(items)} < {exp['count_gte']}",
-                    )
+                    ),
                 )
             if "all_items_type" in exp:
                 wrong = [i for i in items if i.get("type") != exp["all_items_type"]]
@@ -465,7 +461,7 @@ def _run_entity_crud(
 
 
 def _run_entity_content(
-    api: APIClient, cid: str, case: dict, entity_cache: dict
+    api: APIClient, cid: str, case: dict, entity_cache: dict,
 ) -> Result:
     inp = case.get("input", {})
     setup = case.get("setup", {})
@@ -479,7 +475,7 @@ def _run_entity_content(
     if not ename:
         return fail("no entity_name en input ni setup")
 
-    entity_id: Optional[str]
+    entity_id: str | None
     if ename in entity_cache:
         entity_id = entity_cache[ename]
     else:
@@ -489,7 +485,7 @@ def _run_entity_content(
         entity_cache[ename] = entity_id
 
     # Procesar setup (generate, confirm, discard, generate_n)
-    setup_content_id: Optional[str] = None
+    setup_content_id: str | None = None
     if setup:
         gen_cat = setup.get("generate_category")
         gen_query = setup.get("generate_query", "Query de setup baseline")
@@ -546,14 +542,14 @@ def _run_entity_content(
                     (
                         len(items) <= exp["items_count_lte"],
                         f"items {len(items)} > {exp['items_count_lte']}",
-                    )
+                    ),
                 )
             if "all_items_category" in exp:
                 wrong = [
                     i for i in items if i.get("category") != exp["all_items_category"]
                 ]
                 checks.append(
-                    (not wrong, f"{len(wrong)} items con categoria incorrecta")
+                    (not wrong, f"{len(wrong)} items con categoria incorrecta"),
                 )
         return check_all(checks)
 
@@ -573,7 +569,7 @@ def _run_entity_content(
                     (
                         body.get("status") == exp["status"],
                         f"status {body.get('status')!r} != {exp['status']!r}",
-                    )
+                    ),
                 )
             if "content_min_length" in exp:
                 clen = len(body.get("content", ""))
@@ -581,18 +577,18 @@ def _run_entity_content(
                     (
                         clen >= exp["content_min_length"],
                         f"content len {clen} < {exp['content_min_length']}",
-                    )
+                    ),
                 )
             if exp.get("has_generated_text_id"):
                 checks.append(
-                    (bool(body.get("generated_text_id")), "falta generated_text_id")
+                    (bool(body.get("generated_text_id")), "falta generated_text_id"),
                 )
             if "was_edited" in exp:
                 checks.append(
                     (
                         body.get("was_edited") == exp["was_edited"],
                         f"was_edited {body.get('was_edited')} != {exp['was_edited']}",
-                    )
+                    ),
                 )
         return check_all(checks)
 
@@ -604,7 +600,7 @@ def _run_entity_content(
         if not target:
             return fail("sin contenido pending para confirmar")
         resp = api.post(
-            f"/collections/{cid}/entities/{entity_id}/contents/{target}/confirm"
+            f"/collections/{cid}/entities/{entity_id}/contents/{target}/confirm",
         )
         checks = [check_status(resp.status_code, exp["http_status"])]
         # confirm devuelve EntityResponse; verificamos el status via list
@@ -622,7 +618,7 @@ def _run_entity_content(
         if not target:
             return fail("sin contenido para descartar")
         resp = api.patch(
-            f"/collections/{cid}/entities/{entity_id}/contents/{target}/discard"
+            f"/collections/{cid}/entities/{entity_id}/contents/{target}/discard",
         )
         checks = [check_status(resp.status_code, exp["http_status"])]
         if resp.status_code == 200 and "fields" in exp:
@@ -673,7 +669,7 @@ def _run_guardrail(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
 
     if endpoint == "rag_query":
         resp = api.post(
-            f"/collections/{cid}/query", json={"query": inp.get("query", "")}
+            f"/collections/{cid}/query", json={"query": inp.get("query", "")},
         )
         return check_status(resp.status_code, exp["http_status"])
 
@@ -699,7 +695,7 @@ def _run_guardrail(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
 
 
 def _run_image_generation(
-    api: APIClient, cid: str, case: dict, entity_cache: dict
+    api: APIClient, cid: str, case: dict, entity_cache: dict,
 ) -> Result:
     inp = case.get("input", {})
     setup = case.get("setup", {})
@@ -719,8 +715,8 @@ def _run_image_generation(
         entity_cache[ename] = entity_id
     entity_id = entity_cache[ename]
 
-    confirmed_content_id: Optional[str] = None
-    pending_content_id: Optional[str] = None
+    confirmed_content_id: str | None = None
+    pending_content_id: str | None = None
 
     if setup:
         gen_cat = setup.get("generate_category")
@@ -736,7 +732,7 @@ def _run_image_generation(
                 if ok_c:
                     confirmed_content_id = cid_g
 
-    content_id: Optional[str] = None
+    content_id: str | None = None
     if inp.get("use_confirmed_content_id") and confirmed_content_id:
         content_id = confirmed_content_id
     elif inp.get("use_pending_content_id") and pending_content_id:
@@ -792,19 +788,19 @@ def _run_image_generation(
                 (
                     body.get("backend") in allowed,
                     f"backend {body.get('backend')!r} no está en {allowed!r}",
-                )
+                ),
             )
 
         for kw in exp.get("visual_prompt_contains", []):
             checks.append(
-                (kw.lower() in auto_prompt.lower(), f"auto_prompt sin '{kw}'")
+                (kw.lower() in auto_prompt.lower(), f"auto_prompt sin '{kw}'"),
             )
 
     return check_all(checks)
 
 
 def _run_share_content(
-    api: APIClient, cid: str, case: dict, entity_cache: dict
+    api: APIClient, cid: str, case: dict, entity_cache: dict,
 ) -> Result:
     setup = case.get("setup", {})
     inp = case.get("input", {})
@@ -817,21 +813,21 @@ def _run_share_content(
     if not ename:
         return fail("no entity_name en input ni setup")
 
-    entity_id: Optional[str] = entity_cache.get(ename)
+    entity_id: str | None = entity_cache.get(ename)
     if not entity_id:
         entity_id, err = create_entity(api, cid, etype, ename, edesc)
         if err:
             return fail(f"create entity: {err}")
         entity_cache[ename] = entity_id
 
-    setup_content_id: Optional[str] = None
+    setup_content_id: str | None = None
     gen_cat = setup.get("generate_category")
     gen_query = setup.get("generate_query", "Setup query baseline")
     then = setup.get("then")
 
     if gen_cat:
         setup_content_id, err = generate_content(
-            api, cid, entity_id, gen_cat, gen_query
+            api, cid, entity_id, gen_cat, gen_query,
         )
         if err:
             return fail(f"setup generate: {err}")
@@ -856,7 +852,7 @@ def _run_share_content(
 
 
 def _run_share_image(
-    api: APIClient, cid: str, case: dict, entity_cache: dict
+    api: APIClient, cid: str, case: dict, entity_cache: dict,
 ) -> Result:
     inp = case.get("input", {})
     setup = case.get("setup", {})
@@ -869,14 +865,14 @@ def _run_share_image(
     if not ename:
         return fail("no entity_name")
 
-    entity_id: Optional[str] = entity_cache.get(ename)
+    entity_id: str | None = entity_cache.get(ename)
     if not entity_id:
         entity_id, err = create_entity(api, cid, etype, ename, edesc)
         if err:
             return fail(f"create entity: {err}")
         entity_cache[ename] = entity_id
 
-    confirmed_content_id: Optional[str] = None
+    confirmed_content_id: str | None = None
     if setup:
         gen_cat = setup.get("generate_category")
         gen_query = setup.get("generate_query", "Setup image share")
@@ -940,7 +936,7 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
     exp = case.get("expected", {})
 
     # Crear entidad del setup si existe
-    last_entity_id: Optional[str] = None
+    last_entity_id: str | None = None
     entity_created = False
     if setup:
         etype = setup.get("entity_type")
@@ -957,17 +953,17 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
 
     # Tracking de contenidos por categoria: category -> [content_id, ...]
     contents_by_cat: dict[str, list[str]] = {}
-    last_content_id: Optional[str] = None
-    last_entity_name: Optional[str] = None
-    image_resp: Optional[httpx.Response] = None
-    public_feed_visible: Optional[bool] = None
+    last_content_id: str | None = None
+    last_entity_name: str | None = None
+    image_resp: httpx.Response | None = None
+    public_feed_visible: bool | None = None
 
     for i, step in enumerate(steps):
         action = step.get("action")
 
         if action == "create_entity":
             eid, err = create_entity(
-                api, cid, step["type"], step["name"], step.get("description", "")
+                api, cid, step["type"], step["name"], step.get("description", ""),
             )
             if err:
                 return fail(f"step {i} create_entity: {err}")
@@ -987,7 +983,7 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
 
         elif action == "confirm":
             target_spec = step.get("target", "first")
-            target: Optional[str] = None
+            target: str | None = None
             if target_spec == "first":
                 for ids in contents_by_cat.values():
                     if ids:
@@ -1011,7 +1007,7 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
             target = last_content_id
             if target_spec == "confirmed":
                 confirmed = get_contents_by_status(
-                    api, cid, last_entity_id, "confirmed"
+                    api, cid, last_entity_id, "confirmed",
                 )
                 target = confirmed[0]["id"] if confirmed else last_content_id
             if not target:
@@ -1025,10 +1021,10 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
             last_content_id = target
 
         elif action == "generate_image":
-            content_id_for_image: Optional[str] = None
+            content_id_for_image: str | None = None
             if step.get("use_confirmed_content"):
                 confirmed = get_contents_by_status(
-                    api, cid, last_entity_id, "confirmed"
+                    api, cid, last_entity_id, "confirmed",
                 )
                 if confirmed:
                     content_id_for_image = confirmed[0]["id"]
@@ -1089,7 +1085,7 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
             (
                 entity_created == exp["entity_created"],
                 f"entity_created {entity_created} != {exp['entity_created']}",
-            )
+            ),
         )
 
     needs_all = any(
@@ -1122,21 +1118,21 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
                 (
                     len(confirmed_all) == exp["confirmed_count"],
                     f"confirmed {len(confirmed_all)} != {exp['confirmed_count']}",
-                )
+                ),
             )
         if "discarded_count" in exp:
             checks.append(
                 (
                     len(discarded_all) == exp["discarded_count"],
                     f"discarded {len(discarded_all)} != {exp['discarded_count']}",
-                )
+                ),
             )
         if "pending_count" in exp:
             checks.append(
                 (
                     len(pending_all) == exp["pending_count"],
                     f"pending {len(pending_all)} != {exp['pending_count']}",
-                )
+                ),
             )
         if "active_confirmed_query_contains" in exp:
             kw = exp["active_confirmed_query_contains"]
@@ -1172,21 +1168,21 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
                     (
                         len(bs_confirmed) == exp["backstory_confirmed_count"],
                         f"backstory confirmed {len(bs_confirmed)} != {exp['backstory_confirmed_count']}",
-                    )
+                    ),
                 )
             if "backstory_pending_count" in exp:
                 checks.append(
                     (
                         len(bs_pending) == exp["backstory_pending_count"],
                         f"backstory pending {len(bs_pending)} != {exp['backstory_pending_count']}",
-                    )
+                    ),
                 )
             if "extended_description_pending_count" in exp:
                 checks.append(
                     (
                         len(ed_pending) == exp["extended_description_pending_count"],
                         f"ext_desc pending {len(ed_pending)} != {exp['extended_description_pending_count']}",
-                    )
+                    ),
                 )
             if "extended_description_discarded_count" in exp:
                 checks.append(
@@ -1194,7 +1190,7 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
                         len(ed_discarded)
                         == exp["extended_description_discarded_count"],
                         f"ext_desc discarded {len(ed_discarded)} != {exp['extended_description_discarded_count']}",
-                    )
+                    ),
                 )
 
     needs_final = any(
@@ -1213,14 +1209,14 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
                 (
                     item.get("status") == exp["final_status"],
                     f"status {item.get('status')!r} != {exp['final_status']!r}",
-                )
+                ),
             )
         if "final_was_edited" in exp:
             checks.append(
                 (
                     item.get("was_edited") == exp["final_was_edited"],
                     f"was_edited {item.get('was_edited')} != {exp['final_was_edited']}",
-                )
+                ),
             )
         if "final_text_contains" in exp:
             text = item.get("content", "")
@@ -1246,7 +1242,7 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
                     (
                         ibody.get("backend") in allowed,
                         f"backend {ibody.get('backend')!r} no está en {allowed!r}",
-                    )
+                    ),
                 )
         if "content_status" in exp and last_entity_id:
             confirmed = get_contents_by_status(api, cid, last_entity_id, "confirmed")
@@ -1255,7 +1251,7 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
                 (
                     cs == exp["content_status"],
                     f"content status {cs!r} != {exp['content_status']!r}",
-                )
+                ),
             )
 
     if "content_in_public_feed" in exp and public_feed_visible is not None:
@@ -1263,7 +1259,7 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
             (
                 public_feed_visible == exp["content_in_public_feed"],
                 f"content_in_public_feed: visible={public_feed_visible}, expected={exp['content_in_public_feed']}",
-            )
+            ),
         )
 
     return check_all(checks) if checks else ok()
@@ -1317,7 +1313,7 @@ def _print_summary(results: list[dict]) -> None:
     _sep("-")
     print(
         f"  {'Categoria':<22} | {'Total':>5} | {'PASS':>5} | {'FAIL':>5} "
-        f"| {'ERROR':>5} | {'SKIP':>5} | {'Pass%':>6}"
+        f"| {'ERROR':>5} | {'SKIP':>5} | {'Pass%':>6}",
     )
     print(f"  {'-'*22}-+-{'-'*5}-+-{'-'*5}-+-{'-'*5}-+-{'-'*5}-+-{'-'*5}-+-{'-'*6}")
 
@@ -1332,7 +1328,7 @@ def _print_summary(results: list[dict]) -> None:
         pct = f"{n_pass / total * 100:.0f}%" if total else "N/A"
         print(
             f"  {cat:<22} | {total:>5} | {n_pass:>5} | {n_fail:>5} "
-            f"| {n_error:>5} | {n_skip:>5} | {pct:>6}"
+            f"| {n_error:>5} | {n_skip:>5} | {pct:>6}",
         )
 
     _sep("-")
@@ -1344,7 +1340,7 @@ def _print_summary(results: list[dict]) -> None:
     pct = f"{n_pass / total * 100:.1f}%" if total else "N/A"
     print(
         f"  {'TOTAL':<22} | {total:>5} | {n_pass:>5} | {n_fail:>5} "
-        f"| {n_error:>5} | {n_skip:>5} | {pct:>6}"
+        f"| {n_error:>5} | {n_skip:>5} | {pct:>6}",
     )
     _sep()
 
@@ -1367,7 +1363,7 @@ def _print_summary(results: list[dict]) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Loremaster Baseline Evaluation — ejecuta el golden dataset contra la API"
+        description="Loremaster Baseline Evaluation — ejecuta el golden dataset contra la API",
     )
     parser.add_argument(
         "--base-url",
@@ -1427,7 +1423,7 @@ def main() -> None:
     _sep()
     print("  LOREMASTER -- BASELINE EVALUATION")
     print(
-        f"  Dataset  : {DATASET_PATH.name}  ({len(dataset.get('cases', []))} casos totales)"
+        f"  Dataset  : {DATASET_PATH.name}  ({len(dataset.get('cases', []))} casos totales)",
     )
     print(f"  Ejecutar : {len(all_cases)} casos")
     print(f"  Base URL : {args.base_url}")
@@ -1532,7 +1528,7 @@ def main() -> None:
                 "status": status,
                 "detail": detail if not passed else "",
                 "duration_ms": duration_ms,
-            }
+            },
         )
 
     # ── Cleanup ─────────────────────────────────────────────────────────────

@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
-"""
-Threshold Evaluation -- Loremaster
+"""Threshold Evaluation -- Loremaster
 Evalúa el parámetro rag_score_threshold (similitud coseno) en los valores: 0.0, 0.3, 0.5, 0.7
 
 Simula el comportamiento de Qdrant sin necesitar el servidor en marcha.
@@ -168,7 +166,7 @@ def build_index(text: str, model: SentenceTransformer) -> tuple[list[str], np.nd
     )
     chunks = splitter.split_text(text)
     embeddings = model.encode(
-        chunks, show_progress_bar=False, normalize_embeddings=True
+        chunks, show_progress_bar=False, normalize_embeddings=True,
     )
     return chunks, embeddings
 
@@ -225,7 +223,7 @@ def run_evaluation(
                     "has_context": len(hits) > 0,
                     "expect_context": query["expect_context"],
                     "correct": (len(hits) > 0) == query["expect_context"],
-                }
+                },
             )
     return rows
 
@@ -244,7 +242,7 @@ def _print_query_block(query: dict, rows_for_query: list[dict]) -> None:
     print()
     print(
         f"  {'Umbral':>7} | {'Chunks':>6} | {'Max sim':>8} | {'Avg sim':>8} | "
-        f"{'Contexto':>9} | {'Correcto':>9}"
+        f"{'Contexto':>9} | {'Correcto':>9}",
     )
     print(f"  {'-'*7}-+-{'-'*6}-+-{'-'*8}-+-{'-'*8}-+-{'-'*9}-+-{'-'*9}")
     for row in rows_for_query:
@@ -252,7 +250,7 @@ def _print_query_block(query: dict, rows_for_query: list[dict]) -> None:
         ok = "OK " if row["correct"] else "FALLO"
         print(
             f"  {row['threshold']:>7.1f} | {row['hits']:>6} | {row['max_score']:>8.3f} | "
-            f"{row['avg_score']:>8.3f} | {ctx:>9} | {ok:>9}"
+            f"{row['avg_score']:>8.3f} | {ctx:>9} | {ok:>9}",
         )
     print()
 
@@ -262,16 +260,16 @@ def _print_threshold_summary(rows: list[dict]) -> None:
     _sep("=")
     print("  RESUMEN POR UMBRAL")
     print(
-        "  Precision media: avg score de los chunks recuperados (más alto = mayor calidad)"
+        "  Precision media: avg score de los chunks recuperados (más alto = mayor calidad)",
     )
     print(
-        "  Recall medio   : chunks recuperados / top_k posibles (más alto = más cobertura)"
+        "  Recall medio   : chunks recuperados / top_k posibles (más alto = más cobertura)",
     )
     print("  Fallos         : consultas donde el resultado no coincide con lo esperado")
     _sep("-")
     print(
         f"  {'Umbral':>7} | {'Prec media':>10} | {'Recall medio':>13} | "
-        f"{'Chunks/query':>13} | {'Fallos':>7}"
+        f"{'Chunks/query':>13} | {'Fallos':>7}",
     )
     print(f"  {'-'*7}-+-{'-'*10}-+-{'-'*13}-+-{'-'*13}-+-{'-'*7}")
     for thr in THRESHOLDS:
@@ -284,7 +282,7 @@ def _print_threshold_summary(rows: list[dict]) -> None:
         avg_chunks = sum(r["hits"] for r in thr_rows) / len(thr_rows)
         print(
             f"  {thr:>7.1f} | {prec:>10.3f} | {recall:>13.3f} | "
-            f"{avg_chunks:>13.1f} | {fallos:>7}"
+            f"{avg_chunks:>13.1f} | {fallos:>7}",
         )
     _sep("=")
 

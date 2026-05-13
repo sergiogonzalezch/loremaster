@@ -40,6 +40,10 @@ if "app.engine.rag" not in sys.modules:
 
 # 3. Imports de app (con env vars y stubs ya en su lugar)
 import pytest
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.pool import StaticPool
+from sqlmodel import Session, SQLModel, create_engine
+
 from app.core.auth.dependencies import get_current_user
 from app.database import get_session
 from app.main import _csrf_for_unsafe, app
@@ -49,9 +53,6 @@ from app.models.db.entity import Entity, EntityType
 from app.models.db.entity_content import EntityContent
 from app.models.db.user import User
 from app.models.enums import ContentCategory, ContentStatus
-from httpx import ASGITransport, AsyncClient
-from sqlalchemy.pool import StaticPool
-from sqlmodel import Session, SQLModel, create_engine
 
 
 @pytest.fixture(params=["asyncio"])

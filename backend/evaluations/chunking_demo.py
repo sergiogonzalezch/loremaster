@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
-"""
-Chunking Demo -- Loremaster
+"""Chunking Demo -- Loremaster
 Comparativa: Fixed-Size (RecursiveCharacterTextSplitter) vs Semantic Chunking
 
 Sin Qdrant ni LLM. Dependencias: langchain-text-splitters, sentence-transformers, numpy.
@@ -135,8 +133,7 @@ def semantic_chunks(
     threshold_percentile: float = 80.0,
     window_size: int = 1,
 ) -> tuple[list[str], list[float], float, list[int]]:
-    """
-    Chunking semantico inspirado en langchain_experimental.SemanticChunker.
+    """Chunking semantico inspirado en langchain_experimental.SemanticChunker.
 
     Pasos:
       1. Divide el texto en frases.
@@ -163,7 +160,7 @@ def semantic_chunks(
         windowed.append(" ".join(sentences[start:end]))
 
     embeddings = model.encode(
-        windowed, show_progress_bar=False, normalize_embeddings=True
+        windowed, show_progress_bar=False, normalize_embeddings=True,
     )
 
     distances = [
@@ -223,8 +220,7 @@ def _print_semantic_chunks(
     threshold: float,
     breakpoints: list[int],
 ) -> None:
-    """
-    Muestra cada chunk con la distancia coseno en la frontera que lo separa del siguiente.
+    """Muestra cada chunk con la distancia coseno en la frontera que lo separa del siguiente.
     El indice de frontera corresponde a breakpoints[i]-1 en el array distances.
     """
     for i, chunk in enumerate(chunks):
@@ -252,7 +248,7 @@ def _print_summary_table(results: list[tuple[str, dict]]) -> None:
     print(f"  {'-'*26}-+-{'-'*6}-+-{'-'*6}-+-{'-'*6}-+-{'-'*6}")
     for name, s in results:
         print(
-            f"  {name:<26} | {s['count']:>6} | {s['avg']:>6} | {s['min']:>6} | {s['max']:>6}"
+            f"  {name:<26} | {s['count']:>6} | {s['avg']:>6} | {s['min']:>6} | {s['max']:>6}",
         )
     _sep("=")
 
@@ -290,7 +286,7 @@ def main() -> None:
         _print_fixed_chunks(chunks)
         print(
             f"  RESUMEN: {s['count']} chunks  |"
-            f"  avg={s['avg']}  min={s['min']}  max={s['max']}"
+            f"  avg={s['avg']}  min={s['min']}  max={s['max']}",
         )
         print()
 
@@ -299,7 +295,7 @@ def main() -> None:
     print(f"  SEMANTIC  |  modelo={EMBEDDING_MODEL}")
     print(
         f"  Metodo: ventana deslizante + distancia coseno"
-        f"  |  umbral=p{int(SEMANTIC_THRESHOLD_PERCENTILE)}"
+        f"  |  umbral=p{int(SEMANTIC_THRESHOLD_PERCENTILE)}",
     )
     _sep("-")
     print("  Cargando modelo de embeddings...", end=" ", flush=True)
@@ -307,7 +303,7 @@ def main() -> None:
     print("listo.\n")
 
     chunks, distances, threshold, breakpoints = semantic_chunks(
-        text, model, threshold_percentile=SEMANTIC_THRESHOLD_PERCENTILE
+        text, model, threshold_percentile=SEMANTIC_THRESHOLD_PERCENTILE,
     )
     s = _chunk_stats(chunks)
     label = f"Semantic (p{int(SEMANTIC_THRESHOLD_PERCENTILE)})"
@@ -318,14 +314,14 @@ def main() -> None:
             f"  Distancias coseno -- "
             f"min={min(distances):.3f}  "
             f"max={max(distances):.3f}  "
-            f"umbral(p{int(SEMANTIC_THRESHOLD_PERCENTILE)})={threshold:.3f}"
+            f"umbral(p{int(SEMANTIC_THRESHOLD_PERCENTILE)})={threshold:.3f}",
         )
         print(f"  Puntos de corte detectados: {len(breakpoints)}\n")
 
     _print_semantic_chunks(chunks, distances, threshold, breakpoints)
     print(
         f"  RESUMEN: {s['count']} chunks  |"
-        f"  avg={s['avg']}  min={s['min']}  max={s['max']}"
+        f"  avg={s['avg']}  min={s['min']}  max={s['max']}",
     )
     print()
 
@@ -341,7 +337,7 @@ def main() -> None:
     print()
     print("  * Semantic:   cortes donde la similitud entre frases cae mas de lo")
     print(
-        f"    normal (percentil {int(SEMANTIC_THRESHOLD_PERCENTILE)} configurable). Mas lento (requiere embeddings)."
+        f"    normal (percentil {int(SEMANTIC_THRESHOLD_PERCENTILE)} configurable). Mas lento (requiere embeddings).",
     )
     print("    Produce chunks tematicamente coherentes y de tamano variable.")
     print()
