@@ -31,7 +31,7 @@ class Settings(BaseSettings):
         max_tokens: Máximo de tokens en respuestas del LLM.
         max_concurrent_llm_calls: Límite de llamadas concurrentes al LLM.
         max_pending_contents: Máximo de contenidos pendientes por entidad.
-        rate_limit_per_minute: Límite de requests por minuto por usuario (P-2).
+        rate_limit_per_minute: Límite de requests por minuto por usuario.
 
         image_prompt_tokens: Tokens máximos para prompts de imagen.
         image_backend: Backend de generación de imágenes (mock, comfyui).
