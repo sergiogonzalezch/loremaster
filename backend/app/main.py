@@ -87,9 +87,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 async def validation_exception_handler(
     request: Request, _exc: RequestValidationError,
 ) -> JSONResponse:
-    """Maneja errores de validación sin repetir el input del cliente
-    (evita info leak).
-    """
+    """Maneja errores de validación sin repetir el input del cliente (evita info leak)."""
     logger.warning("Validation error on %s %s", request.method, request.url.path)
     return JSONResponse(
         status_code=422, content={"detail": "Error de validación en la solicitud."},
