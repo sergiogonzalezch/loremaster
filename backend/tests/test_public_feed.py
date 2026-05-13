@@ -74,7 +74,9 @@ async def test_public_feed_shows_shared_content(client, db_session):
 
 @pytest.mark.anyio
 async def test_public_feed_unshared_content_not_included(
-    client, db_session, sample_collection,
+    client,
+    db_session,
+    sample_collection,
 ):
     """PUB-02: Contenido no compartido no aparece en el feed público."""
     response = await client.get("/api/v1/public/feed")
@@ -93,10 +95,14 @@ async def test_get_public_profile_returns_shared_contents(client, db_session):
     db_session.flush()
 
     visible_col = Collection(
-        name="My Public World", description="Public world", owner_id="pub-user-id",
+        name="My Public World",
+        description="Public world",
+        owner_id="pub-user-id",
     )
     hidden_col = Collection(
-        name="My Private World", description="Private world", owner_id="pub-user-id",
+        name="My Private World",
+        description="Private world",
+        owner_id="pub-user-id",
     )
     db_session.add(visible_col)
     db_session.add(hidden_col)
@@ -136,7 +142,8 @@ async def test_get_collection_by_non_owner_returns_403(client, db_session):
 
 @pytest.mark.anyio
 async def test_get_collection_with_shared_content_by_non_owner_still_403(
-    client, db_session,
+    client,
+    db_session,
 ):
     """PUB-06: GET /collections/{id} retorna 403 incluso con contenido compartido si no eres owner."""
     from app.models.db.collection import Collection

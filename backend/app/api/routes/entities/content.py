@@ -89,7 +89,8 @@ def list_contents(
     session: Annotated[Session, Depends(get_session)],
     category: Annotated[ContentCategory | None, Query()] = None,
     status: Annotated[
-        Literal["active", "pending", "confirmed", "discarded", "all"], Query(),
+        Literal["active", "pending", "confirmed", "discarded", "all"],
+        Query(),
     ] = "active",
 ):
     """Lista los contenidos de una entidad con filtros y paginación."""

@@ -297,7 +297,8 @@ def soft_delete_content(
 
 
 def _to_response(
-    content: EntityContent, gt: GeneratedText | None,
+    content: EntityContent,
+    gt: GeneratedText | None,
 ) -> EntityContentResponse:
     return EntityContentResponse(
         id=content.id,

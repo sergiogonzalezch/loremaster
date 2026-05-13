@@ -58,7 +58,8 @@ def update_profile(session: Session, user: User, request: UpdateProfileRequest) 
         ).first()
         if existing:
             raise HTTPException(
-                status_code=409, detail="El correo electrónico ya está en uso.",
+                status_code=409,
+                detail="El correo electrónico ya está en uso.",
             )
         user.email = request.email
     session.add(user)

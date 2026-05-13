@@ -1,7 +1,7 @@
 """Middleware de rate limiting para la API.
 
 Limita el número de requests por usuario en una ventana de tiempo.
-Implementa protección contra brute force y DoS (P-2 / H-8).
+Implementa protección contra brute force y DoS.
 
 El rate limiter opera en memoria (dict) con bloqueo por threading.Lock.
 Para producción con múltiples workers, considerar Redis como backend.

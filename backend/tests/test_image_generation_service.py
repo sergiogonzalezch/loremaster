@@ -21,7 +21,8 @@ from sqlmodel import select
 
 @pytest.fixture
 def sample_entity_content_confirmed(
-    db_session: Session, sample_entity: Entity,
+    db_session: Session,
+    sample_entity: Entity,
 ) -> EntityContent:
     """EntityContent confirmado para tests."""
     content = EntityContent(
@@ -58,7 +59,8 @@ def test_ig_01_build_prompt_with_confirmed_content(
 
 
 def test_ig_02_build_prompt_fails_for_unconfirmed_content(
-    db_session: Session, sample_entity: Entity,
+    db_session: Session,
+    sample_entity: Entity,
 ):
     """IG-02: build_prompt lanza error si el contenido no está confirmado."""
     pending_content = EntityContent(
@@ -77,17 +79,21 @@ def test_ig_02_build_prompt_fails_for_unconfirmed_content(
 
 
 def test_ig_03_build_prompt_fails_for_nonexistent_content(
-    db_session: Session, sample_entity: Entity,
+    db_session: Session,
+    sample_entity: Entity,
 ):
     """IG-03: build_prompt lanza error si el content_id no existe."""
     with pytest.raises(NoContextAvailableError):
         build_prompt_service(
-            db_session, sample_entity, "00000000-0000-0000-0000-000000000000",
+            db_session,
+            sample_entity,
+            "00000000-0000-0000-0000-000000000000",
         )
 
 
 def test_ig_04_build_prompt_fails_for_unsupported_category(
-    db_session: Session, sample_entity: Entity,
+    db_session: Session,
+    sample_entity: Entity,
 ):
     """IG-04: build_prompt lanza error si la categoría no es soportada."""
     # Verificar que las categorías permitidas están definidas
@@ -276,12 +282,15 @@ def test_ig_10_get_generation_returns_generation_record(
 
 
 def test_ig_11_get_generation_fails_for_nonexistent(
-    db_session: Session, sample_entity: Entity,
+    db_session: Session,
+    sample_entity: Entity,
 ):
     """IG-11: get_generation lanza error si no existe."""
     with pytest.raises(NoContextAvailableError):
         get_generation_service(
-            db_session, sample_entity, "00000000-0000-0000-0000-000000000000",
+            db_session,
+            sample_entity,
+            "00000000-0000-0000-0000-000000000000",
         )
 
 

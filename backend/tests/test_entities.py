@@ -26,7 +26,8 @@ async def test_list_entities(client, sample_collection):
     ]
     for payload in payloads:
         await client.post(
-            f"/api/v1/collections/{sample_collection.id}/entities", json=payload,
+            f"/api/v1/collections/{sample_collection.id}/entities",
+            json=payload,
         )
 
     response = await client.get(f"/api/v1/collections/{sample_collection.id}/entities")
@@ -77,7 +78,10 @@ async def test_delete_entity(client, sample_collection, sample_entity):
 
 @pytest.mark.anyio
 async def test_delete_entity_cascades_all_contents(
-    client, db_session, sample_collection, sample_entity,
+    client,
+    db_session,
+    sample_collection,
+    sample_entity,
 ):
     """ENT-06: Eliminar entidad hace soft-delete de EntityContent pending y confirmed."""
     gt = GeneratedText(
@@ -162,7 +166,8 @@ async def test_filter_entities_by_name(client, sample_collection):
         {"type": "faction", "name": "Fellowship", "description": ""},
     ]:
         await client.post(
-            f"/api/v1/collections/{sample_collection.id}/entities", json=payload,
+            f"/api/v1/collections/{sample_collection.id}/entities",
+            json=payload,
         )
 
     response = await client.get(
@@ -186,7 +191,8 @@ async def test_filter_entities_by_type(client, sample_collection):
         {"type": "item", "name": "One Ring", "description": ""},
     ]:
         await client.post(
-            f"/api/v1/collections/{sample_collection.id}/entities", json=payload,
+            f"/api/v1/collections/{sample_collection.id}/entities",
+            json=payload,
         )
 
     response = await client.get(
@@ -207,7 +213,8 @@ async def test_filter_entities_name_and_type_combined(client, sample_collection)
         {"type": "character", "name": "Aragorn", "description": ""},
     ]:
         await client.post(
-            f"/api/v1/collections/{sample_collection.id}/entities", json=payload,
+            f"/api/v1/collections/{sample_collection.id}/entities",
+            json=payload,
         )
 
     response = await client.get(
@@ -236,7 +243,10 @@ async def test_filter_entities_created_after_future(client, sample_collection):
 
 @pytest.mark.anyio
 async def test_delete_entity_cascades_generated_images(
-    client, db_session, sample_collection, sample_entity,
+    client,
+    db_session,
+    sample_collection,
+    sample_entity,
 ):
     """ENT-13: Eliminar entidad hace soft-delete de sus ImageGeneration e ImageRecord."""
     from app.models.db.image_generation import ImageGeneration, ImageRecord

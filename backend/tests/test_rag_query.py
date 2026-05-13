@@ -4,7 +4,11 @@ import pytest
 
 @pytest.mark.anyio
 async def test_rag_query_returns_answer(
-    client, mock_rag_engine, mock_llm, sample_collection, sample_document,
+    client,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
+    sample_document,
 ):
     """GEN-01: La consulta RAG retorna answer, query y sources_count."""
     response = await client.post(
@@ -20,7 +24,11 @@ async def test_rag_query_returns_answer(
 
 @pytest.mark.anyio
 async def test_rag_query_uses_rag_context(
-    client, mock_rag_engine, mock_llm, sample_collection, sample_document,
+    client,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
+    sample_document,
 ):
     """GEN-02: El endpoint invoca retrieve_context con collection_id y query correctos."""
     query = "Qué facciones existen"
@@ -46,7 +54,11 @@ async def test_rag_query_empty_context_422(client, sample_collection, sample_doc
 
 @pytest.mark.anyio
 async def test_rag_query_llm_unavailable_503(
-    client, mock_rag_engine, monkeypatch, sample_collection, sample_document,
+    client,
+    mock_rag_engine,
+    monkeypatch,
+    sample_collection,
+    sample_document,
 ):
     """GEN-04: Si chain.invoke falla, retorna 503."""
 
@@ -65,7 +77,11 @@ async def test_rag_query_llm_unavailable_503(
 
 @pytest.mark.anyio
 async def test_rag_query_qdrant_unavailable_503(
-    client, mock_llm, monkeypatch, sample_collection, sample_document,
+    client,
+    mock_llm,
+    monkeypatch,
+    sample_collection,
+    sample_document,
 ):
     """GEN-05: Si retrieve_context lanza excepción (Qdrant caído), retorna 503."""
 
@@ -83,7 +99,9 @@ async def test_rag_query_qdrant_unavailable_503(
 
 @pytest.mark.anyio
 async def test_rag_query_blocked_input_returns_422(
-    client, sample_collection, sample_document,
+    client,
+    sample_collection,
+    sample_document,
 ):
     """GEN-09: Query bloqueada por content_guard retorna 422."""
     response = await client.post(
@@ -95,7 +113,10 @@ async def test_rag_query_blocked_input_returns_422(
 
 @pytest.mark.anyio
 async def test_rag_query_low_score_returns_422(
-    client, mock_rag_engine, sample_collection, sample_document,
+    client,
+    mock_rag_engine,
+    sample_collection,
+    sample_document,
 ):
     """GEN-06: Si el score es bajo, retorna 422."""
     response = await client.post(
@@ -107,7 +128,10 @@ async def test_rag_query_low_score_returns_422(
 
 @pytest.mark.anyio
 async def test_rag_query_with_threshold_passes_param_to_search(
-    client, mock_rag_engine, sample_collection, sample_document,
+    client,
+    mock_rag_engine,
+    sample_collection,
+    sample_document,
 ):
     """GEN-07: El pipeline usa settings."""
     response = await client.post(
@@ -119,7 +143,11 @@ async def test_rag_query_with_threshold_passes_param_to_search(
 
 @pytest.mark.anyio
 async def test_rag_query_llm_failure_releases_semaphore(
-    client, mock_rag_engine, monkeypatch, sample_collection, sample_document,
+    client,
+    mock_rag_engine,
+    monkeypatch,
+    sample_collection,
+    sample_document,
 ):
     """GEN-08: Si el LLM falla, el semáforo se libera y el siguiente request puede ejecutar."""
 

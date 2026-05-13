@@ -1,7 +1,7 @@
 """Middleware de headers de seguridad.
 
 Añade headers de seguridad HTTP a todas las respuestas de la API.
-Implementa protecciones contra XSS, clickjacking y MIME-sniffing (H-9).
+Implementa protecciones contra XSS, clickjacking y MIME-sniffing.
 
 Headers agregados:
     - X-Content-Type-Options: nosniff (evita MIME-sniffing)
@@ -9,7 +9,7 @@ Headers agregados:
     - Referrer-Policy: strict-origin-when-cross-origin
     - Permissions-Policy: restricciones de geolocalización, micrófono, cámara
     - Strict-Transport-Security: HSTS (solo en HTTPS)
-    - Content-Security-Policy: diferenciado por protocolo (H-9)
+    - Content-Security-Policy: diferenciado por protocolo.
 """
 
 from collections.abc import Callable

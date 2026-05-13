@@ -13,7 +13,9 @@ from app.models.schemas.public import PublicFeedItem, PublicImageItem
 
 
 def get_public_feed(
-    session: Session, page: int, page_size: int,
+    session: Session,
+    page: int,
+    page_size: int,
 ) -> tuple[list[PublicFeedItem], int]:
     """Obtiene el feed público de contenidos confirmados."""
     base = (
@@ -44,7 +46,9 @@ def get_public_feed(
 
 
 def get_public_images(
-    session: Session, page: int, page_size: int,
+    session: Session,
+    page: int,
+    page_size: int,
 ) -> tuple[list[PublicImageItem], int]:
     """Obtiene el feed público de imágenes generadas."""
     base = (

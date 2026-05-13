@@ -103,7 +103,10 @@ async def test_delete_cascades_entities(client, db_session, sample_collection):
 
 @pytest.mark.anyio
 async def test_delete_cascades_all_contents(
-    client, db_session, sample_collection, sample_entity,
+    client,
+    db_session,
+    sample_collection,
+    sample_entity,
 ):
     """COL-08: Eliminar colección hace soft-delete de EntityContent pending y confirmed."""
     from app.models.enums import ContentCategory
@@ -156,13 +159,16 @@ async def test_delete_cascades_all_contents(
 async def test_filter_collections_by_name(client):
     """COL-09: Filtrar colecciones por nombre retorna solo las que coinciden."""
     await client.post(
-        "/api/v1/collections/", json={"name": "Middle Earth", "description": ""},
+        "/api/v1/collections/",
+        json={"name": "Middle Earth", "description": ""},
     )
     await client.post(
-        "/api/v1/collections/", json={"name": "Westeros", "description": ""},
+        "/api/v1/collections/",
+        json={"name": "Westeros", "description": ""},
     )
     await client.post(
-        "/api/v1/collections/", json={"name": "Middle Ages Lore", "description": ""},
+        "/api/v1/collections/",
+        json={"name": "Middle Ages Lore", "description": ""},
     )
 
     response = await client.get("/api/v1/collections/?name=middle")
@@ -179,7 +185,8 @@ async def test_filter_collections_by_name(client):
 async def test_filter_collections_by_created_after(client):
     """COL-10: Filtrar colecciones con created_after en el futuro retorna lista vacía."""
     await client.post(
-        "/api/v1/collections/", json={"name": "World X", "description": ""},
+        "/api/v1/collections/",
+        json={"name": "World X", "description": ""},
     )
 
     response = await client.get(
@@ -195,7 +202,8 @@ async def test_filter_collections_by_created_after(client):
 async def test_filter_collections_by_created_before(client):
     """COL-11: Filtrar colecciones con created_before en el pasado retorna lista vacía."""
     await client.post(
-        "/api/v1/collections/", json={"name": "World Y", "description": ""},
+        "/api/v1/collections/",
+        json={"name": "World Y", "description": ""},
     )
 
     response = await client.get(
@@ -210,10 +218,12 @@ async def test_filter_and_pagination_combined(client):
     """COL-12: Filtro por nombre y paginación combinados funcionan correctamente."""
     for i in range(5):
         await client.post(
-            "/api/v1/collections/", json={"name": f"Lore World {i}", "description": ""},
+            "/api/v1/collections/",
+            json={"name": f"Lore World {i}", "description": ""},
         )
     await client.post(
-        "/api/v1/collections/", json={"name": "Unrelated", "description": ""},
+        "/api/v1/collections/",
+        json={"name": "Unrelated", "description": ""},
     )
 
     response = await client.get("/api/v1/collections/?name=lore&page=1&page_size=3")
@@ -242,7 +252,8 @@ async def test_update_collection_name(client, sample_collection):
 async def test_update_collection_duplicate_name_409(client, sample_collection):
     """COL-14: PATCH con nombre de otra colección activa retorna 409."""
     await client.post(
-        "/api/v1/collections/", json={"name": "Other World", "description": ""},
+        "/api/v1/collections/",
+        json={"name": "Other World", "description": ""},
     )
 
     response = await client.patch(
@@ -284,7 +295,9 @@ async def test_same_name_different_owners_both_201(client, db_session):
     assert (await client.post("/api/v1/collections/", json=payload)).status_code == 201
 
     other_collection = Collection(
-        name="Mundo de Tolkien", description="Tolkien world", owner_id="other-user-id",
+        name="Mundo de Tolkien",
+        description="Tolkien world",
+        owner_id="other-user-id",
     )
     db_session.add(other_collection)
     db_session.commit()
@@ -300,7 +313,9 @@ async def test_patch_collection_another_user_403(client, db_session):
     from app.models.db.collection import Collection
 
     other_collection = Collection(
-        name="Other World", description="other", owner_id="other-user-id",
+        name="Other World",
+        description="other",
+        owner_id="other-user-id",
     )
     db_session.add(other_collection)
     db_session.commit()

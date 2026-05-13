@@ -8,7 +8,9 @@ from sqlmodel import select
 
 @pytest.mark.anyio
 async def test_discard_sibling_contents_only_affects_same_category(
-    db_session, sample_collection, sample_entity,
+    db_session,
+    sample_collection,
+    sample_entity,
 ):
     """CMS-01: Descarta siblings solo de la misma categoría, no otras."""
     gt = GeneratedText(

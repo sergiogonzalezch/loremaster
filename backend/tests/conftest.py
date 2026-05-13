@@ -170,14 +170,19 @@ def mock_rag_engine(monkeypatch: pytest.MonkeyPatch) -> dict:
     monkeypatch.setattr(rag_engine_mod, "search_context", _search_context)
     monkeypatch.setattr(rag_engine_mod, "retrieve_context", _retrieve_context)
     monkeypatch.setattr(
-        rag_engine_mod, "delete_document_chunks", _delete_document_chunks,
+        rag_engine_mod,
+        "delete_document_chunks",
+        _delete_document_chunks,
     )
     monkeypatch.setattr(
-        rag_engine_mod, "delete_collection_vectors", _delete_collection_vectors,
+        rag_engine_mod,
+        "delete_collection_vectors",
+        _delete_collection_vectors,
     )
 
     monkeypatch.setattr(
-        "app.services.document.document_service.ingest_chunks", _ingest_chunks,
+        "app.services.document.document_service.ingest_chunks",
+        _ingest_chunks,
     )
     monkeypatch.setattr(
         "app.services.document.document_service.delete_document_chunks",
@@ -216,7 +221,8 @@ def mock_text_extractor(monkeypatch: pytest.MonkeyPatch):
 
     monkeypatch.setattr("app.engine.extractor.extract_text", _extract_text)
     monkeypatch.setattr(
-        "app.services.document.document_service.extract_text", _extract_text,
+        "app.services.document.document_service.extract_text",
+        _extract_text,
     )
 
 
@@ -232,7 +238,9 @@ def mock_image_backend(monkeypatch: pytest.MonkeyPatch):
 def sample_collection(db_session: Session) -> Collection:
     """FX-05: Persisted sample collection."""
     collection = Collection(
-        name="Test World", description="A test world", owner_id="test-user-id",
+        name="Test World",
+        description="A test world",
+        owner_id="test-user-id",
     )
     db_session.add(collection)
     db_session.commit()
@@ -273,7 +281,8 @@ def sample_entity(db_session: Session, sample_collection: Collection) -> Entity:
 
 @pytest.fixture
 def sample_entity_content_confirmed(
-    db_session: Session, sample_entity: Entity,
+    db_session: Session,
+    sample_entity: Entity,
 ) -> "EntityContent":
     """FX-08: Persisted confirmed sample entity content for image generation."""
     content = EntityContent(

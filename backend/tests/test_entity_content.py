@@ -39,7 +39,11 @@ def _make_entity(db_session, collection_id: str, entity_type: EntityType) -> Ent
 
 @pytest.mark.anyio
 async def test_cnt_01_generate_backstory_character_returns_201_pending(
-    client, mock_rag_engine, mock_llm, sample_collection, sample_entity,
+    client,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
+    sample_entity,
 ):
     """CNT-01: Generar contenido backstory para character retorna 201 con status pending."""
     response = await _create_content(client, sample_collection.id, sample_entity.id)
@@ -50,13 +54,20 @@ async def test_cnt_01_generate_backstory_character_returns_201_pending(
 
 @pytest.mark.anyio
 async def test_cnt_02_generate_scene_for_item_returns_422(
-    client, mock_rag_engine, mock_llm, db_session, sample_collection,
+    client,
+    mock_rag_engine,
+    mock_llm,
+    db_session,
+    sample_collection,
 ):
     """CNT-02: Generar scene para item retorna 422 (categoría incompatible con el tipo de entidad)."""
     item = _make_entity(db_session, sample_collection.id, EntityType.item)
 
     response = await _create_content(
-        client, sample_collection.id, item.id, category="scene",
+        client,
+        sample_collection.id,
+        item.id,
+        category="scene",
     )
 
     assert response.status_code == 422
@@ -64,17 +75,27 @@ async def test_cnt_02_generate_scene_for_item_returns_422(
 
 @pytest.mark.anyio
 async def test_cnt_03_max_5_pending_per_category_sixth_returns_409(
-    client, mock_rag_engine, mock_llm, sample_collection, sample_entity,
+    client,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
+    sample_entity,
 ):
     """CNT-03: Máximo 5 pending por categoría; sexto retorna 409."""
     for i in range(5):
         resp = await _create_content(
-            client, sample_collection.id, sample_entity.id, query=f"query {i} extensa",
+            client,
+            sample_collection.id,
+            sample_entity.id,
+            query=f"query {i} extensa",
         )
         assert resp.status_code == 201
 
     sixth = await _create_content(
-        client, sample_collection.id, sample_entity.id, query="sexta query extensa",
+        client,
+        sample_collection.id,
+        sample_entity.id,
+        query="sexta query extensa",
     )
 
     assert sixth.status_code == 409
@@ -82,7 +103,11 @@ async def test_cnt_03_max_5_pending_per_category_sixth_returns_409(
 
 @pytest.mark.anyio
 async def test_cnt_04_pending_limit_is_per_category(
-    client, mock_rag_engine, mock_llm, sample_collection, sample_entity,
+    client,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
+    sample_entity,
 ):
     """CNT-04: 5 pending en backstory no bloquea generar scene (límite por categoría)."""
     for i in range(5):
@@ -94,7 +119,10 @@ async def test_cnt_04_pending_limit_is_per_category(
         )
 
     response = await _create_content(
-        client, sample_collection.id, sample_entity.id, category="scene",
+        client,
+        sample_collection.id,
+        sample_entity.id,
+        category="scene",
     )
 
     assert response.status_code == 201
@@ -102,15 +130,25 @@ async def test_cnt_04_pending_limit_is_per_category(
 
 @pytest.mark.anyio
 async def test_cnt_05_list_excludes_discarded_and_soft_deleted(
-    client, mock_rag_engine, mock_llm, sample_collection, sample_entity,
+    client,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
+    sample_entity,
 ):
     """CNT-05: Listar contenidos excluye discarded y soft-deleted."""
     pending_resp = await _create_content(client, sample_collection.id, sample_entity.id)
     to_discard_resp = await _create_content(
-        client, sample_collection.id, sample_entity.id, query="para descartar extensa",
+        client,
+        sample_collection.id,
+        sample_entity.id,
+        query="para descartar extensa",
     )
     to_delete_resp = await _create_content(
-        client, sample_collection.id, sample_entity.id, query="para borrar extensa",
+        client,
+        sample_collection.id,
+        sample_entity.id,
+        query="para borrar extensa",
     )
 
     pending_id = pending_resp.json()["id"]
@@ -137,14 +175,24 @@ async def test_cnt_05_list_excludes_discarded_and_soft_deleted(
 
 @pytest.mark.anyio
 async def test_cnt_06_list_filtered_by_category(
-    client, mock_rag_engine, mock_llm, sample_collection, sample_entity,
+    client,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
+    sample_entity,
 ):
     """CNT-06: Listar con filtro de categoría solo retorna esa categoría."""
     await _create_content(
-        client, sample_collection.id, sample_entity.id, category="backstory",
+        client,
+        sample_collection.id,
+        sample_entity.id,
+        category="backstory",
     )
     await _create_content(
-        client, sample_collection.id, sample_entity.id, category="scene",
+        client,
+        sample_collection.id,
+        sample_entity.id,
+        category="scene",
     )
 
     response = await client.get(
@@ -158,7 +206,11 @@ async def test_cnt_06_list_filtered_by_category(
 
 @pytest.mark.anyio
 async def test_cnt_06b_list_filtered_by_status(
-    client, mock_rag_engine, mock_llm, sample_collection, sample_entity,
+    client,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
+    sample_entity,
 ):
     """CNT-06b: Listar con filtro de estado retorna solo el estado solicitado."""
     pending_resp = await _create_content(
@@ -169,10 +221,16 @@ async def test_cnt_06b_list_filtered_by_status(
         query="pendiente en scene extensa",
     )
     to_discard_resp = await _create_content(
-        client, sample_collection.id, sample_entity.id, query="descartar esta extensa",
+        client,
+        sample_collection.id,
+        sample_entity.id,
+        query="descartar esta extensa",
     )
     to_confirm_resp = await _create_content(
-        client, sample_collection.id, sample_entity.id, query="confirmar esta extensa",
+        client,
+        sample_collection.id,
+        sample_entity.id,
+        query="confirmar esta extensa",
     )
 
     discarded_id = to_discard_resp.json()["id"]
@@ -212,7 +270,11 @@ async def test_cnt_06b_list_filtered_by_status(
 
 @pytest.mark.anyio
 async def test_cnt_07_edit_pending_content_returns_200(
-    client, mock_rag_engine, mock_llm, sample_collection, sample_entity,
+    client,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
+    sample_entity,
 ):
     """CNT-07: Editar contenido pending retorna 200."""
     created = await _create_content(client, sample_collection.id, sample_entity.id)
@@ -229,7 +291,11 @@ async def test_cnt_07_edit_pending_content_returns_200(
 
 @pytest.mark.anyio
 async def test_cnt_08_edit_confirmed_content_returns_200(
-    client, mock_rag_engine, mock_llm, sample_collection, sample_entity,
+    client,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
+    sample_entity,
 ):
     """CNT-08: Editar contenido confirmed retorna 200."""
     created = await _create_content(client, sample_collection.id, sample_entity.id)
@@ -249,7 +315,11 @@ async def test_cnt_08_edit_confirmed_content_returns_200(
 
 @pytest.mark.anyio
 async def test_cnt_09_edit_discarded_content_returns_409(
-    client, mock_rag_engine, mock_llm, sample_collection, sample_entity,
+    client,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
+    sample_entity,
 ):
     """CNT-09: Editar contenido discarded retorna 409."""
     created = await _create_content(client, sample_collection.id, sample_entity.id)
@@ -268,7 +338,12 @@ async def test_cnt_09_edit_discarded_content_returns_409(
 
 @pytest.mark.anyio
 async def test_cnt_10_confirm_discards_siblings_same_category(
-    client, db_session, mock_rag_engine, mock_llm, sample_collection, sample_entity,
+    client,
+    db_session,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
+    sample_entity,
 ):
     """CNT-10: Confirmar contenido descarta solo siblings de misma categoría."""
     ids = []
@@ -297,11 +372,19 @@ async def test_cnt_10_confirm_discards_siblings_same_category(
 
 @pytest.mark.anyio
 async def test_cnt_11_confirm_backstory_does_not_affect_scene(
-    client, db_session, mock_rag_engine, mock_llm, sample_collection, sample_entity,
+    client,
+    db_session,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
+    sample_entity,
 ):
     """CNT-11: Confirmar backstory no afecta scene confirmed."""
     scene_resp = await _create_content(
-        client, sample_collection.id, sample_entity.id, category="scene",
+        client,
+        sample_collection.id,
+        sample_entity.id,
+        category="scene",
     )
     scene_id = scene_resp.json()["id"]
     await client.post(
@@ -309,7 +392,10 @@ async def test_cnt_11_confirm_backstory_does_not_affect_scene(
     )
 
     backstory_resp = await _create_content(
-        client, sample_collection.id, sample_entity.id, category="backstory",
+        client,
+        sample_collection.id,
+        sample_entity.id,
+        category="backstory",
     )
     backstory_id = backstory_resp.json()["id"]
     await client.post(
@@ -325,12 +411,20 @@ async def test_cnt_11_confirm_backstory_does_not_affect_scene(
 
 @pytest.mark.anyio
 async def test_cnt_10b_confirm_keeps_previous_confirmed_same_category(
-    client, db_session, mock_rag_engine, mock_llm, sample_collection, sample_entity,
+    client,
+    db_session,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
+    sample_entity,
 ):
     """CNT-10b: Confirmar un segundo contenido mantiene el confirmed previo y descarta solo pending siblings."""
     # Confirmar A: queda confirmed (sin siblings, discard no afecta nada)
     first_resp = await _create_content(
-        client, sample_collection.id, sample_entity.id, query="primera historia extensa",
+        client,
+        sample_collection.id,
+        sample_entity.id,
+        query="primera historia extensa",
     )
     first_id = first_resp.json()["id"]
     await client.post(
@@ -339,7 +433,10 @@ async def test_cnt_10b_confirm_keeps_previous_confirmed_same_category(
 
     # Crear B (pending) DESPUÉS de confirmar A
     second_resp = await _create_content(
-        client, sample_collection.id, sample_entity.id, query="segunda historia extensa",
+        client,
+        sample_collection.id,
+        sample_entity.id,
+        query="segunda historia extensa",
     )
     second_id = second_resp.json()["id"]
 
@@ -360,7 +457,9 @@ async def test_cnt_10b_confirm_keeps_previous_confirmed_same_category(
 
 @pytest.mark.anyio
 async def test_cnt_12b_blocked_generate_query_returns_422(
-    client, sample_collection, sample_entity,
+    client,
+    sample_collection,
+    sample_entity,
 ):
     """CNT-12b: Query bloqueada por content_guard retorna 422 (sin mock de pipeline)."""
     response = await _create_content(
@@ -374,7 +473,11 @@ async def test_cnt_12b_blocked_generate_query_returns_422(
 
 @pytest.mark.anyio
 async def test_cnt_12_discard_changes_status(
-    client, mock_rag_engine, mock_llm, sample_collection, sample_entity,
+    client,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
+    sample_entity,
 ):
     """CNT-12: Descartar contenido cambia status a discarded."""
     created = await _create_content(client, sample_collection.id, sample_entity.id)
@@ -390,7 +493,12 @@ async def test_cnt_12_discard_changes_status(
 
 @pytest.mark.anyio
 async def test_cnt_13_soft_delete_returns_204_and_marks_deleted(
-    client, db_session, mock_rag_engine, mock_llm, sample_collection, sample_entity,
+    client,
+    db_session,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
+    sample_entity,
 ):
     """CNT-13: Soft-delete retorna 204 y marca is_deleted=True en DB."""
     created = await _create_content(client, sample_collection.id, sample_entity.id)
@@ -409,11 +517,18 @@ async def test_cnt_13_soft_delete_returns_204_and_marks_deleted(
 
 @pytest.mark.anyio
 async def test_cnt_14_generate_includes_entity_description_in_context(
-    client, mock_rag_engine, mock_llm, sample_collection, sample_entity,
+    client,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
+    sample_entity,
 ):
     """CNT-14: Generar contenido usa entity.description como contexto del LLM."""
     response = await _create_content(
-        client, sample_collection.id, sample_entity.id, query="Expande su historia lore",
+        client,
+        sample_collection.id,
+        sample_entity.id,
+        query="Expande su historia lore",
     )
     assert response.status_code == 201
     assert len(mock_llm["invocations"]) > 0
@@ -421,13 +536,20 @@ async def test_cnt_14_generate_includes_entity_description_in_context(
 
 @pytest.mark.anyio
 async def test_cnt_15_generate_backstory_for_creature_returns_201(
-    client, db_session, mock_rag_engine, mock_llm, sample_collection,
+    client,
+    db_session,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
 ):
     """CNT-15: Generar backstory para creature retorna 201 (creature soporta backstory)."""
     creature = _make_entity(db_session, sample_collection.id, EntityType.creature)
 
     response = await _create_content(
-        client, sample_collection.id, creature.id, category="backstory",
+        client,
+        sample_collection.id,
+        creature.id,
+        category="backstory",
     )
 
     assert response.status_code == 201
@@ -435,13 +557,20 @@ async def test_cnt_15_generate_backstory_for_creature_returns_201(
 
 @pytest.mark.anyio
 async def test_cnt_16_generate_chapter_for_creature_returns_422(
-    client, db_session, mock_rag_engine, mock_llm, sample_collection,
+    client,
+    db_session,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
 ):
     """CNT-16: Generar chapter para creature retorna 422 (creature no soporta chapter)."""
     creature = _make_entity(db_session, sample_collection.id, EntityType.creature)
 
     response = await _create_content(
-        client, sample_collection.id, creature.id, category="chapter",
+        client,
+        sample_collection.id,
+        creature.id,
+        category="chapter",
     )
 
     assert response.status_code == 422
@@ -449,13 +578,20 @@ async def test_cnt_16_generate_chapter_for_creature_returns_422(
 
 @pytest.mark.anyio
 async def test_cnt_17_generate_backstory_for_faction_returns_201(
-    client, db_session, mock_rag_engine, mock_llm, sample_collection,
+    client,
+    db_session,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
 ):
     """CNT-17: Generar backstory para faction retorna 201 (faction soporta backstory)."""
     faction = _make_entity(db_session, sample_collection.id, EntityType.faction)
 
     response = await _create_content(
-        client, sample_collection.id, faction.id, category="backstory",
+        client,
+        sample_collection.id,
+        faction.id,
+        category="backstory",
     )
 
     assert response.status_code == 201
@@ -463,7 +599,11 @@ async def test_cnt_17_generate_backstory_for_faction_returns_201(
 
 @pytest.mark.anyio
 async def test_cnt_18_all_entity_types_accept_extended_description(
-    client, db_session, mock_rag_engine, mock_llm, sample_collection,
+    client,
+    db_session,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
 ):
     """CNT-18: Todos los entity types válidos aceptan extended_description."""
     entity_types = [
@@ -476,7 +616,10 @@ async def test_cnt_18_all_entity_types_accept_extended_description(
     for entity_type in entity_types:
         entity = _make_entity(db_session, sample_collection.id, entity_type)
         response = await _create_content(
-            client, sample_collection.id, entity.id, category="extended_description",
+            client,
+            sample_collection.id,
+            entity.id,
+            category="extended_description",
         )
         assert (
             response.status_code == 201
@@ -488,7 +631,12 @@ async def test_cnt_18_all_entity_types_accept_extended_description(
 
 @pytest.mark.anyio
 async def test_cnt_audit_01_raw_content_never_changes_after_edit(
-    client, db_session, mock_rag_engine, mock_llm, sample_collection, sample_entity,
+    client,
+    db_session,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
+    sample_entity,
 ):
     """El raw_content de generated_texts NO cambia al editar el content."""
     created = await _create_content(client, sample_collection.id, sample_entity.id)
@@ -510,7 +658,11 @@ async def test_cnt_audit_01_raw_content_never_changes_after_edit(
 
 @pytest.mark.anyio
 async def test_cnt_audit_02_was_edited_false_on_creation(
-    client, mock_rag_engine, mock_llm, sample_collection, sample_entity,
+    client,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
+    sample_entity,
 ):
     """was_edited es False cuando el content no ha sido modificado."""
     resp = await _create_content(client, sample_collection.id, sample_entity.id)
@@ -520,7 +672,11 @@ async def test_cnt_audit_02_was_edited_false_on_creation(
 
 @pytest.mark.anyio
 async def test_cnt_audit_03_was_edited_true_after_edit(
-    client, mock_rag_engine, mock_llm, sample_collection, sample_entity,
+    client,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
+    sample_entity,
 ):
     """was_edited es True después de editar el content."""
     created = await _create_content(client, sample_collection.id, sample_entity.id)
@@ -537,7 +693,11 @@ async def test_cnt_audit_03_was_edited_true_after_edit(
 
 @pytest.mark.anyio
 async def test_cnt_audit_04_content_equals_raw_on_creation(
-    client, mock_rag_engine, mock_llm, sample_collection, sample_entity,
+    client,
+    mock_rag_engine,
+    mock_llm,
+    sample_collection,
+    sample_entity,
 ):
     """Al crear, content y raw_content son idénticos."""
     resp = await _create_content(client, sample_collection.id, sample_entity.id)
