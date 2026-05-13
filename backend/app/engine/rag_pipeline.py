@@ -26,6 +26,8 @@ _TRANSPORT_ERRORS = (httpx.HTTPError, ConnectionError, OSError)
 
 @dataclass
 class EntityContext:
+    """Contexto de entidad usado al generar contenido enriquecido."""
+
     name: str
     entity_type: str
     category: ContentCategory
