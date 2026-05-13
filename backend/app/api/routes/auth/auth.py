@@ -49,6 +49,8 @@ class RegisterRequest(BaseModel):
 
 
 class AuthSuccessResponse(BaseModel):
+    """Respuesta devuelta tras un login o registro exitoso."""
+
     message: str = "Autenticación exitosa"
     username: str
 
