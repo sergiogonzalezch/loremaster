@@ -183,7 +183,7 @@ class Settings(BaseSettings):
             warnings.warn(
                 "ENVIRONMENT no está definida en el entorno. "
                 "Ejecutando en modo 'local' con guardas de seguridad relajadas. "
-                "Define ENVIRONMENT=local explícitamente para confirmar la intención (M-12).",
+                "Define ENVIRONMENT=local explícitamente para confirmar la intención.",
                 stacklevel=2,
             )
         return self
