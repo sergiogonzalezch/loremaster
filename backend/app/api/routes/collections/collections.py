@@ -65,14 +65,7 @@ def get_collections(
 ):
     """Lista las colecciones del usuario autenticado con filtros y paginación."""
     items, total = list_collections_service(
-        session,
-        current_user["sub"],
-        pagination.page,
-        pagination.page_size,
-        name=name,
-        created_after=dates.created_after,
-        created_before=dates.created_before,
-        order=pagination.order,
+        session, current_user["sub"], pagination, dates, name,
     )
     return PaginatedResponse.build(items, total, pagination.page, pagination.page_size)
 

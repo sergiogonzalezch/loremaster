@@ -1,6 +1,7 @@
 """Servicios de documentos: ingestión, listado y eliminación."""
 
 from app.services.document.document_service import (
+    DocumentFilters,
     delete_document_service,
     ingest_document_service,
     list_documents_service,
@@ -9,6 +10,7 @@ from app.services.document.document_service import (
 )
 
 __all__ = [
+    "DocumentFilters",
     "delete_document_service",
     "ingest_document_service",
     "list_documents_service",

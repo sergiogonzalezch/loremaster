@@ -8,6 +8,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
+from app.core.api.params import DateRangeParams, PaginationParams
 from app.core.database.utils import db_commit, paginate_with_sort
 from app.core.exceptions import DuplicateCollectionNameError
 from app.models.db.collection import Collection
@@ -116,24 +117,18 @@ def create_collection_service(
 def list_collections_service(
     session: Session,
     owner_id: str,
-    page: int = 1,
-    page_size: int = 20,
+    pagination: PaginationParams,
+    dates: DateRangeParams,
     name: str | None = None,
-    created_after: datetime | None = None,
-    created_before: datetime | None = None,
-    order: Literal["asc", "desc"] = "desc",
 ) -> tuple[list[dict], int]:
     """Lista las colecciones de un usuario con paginación y filtros.
 
     Args:
         session: Sesión de base de datos activa.
         owner_id: UUID del propietario.
-        page: Número de página (1-indexed).
-        page_size: Elementos por página.
+        pagination: Parámetros de paginación y orden.
+        dates: Rango de fechas de creación.
         name: Filtrar por nombre (búsqueda parcial, case-insensitive).
-        created_after: Filtrar colecciones creadas después de esta fecha.
-        created_before: Filtrar colecciones creadas antes de esta fecha.
-        order: Ordenar por fecha de creación (asc o desc).
 
     Returns:
         Tupla de (lista de colecciones enriquecidas con counts, total de resultados).
@@ -142,19 +137,19 @@ def list_collections_service(
     conditions = [Collection.is_deleted.is_(False), Collection.owner_id == owner_id]
     if name:
         conditions.append(Collection.name.ilike(f"%{name}%"))
-    if created_after:
-        conditions.append(Collection.created_at >= created_after)
-    if created_before:
-        conditions.append(Collection.created_at <= created_before)
+    if dates.created_after:
+        conditions.append(Collection.created_at >= dates.created_after)
+    if dates.created_before:
+        conditions.append(Collection.created_at <= dates.created_before)
 
     items, total = paginate_with_sort(
         session,
         Collection,
         conditions,
-        page=page,
-        page_size=page_size,
+        page=pagination.page,
+        page_size=pagination.page_size,
         order_col=Collection.created_at,
-        order=order,
+        order=pagination.order,
     )
     collection_ids = [c.id for c in items]
     doc_counts, entity_counts = _fetch_counts(session, collection_ids)

@@ -40,6 +40,7 @@ from app.models.db.document import Document, DocumentStatus
 from app.models.schemas.document import DocumentResponse
 from app.models.shared import PaginatedResponse
 from app.services.document.document_service import (
+    DocumentFilters,
     delete_document_service,
     ingest_document_service,
     list_documents_service,
@@ -118,16 +119,8 @@ def get_documents(
             detail="Los documentos en estado 'processing' no son visibles en el listado.",
         )
     docs, total = list_documents_service(
-        session,
-        collection_id,
-        pagination.page,
-        pagination.page_size,
-        filename=filename,
-        file_type=file_type,
-        status=status,
-        created_after=dates.created_after,
-        created_before=dates.created_before,
-        order=pagination.order,
+        session, collection_id, pagination, dates,
+        DocumentFilters(filename=filename, file_type=file_type, status=status),
     )
     return PaginatedResponse.build(docs, total, pagination.page, pagination.page_size)
 

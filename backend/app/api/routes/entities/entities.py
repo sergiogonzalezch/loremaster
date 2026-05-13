@@ -24,6 +24,7 @@ from app.models.schemas.entity import (
 )
 from app.models.shared import PaginatedResponse
 from app.services.entity.entity_service import (
+    EntityFilters,
     create_entity_service,
     delete_entity_service,
     list_entities_service,
@@ -63,15 +64,8 @@ def list_entities(
 ):
     """Lista las entidades de una colección con filtros y paginación."""
     entities, total = list_entities_service(
-        session,
-        collection_id,
-        pagination.page,
-        pagination.page_size,
-        name=name,
-        entity_type=type,
-        created_after=dates.created_after,
-        created_before=dates.created_before,
-        order=pagination.order,
+        session, collection_id, pagination, dates,
+        EntityFilters(name=name, entity_type=type),
     )
     return PaginatedResponse.build(
         entities, total, pagination.page, pagination.page_size,

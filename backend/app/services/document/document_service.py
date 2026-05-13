@@ -4,12 +4,14 @@ import asyncio
 import hashlib
 import logging
 import re
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal
 
 from fastapi import UploadFile
 from sqlmodel import Session, select
 
+from app.core.api.params import DateRangeParams, PaginationParams
 from app.core.config import settings
 from app.core.database.soft_delete import soft_delete
 from app.core.database.utils import db_commit, paginate_with_sort
@@ -27,6 +29,13 @@ from app.domain.content_guard import check_document_content
 from app.engine.extractor import extract_text
 from app.engine.rag import delete_document_chunks, ingest_chunks
 from app.models.db.document import Document, DocumentStatus
+
+
+@dataclass
+class DocumentFilters:
+    filename: str | None = None
+    file_type: str | None = None
+    status: DocumentStatus | None = None
 
 
 def _sanitize_for_log(filename: str) -> str:
@@ -173,14 +182,9 @@ def process_ingest_background(session: Session, document: Document, text: str) -
 def list_documents_service(
     session: Session,
     collection_id: str,
-    page: int = 1,
-    page_size: int = 20,
-    filename: str | None = None,
-    file_type: str | None = None,
-    status: DocumentStatus | None = None,
-    created_after: datetime | None = None,
-    created_before: datetime | None = None,
-    order: Literal["asc", "desc"] = "desc",
+    pagination: PaginationParams,
+    dates: DateRangeParams,
+    filters: DocumentFilters | None = None,
 ) -> tuple[list[Document], int]:
     """Lista los documentos de una colección con paginación y filtros.
 
@@ -189,43 +193,39 @@ def list_documents_service(
     Args:
         session: Sesión de base de datos activa.
         collection_id: Identificador de la colección.
-        page: Número de página.
-        page_size: Elementos por página.
-        filename: Filtrar por nombre (búsqueda parcial).
-        file_type: Filtrar por tipo/extension.
-        status: Filtrar por estado de procesamiento.
-        created_after: Filtrar por fecha de creación mínima.
-        created_before: Filtrar por fecha de creación máxima.
-        order: Orden ascendente o descendente.
+        pagination: Parámetros de paginación y orden.
+        dates: Rango de fechas de creación.
+        filters: Filtros opcionales de dominio (filename, file_type, status).
 
     Returns:
         Tupla de (lista de documentos, total de resultados).
 
     """
+    f = filters or DocumentFilters()
     conditions = [
         Document.collection_id == collection_id,
         Document.is_deleted.is_(False),
         Document.status != DocumentStatus.processing,
     ]
-    if filename:
-        conditions.append(Document.filename.ilike(f"%{filename}%"))
-    if file_type:
-        conditions.append(Document.file_type == file_type)
-    if status:
-        conditions.append(Document.status == status)
-    if created_after:
-        conditions.append(Document.created_at >= created_after)
-    if created_before:
-        conditions.append(Document.created_at <= created_before)
+    if f.filename:
+        conditions.append(Document.filename.ilike(f"%{f.filename}%"))
+    if f.file_type:
+        conditions.append(Document.file_type == f.file_type)
+    if f.status:
+        conditions.append(Document.status == f.status)
+    if dates.created_after:
+        conditions.append(Document.created_at >= dates.created_after)
+    if dates.created_before:
+        conditions.append(Document.created_at <= dates.created_before)
 
     return paginate_with_sort(
         session,
         Document,
         conditions,
-        page=page,
-        page_size=page_size,
+        page=pagination.page,
+        page_size=pagination.page_size,
         order_col=Document.created_at,
-        order=order,
+        order=pagination.order,
     )
 
 

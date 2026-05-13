@@ -92,14 +92,8 @@ def list_contents(
 ):
     """Lista los contenidos de una entidad con filtros y paginación."""
     items, total = content_service.list_contents(
-        session,
-        entity_id,
-        collection_id,
-        category,
-        status,
-        pagination.page,
-        pagination.page_size,
-        pagination.order,
+        session, entity_id, collection_id, pagination,
+        content_service.ContentFilters(category=category, status=status),
     )
     return PaginatedResponse.build(items, total, pagination.page, pagination.page_size)
 

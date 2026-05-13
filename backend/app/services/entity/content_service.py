@@ -1,11 +1,13 @@
 """Servicios de lógica de negocio para contenidos de entidad."""
 
 import logging
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Literal
 
 from sqlmodel import Session, select
 
+from app.core.api.params import PaginationParams
 from app.core.database.soft_delete import soft_delete
 from app.core.database.utils import db_commit, paginate_with_sort
 from app.core.exceptions import (
@@ -22,15 +24,18 @@ from app.models.schemas.entity_content import EntityContentResponse
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class ContentFilters:
+    category: ContentCategory | None = None
+    status: Literal["active", "pending", "confirmed", "discarded", "all"] = "active"
+
+
 def list_contents(
     session: Session,
     entity_id: str,
     collection_id: str,
-    category: ContentCategory | None = None,
-    status: Literal["active", "pending", "confirmed", "discarded", "all"] = "active",
-    page: int = 1,
-    page_size: int = 20,
-    order: Literal["asc", "desc"] = "desc",
+    pagination: PaginationParams,
+    filters: ContentFilters | None = None,
 ) -> tuple[list[EntityContentResponse], int]:
     """Lista los contenidos de una entidad con filtros y paginación.
 
@@ -38,44 +43,42 @@ def list_contents(
         session: Sesión de base de datos activa.
         entity_id: Identificador de la entidad.
         collection_id: Identificador de la colección.
-        category: Filtrar por categoría (opcional).
-        status: Filtrar por estado. 'active' excluye discarded por defecto.
-        page: Número de página.
-        page_size: Elementos por página.
-        order: Orden ascendente o descendente.
+        pagination: Parámetros de paginación y orden.
+        filters: Filtros opcionales de dominio (category, status).
 
     Returns:
         Tupla de (lista de contenidos con GeneratedText, total de resultados).
 
     """
+    f = filters or ContentFilters()
     conditions = [
         EntityContent.entity_id == entity_id,
         EntityContent.collection_id == collection_id,
         EntityContent.is_deleted.is_(False),
     ]
 
-    if status == "active":
+    if f.status == "active":
         conditions.append(
             EntityContent.status.in_([ContentStatus.pending, ContentStatus.confirmed]),
         )
-    elif status == "pending":
+    elif f.status == "pending":
         conditions.append(EntityContent.status == ContentStatus.pending)
-    elif status == "confirmed":
+    elif f.status == "confirmed":
         conditions.append(EntityContent.status == ContentStatus.confirmed)
-    elif status == "discarded":
+    elif f.status == "discarded":
         conditions.append(EntityContent.status == ContentStatus.discarded)
 
-    if category is not None:
-        conditions.append(EntityContent.category == category)
+    if f.category is not None:
+        conditions.append(EntityContent.category == f.category)
 
     items, total = paginate_with_sort(
         session,
         EntityContent,
         conditions,
-        page=page,
-        page_size=page_size,
+        page=pagination.page,
+        page_size=pagination.page_size,
         order_col=EntityContent.created_at,
-        order=order,
+        order=pagination.order,
     )
 
     gt_ids = [item.generated_text_id for item in items if item.generated_text_id]

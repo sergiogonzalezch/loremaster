@@ -1,12 +1,14 @@
 """Servicios de lógica de negocio para entidades."""
 
 import logging
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Literal
 
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
+from app.core.api.params import DateRangeParams, PaginationParams
 from app.core.database.utils import db_commit, paginate_with_sort
 from app.core.exceptions import DuplicateEntityNameError
 from app.models.db.entity import Entity, EntityType
@@ -14,6 +16,12 @@ from app.models.schemas.entity import CreateEntityRequest, UpdateEntityRequest
 from app.services.deletion_service import cascade_delete_entity
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class EntityFilters:
+    name: str | None = None
+    entity_type: EntityType | None = None
 
 
 def _find_by_name(session: Session, collection_id: str, name: str) -> Entity | None:
@@ -67,52 +75,45 @@ def create_entity_service(
 def list_entities_service(
     session: Session,
     collection_id: str,
-    page: int = 1,
-    page_size: int = 20,
-    name: str | None = None,
-    entity_type: EntityType | None = None,
-    created_after: datetime | None = None,
-    created_before: datetime | None = None,
-    order: Literal["asc", "desc"] = "desc",
+    pagination: PaginationParams,
+    dates: DateRangeParams,
+    filters: EntityFilters | None = None,
 ) -> tuple[list[Entity], int]:
     """Lista las entidades de una colección con paginación y filtros.
 
     Args:
         session: Sesión de base de datos activa.
         collection_id: Identificador de la colección.
-        page: Número de página.
-        page_size: Elementos por página.
-        name: Filtrar por nombre (búsqueda parcial).
-        entity_type: Filtrar por tipo de entidad.
-        created_after: Filtrar por fecha de creación mínima.
-        created_before: Filtrar por fecha de creación máxima.
-        order: Orden ascendente o descendente.
+        pagination: Parámetros de paginación y orden.
+        dates: Rango de fechas de creación.
+        filters: Filtros opcionales de dominio (name, entity_type).
 
     Returns:
         Tupla de (lista de entidades, total de resultados).
 
     """
+    f = filters or EntityFilters()
     conditions = [
         Entity.collection_id == collection_id,
         Entity.is_deleted.is_(False),
     ]
-    if name:
-        conditions.append(Entity.name.ilike(f"%{name}%"))
-    if entity_type:
-        conditions.append(Entity.type == entity_type)
-    if created_after:
-        conditions.append(Entity.created_at >= created_after)
-    if created_before:
-        conditions.append(Entity.created_at <= created_before)
+    if f.name:
+        conditions.append(Entity.name.ilike(f"%{f.name}%"))
+    if f.entity_type:
+        conditions.append(Entity.type == f.entity_type)
+    if dates.created_after:
+        conditions.append(Entity.created_at >= dates.created_after)
+    if dates.created_before:
+        conditions.append(Entity.created_at <= dates.created_before)
 
     return paginate_with_sort(
         session,
         Entity,
         conditions,
-        page=page,
-        page_size=page_size,
+        page=pagination.page,
+        page_size=pagination.page_size,
         order_col=Entity.created_at,
-        order=order,
+        order=pagination.order,
     )
 
 
