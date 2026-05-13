@@ -94,7 +94,7 @@ def _normalize(text: str) -> str:
     """
     if len(text) > _MAX_TEXT_LENGTH:
         logger.warning(
-            "Texto excede limite de %d caracteres; truncando para validacion (M-2).",
+            "Texto excede limite de %d caracteres; truncando para validacion.",
             _MAX_TEXT_LENGTH,
         )
         text = text[:_MAX_TEXT_LENGTH]
