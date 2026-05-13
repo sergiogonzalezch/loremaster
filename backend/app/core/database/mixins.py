@@ -1,7 +1,7 @@
 """Mixins reutilizables para modelos de base de datos."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlmodel import Field
 
@@ -13,7 +13,7 @@ def generate_id() -> str:
 
 def utc_now() -> datetime:
     """Retorna la fecha y hora actual en UTC."""
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class SoftDeleteMixin:

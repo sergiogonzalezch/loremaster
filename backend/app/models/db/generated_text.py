@@ -1,6 +1,6 @@
 """Modelo de base de datos para textos generados por el pipeline LLM."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import Column, ForeignKey, String
 from sqlmodel import Field, SQLModel
@@ -54,4 +54,4 @@ class GeneratedText(SQLModel, table=True):
     raw_content: str = Field(max_length=10000)
     sources_count: int = Field(default=0)
     token_count: int = Field(default=0)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

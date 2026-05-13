@@ -1,6 +1,6 @@
 """Modelo de base de datos para documentos subidos a colecciones."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
 from sqlalchemy import Column, ForeignKey, String, Text
@@ -66,4 +66,4 @@ class Document(SQLModel, SoftDeleteMixin, table=True):
         default=None,
     )
     raw_text: str | None = Field(sa_column=Column(Text, nullable=True), default=None)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

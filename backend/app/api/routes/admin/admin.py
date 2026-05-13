@@ -1,7 +1,7 @@
 """Rutas de administración para gestión de usuarios y contenido."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response
@@ -126,7 +126,7 @@ def admin_delete_user(
             user_id,
         )
     user.is_deleted = True
-    user.deleted_at = datetime.now(timezone.utc)
+    user.deleted_at = datetime.now(UTC)
     session.add(user)
     session.commit()
     logger.info(

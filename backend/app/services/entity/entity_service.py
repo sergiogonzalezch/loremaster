@@ -2,7 +2,7 @@
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
@@ -152,7 +152,7 @@ def update_entity_service(
         entity.name = request.name.strip()
     if request.description is not None:
         entity.description = request.description.strip()
-    entity.updated_at = datetime.now(timezone.utc)
+    entity.updated_at = datetime.now(UTC)
     if user_id:
         entity.updated_by = user_id
     session.add(entity)

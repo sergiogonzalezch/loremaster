@@ -4,7 +4,7 @@ import logging
 import uuid as _uuid
 from contextlib import suppress
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -488,7 +488,7 @@ def delete_image_service(
 
     record.is_shared = False
     record.is_deleted = True
-    record.deleted_at = datetime.now(timezone.utc)
+    record.deleted_at = datetime.now(UTC)
 
     # Bugfix: storage_path puede ser None en imágenes mock aunque el backend cambie
     if settings.image_backend != "mock" and record.storage_path:

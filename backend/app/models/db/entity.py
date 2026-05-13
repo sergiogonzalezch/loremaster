@@ -1,6 +1,6 @@
 """Modelo de base de datos para entidades dentro de colecciones."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 
 from sqlalchemy import Column, ForeignKey, String, UniqueConstraint
@@ -64,6 +64,6 @@ class Entity(SQLModel, SoftDeleteMixin, table=True):
     type: EntityType = Field(index=True, max_length=50)
     name: str = Field(max_length=200)
     description: str = Field(default="", max_length=2000)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime | None = Field(default=None)
     updated_by: str | None = Field(default=None, max_length=36)

@@ -1,6 +1,6 @@
 """Modelo de base de datos para registro de eventos de moderación."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlmodel import Field, SQLModel
 
@@ -24,4 +24,4 @@ class ModerationLog(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
     layer: str
     snippet: str = Field(max_length=200)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

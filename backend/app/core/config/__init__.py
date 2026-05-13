@@ -152,7 +152,7 @@ class Settings(BaseSettings):
             raise ValueError(
                 msg,
             )
-        if self.environment != "local" and len(self.secret_key) < 32:  # noqa: PLR2004
+        if self.environment != "local" and len(self.secret_key) < 32:
             msg = (
                 f"SECRET_KEY debe tener al menos 32 caracteres en entornos no locales. "
                 f"Actual: {len(self.secret_key)} caracteres"

@@ -1,7 +1,7 @@
 """Servicios de lógica de negocio para colecciones."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
@@ -210,7 +210,7 @@ def update_collection_service(
     if request.description is not None:
         collection.description = request.description.strip()
 
-    collection.updated_at = datetime.now(timezone.utc)
+    collection.updated_at = datetime.now(UTC)
     if user_id:
         collection.updated_by = user_id
     session.add(collection)

@@ -100,7 +100,7 @@ async def ingest_document_service(
             loop.run_in_executor(None, extract_text, content, data.content_type),
             timeout=_EXTRACTION_TIMEOUT_SECONDS,
         )
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.exception(
             "Text extraction timed out for '%s'",
             _sanitize_for_log(data.filename),

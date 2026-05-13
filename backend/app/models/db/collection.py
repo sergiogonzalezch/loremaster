@@ -1,6 +1,6 @@
 """Modelo de base de datos para colecciones de documentos y entidades."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import Column, ForeignKey, String, UniqueConstraint
 from sqlmodel import Field as SQLField
@@ -46,6 +46,6 @@ class Collection(SQLModel, SoftDeleteMixin, table=True):
             index=True,
         ),
     )
-    created_at: datetime = SQLField(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = SQLField(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime | None = SQLField(default=None)
     updated_by: str | None = SQLField(default=None, max_length=36)

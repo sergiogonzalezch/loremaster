@@ -2,7 +2,7 @@
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Literal
 
 from sqlmodel import Session, select
@@ -130,7 +130,7 @@ def edit_content(
         return None
     if content.status == ContentStatus.discarded:
         raise ContentDiscardedError
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     content.content = new_text
     content.updated_at = now
     if user_id:
@@ -165,7 +165,7 @@ def confirm_content(
     if not content:
         return None
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     content.status = ContentStatus.confirmed
     content.confirmed_at = now
     content.updated_at = now
@@ -214,7 +214,7 @@ def discard_content(
     if not content:
         return None
     content.status = ContentStatus.discarded
-    content.updated_at = datetime.now(timezone.utc)
+    content.updated_at = datetime.now(UTC)
     session.add(content)
     db_commit(session, f"discard_content({content_id})")
     session.refresh(content)

@@ -1,6 +1,6 @@
 """Utilidades para soft-delete de registros en base de datos."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlmodel import Session
 
@@ -21,7 +21,7 @@ def soft_delete(session: Session, record: SoftDeleteMixin) -> bool:
 
     Retorna True si la operación fue exitosa.
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     record.is_deleted = True
     record.deleted_at = now
     if hasattr(record, "updated_at"):

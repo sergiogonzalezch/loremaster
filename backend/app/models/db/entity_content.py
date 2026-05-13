@@ -1,6 +1,6 @@
 """Modelo de base de datos para contenidos generados de entidades."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import Column, ForeignKey, String
 from sqlmodel import Field, SQLModel
@@ -67,7 +67,7 @@ class EntityContent(SQLModel, SoftDeleteMixin, table=True):
     content: str = Field(max_length=10000)
     status: ContentStatus = Field(default=ContentStatus.pending, max_length=50)
     is_shared: bool = Field(default=False)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     confirmed_at: datetime | None = Field(default=None)
     updated_at: datetime | None = Field(default=None)
     updated_by: str | None = Field(default=None, max_length=36)

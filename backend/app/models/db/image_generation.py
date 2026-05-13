@@ -1,6 +1,6 @@
 """Modelos de base de datos para generación de imágenes y registros de imágenes."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import Column, ForeignKey, String
 from sqlmodel import Field as SQLField
@@ -74,7 +74,7 @@ class ImageGeneration(SQLModel, SoftDeleteMixin, table=True):
     width: int = SQLField(default=1024)
     height: int = SQLField(default=1024)
 
-    created_at: datetime = SQLField(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = SQLField(default_factory=lambda: datetime.now(UTC))
 
 
 class ImageRecord(SQLModel, SoftDeleteMixin, table=True):
@@ -140,4 +140,4 @@ class ImageRecord(SQLModel, SoftDeleteMixin, table=True):
     generation_ms: int = SQLField(default=0)
 
     is_shared: bool = SQLField(default=False)
-    created_at: datetime = SQLField(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = SQLField(default_factory=lambda: datetime.now(UTC))
