@@ -81,8 +81,7 @@ export function bulkDeleteEntities(
   collectionId: string,
   ids: string[],
 ): Promise<void> {
-  return apiPost<void>(
-    `/collections/${collectionId}/entities/bulk-delete`,
-    { ids },
-  );
+  return apiPost<void>(`/collections/${collectionId}/entities/bulk-delete`, {
+    ids,
+  });
 }

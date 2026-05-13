@@ -186,7 +186,9 @@ export default function CollectionsPage() {
       setShowBulkConfirm(false);
       await fetchCollections();
     } catch (e) {
-      setError(parseApiError(e, "Error al eliminar las colecciones seleccionadas"));
+      setError(
+        parseApiError(e, "Error al eliminar las colecciones seleccionadas"),
+      );
       setShowBulkConfirm(false);
     } finally {
       setBulkDeleting(false);

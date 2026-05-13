@@ -224,7 +224,9 @@ export default function DocumentsTab({
       await fetchDocuments();
       onDocumentsMutated();
     } catch (e) {
-      setError(parseApiError(e, "Error al eliminar los documentos seleccionados"));
+      setError(
+        parseApiError(e, "Error al eliminar los documentos seleccionados"),
+      );
       setShowBulkConfirm(false);
     } finally {
       setBulkDeleting(false);

@@ -10,7 +10,12 @@ import {
   Modal,
   Table,
 } from "react-bootstrap";
-import { getEntities, createEntity, deleteEntity, bulkDeleteEntities } from "../../api";
+import {
+  getEntities,
+  createEntity,
+  deleteEntity,
+  bulkDeleteEntities,
+} from "../../api";
 import { OrderSelect, PageSizeSelect } from "../../components/FilterBar";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import ConfirmModal from "../../components/ConfirmModal";
@@ -122,7 +127,9 @@ export default function EntitiesTab({ collectionId }: Props) {
       setShowBulkConfirm(false);
       await fetchEntities();
     } catch (e) {
-      setError(parseApiError(e, "Error al eliminar las entidades seleccionadas"));
+      setError(
+        parseApiError(e, "Error al eliminar las entidades seleccionadas"),
+      );
       setShowBulkConfirm(false);
     } finally {
       setBulkDeleting(false);
