@@ -27,7 +27,7 @@ interface AuthContextValue {
   user: AuthUser | null;
   /** true mientras se verifica la sesión inicial (evita redirect prematuro en refresh) */
   loading: boolean;
-  login: () => void;
+  login: () => Promise<void>;
   logout: () => void;
 }
 
@@ -70,10 +70,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
   }, []);
 
-  function login() {
-    // El backend ya seteo las cookies en la respuesta de login.
-    // Solo necesitamos obtener los datos del usuario.
-    getMyProfile()
+  function login(): Promise<void> {
+    return getMyProfile()
       .then((profile) => {
         setUser({
           id: profile.id,

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Container,
   Card,
@@ -36,7 +36,9 @@ interface RegisterForm {
  */
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login: contextLogin } = useAuth();
+  const redirectTo = (location.state as { from?: string } | null)?.from ?? "/";
   const [tab, setTab] = useState<string>("login");
   const [loginForm, setLoginForm] = useState<LoginForm>({
     username_or_email: "",
@@ -63,8 +65,8 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(loginForm);
-      contextLogin();
-      navigate("/", { replace: true });
+      await contextLogin();
+      navigate(redirectTo, { replace: true });
     } catch (err) {
       const { text } = parseApiError(err);
       setError(text);
