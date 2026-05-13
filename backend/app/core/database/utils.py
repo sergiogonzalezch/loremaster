@@ -2,7 +2,7 @@
 
 import logging
 from collections.abc import Sequence
-from typing import Any, Literal, TypeVar
+from typing import Literal, TypeVar
 
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
@@ -39,7 +39,7 @@ def paginate_with_sort(
     conditions: Sequence,
     page: int = 1,
     page_size: int = 20,
-    order_col: str | None = None,  # noqa: ANN401
+    order_col: str | None = None,
     order: Literal["asc", "desc"] = "desc",
 ) -> tuple[list[T], int]:
     """Pagina y ordena una consulta por modelo y condiciones dadas.
