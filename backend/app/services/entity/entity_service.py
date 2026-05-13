@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class EntityFilters:
+    """Filtros opcionales para listar entidades de una colección."""
+
     name: str | None = None
     entity_type: EntityType | None = None
 
