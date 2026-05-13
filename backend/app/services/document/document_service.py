@@ -31,6 +31,8 @@ from app.models.db.document import Document, DocumentStatus
 
 @dataclass
 class DocumentFilters:
+    """Filtros opcionales para listar documentos."""
+
     filename: str | None = None
     file_type: str | None = None
     status: DocumentStatus | None = None
