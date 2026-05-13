@@ -10,7 +10,7 @@ LIMITACIONES CONOCIDAS:
 - Requiere complemento con: validacion de esquemas de salida, rate limiting,
   monitoreo de comportamiento anomalo, y revision humana para casos criticos.
 
-MITIGACION ReDoS (M-2):
+MITIGACION ReDoS:
 - Se aplica limite de longitud (100KB) antes de normalizar con NFKD.
 - Texto que exceda el limite se trunca para evitar bloqueo del worker.
 """
