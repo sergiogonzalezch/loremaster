@@ -26,6 +26,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ContentFilters:
+    """Filtros opcionales para listar contenidos de una entidad."""
+
     category: ContentCategory | None = None
     status: Literal["active", "pending", "confirmed", "discarded", "all"] = "active"
 
