@@ -7,9 +7,10 @@ No realiza borrado físico de archivos ni vectores.
 
 import logging
 
+from sqlmodel import Session, select
+
 from app.core.database.soft_delete import soft_delete
 from app.models.db.entity_content import EntityContent
-from sqlmodel import Session, select
 
 logger = logging.getLogger(__name__)
 

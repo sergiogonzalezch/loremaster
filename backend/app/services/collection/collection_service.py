@@ -3,6 +3,10 @@
 import logging
 from datetime import UTC, datetime
 
+from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
+from sqlmodel import Session, select
+
 from app.core.api.params import DateRangeParams, PaginationParams
 from app.core.database.utils import db_commit, paginate_with_sort
 from app.core.exceptions import DuplicateCollectionNameError
@@ -11,9 +15,6 @@ from app.models.db.document import Document
 from app.models.db.entity import Entity
 from app.models.schemas.collection import UpdateCollectionRequest
 from app.services.deletion_service import cascade_delete_collection
-from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError
-from sqlmodel import Session, select
 
 logger = logging.getLogger(__name__)
 

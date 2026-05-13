@@ -8,6 +8,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
+from sqlmodel import Session, select
+
 from app.core.config import settings
 from app.core.database.utils import db_commit
 from app.core.exceptions import NoContextAvailableError
@@ -31,7 +33,6 @@ from app.models.schemas.image_generation import (
     ImageRecordResponse,
     ImageResult,
 )
-from sqlmodel import Session, select
 
 logger = logging.getLogger(__name__)
 

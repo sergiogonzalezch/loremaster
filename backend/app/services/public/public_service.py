@@ -1,5 +1,7 @@
 """Lógica de negocio para feeds públicos de contenidos e imágenes."""
 
+from sqlmodel import Session, select
+
 from app.core.api.filters import _CONTENT_CONDITIONS, _IMAGE_CONDITIONS
 from app.core.database.utils import paginate
 from app.models.db.collection import Collection
@@ -8,7 +10,6 @@ from app.models.db.entity_content import EntityContent
 from app.models.db.image_generation import ImageGeneration, ImageRecord
 from app.models.db.user import User
 from app.models.schemas.public import PublicFeedItem, PublicImageItem
-from sqlmodel import Session, select
 
 
 def get_public_feed(
