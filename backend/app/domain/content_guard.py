@@ -3,7 +3,7 @@
 Aplica patrones de expresiones regulares para detectar contenido no permitido
 antes de procesarlo o tras generarlo.
 
-LIMITACIONES CONOCIDAS (M-1):
+LIMITACIONES CONOCIDAS:
 - Este modulo es una primera linea de defensa, no una barrera exhaustiva.
 - No detecta: jailbreaks estructurales, leetspeak (e.g. "b0mb"), base64, ROT13,
   inyeccion de prompts via delimitadores, o tecnicas de evasion avanzadas.
