@@ -48,7 +48,7 @@ def _delete_vectors_with_retry(collection_id: str) -> bool:
     for attempt in range(1, _QDRANT_RETRY_ATTEMPTS + 1):
         try:
             delete_collection_vectors(collection_id)
-        except Exception as e:  # noqa: PERF203
+        except Exception as e: 
             if attempt < _QDRANT_RETRY_ATTEMPTS:
                 logger.warning(
                     "Qdrant cleanup attempt %d/%d failed for collection %s: %s",

@@ -20,5 +20,5 @@ class PaginationParams:
 class DateRangeParams:
     """Parámetros de rango de fechas para filtrado."""
 
-    created_after: datetime | None = Query(default=None)  # noqa: RUF009
-    created_before: datetime | None = Query(default=None)  # noqa: RUF009
+    created_after: datetime | None = Query(default=None)  
+    created_before: datetime | None = Query(default=None)  
