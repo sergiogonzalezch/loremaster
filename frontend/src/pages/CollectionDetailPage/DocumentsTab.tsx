@@ -16,6 +16,7 @@ import {
   uploadDocument,
   retryDocument,
   deleteDocument,
+  bulkDeleteDocuments,
 } from "../../api";
 import { ApiAbortError } from "../../api/apiClient";
 import { OrderSelect, PageSizeSelect } from "../../components/FilterBar";
@@ -80,6 +81,9 @@ export default function DocumentsTab({
   const [selectedFileName, setSelectedFileName] = useState("");
   const [processingDocs, setProcessingDocs] = useState<Document[]>([]);
   const [retrying, setRetrying] = useState<Set<string>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
 
   /**
    * Carga la lista de documentos aplicando filtros y paginación.
@@ -188,6 +192,44 @@ export default function DocumentsTab({
       controller.abort();
     };
   }, [processingDocs, collectionId, fetchDocuments, onDocumentsMutated]);
+
+  const selectableDocs = documents.filter((d) => d.status !== "processing");
+  const allSelectableSelected =
+    selectableDocs.length > 0 &&
+    selectableDocs.every((d) => selectedIds.has(d.id));
+
+  function toggleSelectAll() {
+    if (allSelectableSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(selectableDocs.map((d) => d.id)));
+    }
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function handleBulkDelete() {
+    setBulkDeleting(true);
+    try {
+      await bulkDeleteDocuments(collectionId, [...selectedIds]);
+      setSelectedIds(new Set());
+      setShowBulkConfirm(false);
+      await fetchDocuments();
+      onDocumentsMutated();
+    } catch (e) {
+      setError(parseApiError(e, "Error al eliminar los documentos seleccionados"));
+      setShowBulkConfirm(false);
+    } finally {
+      setBulkDeleting(false);
+    }
+  }
 
   /**
    * Reintenta la ingestión de un documento fallido y lo mueve
@@ -312,6 +354,21 @@ export default function DocumentsTab({
         </Card.Body>
       </Card>
 
+      <div className="d-flex justify-content-between align-items-center mb-2">
+        <div>
+          {selectedIds.size > 0 && (
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => setShowBulkConfirm(true)}
+              disabled={bulkDeleting}
+            >
+              Eliminar seleccionados ({selectedIds.size})
+            </Button>
+          )}
+        </div>
+      </div>
+
       <div className="mb-3">
         <Form.Label className="fw-semibold">
           Subir documento (PDF o TXT)
@@ -379,6 +436,14 @@ export default function DocumentsTab({
         <Table striped hover responsive className="lm-table">
           <thead>
             <tr>
+              <th style={{ width: 40 }}>
+                <Form.Check
+                  type="checkbox"
+                  checked={allSelectableSelected}
+                  onChange={toggleSelectAll}
+                  disabled={selectableDocs.length === 0}
+                />
+              </th>
               <th>Archivo</th>
               <th>Tipo</th>
               <th>Chunks</th>
@@ -390,6 +455,14 @@ export default function DocumentsTab({
           <tbody>
             {allDocs.map((doc) => (
               <tr key={doc.id}>
+                <td>
+                  <Form.Check
+                    type="checkbox"
+                    checked={selectedIds.has(doc.id)}
+                    onChange={() => toggleSelect(doc.id)}
+                    disabled={doc.status === "processing"}
+                  />
+                </td>
                 <td>
                   {doc.filename}
                   {doc.status === "failed" && doc.processing_error && (
@@ -467,6 +540,15 @@ export default function DocumentsTab({
         onConfirm={deleteConfirm.handleConfirm}
         onCancel={deleteConfirm.cancel}
         loading={deleteConfirm.deleting}
+      />
+
+      <ConfirmModal
+        show={showBulkConfirm}
+        title="Eliminar documentos seleccionados"
+        message={`¿Eliminar ${selectedIds.size} documento${selectedIds.size !== 1 ? "s" : ""}? Se borrarán sus chunks del índice vectorial.`}
+        onConfirm={handleBulkDelete}
+        onCancel={() => setShowBulkConfirm(false)}
+        loading={bulkDeleting}
       />
       <Modal
         show={selectedDocument !== null}

@@ -277,7 +277,8 @@ a:hover {
   padding: 0.28rem 0.65rem;
 }
 
-.btn-warning {
+.btn-warning,
+.btn-primary {
   background-color: var(--lm-accent) !important;
   border-color: var(--lm-accent) !important;
   color: #09090f !important;
@@ -286,17 +287,54 @@ a:hover {
 }
 
 .btn-warning:hover,
-.btn-warning:focus {
+.btn-warning:focus,
+.btn-primary:hover,
+.btn-primary:focus {
   filter: brightness(1.12);
   box-shadow: 0 0 28px var(--lm-accent-glow) !important;
   animation: none;
 }
 
-.btn-warning:disabled {
+.btn-warning:disabled,
+.btn-primary:disabled {
   background-color: var(--lm-accent) !important;
   border-color: var(--lm-accent) !important;
   opacity: 0.4;
   animation: none;
+}
+
+.btn-outline-primary {
+  color: var(--lm-accent) !important;
+  border-color: var(--lm-border-accent) !important;
+  background: transparent !important;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus {
+  background: var(--lm-accent-glow) !important;
+  border-color: var(--lm-accent) !important;
+  color: var(--lm-accent) !important;
+}
+
+.form-check-input:checked {
+  background-color: var(--lm-accent) !important;
+  border-color: var(--lm-accent) !important;
+}
+
+.form-check-input:focus {
+  border-color: var(--lm-border-accent) !important;
+  box-shadow: 0 0 0 0.25rem rgba(157, 111, 232, 0.25) !important;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+  background-color: var(--lm-accent-glow) !important;
+  color: var(--lm-accent) !important;
+}
+
+.dropdown-item:active {
+  background-color: rgba(157, 111, 232, 0.2) !important;
+  color: var(--lm-accent) !important;
 }
 
 .btn-outline-danger {

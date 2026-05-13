@@ -51,7 +51,7 @@ export default function CollectionDetailPage() {
   return (
     <div className="lm-page">
       <Breadcrumb>
-        <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/" }}>
+        <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/collections" }}>
           Colecciones
         </Breadcrumb.Item>
         <Breadcrumb.Item active>{collection.name}</Breadcrumb.Item>

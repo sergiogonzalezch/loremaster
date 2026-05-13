@@ -1,5 +1,6 @@
 """Rutas de documentos para ingestión, listado y eliminación."""
 
+import contextlib
 import logging
 import time
 from typing import Annotated
@@ -37,6 +38,7 @@ from app.core.exceptions import (
 from app.database import get_session
 from app.models.db.collection import Collection
 from app.models.db.document import Document, DocumentStatus
+from app.models.schemas.collection import BulkDeleteRequest
 from app.models.schemas.document import DocumentResponse
 from app.models.shared import PaginatedResponse
 from app.services.document.document_service import (
@@ -165,6 +167,30 @@ async def retry_ingest(
         ) from e
     background_tasks.add_task(process_ingest_background, session, document, text)
     return document
+
+
+@router.post("/{collection_id}/documents/bulk-delete", status_code=204)
+def bulk_delete_documents(
+    collection_id: str,
+    request: BulkDeleteRequest,
+    _: Annotated[Collection, Depends(get_collection_or_404_owned)],
+    session: Annotated[Session, Depends(get_session)],
+):
+    """Elimina múltiples documentos: vectores en Qdrant y soft-delete en BD."""
+    docs = session.exec(
+        select(Document).where(
+            Document.id.in_(request.ids),
+            Document.collection_id == collection_id,
+            Document.is_deleted.is_(False),
+            Document.status != DocumentStatus.processing,
+        ),
+    ).all()
+
+    for doc in docs:
+        with contextlib.suppress(Exception):
+            delete_document_service(session, doc)
+
+    return Response(status_code=204)
 
 
 @router.delete("/{collection_id}/documents/{doc_id}", status_code=204)

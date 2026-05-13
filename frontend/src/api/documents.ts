@@ -75,3 +75,14 @@ export function deleteDocument(
 ): Promise<void> {
   return apiDelete<void>(`/collections/${collectionId}/documents/${docId}`);
 }
+
+/** Elimina múltiples documentos en cascada (máx. 100 IDs). */
+export function bulkDeleteDocuments(
+  collectionId: string,
+  ids: string[],
+): Promise<void> {
+  return apiPost<void>(
+    `/collections/${collectionId}/documents/bulk-delete`,
+    { ids },
+  );
+}
