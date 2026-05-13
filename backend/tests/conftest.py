@@ -36,6 +36,7 @@ if "app.engine.rag" not in sys.modules:
     rag_stub.retrieve_context = _stub_retrieve_context
     rag_stub.delete_document_chunks = _stub_delete_document_chunks
     rag_stub.delete_collection_vectors = _stub_delete_collection_vectors
+    rag_stub.ping_qdrant = _stub_ping_qdrant
     sys.modules["app.engine.rag"] = rag_stub
 
 # 3. Imports de app (con env vars y stubs ya en su lugar)
