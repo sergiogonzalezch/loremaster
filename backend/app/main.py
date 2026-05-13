@@ -27,8 +27,8 @@ from app.api.routes import (
     public_router,
     rag_query_router,
     users_router,
+    media_router,
 )
-from app.api.routes.media import router as media_router
 from app.core.auth.csrf import validate_csrf
 from app.core.config import settings
 from app.core.lifespan import lifespan
