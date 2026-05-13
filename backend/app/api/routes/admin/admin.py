@@ -13,7 +13,7 @@ from app.core.database.utils import paginate_with_sort
 from app.database import get_session
 from app.models.db.collection import Collection
 from app.models.db.user import User
-from app.models.schemas.user_schemas import UserAdminResponse
+from app.models.schemas.user import UserAdminResponse
 from app.services.collection.collection_service import delete_collection_service
 from app.services.deletion_service import cascade_delete_collection
 from app.services.profile.profile_service import delete_profile_image, get_avatar_info

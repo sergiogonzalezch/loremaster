@@ -39,7 +39,7 @@ from app.models.db.collection import Collection
 from app.models.db.document import Document, DocumentStatus
 from app.models.schemas.document import DocumentResponse
 from app.models.shared import PaginatedResponse
-from app.services.document.documents_service import (
+from app.services.document.document_service import (
     delete_document_service,
     ingest_document_service,
     list_documents_service,

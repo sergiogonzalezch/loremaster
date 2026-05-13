@@ -80,7 +80,7 @@ async def test_ingest_qdrant_failure_marks_failed(
     rag_engine_mod = importlib.import_module("app.engine.rag")
     monkeypatch.setattr(rag_engine_mod, "ingest_chunks", _raise_ingest)
     monkeypatch.setattr(
-        "app.services.document.documents_service.ingest_chunks", _raise_ingest
+        "app.services.document.document_service.ingest_chunks", _raise_ingest
     )
 
     response = await client.post(
@@ -224,10 +224,10 @@ async def test_ingest_extraction_timeout_returns_422(
         return "text"
 
     monkeypatch.setattr(
-        "app.services.document.documents_service.extract_text", _slow_extract
+        "app.services.document.document_service.extract_text", _slow_extract
     )
     monkeypatch.setattr(
-        "app.services.document.documents_service._EXTRACTION_TIMEOUT_SECONDS", 0.01
+        "app.services.document.document_service._EXTRACTION_TIMEOUT_SECONDS", 0.01
     )
 
     response = await client.post(
@@ -249,7 +249,7 @@ async def test_ingest_malformed_pdf_marks_422_and_allows_following_ingest(
         return "texto ok"
 
     monkeypatch.setattr(
-        "app.services.document.documents_service.extract_text", _broken_extract
+        "app.services.document.document_service.extract_text", _broken_extract
     )
 
     bad = await client.post(
@@ -275,7 +275,7 @@ async def test_ingest_qdrant_failure_sets_processing_error(
         raise TimeoutError("qdrant timeout")
 
     monkeypatch.setattr(
-        "app.services.document.documents_service.ingest_chunks", _raise_ingest
+        "app.services.document.document_service.ingest_chunks", _raise_ingest
     )
 
     response = await client.post(

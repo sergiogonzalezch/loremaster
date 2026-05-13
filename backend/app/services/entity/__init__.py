@@ -8,7 +8,7 @@ from app.services.entity.content_service import (
     share_content,
     soft_delete_content,
 )
-from app.services.entity.entities_service import (
+from app.services.entity.entity_service import (
     create_entity_service,
     delete_entity_service,
     list_entities_service,

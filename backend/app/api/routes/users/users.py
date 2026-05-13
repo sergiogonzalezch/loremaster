@@ -16,7 +16,7 @@ from app.models.schemas.public import (
     SharedContentSummary,
     SharedImageSummary,
 )
-from app.models.schemas.user_schemas import (
+from app.models.schemas.user import (
     AvatarResponse,
     UpdateProfileRequest,
     UserProfileResponse,

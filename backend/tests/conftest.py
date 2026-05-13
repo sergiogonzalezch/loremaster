@@ -176,10 +176,10 @@ def mock_rag_engine(monkeypatch: pytest.MonkeyPatch) -> dict:
     )
 
     monkeypatch.setattr(
-        "app.services.document.documents_service.ingest_chunks", _ingest_chunks
+        "app.services.document.document_service.ingest_chunks", _ingest_chunks
     )
     monkeypatch.setattr(
-        "app.services.document.documents_service.delete_document_chunks",
+        "app.services.document.document_service.delete_document_chunks",
         _delete_document_chunks,
     )
     monkeypatch.setattr("app.engine.rag_pipeline.retrieve_context", _retrieve_context)
@@ -215,7 +215,7 @@ def mock_text_extractor(monkeypatch: pytest.MonkeyPatch):
 
     monkeypatch.setattr("app.engine.extractor.extract_text", _extract_text)
     monkeypatch.setattr(
-        "app.services.document.documents_service.extract_text", _extract_text
+        "app.services.document.document_service.extract_text", _extract_text
     )
 
 

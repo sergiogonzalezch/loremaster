@@ -1,6 +1,6 @@
 """Servicios de documentos: ingestión, listado y eliminación."""
 
-from app.services.document.documents_service import (
+from app.services.document.document_service import (
     delete_document_service,
     ingest_document_service,
     list_documents_service,
