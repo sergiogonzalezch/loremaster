@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 # 0→o, 1→i, 3→e, 4→a, 5→s, 6→g, @→a, $→s
 _LEET_TABLE = str.maketrans("013456@$", "oieasgas")
 
-# Limite de longitud para prevenir ReDoS/CPU-DoS (M-2)
+# Limite de longitud para prevenir ReDoS/CPU-DoS
 _MAX_TEXT_LENGTH = 100_000  # 100 KB
 
 # Patrones aplicados a entrada de usuarios y documentos: bloquean cualquier mención de acciones dañinas.
