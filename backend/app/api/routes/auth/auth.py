@@ -8,46 +8,26 @@ de tokens via token_version.
 import re
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, Response, status
 from pydantic import BaseModel, EmailStr, Field, field_validator
-from sqlmodel import Session, select
+from sqlmodel import Session
 
-from app.core.auth import create_access_token, hash_password, verify_password
+from app.core.auth import create_access_token
 from app.core.auth.csrf import generate_csrf_token
 from app.core.auth.dependencies import get_current_user
 from app.core.config import settings
 from app.database import get_session
-from app.models.db.user import User
+from app.services.auth import authenticate_user, create_user, invalidate_session
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 class LoginRequest(BaseModel):
-    """Payload para iniciar sesión.
-
-    Attributes:
-        username_or_email: Nombre de usuario o correo electrónico.
-        password: Contraseña del usuario.
-
-    """
-
     username_or_email: str
     password: str
 
 
 class RegisterRequest(BaseModel):
-    """Payload para registrar un nuevo usuario.
-
-    Valida que el username cumpla con el patrón seguro (C-5):
-    solo letras, números, guiones bajos y guiones.
-
-    Attributes:
-        username: Nombre de usuario (3-50 caracteres alfanuméricos).
-        email: Correo electrónico válido.
-        password: Contraseña (mínimo 8 caracteres).
-
-    """
-
     username: str = Field(..., min_length=3, max_length=50)
     email: EmailStr
     password: str = Field(..., min_length=8)
@@ -55,24 +35,7 @@ class RegisterRequest(BaseModel):
     @field_validator("username")
     @classmethod
     def validate_username(cls, v: str) -> str:
-        r"""Valida que el username no contenga caracteres peligrosos.
-
-        Implementa C-5: prevención de path traversal via username.
-        El patrón ^[A-Za-z0-9_-]{3,50}$ evita:
-        - Caracteres especiales (., /, \\, etc.)
-        - Path traversal (../, ..\\)
-        - Inyección en rutas de archivo
-
-        Args:
-            v: Valor del username a validar.
-
-        Returns:
-            Username validado.
-
-        Raises:
-            ValueError: Si el username contiene caracteres no permitidos.
-
-        """
+        r"""Valida que el username no contenga caracteres peligrosos (C-5)."""
         if not re.match(r"^[A-Za-z0-9_-]{3,50}$", v):
             raise ValueError(
                 "El nombre de usuario debe contener solo letras, números, guiones bajos y guiones",
@@ -81,29 +44,11 @@ class RegisterRequest(BaseModel):
 
 
 class AuthSuccessResponse(BaseModel):
-    """Respuesta de autenticación exitosa.
-
-    El token JWT se transporta via cookie HttpOnly (H-13).
-    No se incluye en el body de la respuesta.
-
-    Attributes:
-        message: Mensaje de éxito.
-        username: Nombre de usuario autenticado.
-
-    """
-
     message: str = "Autenticación exitosa"
     username: str
 
 
 def _set_auth_cookies(response: Response, token: str) -> None:
-    """Setea las cookies de autenticación (access_token + csrf_token).
-
-    Args:
-        response: Objeto Response de FastAPI.
-        token: JWT firmado a almacenar en cookie HttpOnly.
-
-    """
     csrf = generate_csrf_token()
     response.set_cookie(
         key=settings.cookie_access_name,
@@ -125,12 +70,6 @@ def _set_auth_cookies(response: Response, token: str) -> None:
 
 
 def _clear_auth_cookies(response: Response) -> None:
-    """Borra las cookies de autenticación.
-
-    Args:
-        response: Objeto Response de FastAPI.
-
-    """
     response.delete_cookie(
         key=settings.cookie_access_name,
         path=settings.cookie_path,
@@ -149,50 +88,10 @@ def login(
     response: Response,
     session: Annotated[Session, Depends(get_session)],
 ):
-    """Autentica un usuario con username/email y contraseña.
-
-    Busca el usuario por username o email, verifica la contraseña
-    con bcrypt, y setea cookies de autenticación (HttpOnly + CSRF).
-
-    Args:
-        request: Credenciales de login.
-        response: Objeto Response para setear cookies.
-        session: Sesión de base de datos.
-
-    Returns:
-        AuthSuccessResponse con mensaje y username.
-
-    Raises:
-        HTTPException 401: Si las credenciales son incorrectas.
-
-    """
-    statement = select(User).where(
-        (User.username == request.username_or_email)
-        | (User.email == request.username_or_email),
-        User.is_deleted.is_(False),
-    )
-    user = session.exec(statement).first()
-
-    if user:
-        valid = verify_password(request.password, user.hashed_password)
-    else:
-        # Timing-safe dummy check: ejecuta bcrypt con hash dummy para
-        # igualar el tiempo de respuesta cuando el usuario no existe (M-6).
-        verify_password(request.password, "$2b$12$abcdefghijklmnopqrstuv")
-        valid = False
-
-    if not valid:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenciales incorrectas",
-        )
-
+    """Autentica un usuario con username/email y contraseña."""
+    user = authenticate_user(session, request.username_or_email, request.password)
     token = create_access_token(
-        data={
-            "sub": user.id,
-            "username": user.username,
-            "version": user.token_version,
-        },
+        data={"sub": user.id, "username": user.username, "version": user.token_version},
     )
     _set_auth_cookies(response, token)
     return {"username": user.username}
@@ -204,58 +103,13 @@ def register(
     response: Response,
     session: Annotated[Session, Depends(get_session)],
 ):
-    """Registra un nuevo usuario y setea cookies de autenticación.
-
-    Valida que el username y email no estén en uso por usuarios activos.
-
-    Args:
-        request: Datos de registro validados.
-        response: Objeto Response para setear cookies.
-        session: Sesión de base de datos.
-
-    Returns:
-        AuthSuccessResponse con mensaje y username.
-
-    Raises:
-        HTTPException 400: Si el username o email ya existen.
-
-    """
-    existing_username = session.exec(
-        select(User).where(User.username == request.username),
-    ).first()
-    if existing_username:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El usuario ya existe",
-        )
-
-    existing_email = session.exec(
-        select(User).where(User.email == request.email, User.is_deleted.is_(False)),
-    ).first()
-    if existing_email:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El correo electrónico ya está registrado",
-        )
-
-    new_user = User(
-        username=request.username,
-        email=request.email,
-        hashed_password=hash_password(request.password),
-    )
-    session.add(new_user)
-    session.commit()
-    session.refresh(new_user)
-
+    """Registra un nuevo usuario y setea cookies de autenticación."""
+    user = create_user(session, request.username, request.email, request.password)
     token = create_access_token(
-        data={
-            "sub": new_user.id,
-            "username": new_user.username,
-            "version": new_user.token_version,
-        },
+        data={"sub": user.id, "username": user.username, "version": user.token_version},
     )
     _set_auth_cookies(response, token)
-    return {"username": new_user.username}
+    return {"username": user.username}
 
 
 @router.post("/logout", status_code=204)
@@ -264,20 +118,6 @@ def logout(
     current_user: Annotated[dict, Depends(get_current_user)],
     session: Annotated[Session, Depends(get_session)],
 ) -> None:
-    """Invalida la sesión del usuario y borra las cookies.
-
-    Incrementa token_version en BD para invalidar tokens previos
-    y borra las cookies de autenticación del navegador.
-
-    Args:
-        response: Objeto Response para borrar cookies.
-        current_user: Usuario autenticado.
-        session: Sesión de base de datos.
-
-    """
-    user = session.get(User, current_user["sub"])
-    if user and not user.is_deleted:
-        user.token_version += 1
-        session.add(user)
-        session.commit()
+    """Invalida la sesión del usuario y borra las cookies."""
+    invalidate_session(session, current_user["sub"])
     _clear_auth_cookies(response)

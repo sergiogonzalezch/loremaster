@@ -3,21 +3,12 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
-from sqlmodel import Session, select
+from sqlmodel import Session
 
-from app.core.api.filters import _CONTENT_CONDITIONS, _IMAGE_CONDITIONS
 from app.core.database.dependencies import get_current_db_user
 from app.database import get_session
-from app.models.db.collection import Collection
-from app.models.db.entity import Entity
-from app.models.db.entity_content import EntityContent
-from app.models.db.image_generation import ImageGeneration, ImageRecord
 from app.models.db.user import User
-from app.models.schemas.public import (
-    PublicProfileResponse,
-    SharedContentSummary,
-    SharedImageSummary,
-)
+from app.models.schemas.public import PublicProfileResponse
 from app.models.schemas.user import (
     AvatarResponse,
     UpdateProfileRequest,
@@ -26,6 +17,8 @@ from app.models.schemas.user import (
 from app.services.profile.profile_service import (
     delete_profile_image,
     get_avatar_info,
+    get_public_profile,
+    update_profile,
     upload_profile_image,
 )
 
@@ -45,29 +38,7 @@ def update_my_profile(
     session: Annotated[Session, Depends(get_session)],
 ):
     """Actualiza el perfil del usuario autenticado (display_name, bio, email)."""
-    if request.display_name is not None:
-        user.display_name = request.display_name
-    if request.bio is not None:
-        user.bio = request.bio
-    if request.email is not None:
-        existing = session.exec(
-            select(User).where(
-                User.email == request.email,
-                User.is_deleted.is_(False),
-                User.id != user.id,
-            ),
-        ).first()
-        if existing:
-            raise HTTPException(
-                status_code=409,
-                detail="El correo electrónico ya está en uso.",
-            )
-        user.email = request.email
-
-    session.add(user)
-    session.commit()
-    session.refresh(user)
-    return user
+    return update_profile(session, user, request)
 
 
 @router.get("/me/avatar", response_model=AvatarResponse)
@@ -102,72 +73,9 @@ def delete_my_avatar(
 
 
 @router.get("/{username}/profile", response_model=PublicProfileResponse)
-def get_public_profile(
+def get_user_public_profile(
     username: str,
     session: Annotated[Session, Depends(get_session)],
 ):
-    """Obtiene el perfil público de un usuario.
-
-    Incluye sus contenidos e imágenes compartidos.
-    """
-    user = session.exec(
-        select(User).where(User.username == username, User.is_deleted.is_(False)),
-    ).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
-
-    content_conditions = (*_CONTENT_CONDITIONS, Collection.owner_id == user.id)
-    image_conditions = (*_IMAGE_CONDITIONS, Collection.owner_id == user.id)
-
-    content_rows = session.exec(
-        select(EntityContent, Entity)
-        .join(Entity, EntityContent.entity_id == Entity.id)
-        .join(Collection, EntityContent.collection_id == Collection.id)
-        .join(User, Collection.owner_id == User.id)
-        .where(*content_conditions)
-        .order_by(EntityContent.confirmed_at.desc()),
-    ).all()
-
-    image_rows = session.exec(
-        select(ImageRecord, ImageGeneration, Entity)
-        .join(ImageGeneration, ImageRecord.generation_id == ImageGeneration.id)
-        .join(Entity, ImageRecord.entity_id == Entity.id)
-        .join(Collection, ImageRecord.collection_id == Collection.id)
-        .join(User, Collection.owner_id == User.id)
-        .where(*image_conditions)
-        .order_by(ImageRecord.created_at.desc()),
-    ).all()
-
-    return PublicProfileResponse(
-        username=user.username,
-        display_name=user.display_name,
-        bio=user.bio,
-        avatar_url=get_avatar_info(user)["avatar_url"],
-        shared_contents=[
-            SharedContentSummary(
-                id=ec.id,
-                content=ec.content,
-                category=ec.category,
-                entity_name=en.name,
-                entity_type=en.type,
-                confirmed_at=ec.confirmed_at,
-                created_at=ec.created_at,
-            )
-            for ec, en in content_rows
-        ],
-        shared_images=[
-            SharedImageSummary(
-                id=img.id,
-                generation_id=img.generation_id,
-                image_url=img.image_url,
-                storage_path=img.storage_path,
-                seed=img.seed,
-                auto_prompt=gen.auto_prompt,
-                final_prompt=gen.final_prompt,
-                entity_name=en.name,
-                entity_type=en.type,
-                created_at=img.created_at,
-            )
-            for img, gen, en in image_rows
-        ],
-    )
+    """Obtiene el perfil público de un usuario con sus contenidos e imágenes compartidos."""
+    return get_public_profile(session, username)
