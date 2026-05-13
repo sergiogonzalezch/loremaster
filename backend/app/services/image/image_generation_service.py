@@ -3,6 +3,7 @@
 import logging
 import uuid as _uuid
 from contextlib import suppress
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -41,6 +42,17 @@ ALLOWED_IMAGE_CATEGORIES = {
     ContentCategory.scene,
     ContentCategory.chapter,
 }
+
+
+@dataclass
+class _GenerationParams:
+    content_id: str
+    category: str
+    auto_prompt: str
+    final_prompt: str
+    batch_size: int
+    seed_base: int
+    backend: str
 
 
 def _get_confirmed_content(
@@ -112,24 +124,19 @@ def _create_image_generation(
     session: Session,
     entity: Entity,
     generation_id: str,
-    content_id: str,
-    category: str,
-    auto_prompt: str,
-    final_prompt: str,
-    batch_size: int,
-    backend: str,
+    params: _GenerationParams,
 ) -> ImageGeneration:
     generation = ImageGeneration(
         id=generation_id,
         entity_id=entity.id,
         collection_id=entity.collection_id,
-        content_id=content_id,
-        category=category,
-        auto_prompt=auto_prompt,
-        final_prompt=final_prompt,
-        prompt_token_count=len(auto_prompt) // 4,
-        batch_size=batch_size,
-        backend=backend,
+        content_id=params.content_id,
+        category=params.category,
+        auto_prompt=params.auto_prompt,
+        final_prompt=params.final_prompt,
+        prompt_token_count=len(params.auto_prompt) // 4,
+        batch_size=params.batch_size,
+        backend=params.backend,
         width=settings.image_width,
         height=settings.image_height,
     )
@@ -176,12 +183,7 @@ def _generate_comfyui_images(
     session: Session,
     username: str,
     entity: Entity,
-    content_id: str,
-    auto_prompt: str,
-    final_prompt: str,
-    batch_size: int,
-    category: str,
-    seed_base: int,
+    params: _GenerationParams,
 ) -> tuple[str, list[ImageResult]]:
     generation_id = str(_uuid.uuid4())
 
@@ -189,22 +191,17 @@ def _generate_comfyui_images(
         session=session,
         entity=entity,
         generation_id=generation_id,
-        content_id=content_id,
-        category=category,
-        auto_prompt=auto_prompt,
-        final_prompt=final_prompt,
-        batch_size=batch_size,
-        backend="comfyui",
+        params=params,
     )
 
     client = ComfyUIClient(base_url=settings.comfyui_url)
     workflow_base = load_template("flux2-klein-4b-api.json")
-    workflow_base = inject_prompt(workflow_base, final_prompt)
+    workflow_base = inject_prompt(workflow_base, params.final_prompt)
 
     images_result: list[ImageResult] = []
 
-    for i in range(batch_size):
-        seed = seed_base + i
+    for i in range(params.batch_size):
+        seed = params.seed_base + i
         workflow = inject_seed(workflow_base, seed)
 
         try:
@@ -329,25 +326,26 @@ def generate_images_service(
     check_user_input(auto_prompt)
     check_user_input(final_prompt)
 
-    effective_seed_base = (
-        seed_base if seed_base is not None else settings.image_seed_base
+    params = _GenerationParams(
+        content_id=content_id,
+        category=content.category.value,
+        auto_prompt=auto_prompt,
+        final_prompt=final_prompt,
+        batch_size=batch_size,
+        seed_base=seed_base if seed_base is not None else settings.image_seed_base,
+        backend=settings.image_backend,
     )
     images_result: list[ImageResult] = []
 
-    if settings.image_backend == "mock":
-        mock_images = _generate_mock_images(entity, batch_size, effective_seed_base)
+    if params.backend == "mock":
+        mock_images = _generate_mock_images(entity, params.batch_size, params.seed_base)
         generation_id = str(_uuid.uuid4())
 
         _create_image_generation(
             session=session,
             entity=entity,
             generation_id=generation_id,
-            content_id=content_id,
-            category=content.category.value,
-            auto_prompt=auto_prompt,
-            final_prompt=final_prompt,
-            batch_size=batch_size,
-            backend="mock",
+            params=params,
         )
 
         for image_id, image_url, seed in mock_images:
@@ -373,22 +371,17 @@ def generate_images_service(
                 ),
             )
 
-    elif settings.image_backend == "comfyui":
+    elif params.backend == "comfyui":
         generation_id, images_result = _generate_comfyui_images(
             session=session,
             username=username,
             entity=entity,
-            content_id=content_id,
-            auto_prompt=auto_prompt,
-            final_prompt=final_prompt,
-            batch_size=batch_size,
-            category=content.category.value,
-            seed_base=effective_seed_base,
+            params=params,
         )
 
     else:
         raise ValueError(
-            f"Backend '{settings.image_backend}' no soportado. "
+            f"Backend '{params.backend}' no soportado. "
             "Usar: 'mock' o 'comfyui'",
         )
 
@@ -399,7 +392,7 @@ def generate_images_service(
         auto_prompt=auto_prompt,
         final_prompt=final_prompt,
         batch_size=batch_size,
-        backend=settings.image_backend,
+        backend=params.backend,
         images=images_result,
     )
 
