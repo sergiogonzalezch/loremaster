@@ -34,21 +34,12 @@ def mock_pipeline(monkeypatch):
     """Reemplaza invoke_generation_pipeline con una implementación determinista."""
     calls: list[dict] = []
 
-    def _invoke(
-        *,
-        collection_id,
-        entity_name,
-        entity_type,
-        category,
-        query,
-        extra_context,
-        top_k=4,
-    ):
+    def _invoke(*, collection_id, entity_ctx, query, extra_context):
         calls.append(
             dict(
                 collection_id=collection_id,
-                entity_name=entity_name,
-                category=category,
+                entity_name=entity_ctx.name,
+                category=entity_ctx.category,
                 query=query,
                 extra_context=extra_context,
             )

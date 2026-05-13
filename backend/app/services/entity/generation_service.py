@@ -14,7 +14,7 @@ from app.core.exceptions import (
 )
 from app.domain.category_rules import validate_category_for_entity
 from app.domain.content_guard import check_generated_output, check_user_input
-from app.engine.rag_pipeline import invoke_generation_pipeline
+from app.engine.rag_pipeline import EntityContext, invoke_generation_pipeline
 from app.models.db.entity import Entity
 from app.models.db.entity_content import EntityContent
 from app.models.db.generated_text import GeneratedText
@@ -85,9 +85,11 @@ def generate(
 
     answer, sources_count = invoke_generation_pipeline(
         collection_id=entity.collection_id,
-        entity_name=entity.name,
-        entity_type=entity.type.value,
-        category=category,
+        entity_ctx=EntityContext(
+            name=entity.name,
+            entity_type=entity.type.value,
+            category=category,
+        ),
         query=query,
         extra_context=extra_context,
     )

@@ -45,6 +45,15 @@ ALLOWED_IMAGE_CATEGORIES = {
 
 
 @dataclass
+class _ImageData:
+    image_id: str
+    filename: str
+    seed: int
+    storage_path: str | None = None
+    image_url: str | None = None
+
+
+@dataclass
 class _GenerationParams:
     content_id: str
     category: str
@@ -81,21 +90,17 @@ def _create_image_record(
     session: Session,
     entity: Entity,
     generation_id: str,
-    image_id: str,
-    storage_path: str | None,
-    filename: str,
-    seed: int,
-    image_url: str | None,
+    data: _ImageData,
 ) -> ImageRecord:
     record = ImageRecord(
-        id=image_id,
+        id=data.image_id,
         generation_id=generation_id,
         entity_id=entity.id,
         collection_id=entity.collection_id,
-        seed=seed,
-        storage_path=storage_path,
-        image_url=image_url,
-        filename=filename,
+        seed=data.seed,
+        storage_path=data.storage_path,
+        image_url=data.image_url,
+        filename=data.filename,
         extension="png",
         width=settings.image_width,
         height=settings.image_height,
@@ -240,11 +245,13 @@ def _generate_comfyui_images(
                 session=session,
                 entity=entity,
                 generation_id=generation_id,
-                image_id=image_id,
-                storage_path=storage_path,
-                filename=filename,
-                seed=seed,
-                image_url=_build_url(storage_path),
+                data=_ImageData(
+                    image_id=image_id,
+                    filename=filename,
+                    seed=seed,
+                    storage_path=storage_path,
+                    image_url=_build_url(storage_path),
+                ),
             )
 
             images_result.append(
@@ -353,11 +360,12 @@ def generate_images_service(
                 session=session,
                 entity=entity,
                 generation_id=generation_id,
-                image_id=image_id,
-                storage_path=None,
-                filename=f"{image_id}.png",
-                seed=seed,
-                image_url=image_url,
+                data=_ImageData(
+                    image_id=image_id,
+                    filename=f"{image_id}.png",
+                    seed=seed,
+                    image_url=image_url,
+                ),
             )
 
             images_result.append(

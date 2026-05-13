@@ -2,6 +2,7 @@
 
 import logging
 import threading
+from dataclasses import dataclass
 
 import httpx
 from langchain_core.output_parsers import StrOutputParser
@@ -21,6 +22,13 @@ generation_chain = llm | StrOutputParser()
 # Errores transitorios de red/transporte que indican un servicio caído (Qdrant, Ollama).
 # Errores de programación (TypeError, ValueError de validación) deben burbujear sin capturar.
 _TRANSPORT_ERRORS = (httpx.HTTPError, ConnectionError, OSError)
+
+
+@dataclass
+class EntityContext:
+    name: str
+    entity_type: str
+    category: ContentCategory
 
 
 def invoke_rag_pipeline(
@@ -68,9 +76,7 @@ def invoke_rag_pipeline(
 
 def invoke_generation_pipeline(
     collection_id: str,
-    entity_name: str,
-    entity_type: str,
-    category: ContentCategory,
+    entity_ctx: EntityContext,
     query: str,
     extra_context: str = "",
 ) -> tuple[str, int]:
@@ -86,8 +92,8 @@ def invoke_generation_pipeline(
     logger.debug(
         "invoke_generation_pipeline: collection=%s entity='%s' category=%s threshold=%.2f top_k=%d query='%.80s'",
         collection_id,
-        entity_name,
-        category,
+        entity_ctx.name,
+        entity_ctx.category,
         settings.rag_score_threshold,
         settings.top_k,
         query,
@@ -100,9 +106,9 @@ def invoke_generation_pipeline(
         raise RuntimeError("Vector store unavailable") from e
 
     rendered_prompt = render_prompt(
-        category=category,
-        entity_name=entity_name,
-        entity_type=entity_type,
+        category=entity_ctx.category,
+        entity_name=entity_ctx.name,
+        entity_type=entity_ctx.entity_type,
         context=context,
         query=query,
     )
@@ -113,15 +119,15 @@ def invoke_generation_pipeline(
     except _TRANSPORT_ERRORS as e:
         logger.exception(
             "LLM generation failed for entity '%s' collection %s",
-            entity_name,
+            entity_ctx.name,
             collection_id,
         )
         raise RuntimeError("LLM service unavailable") from e
 
     logger.info(
         "Generation pipeline completed for entity '%s' (category=%s) using %d chunk(s)",
-        entity_name,
-        category,
+        entity_ctx.name,
+        entity_ctx.category,
         num_chunks,
     )
     return answer, num_chunks
