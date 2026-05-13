@@ -1,7 +1,7 @@
 """Modelo de base de datos para entidades dentro de colecciones."""
 
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 
 from sqlalchemy import Column, ForeignKey, String, UniqueConstraint
 from sqlmodel import Field, SQLModel
