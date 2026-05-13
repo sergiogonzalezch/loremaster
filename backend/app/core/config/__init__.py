@@ -55,7 +55,7 @@ class Settings(BaseSettings):
         chunk_overlap: Solapamiento entre chunks.
         top_k: Chunks de contexto recuperados por RAG.
         rag_score_threshold: Umbral de score para RAG.
-        max_pdf_pages: Límite de páginas para PDFs (H-7, prevención de PDF bombs).
+        max_pdf_pages: Límite de páginas para PDFs (prevención de PDF bombs).
 
         secret_key: Clave secreta para firmar JWT (C-7).
         algorithm: Algoritmo de firma JWT.
