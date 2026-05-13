@@ -9,7 +9,7 @@ from sqlmodel import Field, SQLModel
 from app.core.database.soft_delete import SoftDeleteMixin
 
 
-class EntityType(str, Enum):
+class EntityType(StrEnum):
     """Tipos de entidad que pueden existir dentro de una colección.
 
     Attributes:
