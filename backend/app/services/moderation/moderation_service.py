@@ -2,10 +2,9 @@
 
 import logging
 
+from app.models.db.moderation_log import ModerationLog
 from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Session
-
-from app.models.db.moderation_log import ModerationLog
 
 logger = logging.getLogger(__name__)
 

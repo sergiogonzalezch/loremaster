@@ -2,10 +2,6 @@
 
 import logging
 
-from sqlalchemy import func
-from sqlalchemy.exc import SQLAlchemyError
-from sqlmodel import Session, select
-
 from app.core.config import settings
 from app.core.exceptions import (
     DatabaseError,
@@ -20,6 +16,9 @@ from app.models.db.entity_content import EntityContent
 from app.models.db.generated_text import GeneratedText
 from app.models.enums import ContentCategory, ContentStatus
 from app.models.schemas.entity_content import EntityContentResponse
+from sqlalchemy import func
+from sqlalchemy.exc import SQLAlchemyError
+from sqlmodel import Session, select
 
 logger = logging.getLogger(__name__)
 

@@ -6,9 +6,6 @@ import logging
 import re
 from dataclasses import dataclass
 
-from fastapi import UploadFile
-from sqlmodel import Session, select
-
 from app.core.api.params import DateRangeParams, PaginationParams
 from app.core.config import settings
 from app.core.database.soft_delete import soft_delete
@@ -27,6 +24,8 @@ from app.domain.content_guard import check_document_content
 from app.engine.extractor import extract_text
 from app.engine.rag import delete_document_chunks, ingest_chunks
 from app.models.db.document import Document, DocumentStatus
+from fastapi import UploadFile
+from sqlmodel import Session, select
 
 
 @dataclass

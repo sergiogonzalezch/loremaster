@@ -12,8 +12,6 @@ import logging
 import time
 from pathlib import Path
 
-from sqlmodel import Session, select
-
 from app.core.config import settings
 from app.core.database.soft_delete import soft_delete
 from app.engine.rag import delete_collection_vectors
@@ -25,6 +23,7 @@ from app.services.cascade_service import (
     cascade_delete_by_collection,
     cascade_delete_by_entity,
 )
+from sqlmodel import Session, select
 
 logger = logging.getLogger(__name__)
 

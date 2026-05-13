@@ -5,8 +5,6 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Literal
 
-from sqlmodel import Session, select
-
 from app.core.api.params import PaginationParams
 from app.core.database.soft_delete import soft_delete
 from app.core.database.utils import db_commit, paginate_with_sort
@@ -20,6 +18,7 @@ from app.models.db.entity_content import EntityContent
 from app.models.db.generated_text import GeneratedText
 from app.models.enums import ContentCategory, ContentStatus
 from app.models.schemas.entity_content import EntityContentResponse
+from sqlmodel import Session, select
 
 logger = logging.getLogger(__name__)
 

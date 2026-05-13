@@ -1,10 +1,9 @@
 """Lógica de negocio para autenticación de usuarios."""
 
-from fastapi import HTTPException, status
-from sqlmodel import Session, select
-
 from app.core.auth import hash_password, verify_password
 from app.models.db.user import User
+from fastapi import HTTPException, status
+from sqlmodel import Session, select
 
 
 def authenticate_user(session: Session, username_or_email: str, password: str) -> User:

@@ -5,9 +5,6 @@ import re
 import shutil
 from pathlib import Path
 
-from fastapi import HTTPException, UploadFile
-from sqlmodel import Session, select
-
 from app.core.api.filters import _CONTENT_CONDITIONS, _IMAGE_CONDITIONS
 from app.core.config import settings
 from app.core.database.utils import db_commit
@@ -29,6 +26,8 @@ from app.models.schemas.public import (
     SharedImageSummary,
 )
 from app.models.schemas.user import UpdateProfileRequest
+from fastapi import HTTPException, UploadFile
+from sqlmodel import Session, select
 
 
 def _get_profile_dir(username: str) -> Path:
