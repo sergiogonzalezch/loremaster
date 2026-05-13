@@ -13,7 +13,7 @@ from app.models.schemas.public import PublicFeedItem, PublicImageItem
 
 
 def get_public_feed(
-    session: Session, page: int, page_size: int
+    session: Session, page: int, page_size: int,
 ) -> tuple[list[PublicFeedItem], int]:
     base = (
         select(EntityContent, Entity, User)
@@ -43,7 +43,7 @@ def get_public_feed(
 
 
 def get_public_images(
-    session: Session, page: int, page_size: int
+    session: Session, page: int, page_size: int,
 ) -> tuple[list[PublicImageItem], int]:
     base = (
         select(ImageRecord, ImageGeneration, Entity, User)

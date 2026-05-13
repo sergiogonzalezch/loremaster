@@ -87,7 +87,7 @@ def list_contents(
         gt_map = {
             gt.id: gt
             for gt in session.exec(
-                select(GeneratedText).where(GeneratedText.id.in_(gt_ids))
+                select(GeneratedText).where(GeneratedText.id.in_(gt_ids)),
             ).all()
         }
 
@@ -297,7 +297,7 @@ def soft_delete_content(
 
 
 def _to_response(
-    content: EntityContent, gt: GeneratedText | None
+    content: EntityContent, gt: GeneratedText | None,
 ) -> EntityContentResponse:
     return EntityContentResponse(
         id=content.id,

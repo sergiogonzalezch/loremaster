@@ -5,8 +5,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
-from app.database import get_session
 from app.core.api.params import PaginationParams
+from app.database import get_session
 from app.models.schemas.public import PublicFeedItem, PublicImageItem
 from app.models.shared import PaginatedResponse
 from app.services.public import get_public_feed, get_public_images

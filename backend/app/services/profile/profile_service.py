@@ -54,11 +54,11 @@ def update_profile(session: Session, user: User, request: UpdateProfileRequest) 
                 User.email == request.email,
                 User.is_deleted.is_(False),
                 User.id != user.id,
-            )
+            ),
         ).first()
         if existing:
             raise HTTPException(
-                status_code=409, detail="El correo electrónico ya está en uso."
+                status_code=409, detail="El correo electrónico ya está en uso.",
             )
         user.email = request.email
     session.add(user)
@@ -70,7 +70,7 @@ def update_profile(session: Session, user: User, request: UpdateProfileRequest) 
 def get_public_profile(session: Session, username: str) -> PublicProfileResponse:
     """Obtiene el perfil público de un usuario con sus contenidos e imágenes compartidos."""
     user = session.exec(
-        select(User).where(User.username == username, User.is_deleted.is_(False))
+        select(User).where(User.username == username, User.is_deleted.is_(False)),
     ).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")

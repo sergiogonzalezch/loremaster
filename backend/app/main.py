@@ -23,11 +23,11 @@ from app.api.routes import (
     entities_router,
     health_router,
     image_router,
+    media_router,
     metadata_router,
     public_router,
     rag_query_router,
     users_router,
-    media_router,
 )
 from app.core.auth.csrf import validate_csrf
 from app.core.config import settings

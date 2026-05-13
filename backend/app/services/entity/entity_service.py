@@ -3,6 +3,7 @@
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
+
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
