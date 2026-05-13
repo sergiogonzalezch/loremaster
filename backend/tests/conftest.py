@@ -28,6 +28,9 @@ if "app.engine.rag" not in sys.modules:
     def _stub_delete_collection_vectors(*args, **kwargs):
         return True
 
+    def _stub_ping_qdrant(*args, **kwargs):
+        return None
+
     rag_stub.ingest_chunks = _stub_ingest_chunks
     rag_stub.search_context = _stub_search_context
     rag_stub.retrieve_context = _stub_retrieve_context
