@@ -37,8 +37,8 @@ MAGIC_BYTES: dict[bytes, str] = {
 def _verify_magic_bytes(content: bytes, expected_type: str) -> None:
     """Verifica que el contenido coincida con el tipo esperado usando magic bytes.
 
-    Implementa la validación H-6: no confiar únicamente en el content_type
-    del cliente. Verifica los bytes reales del archivo.
+    No confiar únicamente en el content_type del cliente.
+    Verifica los bytes reales del archivo.
 
     Args:
         content: Contenido binario del archivo.
