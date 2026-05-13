@@ -11,6 +11,7 @@ from alembic.config import Config
 from fastapi import FastAPI
 
 from app.core.config import settings
+from app.engine.rag import ping_qdrant
 
 logger = logging.getLogger(__name__)
 
