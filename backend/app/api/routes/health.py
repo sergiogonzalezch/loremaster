@@ -20,7 +20,7 @@ def health_check():
             status["services"]["qdrant"] = (
                 "healthy" if resp.status_code == 200 else "unhealthy"
             )
-    except Exception:  # noqa: BLE001
+    except httpx.TransportError:
         status["services"]["qdrant"] = "unhealthy"
         status["status"] = "degraded"
 
@@ -31,7 +31,7 @@ def health_check():
             status["services"]["ollama"] = (
                 "healthy" if resp.status_code == 200 else "unhealthy"
             )
-    except Exception:  # noqa: BLE001
+    except httpx.TransportError:
         status["services"]["ollama"] = "unhealthy"
         status["status"] = "degraded"
 
