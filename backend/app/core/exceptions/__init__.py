@@ -164,3 +164,25 @@ class DuplicateDocumentError(Exception):
         """Inicializa la excepción con el ID del documento existente."""
         self.existing_id = existing_id
         super().__init__("El contenido del documento ya existe en esta colección.")
+
+
+class ComfyUIUnavailableError(Exception):
+    """Lanzada cuando ComfyUI no está disponible (conexión rechazada)."""
+
+    def __init__(self) -> None:
+        """Inicializa la excepción indicando servicio no disponible."""
+        super().__init__(
+            "El servicio de generación de imágenes no está disponible. "
+            "Verifica que ComfyUI esté corriendo.",
+        )
+
+
+class ComfyUITimeoutError(Exception):
+    """Lanzada cuando ComfyUI excede el tiempo máximo de generación."""
+
+    def __init__(self, timeout: int) -> None:
+        """Inicializa la excepción con el timeout configurado."""
+        self.timeout = timeout
+        super().__init__(
+            f"La generación de imágenes excedió el tiempo límite de {timeout}s.",
+        )

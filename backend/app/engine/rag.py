@@ -21,7 +21,17 @@ from app.core.exceptions import NoContextAvailableError
 logger = logging.getLogger(__name__)
 
 _qdrant_client = QdrantClient(url=settings.qdrant_url)
-_embedding_model = SentenceTransformer(settings.embedding_model)
+try:
+    _embedding_model = SentenceTransformer(settings.embedding_model)
+except (OSError, RuntimeError):
+    # OSError: fallo DNS/socket al contactar HuggingFace.
+    # RuntimeError: cliente httpx cerrado durante reintentos de huggingface_hub.
+    logger.warning(
+        "No se pudo contactar HuggingFace; cargando modelo de embeddings desde caché local."
+    )
+    _embedding_model = SentenceTransformer(
+        settings.embedding_model, local_files_only=True
+    )
 _splitter = RecursiveCharacterTextSplitter(
     chunk_size=settings.chunk_size,
     chunk_overlap=settings.chunk_overlap,

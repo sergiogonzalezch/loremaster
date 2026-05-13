@@ -334,8 +334,8 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 
 - [x] `image_prompt_builder.py` creado con lógica de construcción de prompts visuales consolidado — `backend/app/engine/image_prompt_builder.py`
 - [x] `build_visual_prompt()` implementada con tres estrategias deterministas por `ContentCategory`: `direct` (extended_description), `entity_only` (backstory/item), `first_sentences` (scene/chapter)
-- [ ] `STYLE_PREFIX` definido por tipo de entidad — no implementado (estrategia basada en `ContentCategory`, no en prefijos por tipo)
-- [ ] `QUALITY_SUFFIX` con tags de calidad para Flux.2 — pendiente para integración real con Flux.2 (Semana 7)
+- [x] `STYLE_PREFIX` por tipo de entidad — la implementación evolucionó: el LLM extrae el tipo específico dinámicamente (`_extract_with_llm` en `image_prompt_builder.py`); el resultado se usa como prefijo del prompt visual. Enfoque más rico que un prefijo estático.
+- [x] `QUALITY_SUFFIX` con tags de calidad — implementado: `QUALITY_SUFFIX = "high quality, masterpiece, sharp focus, professional digital art"` en `engine/image_prompt_builder.py`
 - [x] Límite configurable de tokens en prompt visual (`image_prompt_max_tokens=512`)
 
 ### Filtrado de Contenido
@@ -372,14 +372,14 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 - [x] ComfyUI instalado y corriendo en el host (puerto 8188)
 - [x] Modelo Flux.2 Klein 4B Distilled (FP8) descargado (~8.4 GB VRAM)
 - [x] Variables en `.env.example`: `COMFY_BACKEND=local`, `COMFY_URL`, `COMFY_TIMEOUT`
-- [ ] `start_local.sh` script para levantar Ollama + ComfyUI
+- [ ] `start_local.sh` script para levantar Ollama + ComfyUI — pendiente
 
 ### Workflow ComfyUI
 
 - [x] `workflows/flux2_klein_t2i.json` creado en formato API de ComfyUI
 - [x] Parametros fijos: `steps=4`, `cfg=1.0`, `sampler=euler`, `scheduler=simple`
 - [x] Resolucion: `1024x1024`
-- [ ] Negative prompt base: `blurry, ugly, deformed, watermark, text, extra limbs, worst quality`
+- [ ] Negative prompt base: nodo 100 ("CLIP Text Encode Negative Prompt") existe en `flux2-klein-4b-api.json` pero el campo `text` está vacío — el contenido `blurry, ugly, deformed…` no fue inyectado
 - [x] Assert en cliente: `cfg` DEBE ser 1.0 (cfg > 1.0 produce imagenes degradadas)
 
 ### Cliente ComfyUI
@@ -387,8 +387,8 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 - [x] `comfy_client.py` implementado con comunicacion HTTP/WebSocket a ComfyUI
 - [x] Enviar workflow con prompt inyectado
 - [x] Recibir imagen generada (bytes)
-- [ ] Timeout configurable (default 60s)
-- [ ] Manejo de errores: ComfyUI no disponible → `HTTP 503`
+- [x] Timeout configurable vía `.env` — `COMFYUI_TIMEOUT` (default 300s) y `COMFYUI_REQUEST_TIMEOUT` (default 30s) en `Settings`; `ComfyUIClient` acepta `request_timeout` por constructor; el servicio pasa `settings.comfyui_timeout` a `get_history_until_complete`
+- [x] Manejo de errores: ComfyUI no disponible → `HTTP 503` — `ComfyUIUnavailableError` (conexión rechazada) y `ComfyUITimeoutError` (timeout excedido) propagadas desde el servicio y capturadas en la ruta como 503
 
 ### Integracion con Endpoint
 
@@ -401,20 +401,20 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 - [x] `POST /image-generation/generate` con descripcion genera imagen real (1024x1024)
 - [x] Imagen corresponde visualmente a la descripcion proporcionada
 - [x] Metadata incluye `visual_prompt` y `seed` usados
-- [ ] Timeout de ComfyUI retorna 503 con mensaje claro
+- [x] Timeout de ComfyUI retorna 503 con mensaje claro — `ComfyUITimeoutError` devuelve 503 con el mensaje del timeout configurado
 - [x] `cfg=1.0` esta hardcodeado y validado
 
-### Nota — Semana 7 implementada parcialmente (backend mock activo)
+### Nota — Semana 7: integración real con ComfyUI implementada
 
-El endpoint de generacion de imagenes esta funcional en modo mock. La arquitectura esta preparada para la integracion real con ComfyUI:
+La integración real con ComfyUI está funcional en `services/image/image_generation_service.py`:
 
 - [x] Flujo de dos pasos implementado: `build-prompt` → `generate`
 - [x] `image_backend` configurable: `"mock"` (default) o `"comfyui"`
-- [x] `ComfyUIIntegrationError` (HTTP 503) y `ComfyUITimeoutError` (HTTP 504) disponibles para cuando se conecte ComfyUI real
+- [x] `_generate_comfyui_images()` — envía workflow via `queue_prompt`, polling con `get_history_until_complete`, descarga imagen, guarda en filesystem local con protección anti-path-traversal
 - [x] Límite de 512 tokens en prompt visual (`image_prompt_max_tokens=512`)
 - [x] Seed generable por batch (base + offset por imagen)
-- [x] 13 tests en `test_image_generation_service.py` pasando (mock + build-prompt + guardrails)
-- [ ] Integracion real con ComfyUI/Flux.2 Klein pendiente (requiere GPU local o RunPod)
+- [x] Integración real con ComfyUI/Flux.2 Klein operativa cuando `IMAGE_BACKEND=comfyui` (requiere ComfyUI corriendo)
+- [x] Errores de ComfyUI devuelven 503 diferenciado — `ComfyUIUnavailableError` y `ComfyUITimeoutError` en `core/exceptions/`
 
 ---
 
@@ -432,11 +432,13 @@ El endpoint de generacion de imagenes esta funcional en modo mock. La arquitectu
 
 ### Storage S3
 
+> **Decisión de diseño:** S3/LocalStack reemplazado por almacenamiento local en filesystem (`core/storage/`). La integración con S3 queda pendiente para Semana 9+.
+
 - [ ] Agregar LocalStack al `docker-compose.yml` (puerto 4566)
-- [ ] `storage.py` con abstraccion para subir/descargar de S3
-- [ ] Variables: `STORAGE_BACKEND`, `S3_ENDPOINT_URL`, `S3_BUCKET`
-- [ ] Imagenes generadas se guardan en S3 con key unica
-- [ ] Retornar URL de S3 al cliente
+- [x] `core/storage/__init__.py` — abstracción de almacenamiento: `save_file`, `build_storage_url`, `build_generation_path` con protección anti-path-traversal
+- [ ] Variables: `STORAGE_BACKEND`, `S3_ENDPOINT_URL`, `S3_BUCKET` — la config actual usa `media_root` y `storage_base_url` (filesystem local)
+- [x] Imágenes generadas se guardan con key única (`{uuid}.png`) bajo `users/{username}/img/generation/...`
+- [x] URL de imagen retornada al cliente vía `storage_base_url + storage_path`
 
 ### Gestion de Entidades (CRUD)
 
@@ -456,8 +458,8 @@ El endpoint de generacion de imagenes esta funcional en modo mock. La arquitectu
 
 ### Criterios de aceptacion Semana 8
 
-- [ ] Flujo completo: ingestar lore → build-prompt con contexto RAG → imagen coherente con el lore (pendiente integracion ComfyUI real)
-- [ ] Imagen guardada en LocalStack S3 y URL retornada al cliente
+- [ ] Flujo completo: ingestar lore → build-prompt con contexto RAG → imagen coherente con el lore (RAG context en build-prompt pendiente)
+- [ ] Imagen guardada en LocalStack S3 y URL retornada al cliente — reemplazado por filesystem local; S3 pendiente
 - [x] CRUD de entidades funcional con soft delete
 - [x] Metadata de generación registrada (`visual_prompt`, `prompt_token_count`, `prompt_source`, `prompt_strategy`, `backend`, `generation_ms`)
 
@@ -465,11 +467,43 @@ El endpoint de generacion de imagenes esta funcional en modo mock. La arquitectu
 
 - [ ] Todos los criterios de Semanas 5-8 cumplidos
 - [ ] RAG genera respuestas de texto de alta calidad
-- [ ] Imagenes se generan localmente con ComfyUI + Flux.2 Klein
-- [ ] Imagenes usan contexto RAG para coherencia con el lore
-- [ ] Storage S3 funcional (LocalStack)
+- [x] Imágenes se generan localmente con ComfyUI + Flux.2 Klein (requiere `IMAGE_BACKEND=comfyui` y ComfyUI corriendo)
+- [ ] Imágenes usan contexto RAG para coherencia con el lore
+- [ ] Storage S3 funcional (LocalStack) — en su lugar, almacenamiento local funcional
 - [x] CRUD de entidades completo
 - [ ] README actualizado con instrucciones de ComfyUI y S3
+
+---
+
+## Nota — Funcionalidades de Autenticación y Seguridad implementadas (fuera del plan original)
+
+Sistema completo de autenticación y seguridad implementado durante Fase 2 (Semanas 7-8):
+
+### Autenticación y Usuarios
+
+- [x] `core/auth/__init__.py` — JWT: creación, verificación y hash de contraseñas (bcrypt)
+- [x] `core/auth/clerk.py` — `JWKSManager` con caché TTL 1h thread-safe; `decode_clerk_token()` para producción
+- [x] `core/auth/dependencies.py` — `get_current_user` (local o Clerk según `environment`), `get_current_user_optional`, `get_admin_user`
+- [x] `core/auth/csrf.py` — CSRF token via cookie doble-submit
+- [x] `models/db/user.py` — Modelo `User` con `username`, `email`, `hashed_password`, `is_admin`, `token_version` (para invalidación de sesiones)
+- [x] `api/routes/auth/` — registro, login, logout, refresh con cookies HttpOnly
+- [x] `api/routes/users/users.py` — perfil de usuario autenticado
+- [x] `api/routes/admin/admin.py` — gestión de usuarios (requiere `is_admin=True`)
+- [x] `services/profile/profile_service.py` — lógica de perfil
+
+### Seguridad y Middlewares
+
+- [x] `api/middlewares/rate_limit.py` — rate limiting por IP
+- [x] `api/middlewares/security_headers.py` — cabeceras de seguridad (CSP, HSTS, X-Frame-Options, etc.)
+- [x] `core/storage/validator.py` — `FileValidator`: validación de magic bytes, EXIF strip en imágenes, extensión y MIME
+
+### Feed Público
+
+- [x] `api/routes/public/public.py` — feed de imágenes compartidas públicamente (`is_shared=True`)
+- [x] `services/public/public_service.py` — lógica de listado del feed
+- [x] `api/routes/media.py` — servicio de imágenes estáticas con control de acceso (propias o compartidas)
+- [x] Endpoint `PATCH .../share` — marcar/desmarcar imagen como pública
+- [x] `services/moderation/moderation_service.py` + `models/db/moderation_log.py` — registro de moderación
 
 ---
 

@@ -100,6 +100,7 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["D", "S", "EM"]
 "alembic/versions/*.py" = ["D", "N999"]
+"evaluations/**/*.py" = ["D", "BLE", "C90"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]

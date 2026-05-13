@@ -41,6 +41,8 @@ class Settings(BaseSettings):
         image_seed_base: Semilla base para generación.
 
         comfyui_url: URL del servidor ComfyUI.
+        comfyui_timeout: Segundos máximos para que ComfyUI genere una imagen.
+        comfyui_request_timeout: Timeout en segundos para cada request HTTP a ComfyUI.
 
         media_root: Directorio raíz para archivos multimedia.
         storage_backend: Backend de almacenamiento (local, s3, r2).
@@ -95,6 +97,8 @@ class Settings(BaseSettings):
 
     # ComfyUI
     comfyui_url: str = "http://localhost:8188"
+    comfyui_timeout: int = 300
+    comfyui_request_timeout: float = 30.0
 
     # Storage
     media_root: str = "./media"

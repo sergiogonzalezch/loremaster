@@ -12,7 +12,11 @@ from sqlmodel import Session, select
 
 from app.core.config import settings
 from app.core.database.utils import db_commit
-from app.core.exceptions import NoContextAvailableError
+from app.core.exceptions import (
+    ComfyUITimeoutError,
+    ComfyUIUnavailableError,
+    NoContextAvailableError,
+)
 from app.core.storage import build_generation_path, save_file
 from app.domain.content_guard import check_user_input
 from app.engine.comfyui_client import (
@@ -199,7 +203,10 @@ def _generate_comfyui_images(
         params=params,
     )
 
-    client = ComfyUIClient(base_url=settings.comfyui_url)
+    client = ComfyUIClient(
+        base_url=settings.comfyui_url,
+        request_timeout=settings.comfyui_request_timeout,
+    )
     workflow_base = load_template("flux2-klein-4b-api.json")
     workflow_base = inject_prompt(workflow_base, params.final_prompt)
 
@@ -211,9 +218,16 @@ def _generate_comfyui_images(
 
         try:
             prompt_id = client.queue_prompt(workflow)
-            result = client.get_history_until_complete(prompt_id)
+            result = client.get_history_until_complete(
+                prompt_id,
+                timeout=settings.comfyui_timeout,
+            )
             output_images = client.get_output_images(result)
-        except (httpx.HTTPError, TimeoutError, ValueError) as exc:
+        except httpx.ConnectError as exc:
+            raise ComfyUIUnavailableError() from exc
+        except TimeoutError as exc:
+            raise ComfyUITimeoutError(settings.comfyui_timeout) from exc
+        except (httpx.HTTPError, ValueError) as exc:
             logger.warning(
                 "ComfyUI falló en iteración %d/%d: %s",
                 i + 1,

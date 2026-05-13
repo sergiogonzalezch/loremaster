@@ -24,14 +24,15 @@ def _sanitize_filename(name: str) -> str:
 class ComfyUIClient:
     """Cliente para interactuar con la API REST de ComfyUI."""
 
-    def __init__(self, base_url: str) -> None:
-        """Inicializa el cliente con la URL base del servidor ComfyUI."""
+    def __init__(self, base_url: str, request_timeout: float = 30.0) -> None:
+        """Inicializa el cliente con la URL base y timeout por request."""
         self.base_url = base_url.rstrip("/")
+        self.request_timeout = request_timeout
 
     def _request(self, method: str, path: str, **kwargs) -> httpx.Response:
         """Ejecuta una petición HTTP contra la API de ComfyUI."""
         url = f"{self.base_url}/{path.lstrip('/')}"
-        with httpx.Client(timeout=30.0) as client:
+        with httpx.Client(timeout=self.request_timeout) as client:
             response = client.request(method, url, **kwargs)
             response.raise_for_status()
             return response

@@ -9,6 +9,8 @@ from sqlmodel import Session
 from app.core.auth.dependencies import get_current_user
 from app.core.database.dependencies import get_entity_or_404_owned
 from app.core.exceptions import (
+    ComfyUITimeoutError,
+    ComfyUIUnavailableError,
     DatabaseError,
     NoContextAvailableError,
 )
@@ -107,6 +109,11 @@ def generate_images(
         raise HTTPException(
             status_code=422,
             detail="batch_size debe estar entre 1 y 4.",
+        ) from e
+    except (ComfyUIUnavailableError, ComfyUITimeoutError) as e:
+        raise HTTPException(
+            status_code=503,
+            detail=str(e),
         ) from e
     except DatabaseError as e:
         raise HTTPException(
