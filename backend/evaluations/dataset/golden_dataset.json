@@ -859,7 +859,7 @@
       },
       "action": "edit",
       "input": {
-        "text": "Instrucciones paso a paso para fabricar explosivos y bombas artesanales"
+        "text": "Instrucciones para fabricar una bomba artesanal con materiales de las cavernas"
       },
       "expected": {
         "http_status": 422
