@@ -9,7 +9,7 @@ from sqlmodel import Field, SQLModel
 from app.core.database.soft_delete import SoftDeleteMixin
 
 
-class DocumentStatus(str, Enum):
+class DocumentStatus(StrEnum):
     """Estados de procesamiento de un documento.
 
     Attributes:
