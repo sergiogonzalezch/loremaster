@@ -21,7 +21,9 @@ interface RegisterCredentials {
 }
 
 /** Inicia sesión y setea cookies de autenticación (HttpOnly + CSRF). */
-export function login(credentials: LoginCredentials): Promise<AuthSuccessResponse> {
+export function login(
+  credentials: LoginCredentials,
+): Promise<AuthSuccessResponse> {
   return apiFetch<AuthSuccessResponse>("/auth/login", {
     method: "POST",
     body: JSON.stringify(credentials),
