@@ -11,6 +11,7 @@ export interface UserProfile {
   avatar_url: string | null;
   is_admin: boolean;
   created_at: string;
+  expires_at?: string | null;
 }
 
 /** Payload para actualizar el perfil. */

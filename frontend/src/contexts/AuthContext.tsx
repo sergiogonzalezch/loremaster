@@ -10,6 +10,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
   type ReactNode,
 } from "react";
 import { logoutApi } from "../api/auth";
@@ -45,11 +46,24 @@ export const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const logoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const logout = useCallback(() => {
+    if (logoutTimerRef.current) {
+      clearTimeout(logoutTimerRef.current);
+      logoutTimerRef.current = null;
+    }
     void logoutApi().catch(() => {});
     setUser(null);
   }, []);
+
+  function scheduleLogout(expiresAt: string | null | undefined) {
+    if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
+    if (!expiresAt) return;
+    const ms = new Date(expiresAt).getTime() - Date.now();
+    if (ms <= 0) return;
+    logoutTimerRef.current = setTimeout(logout, ms);
+  }
 
   // Verifica la sesión activa al montar (lee la cookie HttpOnly automáticamente).
   // loading=true hasta que finalice para que ProtectedRoute no redirija antes de tiempo.
@@ -61,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           username: profile.username,
           is_admin: profile.is_admin ?? false,
         });
+        scheduleLogout(profile.expires_at);
       })
       .catch(() => {
         setUser(null);
@@ -68,6 +83,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => {
         setLoading(false);
       });
+    return () => {
+      if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
+    };
   }, []);
 
   function login(): Promise<void> {
@@ -78,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           username: profile.username,
           is_admin: profile.is_admin ?? false,
         });
+        scheduleLogout(profile.expires_at);
       })
       .catch(() => {
         setUser(null);

@@ -34,6 +34,7 @@ class UserProfileResponse(BaseModel):
         avatar_url: URL de la imagen de perfil.
         is_admin: Si el usuario es administrador.
         created_at: Fecha de registro.
+        expires_at: Fecha de expiración del token JWT activo.
 
     """
 
@@ -47,6 +48,7 @@ class UserProfileResponse(BaseModel):
     avatar_url: str | None = None
     is_admin: bool = False
     created_at: datetime
+    expires_at: datetime | None = None
 
 
 class UserAdminResponse(BaseModel):

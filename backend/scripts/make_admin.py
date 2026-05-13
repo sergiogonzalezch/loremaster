@@ -39,7 +39,7 @@ def main():
 
     with Session(engine) as session:
         user = session.exec(
-            select(User).where(User.username == username, not User.is_deleted),
+            select(User).where(User.username == username, User.is_deleted.is_(False)),
         ).first()
 
         if not user:

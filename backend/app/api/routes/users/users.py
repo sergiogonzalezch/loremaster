@@ -1,10 +1,12 @@
 """Rutas de perfil de usuario y gestión de avatares."""
 
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 from sqlmodel import Session
 
+from app.core.auth.dependencies import get_current_user
 from app.core.database.dependencies import get_current_db_user
 from app.database import get_session
 from app.models.db.user import User
@@ -26,9 +28,15 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("/me", response_model=UserProfileResponse)
-def get_my_profile(user: Annotated[User, Depends(get_current_db_user)]):
-    """Obtiene el perfil del usuario autenticado."""
-    return user
+def get_my_profile(
+    user: Annotated[User, Depends(get_current_db_user)],
+    current_user: Annotated[dict, Depends(get_current_user)],
+):
+    """Obtiene el perfil del usuario autenticado, incluyendo la expiración del token."""
+    response = UserProfileResponse.model_validate(user)
+    if exp := current_user.get("exp"):
+        response.expires_at = datetime.fromtimestamp(exp, tz=UTC)
+    return response
 
 
 @router.patch("/me", response_model=UserProfileResponse)
