@@ -63,8 +63,7 @@ def _verify_magic_bytes(content: bytes, expected_type: str) -> None:
 def _strip_exif(data: bytes) -> bytes:
     """Elimina metadatos EXIF de una imagen.
 
-    Implementa la protección L-2: strip de metadatos sensibles
-    (GPS, datos de cámara, etc.) de imágenes subidas.
+    Strip de metadatos sensibles (GPS, datos de cámara, etc.) de imágenes subidas.
 
     Args:
         data: Contenido binario de la imagen.
