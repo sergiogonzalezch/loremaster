@@ -41,7 +41,7 @@ if settings.environment == "local":
     logger.warning(
         "WARNING: Ejecutando en entorno 'local'. "
         "Guardas de seguridad relajadas (CSP, HTTPS, validaciones estrictas). "
-        "Para produccion: definir ENVIRONMENT=production en .env (M-12).",
+        "Para produccion: definir ENVIRONMENT=production en .env.",
     )
 
 
