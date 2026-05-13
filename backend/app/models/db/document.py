@@ -1,7 +1,7 @@
 """Modelo de base de datos para documentos subidos a colecciones."""
 
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 
 from sqlalchemy import Column, ForeignKey, String, Text
 from sqlmodel import Field, SQLModel
