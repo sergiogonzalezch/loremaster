@@ -20,7 +20,7 @@ class ContentCategory(StrEnum):
     chapter = "chapter"
 
 
-class ContentStatus(str, Enum):
+class ContentStatus(StrEnum):
     """Estados del ciclo de vida de un contenido generado.
 
     Attributes:
