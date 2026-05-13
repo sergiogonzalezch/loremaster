@@ -127,6 +127,9 @@ def edit_content(
             request.content,
             current_user["sub"],
         )
+    except ContentNotAllowedError as e:
+        log_moderation_event(session, "input", e.snippet)
+        raise HTTPException(status_code=422, detail=str(e)) from e
     except ContentDiscardedError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
     except DatabaseError as e:

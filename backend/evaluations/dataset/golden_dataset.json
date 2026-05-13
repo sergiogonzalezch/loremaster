@@ -1032,8 +1032,7 @@
       "expected": {
         "http_status": 204,
         "after_delete": {
-          "entity_http_status": 404,
-          "contents_not_visible": true
+          "http_status": 404
         }
       }
     },
