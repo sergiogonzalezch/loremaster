@@ -92,7 +92,7 @@ def get_admin_user(
 ) -> dict:
     """Obtiene el usuario actual verificando que sea administrador.
 
-    Implementa H-1: la autorización de admin se verifica desde la base de datos,
+    La autorización de admin se verifica desde la base de datos,
     no desde el JWT (is_admin fue eliminado del token por seguridad).
 
     Args:
