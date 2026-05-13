@@ -57,7 +57,7 @@ class Settings(BaseSettings):
         rag_score_threshold: Umbral de score para RAG.
         max_pdf_pages: Límite de páginas para PDFs (prevención de PDF bombs).
 
-        secret_key: Clave secreta para firmar JWT (C-7).
+        secret_key: Clave secreta para firmar JWT.
         algorithm: Algoritmo de firma JWT.
         access_token_expire_minutes: Duración del token JWT en minutos.
 
