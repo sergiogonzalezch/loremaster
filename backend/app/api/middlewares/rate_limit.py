@@ -125,9 +125,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             if user_id not in self.requests:
                 self.requests[user_id] = []
 
-            self.requests[user_id] = [
-                t for t in self.requests[user_id] if t > window_start
-            ]
+            self.requests[user_id] = [t for t in self.requests[user_id] if t > window_start]
 
             if len(self.requests[user_id]) >= self.requests_per_minute:
                 return False

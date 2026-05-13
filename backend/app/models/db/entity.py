@@ -44,9 +44,7 @@ class Entity(SQLModel, SoftDeleteMixin, table=True):
     """
 
     __tablename__ = "entities"
-    __table_args__ = (
-        UniqueConstraint("collection_id", "name", name="uq_entity_collection_name"),
-    )
+    __table_args__ = (UniqueConstraint("collection_id", "name", name="uq_entity_collection_name"),)
 
     id: str = Field(
         default_factory=lambda: str(__import__("uuid").uuid4()),

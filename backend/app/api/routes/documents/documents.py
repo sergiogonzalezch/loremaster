@@ -212,11 +212,7 @@ def document_events(
                 )
                 docs = session.exec(stmt).all()
 
-                current_processing = {
-                    d.id: d.status
-                    for d in docs
-                    if d.status == DocumentStatus.processing
-                }
+                current_processing = {d.id: d.status for d in docs if d.status == DocumentStatus.processing}
 
                 if current_processing != seen_processing:
                     seen_processing.clear()

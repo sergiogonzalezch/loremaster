@@ -27,9 +27,7 @@ class Collection(SQLModel, SoftDeleteMixin, table=True):
     """
 
     __tablename__ = "collections"
-    __table_args__ = (
-        UniqueConstraint("name", "owner_id", name="uq_collection_name_owner"),
-    )
+    __table_args__ = (UniqueConstraint("name", "owner_id", name="uq_collection_name_owner"),)
 
     id: str = SQLField(
         default_factory=lambda: str(__import__("uuid").uuid4()),

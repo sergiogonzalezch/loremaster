@@ -160,13 +160,12 @@ def semantic_chunks(
         windowed.append(" ".join(sentences[start:end]))
 
     embeddings = model.encode(
-        windowed, show_progress_bar=False, normalize_embeddings=True,
+        windowed,
+        show_progress_bar=False,
+        normalize_embeddings=True,
     )
 
-    distances = [
-        _cosine_distance(embeddings[i], embeddings[i + 1])
-        for i in range(len(embeddings) - 1)
-    ]
+    distances = [_cosine_distance(embeddings[i], embeddings[i + 1]) for i in range(len(embeddings) - 1)]
 
     threshold = float(np.percentile(distances, threshold_percentile))
     # breakpoints[i] = indice de la primera frase del chunk i+1
@@ -285,8 +284,7 @@ def main() -> None:
         _sep("-")
         _print_fixed_chunks(chunks)
         print(
-            f"  RESUMEN: {s['count']} chunks  |"
-            f"  avg={s['avg']}  min={s['min']}  max={s['max']}",
+            f"  RESUMEN: {s['count']} chunks  |" f"  avg={s['avg']}  min={s['min']}  max={s['max']}",
         )
         print()
 
@@ -294,8 +292,7 @@ def main() -> None:
     _sep("-")
     print(f"  SEMANTIC  |  modelo={EMBEDDING_MODEL}")
     print(
-        f"  Metodo: ventana deslizante + distancia coseno"
-        f"  |  umbral=p{int(SEMANTIC_THRESHOLD_PERCENTILE)}",
+        f"  Metodo: ventana deslizante + distancia coseno" f"  |  umbral=p{int(SEMANTIC_THRESHOLD_PERCENTILE)}",
     )
     _sep("-")
     print("  Cargando modelo de embeddings...", end=" ", flush=True)
@@ -303,7 +300,9 @@ def main() -> None:
     print("listo.\n")
 
     chunks, distances, threshold, breakpoints = semantic_chunks(
-        text, model, threshold_percentile=SEMANTIC_THRESHOLD_PERCENTILE,
+        text,
+        model,
+        threshold_percentile=SEMANTIC_THRESHOLD_PERCENTILE,
     )
     s = _chunk_stats(chunks)
     label = f"Semantic (p{int(SEMANTIC_THRESHOLD_PERCENTILE)})"
@@ -320,8 +319,7 @@ def main() -> None:
 
     _print_semantic_chunks(chunks, distances, threshold, breakpoints)
     print(
-        f"  RESUMEN: {s['count']} chunks  |"
-        f"  avg={s['avg']}  min={s['min']}  max={s['max']}",
+        f"  RESUMEN: {s['count']} chunks  |" f"  avg={s['avg']}  min={s['min']}  max={s['max']}",
     )
     print()
 

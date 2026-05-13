@@ -26,12 +26,8 @@ try:
 except (OSError, RuntimeError):
     # OSError: fallo DNS/socket al contactar HuggingFace.
     # RuntimeError: cliente httpx cerrado durante reintentos de huggingface_hub.
-    logger.warning(
-        "No se pudo contactar HuggingFace; cargando modelo de embeddings desde caché local."
-    )
-    _embedding_model = SentenceTransformer(
-        settings.embedding_model, local_files_only=True
-    )
+    logger.warning("No se pudo contactar HuggingFace; cargando modelo de embeddings desde caché local.")
+    _embedding_model = SentenceTransformer(settings.embedding_model, local_files_only=True)
 _splitter = RecursiveCharacterTextSplitter(
     chunk_size=settings.chunk_size,
     chunk_overlap=settings.chunk_overlap,
@@ -57,10 +53,7 @@ def _ensure_qdrant_collection(collection_id: str) -> None:
             ),
         )
         if not _collection_exists(name):
-            msg = (
-                f"Qdrant collection '{name}' could not be created. "
-                "Check Qdrant connectivity and configuration."
-            )
+            msg = f"Qdrant collection '{name}' could not be created. " "Check Qdrant connectivity and configuration."
             raise RuntimeError(
                 msg,
             )
@@ -144,11 +137,7 @@ def search_context(
     if top_k is None:
         top_k = settings.top_k
     query_vector = _embedding_model.encode([query])[0].tolist()
-    effective_threshold = (
-        score_threshold
-        if (score_threshold is not None and score_threshold > 0.0)
-        else None
-    )
+    effective_threshold = score_threshold if (score_threshold is not None and score_threshold > 0.0) else None
     results = _qdrant_client.query_points(
         collection_name=name,
         query=query_vector,

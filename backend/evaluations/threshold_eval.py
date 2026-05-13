@@ -166,7 +166,9 @@ def build_index(text: str, model: SentenceTransformer) -> tuple[list[str], np.nd
     )
     chunks = splitter.split_text(text)
     embeddings = model.encode(
-        chunks, show_progress_bar=False, normalize_embeddings=True,
+        chunks,
+        show_progress_bar=False,
+        normalize_embeddings=True,
     )
     return chunks, embeddings
 
@@ -241,16 +243,14 @@ def _print_query_block(query: dict, rows_for_query: list[dict]) -> None:
     print(f"  Esperado  : contexto={expected}")
     print()
     print(
-        f"  {'Umbral':>7} | {'Chunks':>6} | {'Max sim':>8} | {'Avg sim':>8} | "
-        f"{'Contexto':>9} | {'Correcto':>9}",
+        f"  {'Umbral':>7} | {'Chunks':>6} | {'Max sim':>8} | {'Avg sim':>8} | " f"{'Contexto':>9} | {'Correcto':>9}",
     )
     print(f"  {'-'*7}-+-{'-'*6}-+-{'-'*8}-+-{'-'*8}-+-{'-'*9}-+-{'-'*9}")
     for row in rows_for_query:
         ctx = "SI " if row["has_context"] else "NO "
         ok = "OK " if row["correct"] else "FALLO"
         print(
-            f"  {row['threshold']:>7.1f} | {row['hits']:>6} | {row['max_score']:>8.3f} | "
-            f"{row['avg_score']:>8.3f} | {ctx:>9} | {ok:>9}",
+            f"  {row['threshold']:>7.1f} | {row['hits']:>6} | {row['max_score']:>8.3f} | " f"{row['avg_score']:>8.3f} | {ctx:>9} | {ok:>9}",
         )
     print()
 
@@ -268,8 +268,7 @@ def _print_threshold_summary(rows: list[dict]) -> None:
     print("  Fallos         : consultas donde el resultado no coincide con lo esperado")
     _sep("-")
     print(
-        f"  {'Umbral':>7} | {'Prec media':>10} | {'Recall medio':>13} | "
-        f"{'Chunks/query':>13} | {'Fallos':>7}",
+        f"  {'Umbral':>7} | {'Prec media':>10} | {'Recall medio':>13} | " f"{'Chunks/query':>13} | {'Fallos':>7}",
     )
     print(f"  {'-'*7}-+-{'-'*10}-+-{'-'*13}-+-{'-'*13}-+-{'-'*7}")
     for thr in THRESHOLDS:
@@ -281,8 +280,7 @@ def _print_threshold_summary(rows: list[dict]) -> None:
         recall = sum(recall_vals) / len(recall_vals)
         avg_chunks = sum(r["hits"] for r in thr_rows) / len(thr_rows)
         print(
-            f"  {thr:>7.1f} | {prec:>10.3f} | {recall:>13.3f} | "
-            f"{avg_chunks:>13.1f} | {fallos:>7}",
+            f"  {thr:>7.1f} | {prec:>10.3f} | {recall:>13.3f} | " f"{avg_chunks:>13.1f} | {fallos:>7}",
         )
     _sep("=")
 

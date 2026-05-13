@@ -106,10 +106,7 @@ class FileValidator:
 
         """
         if file.content_type not in IMAGE_MIME_TYPES:
-            msg = (
-                f"Tipo de archivo no permitido: {file.content_type}. "
-                f"Solo se permiten imágenes: {', '.join(sorted(IMAGE_EXTENSIONS))}"
-            )
+            msg = f"Tipo de archivo no permitido: {file.content_type}. " f"Solo se permiten imágenes: {', '.join(sorted(IMAGE_EXTENSIONS))}"
             raise ValueError(
                 msg,
             )

@@ -72,7 +72,8 @@ def _err(msg: str) -> None:
 
 def _result_line(case_id: str, status: str, duration_ms: int, desc: str) -> None:
     icon = {"PASS": "OK ", "FAIL": "XX ", "SKIP": "-- ", "ERROR": "EE "}.get(
-        status, "?? ",
+        status,
+        "?? ",
     )
     print(f"  [{icon}] {case_id:<12} {status:<5}  {duration_ms:>6}ms  {desc[:52]}")
 
@@ -151,10 +152,7 @@ def check_status(actual: int, expected: int) -> Result:
 
 
 def check_fields(body: dict, fields: dict) -> list[Result]:
-    return [
-        (body.get(k) == v, f"campo '{k}': {body.get(k)!r} != {v!r}")
-        for k, v in fields.items()
-    ]
+    return [(body.get(k) == v, f"campo '{k}': {body.get(k)!r} != {v!r}") for k, v in fields.items()]
 
 
 # --------------------------------------------------------------------------- #
@@ -200,7 +198,11 @@ def wait_for_docs(api: APIClient, cid: str) -> tuple[bool, str]:
 
 
 def create_entity(
-    api: APIClient, cid: str, etype: str, name: str, description: str = "",
+    api: APIClient,
+    cid: str,
+    etype: str,
+    name: str,
+    description: str = "",
 ) -> tuple[str | None, str]:
     resp = api.post(
         f"/collections/{cid}/entities",
@@ -212,7 +214,11 @@ def create_entity(
 
 
 def generate_content(
-    api: APIClient, cid: str, eid: str, category: str, query: str,
+    api: APIClient,
+    cid: str,
+    eid: str,
+    category: str,
+    query: str,
 ) -> tuple[str | None, str]:
     resp = api.post(
         f"/collections/{cid}/entities/{eid}/generate/{category}",
@@ -224,7 +230,10 @@ def generate_content(
 
 
 def confirm_content(
-    api: APIClient, cid: str, eid: str, content_id: str,
+    api: APIClient,
+    cid: str,
+    eid: str,
+    content_id: str,
 ) -> tuple[bool, str]:
     resp = api.post(f"/collections/{cid}/entities/{eid}/contents/{content_id}/confirm")
     if resp.status_code == 200:
@@ -233,7 +242,10 @@ def confirm_content(
 
 
 def discard_content(
-    api: APIClient, cid: str, eid: str, content_id: str,
+    api: APIClient,
+    cid: str,
+    eid: str,
+    content_id: str,
 ) -> tuple[bool, str]:
     resp = api.patch(f"/collections/{cid}/entities/{eid}/contents/{content_id}/discard")
     if resp.status_code == 200:
@@ -246,7 +258,11 @@ def list_contents(api: APIClient, cid: str, eid: str, **params) -> httpx.Respons
 
 
 def get_contents_by_status(
-    api: APIClient, cid: str, eid: str, status: str = "all", category: str = None,
+    api: APIClient,
+    cid: str,
+    eid: str,
+    status: str = "all",
+    category: str = None,
 ) -> list[dict]:
     params: dict = {"page_size": 50, "status": status}
     if category:
@@ -258,7 +274,10 @@ def get_contents_by_status(
 
 
 def get_latest_pending(
-    api: APIClient, cid: str, eid: str, category: str = None,
+    api: APIClient,
+    cid: str,
+    eid: str,
+    category: str = None,
 ) -> dict | None:
     items = get_contents_by_status(api, cid, eid, "pending", category)
     return items[0] if items else None
@@ -377,7 +396,10 @@ def _run_rag_query(api: APIClient, cid: str, case: dict) -> Result:
 
 
 def _run_entity_crud(
-    api: APIClient, cid: str, case: dict, entity_cache: dict,
+    api: APIClient,
+    cid: str,
+    case: dict,
+    entity_cache: dict,
 ) -> Result:
     action = case.get("action", "create")
     inp = case.get("input", {})
@@ -461,7 +483,10 @@ def _run_entity_crud(
 
 
 def _run_entity_content(
-    api: APIClient, cid: str, case: dict, entity_cache: dict,
+    api: APIClient,
+    cid: str,
+    case: dict,
+    entity_cache: dict,
 ) -> Result:
     inp = case.get("input", {})
     setup = case.get("setup", {})
@@ -515,12 +540,7 @@ def _run_entity_content(
                     return fail(f"setup discard: {err}")
 
     # ── Detectar lista ──────────────────────────────────────────────────────
-    is_list = (
-        action is None
-        and "query" not in inp
-        and "category" not in inp
-        and ("page" in inp or "page_size" in inp or "category_filter" in inp)
-    )
+    is_list = action is None and "query" not in inp and "category" not in inp and ("page" in inp or "page_size" in inp or "category_filter" in inp)
     if is_list:
         params: dict = {
             "page": inp.get("page", 1),
@@ -545,9 +565,7 @@ def _run_entity_content(
                     ),
                 )
             if "all_items_category" in exp:
-                wrong = [
-                    i for i in items if i.get("category") != exp["all_items_category"]
-                ]
+                wrong = [i for i in items if i.get("category") != exp["all_items_category"]]
                 checks.append(
                     (not wrong, f"{len(wrong)} items con categoria incorrecta"),
                 )
@@ -594,9 +612,7 @@ def _run_entity_content(
 
     # ── Confirmar ──────────────────────────────────────────────────────────
     if action == "confirm":
-        target = setup_content_id or (
-            get_latest_pending(api, cid, entity_id) or {}
-        ).get("id")
+        target = setup_content_id or (get_latest_pending(api, cid, entity_id) or {}).get("id")
         if not target:
             return fail("sin contenido pending para confirmar")
         resp = api.post(
@@ -612,9 +628,7 @@ def _run_entity_content(
 
     # ── Descartar ─────────────────────────────────────────────────────────
     if action == "discard":
-        target = setup_content_id or (
-            get_latest_pending(api, cid, entity_id) or {}
-        ).get("id")
+        target = setup_content_id or (get_latest_pending(api, cid, entity_id) or {}).get("id")
         if not target:
             return fail("sin contenido para descartar")
         resp = api.patch(
@@ -627,9 +641,7 @@ def _run_entity_content(
 
     # ── Editar ────────────────────────────────────────────────────────────
     if action == "edit":
-        target = setup_content_id or (
-            get_latest_pending(api, cid, entity_id) or {}
-        ).get("id")
+        target = setup_content_id or (get_latest_pending(api, cid, entity_id) or {}).get("id")
         if not target:
             confirmed = get_contents_by_status(api, cid, entity_id, "confirmed")
             target = confirmed[0]["id"] if confirmed else None
@@ -646,9 +658,7 @@ def _run_entity_content(
 
     # ── Borrar contenido ──────────────────────────────────────────────────
     if action == "delete_content":
-        target = setup_content_id or (
-            get_latest_pending(api, cid, entity_id) or {}
-        ).get("id")
+        target = setup_content_id or (get_latest_pending(api, cid, entity_id) or {}).get("id")
         if not target:
             return fail("sin contenido para borrar")
         resp = api.delete(f"/collections/{cid}/entities/{entity_id}/contents/{target}")
@@ -669,7 +679,8 @@ def _run_guardrail(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
 
     if endpoint == "rag_query":
         resp = api.post(
-            f"/collections/{cid}/query", json={"query": inp.get("query", "")},
+            f"/collections/{cid}/query",
+            json={"query": inp.get("query", "")},
         )
         return check_status(resp.status_code, exp["http_status"])
 
@@ -695,7 +706,10 @@ def _run_guardrail(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
 
 
 def _run_image_generation(
-    api: APIClient, cid: str, case: dict, entity_cache: dict,
+    api: APIClient,
+    cid: str,
+    case: dict,
+    entity_cache: dict,
 ) -> Result:
     inp = case.get("input", {})
     setup = case.get("setup", {})
@@ -781,9 +795,7 @@ def _run_image_generation(
             checks.append((bool(auto_prompt), "auto_prompt vacio"))
 
         if "backend" in exp:
-            allowed = (
-                exp["backend"] if isinstance(exp["backend"], list) else [exp["backend"]]
-            )
+            allowed = exp["backend"] if isinstance(exp["backend"], list) else [exp["backend"]]
             checks.append(
                 (
                     body.get("backend") in allowed,
@@ -800,7 +812,10 @@ def _run_image_generation(
 
 
 def _run_share_content(
-    api: APIClient, cid: str, case: dict, entity_cache: dict,
+    api: APIClient,
+    cid: str,
+    case: dict,
+    entity_cache: dict,
 ) -> Result:
     setup = case.get("setup", {})
     inp = case.get("input", {})
@@ -827,7 +842,11 @@ def _run_share_content(
 
     if gen_cat:
         setup_content_id, err = generate_content(
-            api, cid, entity_id, gen_cat, gen_query,
+            api,
+            cid,
+            entity_id,
+            gen_cat,
+            gen_query,
         )
         if err:
             return fail(f"setup generate: {err}")
@@ -852,7 +871,10 @@ def _run_share_content(
 
 
 def _run_share_image(
-    api: APIClient, cid: str, case: dict, entity_cache: dict,
+    api: APIClient,
+    cid: str,
+    case: dict,
+    entity_cache: dict,
 ) -> Result:
     inp = case.get("input", {})
     setup = case.get("setup", {})
@@ -963,7 +985,11 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
 
         if action == "create_entity":
             eid, err = create_entity(
-                api, cid, step["type"], step["name"], step.get("description", ""),
+                api,
+                cid,
+                step["type"],
+                step["name"],
+                step.get("description", ""),
             )
             if err:
                 return fail(f"step {i} create_entity: {err}")
@@ -1007,7 +1033,10 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
             target = last_content_id
             if target_spec == "confirmed":
                 confirmed = get_contents_by_status(
-                    api, cid, last_entity_id, "confirmed",
+                    api,
+                    cid,
+                    last_entity_id,
+                    "confirmed",
                 )
                 target = confirmed[0]["id"] if confirmed else last_content_id
             if not target:
@@ -1024,7 +1053,10 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
             content_id_for_image: str | None = None
             if step.get("use_confirmed_content"):
                 confirmed = get_contents_by_status(
-                    api, cid, last_entity_id, "confirmed",
+                    api,
+                    cid,
+                    last_entity_id,
+                    "confirmed",
                 )
                 if confirmed:
                     content_id_for_image = confirmed[0]["id"]
@@ -1070,12 +1102,8 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
             pub_resp = api.get("/public/feed", params={"page_size": 50})
             if pub_resp.status_code != 200:
                 return fail(f"step {i} check_public_feed HTTP {pub_resp.status_code}")
-            feed_names = [
-                item.get("entity_name") for item in pub_resp.json().get("data", [])
-            ]
-            public_feed_visible = (
-                last_entity_name in feed_names if last_entity_name else False
-            )
+            feed_names = [item.get("entity_name") for item in pub_resp.json().get("data", [])]
+            public_feed_visible = last_entity_name in feed_names if last_entity_name else False
 
     # ── Evaluar estado final ──────────────────────────────────────────────
     checks: list[Result] = []
@@ -1140,28 +1168,10 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
             checks.append((found, f"ningun confirmed con query que contenga '{kw}'"))
 
         if needs_cat:
-            bs_confirmed = [
-                i
-                for i in all_items
-                if i.get("category") == "backstory" and i.get("status") == "confirmed"
-            ]
-            bs_pending = [
-                i
-                for i in all_items
-                if i.get("category") == "backstory" and i.get("status") == "pending"
-            ]
-            ed_pending = [
-                i
-                for i in all_items
-                if i.get("category") == "extended_description"
-                and i.get("status") == "pending"
-            ]
-            ed_discarded = [
-                i
-                for i in all_items
-                if i.get("category") == "extended_description"
-                and i.get("status") == "discarded"
-            ]
+            bs_confirmed = [i for i in all_items if i.get("category") == "backstory" and i.get("status") == "confirmed"]
+            bs_pending = [i for i in all_items if i.get("category") == "backstory" and i.get("status") == "pending"]
+            ed_pending = [i for i in all_items if i.get("category") == "extended_description" and i.get("status") == "pending"]
+            ed_discarded = [i for i in all_items if i.get("category") == "extended_description" and i.get("status") == "discarded"]
 
             if "backstory_confirmed_count" in exp:
                 checks.append(
@@ -1187,15 +1197,12 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
             if "extended_description_discarded_count" in exp:
                 checks.append(
                     (
-                        len(ed_discarded)
-                        == exp["extended_description_discarded_count"],
+                        len(ed_discarded) == exp["extended_description_discarded_count"],
                         f"ext_desc discarded {len(ed_discarded)} != {exp['extended_description_discarded_count']}",
                     ),
                 )
 
-    needs_final = any(
-        k in exp for k in ("final_status", "final_was_edited", "final_text_contains")
-    )
+    needs_final = any(k in exp for k in ("final_status", "final_was_edited", "final_text_contains"))
     if needs_final and last_entity_id:
         confirmed = get_contents_by_status(api, cid, last_entity_id, "confirmed")
         item = confirmed[0] if confirmed else None
@@ -1233,11 +1240,7 @@ def _run_full_flow(api: APIClient, cid: str, case: dict, entity_cache: dict) -> 
                 has_url = bool(flow_images and flow_images[0].get("image_url"))
                 checks.append((has_url, "falta image_url en images[0]"))
             if "image_backend" in exp:
-                allowed = (
-                    exp["image_backend"]
-                    if isinstance(exp["image_backend"], list)
-                    else [exp["image_backend"]]
-                )
+                allowed = exp["image_backend"] if isinstance(exp["image_backend"], list) else [exp["image_backend"]]
                 checks.append(
                     (
                         ibody.get("backend") in allowed,
@@ -1312,8 +1315,7 @@ def _print_summary(results: list[dict]) -> None:
     print("  RESUMEN POR CATEGORIA")
     _sep("-")
     print(
-        f"  {'Categoria':<22} | {'Total':>5} | {'PASS':>5} | {'FAIL':>5} "
-        f"| {'ERROR':>5} | {'SKIP':>5} | {'Pass%':>6}",
+        f"  {'Categoria':<22} | {'Total':>5} | {'PASS':>5} | {'FAIL':>5} " f"| {'ERROR':>5} | {'SKIP':>5} | {'Pass%':>6}",
     )
     print(f"  {'-'*22}-+-{'-'*5}-+-{'-'*5}-+-{'-'*5}-+-{'-'*5}-+-{'-'*5}-+-{'-'*6}")
 
@@ -1327,8 +1329,7 @@ def _print_summary(results: list[dict]) -> None:
         n_skip = sum(1 for r in cat_rows if r["status"] == "SKIP")
         pct = f"{n_pass / total * 100:.0f}%" if total else "N/A"
         print(
-            f"  {cat:<22} | {total:>5} | {n_pass:>5} | {n_fail:>5} "
-            f"| {n_error:>5} | {n_skip:>5} | {pct:>6}",
+            f"  {cat:<22} | {total:>5} | {n_pass:>5} | {n_fail:>5} " f"| {n_error:>5} | {n_skip:>5} | {pct:>6}",
         )
 
     _sep("-")
@@ -1339,8 +1340,7 @@ def _print_summary(results: list[dict]) -> None:
     n_skip = sum(1 for r in results if r["status"] == "SKIP")
     pct = f"{n_pass / total * 100:.1f}%" if total else "N/A"
     print(
-        f"  {'TOTAL':<22} | {total:>5} | {n_pass:>5} | {n_fail:>5} "
-        f"| {n_error:>5} | {n_skip:>5} | {pct:>6}",
+        f"  {'TOTAL':<22} | {total:>5} | {n_pass:>5} | {n_fail:>5} " f"| {n_error:>5} | {n_skip:>5} | {pct:>6}",
     )
     _sep()
 

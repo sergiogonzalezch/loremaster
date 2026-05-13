@@ -12,14 +12,10 @@ from app.models.enums import ContentCategory
 ENGLISH_RESPONSE_INSTRUCTION = "Respond IN ENGLISH"
 """Instrucción de respuesta en inglés para los prompts del LLM."""
 
-_TYPE_EXTRACT_SUFFIX = (
-    f". {ENGLISH_RESPONSE_INSTRUCTION} with only one word or short term: "
-)
+_TYPE_EXTRACT_SUFFIX = f". {ENGLISH_RESPONSE_INSTRUCTION} with only one word or short term: "
 """Sufijo para extracción del tipo específico de entidad."""
 
-_ATTRIBUTE_EXTRACT_SUFFIX = (
-    "Respond IN ENGLISH only with the list of visual attributes, without explanation."
-)
+_ATTRIBUTE_EXTRACT_SUFFIX = "Respond IN ENGLISH only with the list of visual attributes, without explanation."
 """Sufijo para extracción de atributos visuales."""
 
 _BASE_EXTRACT = "extract ALL visual attributes that the text EXPLICITLY mentions. "
@@ -106,8 +102,7 @@ _ATTRIBUTOS_BY_ENTITY_CATEGORY = {
         "lighting on character, surrounding environment mentioned, action performed, position in space"
     ),
     (EntityType.character, ContentCategory.chapter): (
-        "position in space, clothing, accessories, visible expression, lighting, atmosphere, "
-        "surrounding environment mentioned"
+        "position in space, clothing, accessories, visible expression, lighting, atmosphere, " "surrounding environment mentioned"
     ),
     (EntityType.creature, ContentCategory.extended_description): (
         "species, body type, colors (all mentioned), textures (skin/fur/scales), "
@@ -121,9 +116,7 @@ _ATTRIBUTOS_BY_ENTITY_CATEGORY = {
     (EntityType.creature, ContentCategory.scene): (
         "position, action, visible body language, interaction with environment, lighting, surrounding environment mentioned"
     ),
-    (EntityType.creature, ContentCategory.chapter): (
-        "position, action, environment, lighting, atmosphere, surrounding environment mentioned"
-    ),
+    (EntityType.creature, ContentCategory.chapter): ("position, action, environment, lighting, atmosphere, surrounding environment mentioned"),
     (EntityType.location, ContentCategory.extended_description): (
         "environment type, architectural style, materials (all), colors mentioned, distinctive elements, "
         "typical lighting, scale, atmosphere, natural elements, furniture, decoration, visible symbols"
@@ -133,8 +126,7 @@ _ATTRIBUTOS_BY_ENTITY_CATEGORY = {
         "current vs past state, distinctive symbols, elements that changed, elements that remain"
     ),
     (EntityType.location, ContentCategory.scene): (
-        "foreground elements, lighting, climate, atmosphere, action occurring, surrounding environment, "
-        "colors mentioned, textures"
+        "foreground elements, lighting, climate, atmosphere, action occurring, surrounding environment, " "colors mentioned, textures"
     ),
     (EntityType.location, ContentCategory.chapter): (
         "space description, architectural style, materials, lighting, atmosphere, elements present, colors, textures"
@@ -145,16 +137,12 @@ _ATTRIBUTOS_BY_ENTITY_CATEGORY = {
         "insignias, uniforms, decoration, band colors"
     ),
     (EntityType.faction, ContentCategory.backstory): (
-        "period style, original symbols, founding colors, visible power elements, "
-        "historical emblems, period clothing, associated architecture"
+        "period style, original symbols, founding colors, visible power elements, " "historical emblems, period clothing, associated architecture"
     ),
     (EntityType.faction, ContentCategory.scene): (
-        "visible symbol, dominant colors, member presence, uniforms, insignia, visible weapons, "
-        "atmosphere, member expressions"
+        "visible symbol, dominant colors, member presence, uniforms, insignia, visible weapons, " "atmosphere, member expressions"
     ),
-    (EntityType.faction, ContentCategory.chapter): (
-        "visible symbol, colors, presence, atmosphere, visible uniforms"
-    ),
+    (EntityType.faction, ContentCategory.chapter): ("visible symbol, colors, presence, atmosphere, visible uniforms"),
     (EntityType.item, ContentCategory.extended_description): (
         "object type, main material, secondary materials, colors (all), texture, condition, size, "
         "decorative elements, indicators (glow, runes, energy, magic), engraved symbols, marks, "
@@ -164,12 +152,8 @@ _ATTRIBUTOS_BY_ENTITY_CATEGORY = {
         "original appearance, period materials, original colors, visible engraved symbols, "
         "condition at that time, period decorative elements, frames, mounts"
     ),
-    (EntityType.item, ContentCategory.scene): (
-        "how displayed, position, lighting, character interaction, visible state, glow, visible damage"
-    ),
-    (EntityType.item, ContentCategory.chapter): (
-        "presence, position, lighting, visible state, colors"
-    ),
+    (EntityType.item, ContentCategory.scene): ("how displayed, position, lighting, character interaction, visible state, glow, visible damage"),
+    (EntityType.item, ContentCategory.chapter): ("presence, position, lighting, visible state, colors"),
 }
 """Atributos visuales esperados por combinación de tipo de entidad y categoría."""
 

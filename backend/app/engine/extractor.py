@@ -37,9 +37,7 @@ def extract_text(content_bytes: bytes, content_type: str) -> str:
             raise ValueError(
                 msg,
             )
-        return "\n".join(
-            page.extract_text() or "" for page in reader.pages[: settings.max_pdf_pages]
-        )
+        return "\n".join(page.extract_text() or "" for page in reader.pages[: settings.max_pdf_pages])
     if content_type == "text/plain":
         return content_bytes.decode("utf-8", errors="ignore")
     msg = f"Unsupported content type: {content_type}"

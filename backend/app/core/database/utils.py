@@ -52,11 +52,7 @@ def paginate_with_sort(
     ).one()
     sort_col = order_col.asc() if order == "asc" else order_col.desc()
     items = session.exec(
-        select(model)
-        .where(*conditions)
-        .order_by(sort_col)
-        .offset(skip)
-        .limit(page_size),
+        select(model).where(*conditions).order_by(sort_col).offset(skip).limit(page_size),
     ).all()
     return list(items), total
 

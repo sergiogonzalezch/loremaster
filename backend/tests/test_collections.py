@@ -73,9 +73,7 @@ async def test_delete_cascades_documents(client, db_session, sample_collection):
     db_session.commit()
     db_session.refresh(doc)
 
-    assert (
-        await client.delete(f"/api/v1/collections/{sample_collection.id}")
-    ).status_code == 204
+    assert (await client.delete(f"/api/v1/collections/{sample_collection.id}")).status_code == 204
 
     db_doc = db_session.exec(select(Document).where(Document.id == doc.id)).first()
     assert db_doc.is_deleted is True
@@ -94,9 +92,7 @@ async def test_delete_cascades_entities(client, db_session, sample_collection):
     db_session.commit()
     db_session.refresh(entity)
 
-    assert (
-        await client.delete(f"/api/v1/collections/{sample_collection.id}")
-    ).status_code == 204
+    assert (await client.delete(f"/api/v1/collections/{sample_collection.id}")).status_code == 204
 
     db_entity = db_session.exec(select(Entity).where(Entity.id == entity.id)).first()
     assert db_entity.is_deleted is True
@@ -145,9 +141,7 @@ async def test_delete_cascades_all_contents(
     db_session.refresh(pending)
     db_session.refresh(confirmed)
 
-    assert (
-        await client.delete(f"/api/v1/collections/{sample_collection.id}")
-    ).status_code == 204
+    assert (await client.delete(f"/api/v1/collections/{sample_collection.id}")).status_code == 204
 
     for content_id in (pending.id, confirmed.id):
         row = db_session.exec(

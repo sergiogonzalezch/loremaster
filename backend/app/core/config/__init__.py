@@ -149,37 +149,25 @@ class Settings(BaseSettings):
         - ENVIRONMENT sea un valor válido.
         """
         if "*" in self.allowed_origins:
-            msg = (
-                "ALLOWED_ORIGINS no puede contener '*' cuando allow_credentials=True. "
-                "Especifica los orígenes concretos en .env"
-            )
+            msg = "ALLOWED_ORIGINS no puede contener '*' cuando allow_credentials=True. " "Especifica los orígenes concretos en .env"
             raise ValueError(
                 msg,
             )
         if self.environment != "local" and len(self.secret_key) < 32:
-            msg = (
-                f"SECRET_KEY debe tener al menos 32 caracteres en entornos no locales. "
-                f"Actual: {len(self.secret_key)} caracteres"
-            )
+            msg = f"SECRET_KEY debe tener al menos 32 caracteres en entornos no locales. " f"Actual: {len(self.secret_key)} caracteres"
             raise ValueError(
                 msg,
             )
         if self.environment in ("production", "demo"):
             for origin in self.allowed_origins:
                 if not origin.startswith("https://"):
-                    msg = (
-                        f"ALLOWED_ORIGINS en {self.environment} debe usar HTTPS: '{origin}'. "
-                        f"Cambia a https:// para entorno {self.environment}"
-                    )
+                    msg = f"ALLOWED_ORIGINS en {self.environment} debe usar HTTPS: '{origin}'. " f"Cambia a https:// para entorno {self.environment}"
                     raise ValueError(
                         msg,
                     )
         valid_envs = {"local", "demo", "production", "test"}
         if self.environment not in valid_envs:
-            msg = (
-                f"ENVIRONMENT debe ser uno de: {', '.join(valid_envs)}. "
-                f"Valor recibido: '{self.environment}'"
-            )
+            msg = f"ENVIRONMENT debe ser uno de: {', '.join(valid_envs)}. " f"Valor recibido: '{self.environment}'"
             raise ValueError(
                 msg,
             )

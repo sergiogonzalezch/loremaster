@@ -46,8 +46,7 @@ class ContentNotConfirmedError(Exception):
     def __init__(self) -> None:
         """Inicializa la excepción indicando contenido no confirmado."""
         super().__init__(
-            "El contenido indicado no existe, no está confirmado "
-            "o no pertenece a esta entidad.",
+            "El contenido indicado no existe, no está confirmado " "o no pertenece a esta entidad.",
         )
 
 
@@ -56,10 +55,7 @@ class PendingLimitExceededError(Exception):
 
     def __init__(self, message: str = "") -> None:
         """Inicializa la excepción con mensaje sobre límite de pendientes."""
-        default = (
-            "Se alcanzó el límite de contenidos pendientes. "
-            "Confirma o descarta contenidos antes de generar nuevos."
-        )
+        default = "Se alcanzó el límite de contenidos pendientes. " "Confirma o descarta contenidos antes de generar nuevos."
         super().__init__(message or default)
 
 
@@ -152,8 +148,7 @@ class DocumentNotRetryableError(Exception):
     def __init__(self) -> None:
         """Inicializa la excepción indicando que el documento no es reintentable."""
         super().__init__(
-            "El documento no está en estado 'failed' o no tiene texto almacenado "
-            "para reintentar la ingestión.",
+            "El documento no está en estado 'failed' o no tiene texto almacenado " "para reintentar la ingestión.",
         )
 
 
@@ -172,8 +167,7 @@ class ComfyUIUnavailableError(Exception):
     def __init__(self) -> None:
         """Inicializa la excepción indicando servicio no disponible."""
         super().__init__(
-            "El servicio de generación de imágenes no está disponible. "
-            "Verifica que ComfyUI esté corriendo.",
+            "El servicio de generación de imágenes no está disponible. " "Verifica que ComfyUI esté corriendo.",
         )
 
 

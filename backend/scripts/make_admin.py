@@ -31,8 +31,7 @@ def main():
 
     if not force:
         response = input(
-            f"WARNING: You are about to make '{username}' an admin. "
-            "This grants full system access. Continue? (yes/no): ",
+            f"WARNING: You are about to make '{username}' an admin. " "This grants full system access. Continue? (yes/no): ",
         )
         if response.lower() != "yes":
             print("Aborted.")

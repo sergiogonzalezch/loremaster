@@ -21,9 +21,7 @@ _PREAMBLE = "Eres un escritor experto en narrativa y worldbuilding. "
 _ONLY_CONTEXT = "Usa ÚNICAMENTE la información del contexto proporcionado."
 # entity_name y entity_type van en la zona de DATOS (<entity>), no en instrucciones.
 _ENTITY_SECTION = "\n\n<entity>\n{entity_name} ({entity_type})\n</entity>"
-_SECTIONS = (
-    "\n\n<context>\n{context}\n</context>\n\n<user_request>\n{query}\n</user_request>"
-)
+_SECTIONS = "\n\n<context>\n{context}\n</context>\n\n<user_request>\n{query}\n</user_request>"
 
 _TEMPLATES: dict[ContentCategory, str] = {
     ContentCategory.backstory: (

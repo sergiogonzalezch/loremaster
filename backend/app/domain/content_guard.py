@@ -98,11 +98,7 @@ def _normalize(text: str) -> str:
             _MAX_TEXT_LENGTH,
         )
         text = text[:_MAX_TEXT_LENGTH]
-    text = "".join(
-        c
-        for c in unicodedata.normalize("NFKD", text)
-        if unicodedata.category(c) != "Mn"
-    ).lower()
+    text = "".join(c for c in unicodedata.normalize("NFKD", text) if unicodedata.category(c) != "Mn").lower()
     text = text.translate(_LEET_TABLE)
     return re.sub(r"(.)\1{2,}", r"\1", text)
 

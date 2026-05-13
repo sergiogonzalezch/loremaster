@@ -622,9 +622,7 @@ async def test_cnt_18_all_entity_types_accept_extended_description(
             entity.id,
             category="extended_description",
         )
-        assert (
-            response.status_code == 201
-        ), f"extended_description failed for {entity_type.value}: {response.json()}"
+        assert response.status_code == 201, f"extended_description failed for {entity_type.value}: {response.json()}"
 
 
 # ── GeneratedText audit tests ─────────────────────────────────────────────────
@@ -648,8 +646,7 @@ async def test_cnt_audit_01_raw_content_never_changes_after_edit(
     original_raw = db_session.get(GeneratedText, generated_text_id).raw_content
 
     await client.patch(
-        f"/api/v1/collections/{sample_collection.id}/entities/"
-        f"{sample_entity.id}/contents/{content_id}",
+        f"/api/v1/collections/{sample_collection.id}/entities/" f"{sample_entity.id}/contents/{content_id}",
         json={"content": "Texto completamente diferente"},
     )
 
@@ -684,8 +681,7 @@ async def test_cnt_audit_03_was_edited_true_after_edit(
     content_id = created.json()["id"]
 
     edited = await client.patch(
-        f"/api/v1/collections/{sample_collection.id}/entities/"
-        f"{sample_entity.id}/contents/{content_id}",
+        f"/api/v1/collections/{sample_collection.id}/entities/" f"{sample_entity.id}/contents/{content_id}",
         json={"content": "Texto editado manualmente"},
     )
     assert edited.status_code == 200

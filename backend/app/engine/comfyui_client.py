@@ -251,10 +251,7 @@ def inject_prompt(workflow: dict, prompt: str) -> dict:
 
     node = workflow.get("12")
     if node is None:
-        msg = (
-            "Nodo 12 (PrimitiveStringMultiline) no encontrado en el template. "
-            "Verificar que el template esté en formato API (ver Sección 0)."
-        )
+        msg = "Nodo 12 (PrimitiveStringMultiline) no encontrado en el template. " "Verificar que el template esté en formato API (ver Sección 0)."
         raise ValueError(
             msg,
         )

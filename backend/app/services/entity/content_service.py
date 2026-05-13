@@ -93,9 +93,7 @@ def list_contents(
             ).all()
         }
 
-    return [
-        _to_response(item, gt_map.get(item.generated_text_id)) for item in items
-    ], total
+    return [_to_response(item, gt_map.get(item.generated_text_id)) for item in items], total
 
 
 def edit_content(
