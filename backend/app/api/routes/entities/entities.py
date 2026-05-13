@@ -63,7 +63,7 @@ def list_entities(
     _: Annotated[Collection, Depends(get_collection_or_404_owned)],
     session: Annotated[Session, Depends(get_session)],
     name: Annotated[str | None, Query()] = None,
-    type: Annotated[EntityType | None, Query()] = None,  # noqa: A002
+    entity_type: Annotated[EntityType | None, Query(alias="type")] = None,
 ):
     """Lista las entidades de una colección con filtros y paginación."""
     entities, total = list_entities_service(
@@ -71,7 +71,7 @@ def list_entities(
         collection_id,
         pagination,
         dates,
-        EntityFilters(name=name, entity_type=type),
+        EntityFilters(name=name, entity_type=entity_type),
     )
     return PaginatedResponse.build(
         entities,
