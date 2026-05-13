@@ -21,7 +21,7 @@ def verify(
 ):
     """Verifica la validez de un token Bearer de Clerk.
 
-    Valida que el usuario exista en la BD y no esté eliminado (M-5).
+    Valida que el usuario exista en la BD y no esté eliminado.
     """
     if not credentials:
         raise HTTPException(
