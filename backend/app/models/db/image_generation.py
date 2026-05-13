@@ -45,7 +45,7 @@ class ImageGeneration(SQLModel, SoftDeleteMixin, table=True):
             ForeignKey("entities.id"),
             nullable=False,
             index=True,
-        )
+        ),
     )
     collection_id: str = SQLField(
         sa_column=Column(
@@ -53,7 +53,7 @@ class ImageGeneration(SQLModel, SoftDeleteMixin, table=True):
             ForeignKey("collections.id"),
             nullable=False,
             index=True,
-        )
+        ),
     )
     content_id: str | None = SQLField(
         sa_column=Column(
@@ -61,7 +61,7 @@ class ImageGeneration(SQLModel, SoftDeleteMixin, table=True):
             ForeignKey("entity_contents.id"),
             nullable=True,
             index=True,
-        )
+        ),
     )
     category: str = SQLField(max_length=50)
 
@@ -111,7 +111,7 @@ class ImageRecord(SQLModel, SoftDeleteMixin, table=True):
             ForeignKey("image_generations.id"),
             nullable=False,
             index=True,
-        )
+        ),
     )
     entity_id: str = SQLField(
         sa_column=Column(
@@ -119,7 +119,7 @@ class ImageRecord(SQLModel, SoftDeleteMixin, table=True):
             ForeignKey("entities.id"),
             nullable=False,
             index=True,
-        )
+        ),
     )
     collection_id: str = SQLField(
         sa_column=Column(
@@ -127,7 +127,7 @@ class ImageRecord(SQLModel, SoftDeleteMixin, table=True):
             ForeignKey("collections.id"),
             nullable=False,
             index=True,
-        )
+        ),
     )
 
     seed: int = SQLField(default=42)

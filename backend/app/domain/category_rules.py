@@ -33,7 +33,7 @@ ENTITY_CATEGORY_MAP: dict[EntityType, list[ContentCategory]] = {
 
 
 def validate_category_for_entity(
-    entity_type: EntityType, category: ContentCategory
+    entity_type: EntityType, category: ContentCategory,
 ) -> bool:
     """Valida que una categoría de contenido sea válida para un tipo de entidad.
 

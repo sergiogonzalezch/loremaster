@@ -19,7 +19,8 @@ _ALEMBIC_INI = Path(__file__).resolve().parent.parent.parent / "alembic.ini"
 
 def _run_migrations() -> None:
     """Ejecuta las migraciones de Alembic heads-up usando la URL de la
-    base de datos configurada."""
+    base de datos configurada.
+    """
     alembic_cfg = Config(str(_ALEMBIC_INI))
     alembic_cfg.set_main_option("sqlalchemy.url", settings.database_url)
     command.upgrade(alembic_cfg, "head")
@@ -45,14 +46,14 @@ async def lifespan(_app: FastAPI):
 
         await asyncio.to_thread(ping_qdrant)
         logger.info("Qdrant connection OK (%s)", settings.qdrant_url)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.warning("Qdrant not reachable at startup: %s", e)
 
     try:
         async with httpx.AsyncClient() as client:
             await client.get(f"{settings.ollama_base_url}/api/tags", timeout=5)
         logger.info("Ollama connection OK (%s)", settings.ollama_base_url)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.warning("Ollama not reachable at startup: %s", e)
 
     yield

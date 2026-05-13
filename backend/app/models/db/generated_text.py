@@ -35,13 +35,13 @@ class GeneratedText(SQLModel, table=True):
     )
     entity_id: str = Field(
         sa_column=Column(
-            String(36), ForeignKey("entities.id"), nullable=False, index=True
-        )
+            String(36), ForeignKey("entities.id"), nullable=False, index=True,
+        ),
     )
     collection_id: str = Field(
         sa_column=Column(
-            String(36), ForeignKey("collections.id"), nullable=False, index=True
-        )
+            String(36), ForeignKey("collections.id"), nullable=False, index=True,
+        ),
     )
     category: str = Field(max_length=50)
     query: str = Field(max_length=2000)

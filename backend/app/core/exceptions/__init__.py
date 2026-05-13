@@ -23,7 +23,7 @@ class ContentNotAllowedError(Exception):
     """Lanzada cuando el contenido no pasa la validación de moderación."""
 
     def __init__(
-        self, message: str = "Contenido no permitido.", snippet: str = ""
+        self, message: str = "Contenido no permitido.", snippet: str = "",
     ) -> None:
         """Inicializa la excepción con mensaje y fragmento del contenido."""
         self.snippet = snippet[:200]
@@ -45,7 +45,7 @@ class ContentNotConfirmedError(Exception):
         """Inicializa la excepción indicando contenido no confirmado."""
         super().__init__(
             "El contenido indicado no existe, no está confirmado "
-            "o no pertenece a esta entidad."
+            "o no pertenece a esta entidad.",
         )
 
 
@@ -107,7 +107,7 @@ class InvalidCategoryError(Exception):
     def __init__(self, category: str, entity_type: str) -> None:
         """Inicializa la excepción con la categoría y tipo de entidad inválidos."""
         super().__init__(
-            f"La categoría '{category}' no es válida para el tipo de entidad '{entity_type}'."
+            f"La categoría '{category}' no es válida para el tipo de entidad '{entity_type}'.",
         )
 
 
@@ -151,7 +151,7 @@ class DocumentNotRetryableError(Exception):
         """Inicializa la excepción indicando que el documento no es reintentable."""
         super().__init__(
             "El documento no está en estado 'failed' o no tiene texto almacenado "
-            "para reintentar la ingestión."
+            "para reintentar la ingestión.",
         )
 
 

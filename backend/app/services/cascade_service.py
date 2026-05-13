@@ -36,12 +36,12 @@ def cascade_delete_by_entity(
             EntityContent.entity_id == entity_id,
             EntityContent.collection_id == collection_id,
             EntityContent.is_deleted.is_(False),
-        )
+        ),
     ).all()
     for c in contents:
         soft_delete(session, c)
     logger.info(
-        "Soft-deleted %d EntityContent(s) [entity_id=%s]", len(contents), entity_id
+        "Soft-deleted %d EntityContent(s) [entity_id=%s]", len(contents), entity_id,
     )
     return len(contents)
 
@@ -64,7 +64,7 @@ def cascade_delete_by_collection(
         select(EntityContent).where(
             EntityContent.collection_id == collection_id,
             EntityContent.is_deleted.is_(False),
-        )
+        ),
     ).all()
     for c in contents:
         soft_delete(session, c)

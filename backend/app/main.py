@@ -41,7 +41,7 @@ if settings.environment == "local":
     logger.warning(
         "WARNING: Ejecutando en entorno 'local'. "
         "Guardas de seguridad relajadas (CSP, HTTPS, validaciones estrictas). "
-        "Para produccion: definir ENVIRONMENT=production en .env (M-12)."
+        "Para produccion: definir ENVIRONMENT=production en .env (M-12).",
     )
 
 
@@ -79,19 +79,20 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
         exc_info=exc,
     )
     return JSONResponse(
-        status_code=500, content={"detail": "Error interno del servidor."}
+        status_code=500, content={"detail": "Error interno del servidor."},
     )
 
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(
-    request: Request, _exc: RequestValidationError
+    request: Request, _exc: RequestValidationError,
 ) -> JSONResponse:
     """Maneja errores de validación sin repetir el input del cliente
-    (evita info leak)."""
+    (evita info leak).
+    """
     logger.warning("Validation error on %s %s", request.method, request.url.path)
     return JSONResponse(
-        status_code=422, content={"detail": "Error de validación en la solicitud."}
+        status_code=422, content={"detail": "Error de validación en la solicitud."},
     )
 
 
@@ -104,7 +105,7 @@ app.add_middleware(
 )
 
 app.add_middleware(
-    RateLimitMiddleware, requests_per_minute=settings.rate_limit_per_minute
+    RateLimitMiddleware, requests_per_minute=settings.rate_limit_per_minute,
 )
 app.add_middleware(SecurityHeadersMiddleware)
 

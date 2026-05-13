@@ -14,7 +14,7 @@ class SoftDeleteMixin:
     deleted_at: datetime | None = None
 
 
-def soft_delete(session: Session, record) -> bool:
+def soft_delete(session: Session, record: SoftDeleteMixin) -> bool:
     """Marca un registro como eliminado (soft-delete).
 
     Actualiza is_deleted, deleted_at y updated_at, y hace commit en la sesión.

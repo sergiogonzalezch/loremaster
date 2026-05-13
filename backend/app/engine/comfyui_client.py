@@ -24,7 +24,7 @@ def _sanitize_filename(name: str) -> str:
 class ComfyUIClient:
     """Cliente para interactuar con la API REST de ComfyUI."""
 
-    def __init__(self, base_url: str):
+    def __init__(self, base_url: str) -> None:
         """Inicializa el cliente con la URL base del servidor ComfyUI."""
         self.base_url = base_url.rstrip("/")
 
@@ -91,7 +91,7 @@ class ComfyUIClient:
         return {"status": "running", "outputs": {}}
 
     def get_history_until_complete(
-        self, prompt_id, timeout: int = 300, poll_interval: float = 2.0
+        self, prompt_id: str, timeout: int = 300, poll_interval: float = 2.0,
     ) -> dict:
         """Espera hasta que la ejecución complete (polling).
 
@@ -114,7 +114,7 @@ class ComfyUIClient:
             elapsed = time.time() - start_time
             if elapsed > timeout:
                 raise TimeoutError(
-                    f"Timeout después de {timeout}s esperando generación ComfyUI"
+                    f"Timeout después de {timeout}s esperando generación ComfyUI",
                 )
             result = self.get_history(prompt_id)
             status = result.get("status", "queued")
@@ -124,12 +124,12 @@ class ComfyUIClient:
 
             if status == "failed":
                 raise RuntimeError(
-                    f"Generación falló: {result.get('error','Unknown error')}"
+                    f"Generación falló: {result.get('error','Unknown error')}",
                 )
             time.sleep(poll_interval)
 
     def download_image(
-        self, filename: str, subfolder: str = "", folder_type: str = "output"
+        self, filename: str, subfolder: str = "", folder_type: str = "output",
     ) -> bytes:
         """Descarga una imagen generada.
 
@@ -241,7 +241,7 @@ def inject_prompt(workflow: dict, prompt: str) -> dict:
     if node is None:
         raise ValueError(
             "Nodo 12 (PrimitiveStringMultiline) no encontrado en el template. "
-            "Verificar que el template esté en formato API (ver Sección 0)."
+            "Verificar que el template esté en formato API (ver Sección 0).",
         )
 
     node["inputs"]["value"] = prompt

@@ -42,7 +42,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
 
     @classmethod
     def build(
-        cls, items: list, total: int, page: int, page_size: int
+        cls, items: list, total: int, page: int, page_size: int,
     ) -> "PaginatedResponse":
         """Construye una respuesta paginada a partir de los items y metadatos."""
         return cls(

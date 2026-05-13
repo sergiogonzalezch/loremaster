@@ -195,7 +195,7 @@ def _build_instruction(entity_type: EntityType, category: ContentCategory) -> st
         entity_desc = f"a {entity_en}"
 
     attrs = _ATTRIBUTOS_BY_ENTITY_CATEGORY.get(
-        (entity_type, category), "colors, shapes, textures, sizes"
+        (entity_type, category), "colors, shapes, textures, sizes",
     )
     type_label = _TYPE_LABEL_BY_ENTITY.get(entity_type, "")
     ignore = _IGNORA_BY_CATEGORY.get(category, "IGNORE: narrative, history.")

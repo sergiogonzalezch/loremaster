@@ -80,7 +80,7 @@ def _extract_with_llm(
             chain = _generation_chain
 
             tipo_result = chain.invoke(
-                f"{type_prompt}\n\nTEXT:\n---\n{content_text}\n---"
+                f"{type_prompt}\n\nTEXT:\n---\n{content_text}\n---",
             )
             tipo_especifico = tipo_result.strip().lower() if tipo_result else ""
             if not tipo_especifico:

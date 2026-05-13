@@ -2,6 +2,7 @@
 
 import logging
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Session
 
 from app.models.db.moderation_log import ModerationLog
@@ -22,6 +23,6 @@ def log_moderation_event(session: Session, layer: str, snippet: str) -> None:
         entry = ModerationLog(layer=layer, snippet=snippet[:200])
         session.add(entry)
         session.commit()
-    except Exception as e:
+    except SQLAlchemyError as e:
         session.rollback()
         logger.warning("Failed to persist moderation log entry: %s", e)

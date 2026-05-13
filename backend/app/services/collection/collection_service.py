@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 def _fetch_counts(
-    session: Session, collection_ids: list[str]
+    session: Session, collection_ids: list[str],
 ) -> tuple[dict[str, int], dict[str, int]]:
     if not collection_ids:
         return {}, {}
@@ -30,7 +30,7 @@ def _fetch_counts(
             Document.collection_id.in_(collection_ids),
             Document.is_deleted.is_(False),
         )
-        .group_by(Document.collection_id)
+        .group_by(Document.collection_id),
     ).all()
     entity_rows = session.exec(
         select(Entity.collection_id, func.count(Entity.id))
@@ -38,7 +38,7 @@ def _fetch_counts(
             Entity.collection_id.in_(collection_ids),
             Entity.is_deleted.is_(False),
         )
-        .group_by(Entity.collection_id)
+        .group_by(Entity.collection_id),
     ).all()
     return (
         dict(doc_rows),
@@ -47,7 +47,7 @@ def _fetch_counts(
 
 
 def get_collection_with_counts_service(
-    session: Session, collection: Collection
+    session: Session, collection: Collection,
 ) -> dict:
     """Enriquece una colección con recuentos de documentos y entidades.
 
@@ -68,7 +68,7 @@ def get_collection_with_counts_service(
 
 
 def create_collection_service(
-    session: Session, owner_id: str, name: str, description: str = ""
+    session: Session, owner_id: str, name: str, description: str = "",
 ) -> Collection:
     """Crea una nueva colección para un usuario.
 
@@ -94,7 +94,7 @@ def create_collection_service(
             Collection.name == name,
             Collection.owner_id == owner_id,
             Collection.is_deleted.is_(False),
-        )
+        ),
     ).first()
     if existing:
         raise DuplicateCollectionNameError(name)
@@ -108,7 +108,7 @@ def create_collection_service(
         raise DuplicateCollectionNameError(name) from e
     session.refresh(collection)
     logger.info(
-        "Collection '%s' created with id %s (owner: %s)", name, collection.id, owner_id
+        "Collection '%s' created with id %s (owner: %s)", name, collection.id, owner_id,
     )
     return collection
 
@@ -198,7 +198,7 @@ def update_collection_service(
                 Collection.owner_id == collection.owner_id,
                 Collection.is_deleted.is_(False),
                 Collection.id != collection.id,
-            )
+            ),
         ).first()
         if existing:
             raise DuplicateCollectionNameError(new_name)

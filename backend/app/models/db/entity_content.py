@@ -45,7 +45,7 @@ class EntityContent(SQLModel, SoftDeleteMixin, table=True):
             ForeignKey("entities.id"),
             nullable=False,
             index=True,
-        )
+        ),
     )
     collection_id: str = Field(
         sa_column=Column(
@@ -53,7 +53,7 @@ class EntityContent(SQLModel, SoftDeleteMixin, table=True):
             ForeignKey("collections.id"),
             nullable=False,
             index=True,
-        )
+        ),
     )
     generated_text_id: str = Field(
         sa_column=Column(
@@ -61,7 +61,7 @@ class EntityContent(SQLModel, SoftDeleteMixin, table=True):
             ForeignKey("generated_texts.id"),
             nullable=False,
             index=True,
-        )
+        ),
     )
     category: ContentCategory = Field(max_length=50)
     content: str = Field(max_length=10000)

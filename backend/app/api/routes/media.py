@@ -77,7 +77,7 @@ def _check_generation_access(
         select(ImageRecord).where(
             ImageRecord.storage_path == storage_path,
             ImageRecord.is_deleted.is_(False),
-        )
+        ),
     ).first()
     if not record:
         raise HTTPException(status_code=404, detail="Archivo no encontrado.")
@@ -90,7 +90,7 @@ def _check_generation_access(
             Collection.id == record.collection_id,
             Collection.owner_id == current_user["sub"],
             Collection.is_deleted.is_(False),
-        )
+        ),
     ).first()
     if not owned:
         raise HTTPException(status_code=404, detail="Archivo no encontrado.")

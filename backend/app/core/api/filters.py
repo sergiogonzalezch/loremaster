@@ -1,5 +1,6 @@
 """Condiciones de filtro reutilizables para consultas de contenido
-compartido e imágenes."""
+compartido e imágenes.
+"""
 
 from app.models.db.collection import Collection
 from app.models.db.entity import Entity

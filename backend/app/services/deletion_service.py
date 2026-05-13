@@ -84,20 +84,20 @@ def cascade_delete_entity(session: Session, entity: Entity) -> None:
 
     """
     deleted_contents = cascade_delete_by_entity(
-        session, entity.id, entity.collection_id
+        session, entity.id, entity.collection_id,
     )
     logger.info(
-        "Soft-deleted %d EntityContent(s) for entity %s", deleted_contents, entity.id
+        "Soft-deleted %d EntityContent(s) for entity %s", deleted_contents, entity.id,
     )
 
     deleted_images = _cascade_delete_images_by_entity(session, entity.id)
     logger.info(
-        "Soft-deleted %d ImageRecord(s) for entity %s", deleted_images, entity.id
+        "Soft-deleted %d ImageRecord(s) for entity %s", deleted_images, entity.id,
     )
 
     soft_delete(session, entity)
     logger.info(
-        "Entity %s soft-deleted from collection %s", entity.id, entity.collection_id
+        "Entity %s soft-deleted from collection %s", entity.id, entity.collection_id,
     )
 
 
@@ -123,24 +123,24 @@ def cascade_delete_collection(session: Session, collection: Collection) -> bool:
         select(Document).where(
             Document.collection_id == collection.id,
             Document.is_deleted.is_(False),
-        )
+        ),
     ).all()
     for doc in docs:
         soft_delete(session, doc)
     logger.info(
-        "Soft-deleted %d document(s) for collection %s", len(docs), collection.id
+        "Soft-deleted %d document(s) for collection %s", len(docs), collection.id,
     )
 
     entities = session.exec(
         select(Entity).where(
             Entity.collection_id == collection.id,
             Entity.is_deleted.is_(False),
-        )
+        ),
     ).all()
     for entity in entities:
         cascade_delete_entity(session, entity)
     logger.info(
-        "Soft-deleted %d entity(ies) for collection %s", len(entities), collection.id
+        "Soft-deleted %d entity(ies) for collection %s", len(entities), collection.id,
     )
 
     orphan_contents = cascade_delete_by_collection(session, collection.id)
@@ -179,13 +179,13 @@ def _delete_image_file(storage_path: str | None) -> None:
         file_path = (media_root_resolved / storage_path).resolve()
         if not file_path.is_relative_to(media_root_resolved):
             logger.warning(
-                "Attempted to delete file outside media_root: %s", storage_path
+                "Attempted to delete file outside media_root: %s", storage_path,
             )
             return
         if file_path.exists() and file_path.is_file():
             file_path.unlink()
             logger.info("Deleted file: %s", storage_path)
-    except Exception as e:
+    except OSError as e:
         logger.warning("Failed to delete file %s: %s", storage_path, e)
 
 

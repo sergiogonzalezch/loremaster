@@ -74,7 +74,7 @@ class RegisterRequest(BaseModel):
         """
         if not re.match(r"^[A-Za-z0-9_-]{3,50}$", v):
             raise ValueError(
-                "El nombre de usuario debe contener solo letras, números, guiones bajos y guiones"
+                "El nombre de usuario debe contener solo letras, números, guiones bajos y guiones",
             )
         return v
 
@@ -191,7 +191,7 @@ def login(
             "sub": user.id,
             "username": user.username,
             "version": user.token_version,
-        }
+        },
     )
     _set_auth_cookies(response, token)
     return {"username": user.username}
@@ -220,7 +220,7 @@ def register(
 
     """
     existing_username = session.exec(
-        select(User).where(User.username == request.username)
+        select(User).where(User.username == request.username),
     ).first()
     if existing_username:
         raise HTTPException(
@@ -229,7 +229,7 @@ def register(
         )
 
     existing_email = session.exec(
-        select(User).where(User.email == request.email, User.is_deleted.is_(False))
+        select(User).where(User.email == request.email, User.is_deleted.is_(False)),
     ).first()
     if existing_email:
         raise HTTPException(
@@ -251,7 +251,7 @@ def register(
             "sub": new_user.id,
             "username": new_user.username,
             "version": new_user.token_version,
-        }
+        },
     )
     _set_auth_cookies(response, token)
     return {"username": new_user.username}

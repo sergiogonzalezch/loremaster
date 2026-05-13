@@ -147,25 +147,25 @@ class Settings(BaseSettings):
         if "*" in self.allowed_origins:
             raise ValueError(
                 "ALLOWED_ORIGINS no puede contener '*' cuando allow_credentials=True. "
-                "Especifica los orígenes concretos en .env"
+                "Especifica los orígenes concretos en .env",
             )
         if self.environment != "local" and len(self.secret_key) < 32:  # noqa: PLR2004
             raise ValueError(
                 f"SECRET_KEY debe tener al menos 32 caracteres en entornos no locales. "
-                f"Actual: {len(self.secret_key)} caracteres"
+                f"Actual: {len(self.secret_key)} caracteres",
             )
         if self.environment in ("production", "demo"):
             for origin in self.allowed_origins:
                 if not origin.startswith("https://"):
                     raise ValueError(
                         f"ALLOWED_ORIGINS en {self.environment} debe usar HTTPS: '{origin}'. "
-                        f"Cambia a https:// para entorno {self.environment}"
+                        f"Cambia a https:// para entorno {self.environment}",
                     )
         valid_envs = {"local", "demo", "production", "test"}
         if self.environment not in valid_envs:
             raise ValueError(
                 f"ENVIRONMENT debe ser uno de: {', '.join(valid_envs)}. "
-                f"Valor recibido: '{self.environment}'"
+                f"Valor recibido: '{self.environment}'",
             )
         if self.environment == "local" and not os.environ.get("ENVIRONMENT"):
             warnings.warn(
@@ -177,7 +177,7 @@ class Settings(BaseSettings):
         return self
 
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+        env_file=".env", env_file_encoding="utf-8", extra="ignore",
     )
 
 

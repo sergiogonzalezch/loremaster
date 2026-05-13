@@ -44,7 +44,7 @@ class Collection(SQLModel, SoftDeleteMixin, table=True):
             ForeignKey("users.id"),
             nullable=True,
             index=True,
-        )
+        ),
     )
     created_at: datetime = SQLField(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime | None = SQLField(default=None)

@@ -34,7 +34,7 @@ def extract_text(content_bytes: bytes, content_type: str) -> str:
         reader = PdfReader(io.BytesIO(content_bytes))
         if len(reader.pages) > settings.max_pdf_pages:
             raise ValueError(
-                f"El PDF excede el límite de {settings.max_pdf_pages} páginas"
+                f"El PDF excede el límite de {settings.max_pdf_pages} páginas",
             )
         return "\n".join(
             page.extract_text() or "" for page in reader.pages[: settings.max_pdf_pages]

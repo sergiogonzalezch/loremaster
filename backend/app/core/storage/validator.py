@@ -76,7 +76,7 @@ def _strip_exif(data: bytes) -> bytes:
         buffer = BytesIO()
         img.save(buffer, format=img.format or "JPEG")
         return buffer.getvalue()
-    except Exception:
+    except (OSError, SyntaxError, ValueError):
         return data
 
 
@@ -107,7 +107,7 @@ class FileValidator:
         if file.content_type not in IMAGE_MIME_TYPES:
             raise ValueError(
                 f"Tipo de archivo no permitido: {file.content_type}. "
-                f"Solo se permiten imágenes: {', '.join(sorted(IMAGE_EXTENSIONS))}"
+                f"Solo se permiten imágenes: {', '.join(sorted(IMAGE_EXTENSIONS))}",
             )
         ext = Path(file.filename or "image.jpg").suffix.lower()
         if ext not in IMAGE_EXTENSIONS:
@@ -126,7 +126,7 @@ class FileValidator:
 
         if max_bytes and len(content) > max_bytes:
             raise ValueError(
-                f"El archivo excede el tamaño máximo de {max_bytes // (1024*1024)}MB"
+                f"El archivo excede el tamaño máximo de {max_bytes // (1024*1024)}MB",
             )
 
         file.file.seek(0)
@@ -163,7 +163,7 @@ class FileValidator:
         content = file.file.read()
         if max_bytes and len(content) > max_bytes:
             raise ValueError(
-                f"El archivo excede el tamaño máximo de {max_bytes // (1024*1024)}MB"
+                f"El archivo excede el tamaño máximo de {max_bytes // (1024*1024)}MB",
             )
         _verify_magic_bytes(content, file.content_type)
 

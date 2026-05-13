@@ -56,7 +56,7 @@ async def upload_profile_image(session: Session, user: User, file: UploadFile) -
     """
     if not re.match(r"^[A-Za-z0-9_-]{3,50}$", user.username):
         raise ValueError(
-            f"Username inválido para construcción de ruta: {user.username!r}"
+            f"Username inválido para construcción de ruta: {user.username!r}",
         )
 
     max_bytes = int(settings.profile_image_max_size_mb * 1024 * 1024)

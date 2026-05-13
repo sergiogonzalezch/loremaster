@@ -16,6 +16,7 @@ from collections.abc import Callable
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
+from starlette.types import ASGIApp
 
 from app.core.config import settings
 
@@ -33,7 +34,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     """
 
-    def __init__(self, app, requests_per_minute: int = 30):
+    def __init__(self, app: ASGIApp, requests_per_minute: int = 30) -> None:
         """Inicializa el middleware con el límite de requests por minuto."""
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
@@ -80,7 +81,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return JSONResponse(
                 status_code=429,
                 content={
-                    "detail": "Demasiadas solicitudes. Intenta de nuevo en un minuto."
+                    "detail": "Demasiadas solicitudes. Intenta de nuevo en un minuto.",
                 },
             )
 

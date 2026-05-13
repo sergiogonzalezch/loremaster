@@ -94,7 +94,7 @@ def decode_clerk_token(token: str) -> dict:
         )
     except JWTError as exc:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido",
         ) from exc
 
 
@@ -113,13 +113,13 @@ def verify(
     """
     if not credentials:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="No autorizado"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="No autorizado",
         )
     payload = decode_clerk_token(credentials.credentials)
     user_id = payload.get("sub")
     user = session.get(User, user_id)
     if not user or user.is_deleted:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario no encontrado"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario no encontrado",
         )
     return {"valid": True, "user_id": user_id}

@@ -33,10 +33,10 @@ _MAX_TEXT_LENGTH = 100_000  # 100 KB
 # Patrones aplicados a entrada de usuarios y documentos: bloquean cualquier mención de acciones dañinas.
 _BLOCKED_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(
-        r"\b(porn|porno|xxx|explicit\s+sexual|sexo\s+expl[íi]cito)\b", re.IGNORECASE
+        r"\b(porn|porno|xxx|explicit\s+sexual|sexo\s+expl[íi]cito)\b", re.IGNORECASE,
     ),
     re.compile(
-        r"\b(hate\s+speech|supremac(?:y|ista)|genocid(?:e|io)|slur)\b", re.IGNORECASE
+        r"\b(hate\s+speech|supremac(?:y|ista)|genocid(?:e|io)|slur)\b", re.IGNORECASE,
     ),
     re.compile(
         r"\b(make|build|fabricar|crear)\s+((a|an|un|una)\s+)?(bomb|bomba|weapon|arma)\b",
@@ -57,10 +57,10 @@ _BLOCKED_PATTERNS: tuple[re.Pattern[str], ...] = (
 # para evitar falsos positivos cuando contenido narrativo de fantasía menciona armas en contexto.
 _OUTPUT_BLOCKED_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(
-        r"\b(porn|porno|xxx|explicit\s+sexual|sexo\s+expl[íi]cito)\b", re.IGNORECASE
+        r"\b(porn|porno|xxx|explicit\s+sexual|sexo\s+expl[íi]cito)\b", re.IGNORECASE,
     ),
     re.compile(
-        r"\b(hate\s+speech|supremac(?:y|ista)|genocid(?:e|io)|slur)\b", re.IGNORECASE
+        r"\b(hate\s+speech|supremac(?:y|ista)|genocid(?:e|io)|slur)\b", re.IGNORECASE,
     ),
     re.compile(
         r"\b(c[oó]mo|instrucciones?)\s+(para\s+)?(make|build|fabricar|crear)\s+((a|an|un|una)\s+)?(bomb|bomba|weapon|arma)\b",
@@ -104,7 +104,7 @@ def _normalize(text: str) -> str:
 
 
 def _check_text(
-    text: str, error: Exception, patterns: tuple[re.Pattern[str], ...]
+    text: str, error: Exception, patterns: tuple[re.Pattern[str], ...],
 ) -> None:
     """Verifica texto contra patrones bloqueados y lanza la excepción dada si coincide."""
     normalized = _normalize(text)
@@ -119,7 +119,7 @@ def check_user_input(text: str) -> None:
     Lanza ContentNotAllowedError si se detecta contenido no permitido.
     """
     _check_text(
-        text, ContentNotAllowedError("Contenido no permitido.", text), _BLOCKED_PATTERNS
+        text, ContentNotAllowedError("Contenido no permitido.", text), _BLOCKED_PATTERNS,
     )
 
 

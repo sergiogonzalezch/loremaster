@@ -25,7 +25,7 @@ def save_file(content: bytes, relative_path: str) -> str:
     path = (media_root_resolved / relative_path).resolve()
     if not path.is_relative_to(media_root_resolved):
         raise ValueError(
-            "Ruta de archivo inválida: intento de path traversal detectado"
+            "Ruta de archivo inválida: intento de path traversal detectado",
         )
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(content)

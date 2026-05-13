@@ -28,7 +28,7 @@ _PROMPT = PromptTemplate.from_template(
 {context},\n
     PREGUNTA:
 {query}.
-    """
+    """,
 )
 """Plantilla de prompt para consultas RAG."""
 

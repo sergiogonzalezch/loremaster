@@ -6,6 +6,7 @@ from contextlib import suppress
 from datetime import datetime, timezone
 from pathlib import Path
 
+import httpx
 from sqlmodel import Session, select
 
 from app.core.config import settings
@@ -54,7 +55,7 @@ def _get_confirmed_content(
             EntityContent.collection_id == entity.collection_id,
             EntityContent.status == ContentStatus.confirmed,
             EntityContent.is_deleted.is_(False),
-        )
+        ),
     ).first()
 
 
@@ -210,9 +211,9 @@ def _generate_comfyui_images(
             prompt_id = client.queue_prompt(workflow)
             result = client.get_history_until_complete(prompt_id)
             output_images = client.get_output_images(result)
-        except Exception as exc:
+        except (httpx.HTTPError, TimeoutError, ValueError) as exc:
             logger.warning(
-                "ComfyUI falló en iteración %d/%d: %s", i + 1, batch_size, exc
+                "ComfyUI falló en iteración %d/%d: %s", i + 1, batch_size, exc,
             )
             continue
 
@@ -223,7 +224,7 @@ def _generate_comfyui_images(
                     subfolder=img_info["subfolder"],
                     folder_type=img_info["type"],
                 )
-            except Exception as exc:
+            except (httpx.HTTPError, OSError) as exc:
                 logger.warning("Descarga falló en iteración %d: %s", i + 1, exc)
                 continue
 
@@ -254,7 +255,7 @@ def _generate_comfyui_images(
                     image_id=image_id,
                     storage_path=storage_path,
                     seed=seed,
-                )
+                ),
             )
 
     if not images_result:
@@ -268,8 +269,7 @@ def build_prompt_service(
     entity: Entity,
     content_id: str,
 ) -> BuildPromptResponse:
-    """
-    Construye el prompt automático sin guardar nada (efímero).
+    """Construye el prompt automático sin guardar nada (efímero).
 
     Flujo:
     1. Validar que content_id pertenece al entity y está confirmado
@@ -289,7 +289,7 @@ def build_prompt_service(
     if content.category not in ALLOWED_IMAGE_CATEGORIES:
         raise ValueError(
             f"Categoría '{content.category.value}' no soportada para "
-            f"generación de imágenes"
+            f"generación de imágenes",
         )
 
     build_result = build_visual_prompt(
@@ -315,8 +315,7 @@ def generate_images_service(
     batch_size: int,
     seed_base: int | None = None,
 ) -> GenerateImagesResponse:
-    """
-    Genera un batch de imágenes.
+    """Genera un batch de imágenes.
 
     Raises:
         NoContextAvailableError: Si el contenido no existe o no está confirmado
@@ -371,7 +370,7 @@ def generate_images_service(
                     width=settings.image_width,
                     height=settings.image_height,
                     generation_ms=0,
-                )
+                ),
             )
 
     elif settings.image_backend == "comfyui":
@@ -390,7 +389,7 @@ def generate_images_service(
     else:
         raise ValueError(
             f"Backend '{settings.image_backend}' no soportado. "
-            "Usar: 'mock' o 'comfyui'"
+            "Usar: 'mock' o 'comfyui'",
         )
 
     db_commit(session, f"generate_images({entity.id})")
@@ -413,8 +412,7 @@ def share_image_service(
     *,
     shared: bool,
 ) -> ImageRecordResponse:
-    """
-    Marca o desmarca una imagen como compartida públicamente.
+    """Marca o desmarca una imagen como compartida públicamente.
 
     Raises:
         NoContextAvailableError: Si la imagen no existe o no pertenece a la entidad
@@ -426,7 +424,7 @@ def share_image_service(
             ImageRecord.generation_id == generation_id,
             ImageRecord.entity_id == entity.id,
             ImageRecord.is_deleted.is_(False),
-        )
+        ),
     ).first()
 
     if not record:
@@ -462,8 +460,7 @@ def delete_image_service(
     generation_id: str,
     image_id: str,
 ) -> None:
-    """
-    Elimina una imagen individual del batch (soft delete).
+    """Elimina una imagen individual del batch (soft delete).
 
     Raises:
         NoContextAvailableError: Si la imagen no existe o no pertenece a la entidad
@@ -475,7 +472,7 @@ def delete_image_service(
             ImageRecord.generation_id == generation_id,
             ImageRecord.entity_id == entity.id,
             ImageRecord.is_deleted.is_(False),
-        )
+        ),
     ).first()
 
     if not record:
@@ -499,8 +496,7 @@ def get_generation_service(
     entity: Entity,
     generation_id: str,
 ) -> GenerateImagesResponse:
-    """
-    Obtiene una generación existente con sus imágenes.
+    """Obtiene una generación existente con sus imágenes.
 
     Raises:
         NoContextAvailableError: Si la generación no existe o no pertenece a la entidad
@@ -511,7 +507,7 @@ def get_generation_service(
             ImageGeneration.id == generation_id,
             ImageGeneration.entity_id == entity.id,
             ImageGeneration.is_deleted.is_(False),
-        )
+        ),
     ).first()
 
     if not generation:
@@ -521,7 +517,7 @@ def get_generation_service(
         select(ImageRecord).where(
             ImageRecord.generation_id == generation_id,
             ImageRecord.is_deleted.is_(False),
-        )
+        ),
     ).all()
 
     images = [
@@ -550,8 +546,7 @@ def list_generations_service(
     session: Session,
     entity: Entity,
 ) -> tuple[list, int]:
-    """
-    Lista todas las generaciones de imágenes de una entidad.
+    """Lista todas las generaciones de imágenes de una entidad.
 
     Returns:
         (generations_list, total_count)
@@ -564,7 +559,7 @@ def list_generations_service(
             ImageGeneration.collection_id == entity.collection_id,
             ImageGeneration.is_deleted.is_(False),
         )
-        .order_by(ImageGeneration.created_at.desc())
+        .order_by(ImageGeneration.created_at.desc()),
     ).all()
 
     result = []
@@ -575,7 +570,7 @@ def list_generations_service(
                 ImageRecord.generation_id == gen.id,
                 ImageRecord.is_deleted.is_(False),
             )
-            .order_by(ImageRecord.seed.asc())
+            .order_by(ImageRecord.seed.asc()),
         ).all()
 
         images = [
@@ -616,7 +611,7 @@ def list_generations_service(
                 created_at=gen.created_at,
                 is_deleted=gen.is_deleted,
                 images=images,
-            )
+            ),
         )
 
     return result, len(result)

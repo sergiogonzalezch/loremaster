@@ -54,7 +54,7 @@ router = APIRouter(prefix="/collections", tags=["documents"])
 
 
 @router.post(
-    "/{collection_id}/documents", response_model=DocumentResponse, status_code=202
+    "/{collection_id}/documents", response_model=DocumentResponse, status_code=202,
 )
 async def ingest(
     collection_id: str,
@@ -82,20 +82,20 @@ async def ingest(
         raise HTTPException(status_code=422, detail=str(e)) from e
     except DocumentExtractionError as e:
         raise HTTPException(
-            status_code=422, detail="No se pudo extraer el texto del archivo."
+            status_code=422, detail="No se pudo extraer el texto del archivo.",
         ) from e
     except DuplicateDocumentError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
     except DatabaseError as e:
         raise HTTPException(
-            status_code=500, detail="Error interno del servidor."
+            status_code=500, detail="Error interno del servidor.",
         ) from e
     background_tasks.add_task(process_ingest_background, session, document, text)
     return document
 
 
 @router.get(
-    "/{collection_id}/documents", response_model=PaginatedResponse[DocumentResponse]
+    "/{collection_id}/documents", response_model=PaginatedResponse[DocumentResponse],
 )
 def get_documents(
     collection_id: str,
@@ -159,7 +159,7 @@ async def retry_ingest(
         raise HTTPException(status_code=409, detail=str(e)) from e
     except DatabaseError as e:
         raise HTTPException(
-            status_code=500, detail="Error interno del servidor."
+            status_code=500, detail="Error interno del servidor.",
         ) from e
     background_tasks.add_task(process_ingest_background, session, document, text)
     return document
@@ -176,7 +176,7 @@ def delete_document(
         delete_document_service(session, doc)
     except VectorStoreError as e:
         raise HTTPException(
-            status_code=503, detail="El almacén de vectores no está disponible."
+            status_code=503, detail="El almacén de vectores no está disponible.",
         ) from e
     return Response(status_code=204)
 

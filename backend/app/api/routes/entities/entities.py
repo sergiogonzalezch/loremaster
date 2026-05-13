@@ -34,7 +34,7 @@ router = APIRouter(prefix="/collections", tags=["entities"])
 
 
 @router.post(
-    "/{collection_id}/entities", response_model=EntityResponse, status_code=201
+    "/{collection_id}/entities", response_model=EntityResponse, status_code=201,
 )
 def create_entity(
     collection_id: str,
@@ -50,7 +50,7 @@ def create_entity(
 
 
 @router.get(
-    "/{collection_id}/entities", response_model=PaginatedResponse[EntityResponse]
+    "/{collection_id}/entities", response_model=PaginatedResponse[EntityResponse],
 )
 def list_entities(
     collection_id: str,
@@ -74,7 +74,7 @@ def list_entities(
         order=pagination.order,
     )
     return PaginatedResponse.build(
-        entities, total, pagination.page, pagination.page_size
+        entities, total, pagination.page, pagination.page_size,
     )
 
 
@@ -110,7 +110,7 @@ def delete_entity(
         delete_entity_service(session, entity)
     except DatabaseError as e:
         raise HTTPException(
-            status_code=500, detail="Error interno del servidor."
+            status_code=500, detail="Error interno del servidor.",
         ) from e
     return Response(status_code=204)
 
@@ -128,7 +128,7 @@ def bulk_delete_entities(
             Entity.id.in_(request.ids),
             Entity.collection_id == collection_id,
             Entity.is_deleted.is_(False),
-        )
+        ),
     ).all()
 
     for entity in entities:

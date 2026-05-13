@@ -59,7 +59,7 @@ class Entity(SQLModel, SoftDeleteMixin, table=True):
             ForeignKey("collections.id"),
             nullable=False,
             index=True,
-        )
+        ),
     )
     type: EntityType = Field(index=True, max_length=50)
     name: str = Field(max_length=200)

@@ -54,7 +54,7 @@ def get_current_user(
             raise HTTPException(status_code=401, detail="No autorizado")
         # Verificar token_version si existe en el token de Clerk (custom claim)
         if "version" in payload and not hmac.compare_digest(
-            str(user.token_version), str(payload.get("version", 0))
+            str(user.token_version), str(payload.get("version", 0)),
         ):
             raise HTTPException(status_code=401, detail="Sesión inválida")
         return payload

@@ -56,7 +56,7 @@ def list_contents(
 
     if status == "active":
         conditions.append(
-            EntityContent.status.in_([ContentStatus.pending, ContentStatus.confirmed])
+            EntityContent.status.in_([ContentStatus.pending, ContentStatus.confirmed]),
         )
     elif status == "pending":
         conditions.append(EntityContent.status == ContentStatus.pending)
@@ -310,7 +310,7 @@ def _get_active_content(
             EntityContent.entity_id == entity_id,
             EntityContent.collection_id == collection_id,
             EntityContent.is_deleted.is_(False),
-        )
+        ),
     ).first()
 
 
@@ -340,7 +340,7 @@ def _discard_sibling_contents(
             EntityContent.id != exclude_id,
             EntityContent.status.in_(statuses),
             EntityContent.is_deleted.is_(False),
-        )
+        ),
     ).all()
     for s in siblings:
         s.status = ContentStatus.discarded

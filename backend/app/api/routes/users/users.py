@@ -53,11 +53,11 @@ def update_my_profile(
                 User.email == request.email,
                 User.is_deleted.is_(False),
                 User.id != user.id,
-            )
+            ),
         ).first()
         if existing:
             raise HTTPException(
-                status_code=409, detail="El correo electrónico ya está en uso."
+                status_code=409, detail="El correo electrónico ya está en uso.",
             )
         user.email = request.email
 
@@ -108,7 +108,7 @@ def get_public_profile(
     Incluye sus contenidos e imágenes compartidos.
     """
     user = session.exec(
-        select(User).where(User.username == username, User.is_deleted.is_(False))
+        select(User).where(User.username == username, User.is_deleted.is_(False)),
     ).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
@@ -122,7 +122,7 @@ def get_public_profile(
         .join(Collection, EntityContent.collection_id == Collection.id)
         .join(User, Collection.owner_id == User.id)
         .where(*content_conditions)
-        .order_by(EntityContent.confirmed_at.desc())
+        .order_by(EntityContent.confirmed_at.desc()),
     ).all()
 
     image_rows = session.exec(
@@ -132,7 +132,7 @@ def get_public_profile(
         .join(Collection, ImageRecord.collection_id == Collection.id)
         .join(User, Collection.owner_id == User.id)
         .where(*image_conditions)
-        .order_by(ImageRecord.created_at.desc())
+        .order_by(ImageRecord.created_at.desc()),
     ).all()
 
     return PublicProfileResponse(
