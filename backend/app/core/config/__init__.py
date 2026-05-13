@@ -140,7 +140,7 @@ class Settings(BaseSettings):
 
         Verifica que:
         - CORS no use '*' cuando allow_credentials=True.
-        - SECRET_KEY tenga al menos 32 caracteres en entornos no locales (C-7).
+        - SECRET_KEY tenga al menos 32 caracteres en entornos no locales.
         - ALLOWED_ORIGINS use HTTPS en producción.
         - ENVIRONMENT sea un valor válido.
         """
