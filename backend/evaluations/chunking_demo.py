@@ -285,7 +285,7 @@ def main() -> None:
 
         _sep("-")
         print(f"  FIXED-SIZE  |  chunk_size={cs}  overlap={co}")
-        print(f"  Separadores: ['\\\\n\\\\n', '\\\\n', '. ', ' ', '']")
+        print("  Separadores: ['\\\\n\\\\n', '\\\\n', '. ', ' ', '']")
         _sep("-")
         _print_fixed_chunks(chunks)
         print(

@@ -8,7 +8,7 @@ de tokens via token_version.
 import re
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Response
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from sqlmodel import Session
 

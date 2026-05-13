@@ -1,24 +1,15 @@
 import importlib
 import os
 import sys
+import types
 from collections.abc import Generator
+from typing import AsyncGenerator
 
+# 1. Variables de entorno ANTES de cualquier import de app (Settings se instancia al importar)
 os.environ.setdefault("ENVIRONMENT", "test")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-for-testing-only-not-for-prod")
 
-import pytest
-from typing import AsyncGenerator
-from httpx import ASGITransport, AsyncClient
-from sqlalchemy.pool import StaticPool
-from sqlmodel import Session, SQLModel, create_engine
-
-BACKEND_DIR = os.path.dirname(os.path.dirname(__file__))
-if BACKEND_DIR not in sys.path:
-    sys.path.insert(0, BACKEND_DIR)
-
-import types
-
-# Prevent heavy external model loading during app import.
+# 2. Stub de app.engine.rag ANTES de importar app.main (evita carga de modelos pesados)
 if "app.engine.rag" not in sys.modules:
     rag_stub = types.ModuleType("app.engine.rag")
 
@@ -44,12 +35,20 @@ if "app.engine.rag" not in sys.modules:
     rag_stub.delete_collection_vectors = _stub_delete_collection_vectors
     sys.modules["app.engine.rag"] = rag_stub
 
+# 3. Imports de app (con env vars y stubs ya en su lugar)
+import pytest
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.pool import StaticPool
+from sqlmodel import Session, SQLModel, create_engine
+
 from app.core.auth.dependencies import get_current_user
 from app.database import get_session
 from app.main import app, _csrf_for_unsafe
 from app.models.db.collection import Collection
 from app.models.db.document import Document, DocumentStatus
 from app.models.db.entity import Entity, EntityType
+from app.models.db.entity_content import EntityContent
+from app.models.enums import ContentCategory, ContentStatus
 from app.models.db.user import User
 
 
@@ -128,7 +127,7 @@ def mock_rag_engine(monkeypatch: pytest.MonkeyPatch) -> dict:
         collection_id: str,
         query: str,
         top_k: int | None = None,
-        score_threshold: float | None = None
+        score_threshold: float | None = None,
     ) -> list[str]:
         calls["search_context"].append(
             {
@@ -275,8 +274,6 @@ def sample_entity_content_confirmed(
     db_session: Session, sample_entity: Entity
 ) -> "EntityContent":
     """FX-08: Persisted confirmed sample entity content for image generation."""
-    from app.models.db.entity_content import EntityContent
-    from app.models.enums import ContentCategory, ContentStatus
 
     content = EntityContent(
         entity_id=sample_entity.id,

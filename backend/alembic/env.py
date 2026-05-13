@@ -9,13 +9,13 @@ from alembic import context
 # access to the values within the .ini file in use.
 
 config = context.config
-from app.core.config import settings
+from app.core.config import settings  # noqa: E402
 
 config.set_main_option("sqlalchemy.url", settings.database_url)
 
 
-from sqlmodel import SQLModel
-import app.models  # noqa: F401
+from sqlmodel import SQLModel  # noqa: E402
+import app.models  # noqa: E402, F401
 
 # from app.models.collections import Collection
 # from app.models.documents import Document
