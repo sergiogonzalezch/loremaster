@@ -68,7 +68,7 @@ def hash_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verifica una contraseña en texto plano contra un hash bcrypt.
 
-    Retorna False silenciosamente si el hash es inválido (M-6: timing-safe
+    Retorna False silenciosamente si el hash es inválido (timing-safe
     dummy checks con hashes dummy no válidos).
     """
     try:
