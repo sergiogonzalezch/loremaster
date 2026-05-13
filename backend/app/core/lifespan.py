@@ -42,14 +42,14 @@ async def lifespan(_: FastAPI):
     try:
         await asyncio.to_thread(ping_qdrant)
         logger.info("Qdrant connection OK (%s)", settings.qdrant_url)
-    except Exception as e:  # noqa: BLE001
+    except (httpx.TransportError, OSError) as e:
         logger.warning("Qdrant not reachable at startup: %s", e)
 
     try:
         async with httpx.AsyncClient() as client:
             await client.get(f"{settings.ollama_base_url}/api/tags", timeout=5)
         logger.info("Ollama connection OK (%s)", settings.ollama_base_url)
-    except Exception as e:  # noqa: BLE001
+    except httpx.TransportError as e:
         logger.warning("Ollama not reachable at startup: %s", e)
 
     yield
