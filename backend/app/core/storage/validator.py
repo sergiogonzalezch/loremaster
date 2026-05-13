@@ -148,8 +148,8 @@ class FileValidator:
         """Valida que el archivo sea un documento permitido.
 
         Verifica tipo MIME, magic bytes y tamaño máximo.
-        Implementa H-6: validación de magic bytes para prevenir
-        que un atacante suba archivos con content_type falsificado.
+        Valida magic bytes para prevenir que un atacante suba archivos
+        con content_type falsificado.
 
         Args:
             file: Archivo subido via UploadFile.
