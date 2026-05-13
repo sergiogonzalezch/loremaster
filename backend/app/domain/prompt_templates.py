@@ -89,7 +89,7 @@ def render_prompt(
     """
 
     def _escape(v: str) -> str:
-        """Escapa llaves de formato y etiquetas XML de cierre (H-4, H-5)."""
+        """Escapa llaves de formato y etiquetas XML de cierre."""
         return (
             v.replace("{", "{{")
             .replace("}", "}}")
