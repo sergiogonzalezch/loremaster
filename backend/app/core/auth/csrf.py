@@ -1,6 +1,6 @@
 """Generación y validación de tokens CSRF.
 
-Implementa la defensa Double Submit Cookie contra CSRF (H-14, M-17).
+Implementa la defensa Double Submit Cookie contra CSRF.
 El backend genera un token aleatorio que se envía como cookie legible por JS
 y el frontend lo devuelve en el header X-CSRF-Token en cada mutación.
 """
