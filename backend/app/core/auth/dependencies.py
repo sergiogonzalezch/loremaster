@@ -27,7 +27,7 @@ def get_current_user(
     Valida firma, existencia de usuario, soft-delete y token_version.
 
     En producción (environment="production"), delega la verificación
-    a Clerk (C-1) pero sigue leyendo de la cookie local.
+    a Clerk pero sigue leyendo de la cookie local.
 
     Args:
         request: Objeto Request para acceder a cookies.
