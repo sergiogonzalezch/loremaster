@@ -23,11 +23,15 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 class LoginRequest(BaseModel):
+    """Payload para iniciar sesión con username/email y contraseña."""
+
     username_or_email: str
     password: str
 
 
 class RegisterRequest(BaseModel):
+    """Payload para registrar un nuevo usuario."""
+
     username: str = Field(..., min_length=3, max_length=50)
     email: EmailStr
     password: str = Field(..., min_length=8)
