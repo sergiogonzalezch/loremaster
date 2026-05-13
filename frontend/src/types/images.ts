@@ -6,7 +6,7 @@
 export type ImageStatus = "pending" | "confirmed" | "discarded";
 
 /** Backends soportados para generación de imágenes. */
-export type ImageBackend = "mock" | "comfyui" | "local" | "runpod";
+export type ImageBackend = "mock" | "comfyui";
 
 /** Registro individual de una imagen generada. */
 export interface ImageRecord {

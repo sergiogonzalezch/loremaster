@@ -57,13 +57,16 @@ class AuthSuccessResponse(BaseModel):
 
 def _set_auth_cookies(response: Response, token: str) -> None:
     csrf = generate_csrf_token()
+    # path="/" para que las cookies se envíen a todas las rutas del dominio,
+    # incluyendo /media/* (access_token) y cualquier página del frontend (csrf_token).
+    # Seguridad garantizada por httponly=True (no legible desde JS) y samesite=Strict.
     response.set_cookie(
         key=settings.cookie_access_name,
         value=token,
         httponly=True,
         secure=settings.cookie_secure,
         samesite=settings.cookie_samesite,
-        path=settings.cookie_path,
+        path="/",
         domain=settings.cookie_domain,
     )
     response.set_cookie(
@@ -71,7 +74,7 @@ def _set_auth_cookies(response: Response, token: str) -> None:
         value=csrf,
         secure=settings.cookie_secure,
         samesite=settings.cookie_samesite,
-        path=settings.cookie_path,
+        path="/",
         domain=settings.cookie_domain,
     )
 
@@ -79,12 +82,12 @@ def _set_auth_cookies(response: Response, token: str) -> None:
 def _clear_auth_cookies(response: Response) -> None:
     response.delete_cookie(
         key=settings.cookie_access_name,
-        path=settings.cookie_path,
+        path="/",
         domain=settings.cookie_domain,
     )
     response.delete_cookie(
         key=settings.cookie_csrf_name,
-        path=settings.cookie_path,
+        path="/",
         domain=settings.cookie_domain,
     )
 

@@ -25,7 +25,6 @@ export default function PublicContentModal({
   entityName,
   entityType,
   ownerUsername,
-  ownerDisplayName,
   confirmedAt,
   createdAt,
 }: Props) {

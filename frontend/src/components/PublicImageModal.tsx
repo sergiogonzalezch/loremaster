@@ -35,7 +35,6 @@ export default function PublicImageModal({
   entityName,
   entityType,
   ownerUsername,
-  ownerDisplayName,
   createdAt,
 }: Props) {
   const resolvedUrl = storagePath

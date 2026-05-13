@@ -17,7 +17,7 @@ from app.core.exceptions import (
     ComfyUIUnavailableError,
     NoContextAvailableError,
 )
-from app.core.storage import build_generation_path, save_file
+from app.core.storage import build_generation_path, build_storage_url, save_file
 from app.domain.content_guard import check_user_input
 from app.engine.comfyui_client import (
     ComfyUIClient,
@@ -85,9 +85,7 @@ def _get_confirmed_content(
 
 
 def _build_url(storage_path: str | None) -> str | None:
-    if not storage_path:
-        return None
-    return f"{settings.storage_base_url}/{storage_path}"
+    return build_storage_url(storage_path)
 
 
 def _create_image_record(
@@ -541,7 +539,7 @@ def get_generation_service(
     images = [
         ImageResult(
             id=r.id,
-            image_url=_build_url(r.storage_path),
+            image_url=_build_url(r.storage_path) or r.image_url,
             seed=r.seed,
             width=r.width,
             height=r.height,

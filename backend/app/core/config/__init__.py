@@ -129,7 +129,7 @@ class Settings(BaseSettings):
     cookie_secure: bool = False  # True en producción/demo (HTTPS)
     cookie_samesite: str = "Strict"
     cookie_domain: str | None = None
-    cookie_path: str = "/api/v1"
+    cookie_path: str = "/"
 
     # Clerk - production
     clerk_jwks_url: str = "https://your-org.clerk.accounts.dev/.well-known/jwks.json"

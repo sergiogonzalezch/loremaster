@@ -234,7 +234,9 @@ class ImageGenerationListResponse(BaseModel):
 
     Attributes:
         generations: Lista de solicitudes con sus imágenes.
+        total: Total de solicitudes.
 
     """
 
     generations: list[ImageGenerationListItem]
+    total: int
