@@ -12,7 +12,7 @@ SECRET_KEY = settings.secret_key
 ALGORITHM = settings.algorithm
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
 
-# Politica de token_version (L-11):
+# Politica de token_version:
 # - token_version se incrementa en logout para invalidar tokens previos
 # - Tokens tienen TTL de ACCESS_TOKEN_EXPIRE_MINUTES (default 60min)
 # - Recomendacion: usar refresh tokens de 7 dias con access tokens de 15-60 min
