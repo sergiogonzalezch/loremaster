@@ -1,11 +1,12 @@
+from collections.abc import AsyncGenerator
+
 import pytest
-from typing import AsyncGenerator
-from httpx import ASGITransport, AsyncClient
-from sqlmodel import Session, select
 from app.core.auth import create_access_token, hash_password
 from app.database import get_session
-from app.main import app, _csrf_for_unsafe
+from app.main import _csrf_for_unsafe, app
 from app.models.db.user import User
+from httpx import ASGITransport, AsyncClient
+from sqlmodel import Session, select
 
 
 @pytest.mark.anyio
@@ -257,7 +258,7 @@ async def test_token_version_mismatch_returns_401(auth_client, db_session):
             "username": "versionuser",
             "is_admin": False,
             "version": 3,
-        }
+        },
     )
 
     # Setear cookie con token stale

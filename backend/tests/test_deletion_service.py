@@ -1,4 +1,4 @@
-import app.services.deletion_service as deletion_service
+from app.services import deletion_service
 
 
 def test_delete_vectors_with_retry_retries_until_success(monkeypatch):

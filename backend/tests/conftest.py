@@ -2,8 +2,7 @@ import importlib
 import os
 import sys
 import types
-from collections.abc import Generator
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator, Generator
 
 # 1. Variables de entorno ANTES de cualquier import de app (Settings se instancia al importar)
 os.environ.setdefault("ENVIRONMENT", "test")
@@ -41,19 +40,18 @@ if "app.engine.rag" not in sys.modules:
 
 # 3. Imports de app (con env vars y stubs ya en su lugar)
 import pytest
-from httpx import ASGITransport, AsyncClient
-from sqlalchemy.pool import StaticPool
-from sqlmodel import Session, SQLModel, create_engine
-
 from app.core.auth.dependencies import get_current_user
 from app.database import get_session
-from app.main import app, _csrf_for_unsafe
+from app.main import _csrf_for_unsafe, app
 from app.models.db.collection import Collection
 from app.models.db.document import Document, DocumentStatus
 from app.models.db.entity import Entity, EntityType
 from app.models.db.entity_content import EntityContent
-from app.models.enums import ContentCategory, ContentStatus
 from app.models.db.user import User
+from app.models.enums import ContentCategory, ContentStatus
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.pool import StaticPool
+from sqlmodel import Session, SQLModel, create_engine
 
 
 @pytest.fixture(params=["asyncio"])
@@ -122,7 +120,7 @@ def mock_rag_engine(monkeypatch: pytest.MonkeyPatch) -> dict:
 
     def _ingest_chunks(*, doc_id: str, collection_id: str, text: str) -> int:
         calls["ingest_chunks"].append(
-            {"doc_id": doc_id, "collection_id": collection_id, "text": text}
+            {"doc_id": doc_id, "collection_id": collection_id, "text": text},
         )
         return 5
 
@@ -139,7 +137,7 @@ def mock_rag_engine(monkeypatch: pytest.MonkeyPatch) -> dict:
                 "query": query,
                 "top_k": top_k,
                 "score_threshold": score_threshold,
-            }
+            },
         )
         return ["contexto 1", "contexto 2"]
 
@@ -153,13 +151,13 @@ def mock_rag_engine(monkeypatch: pytest.MonkeyPatch) -> dict:
                 "collection_id": collection_id,
                 "query": query,
                 "extra_context": extra_context,
-            }
+            },
         )
         return ("contexto 1\n\n---\n\ncontexto 2", 2)
 
     def _delete_document_chunks(collection_id: str, doc_id: str) -> int:
         calls["delete_document_chunks"].append(
-            {"collection_id": collection_id, "doc_id": doc_id}
+            {"collection_id": collection_id, "doc_id": doc_id},
         )
         return 0
 
@@ -172,14 +170,14 @@ def mock_rag_engine(monkeypatch: pytest.MonkeyPatch) -> dict:
     monkeypatch.setattr(rag_engine_mod, "search_context", _search_context)
     monkeypatch.setattr(rag_engine_mod, "retrieve_context", _retrieve_context)
     monkeypatch.setattr(
-        rag_engine_mod, "delete_document_chunks", _delete_document_chunks
+        rag_engine_mod, "delete_document_chunks", _delete_document_chunks,
     )
     monkeypatch.setattr(
-        rag_engine_mod, "delete_collection_vectors", _delete_collection_vectors
+        rag_engine_mod, "delete_collection_vectors", _delete_collection_vectors,
     )
 
     monkeypatch.setattr(
-        "app.services.document.document_service.ingest_chunks", _ingest_chunks
+        "app.services.document.document_service.ingest_chunks", _ingest_chunks,
     )
     monkeypatch.setattr(
         "app.services.document.document_service.delete_document_chunks",
@@ -218,7 +216,7 @@ def mock_text_extractor(monkeypatch: pytest.MonkeyPatch):
 
     monkeypatch.setattr("app.engine.extractor.extract_text", _extract_text)
     monkeypatch.setattr(
-        "app.services.document.document_service.extract_text", _extract_text
+        "app.services.document.document_service.extract_text", _extract_text,
     )
 
 
@@ -234,7 +232,7 @@ def mock_image_backend(monkeypatch: pytest.MonkeyPatch):
 def sample_collection(db_session: Session) -> Collection:
     """FX-05: Persisted sample collection."""
     collection = Collection(
-        name="Test World", description="A test world", owner_id="test-user-id"
+        name="Test World", description="A test world", owner_id="test-user-id",
     )
     db_session.add(collection)
     db_session.commit()
@@ -275,10 +273,9 @@ def sample_entity(db_session: Session, sample_collection: Collection) -> Entity:
 
 @pytest.fixture
 def sample_entity_content_confirmed(
-    db_session: Session, sample_entity: Entity
+    db_session: Session, sample_entity: Entity,
 ) -> "EntityContent":
     """FX-08: Persisted confirmed sample entity content for image generation."""
-
     content = EntityContent(
         entity_id=sample_entity.id,
         collection_id=sample_entity.collection_id,

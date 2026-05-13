@@ -1,6 +1,6 @@
 """Tests para el constructor de prompts visuales (app.engine.image_prompt_builder)."""
 
-from app.engine.image_prompt_builder import build_visual_prompt, _estimate_tokens
+from app.engine.image_prompt_builder import _estimate_tokens, build_visual_prompt
 from app.models.db.entity import EntityType
 from app.models.enums import ContentCategory
 

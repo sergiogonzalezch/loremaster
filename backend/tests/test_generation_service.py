@@ -1,5 +1,4 @@
 import pytest
-
 from app.core.config import settings
 from app.core.exceptions import (
     ContentNotAllowedError,
@@ -42,12 +41,12 @@ def mock_pipeline(monkeypatch):
                 category=entity_ctx.category,
                 query=query,
                 extra_context=extra_context,
-            )
+            ),
         )
         return "Contenido generado por el pipeline mock", 3
 
     monkeypatch.setattr(
-        "app.services.entity.generation_service.invoke_generation_pipeline", _invoke
+        "app.services.entity.generation_service.invoke_generation_pipeline", _invoke,
     )
     return calls
 
@@ -56,7 +55,7 @@ def mock_pipeline(monkeypatch):
 
 
 def test_gen_svc_01_persists_entity_content_with_correct_fields(
-    db_session, sample_collection, mock_pipeline
+    db_session, sample_collection, mock_pipeline,
 ):
     """GEN-SVC-01: generate() persiste EntityContent con query, sources_count, content y status=pending."""
     entity = _make_entity(db_session, sample_collection.id)
@@ -78,13 +77,13 @@ def test_gen_svc_01_persists_entity_content_with_correct_fields(
 
 
 def test_gen_svc_02_strips_whitespace_from_query(
-    db_session, sample_collection, mock_pipeline
+    db_session, sample_collection, mock_pipeline,
 ):
     """GEN-SVC-02: generate() elimina espacios en los extremos de la query antes de procesar."""
     entity = _make_entity(db_session, sample_collection.id)
 
     result = generate(
-        db_session, entity, ContentCategory.backstory, "  query con espacios  "
+        db_session, entity, ContentCategory.backstory, "  query con espacios  ",
     )
 
     assert result.query == "query con espacios"
@@ -92,7 +91,7 @@ def test_gen_svc_02_strips_whitespace_from_query(
 
 
 def test_gen_svc_03_raises_invalid_category_error(
-    db_session, sample_collection, mock_pipeline
+    db_session, sample_collection, mock_pipeline,
 ):
     """GEN-SVC-03: generate() lanza InvalidCategoryError si la categoría no es válida para el tipo de entidad."""
     item = _make_entity(db_session, sample_collection.id, EntityType.item)
@@ -102,7 +101,7 @@ def test_gen_svc_03_raises_invalid_category_error(
 
 
 def test_gen_svc_04_raises_pending_limit_exceeded(
-    db_session, sample_collection, mock_pipeline
+    db_session, sample_collection, mock_pipeline,
 ):
     """GEN-SVC-04: generate() lanza PendingLimitExceededError al alcanzar settings.max_pending_contents."""
     entity = _make_entity(db_session, sample_collection.id)
@@ -125,7 +124,7 @@ def test_gen_svc_04_raises_pending_limit_exceeded(
 
 
 def test_gen_svc_05_blocked_query_raises_content_not_allowed(
-    db_session, sample_collection
+    db_session, sample_collection,
 ):
     """GEN-SVC-05: generate() lanza ContentNotAllowedError si check_user_input bloquea la query."""
     entity = _make_entity(db_session, sample_collection.id)
@@ -140,11 +139,11 @@ def test_gen_svc_05_blocked_query_raises_content_not_allowed(
 
 
 def test_gen_svc_06_passes_entity_description_to_pipeline(
-    db_session, sample_collection, mock_pipeline
+    db_session, sample_collection, mock_pipeline,
 ):
     """GEN-SVC-06: generate() incluye entity.description en el extra_context del pipeline."""
     entity = _make_entity(
-        db_session, sample_collection.id, description="Arquera élfica del bosque eterno"
+        db_session, sample_collection.id, description="Arquera élfica del bosque eterno",
     )
 
     generate(
@@ -158,7 +157,7 @@ def test_gen_svc_06_passes_entity_description_to_pipeline(
 
 
 def test_gen_svc_07_pending_limit_is_per_category(
-    db_session, sample_collection, mock_pipeline
+    db_session, sample_collection, mock_pipeline,
 ):
     """GEN-SVC-07: El límite de pending es por categoría; backstory lleno no bloquea scene."""
     entity = _make_entity(db_session, sample_collection.id)
@@ -172,7 +171,7 @@ def test_gen_svc_07_pending_limit_is_per_category(
         )
 
     result = generate(
-        db_session, entity, ContentCategory.scene, "Una escena de combate en el bosque"
+        db_session, entity, ContentCategory.scene, "Una escena de combate en el bosque",
     )
 
     assert result.status == ContentStatus.pending
@@ -180,7 +179,7 @@ def test_gen_svc_07_pending_limit_is_per_category(
 
 
 def test_gen_svc_08_entity_without_description_sends_empty_extra_context(
-    db_session, sample_collection, mock_pipeline
+    db_session, sample_collection, mock_pipeline,
 ):
     """GEN-SVC-08: Si entity.description está vacío, extra_context es cadena vacía."""
     entity = _make_entity(db_session, sample_collection.id, description="")

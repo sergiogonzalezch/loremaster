@@ -1,15 +1,14 @@
 import pytest
-from sqlmodel import select
-
 from app.models.db.entity_content import EntityContent
-from app.models.enums import ContentCategory, ContentStatus
 from app.models.db.generated_text import GeneratedText
+from app.models.enums import ContentCategory, ContentStatus
 from app.services.entity.content_service import _discard_sibling_contents
+from sqlmodel import select
 
 
 @pytest.mark.anyio
 async def test_discard_sibling_contents_only_affects_same_category(
-    db_session, sample_collection, sample_entity
+    db_session, sample_collection, sample_entity,
 ):
     """CMS-01: Descarta siblings solo de la misma categoría, no otras."""
     gt = GeneratedText(
@@ -74,7 +73,7 @@ async def test_discard_sibling_contents_only_affects_same_category(
     assert discarded == 2
 
     rows = db_session.exec(
-        select(EntityContent).where(EntityContent.entity_id == sample_entity.id)
+        select(EntityContent).where(EntityContent.entity_id == sample_entity.id),
     ).all()
     by_id = {r.id: r for r in rows}
     assert by_id[sibling_pending.id].status == ContentStatus.discarded

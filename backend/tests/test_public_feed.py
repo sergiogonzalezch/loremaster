@@ -5,8 +5,8 @@ def _make_shared_content(db_session, collection_id, entity_id=None):
     """Helper: inserta un EntityContent confirmed+is_shared en la colección indicada."""
     from app.models.db.entity import Entity, EntityType
     from app.models.db.entity_content import EntityContent
-    from app.models.enums import ContentCategory, ContentStatus
     from app.models.db.generated_text import GeneratedText
+    from app.models.enums import ContentCategory, ContentStatus
 
     if entity_id is None:
         entity = Entity(
@@ -47,8 +47,8 @@ def _make_shared_content(db_session, collection_id, entity_id=None):
 @pytest.mark.anyio
 async def test_public_feed_shows_shared_content(client, db_session):
     """PUB-01: GET /public/feed devuelve items de contenido compartido con preview y content completo."""
-    from app.models.db.user import User
     from app.models.db.collection import Collection
+    from app.models.db.user import User
 
     user = User(id="feed-user-a", username="feeduser", hashed_password="hash")
     db_session.add(user)
@@ -74,7 +74,7 @@ async def test_public_feed_shows_shared_content(client, db_session):
 
 @pytest.mark.anyio
 async def test_public_feed_unshared_content_not_included(
-    client, db_session, sample_collection
+    client, db_session, sample_collection,
 ):
     """PUB-02: Contenido no compartido no aparece en el feed público."""
     response = await client.get("/api/v1/public/feed")
@@ -85,18 +85,18 @@ async def test_public_feed_unshared_content_not_included(
 @pytest.mark.anyio
 async def test_get_public_profile_returns_shared_contents(client, db_session):
     """PUB-03: GET /users/{username}/profile devuelve shared_contents con info de entidad."""
-    from app.models.db.user import User
     from app.models.db.collection import Collection
+    from app.models.db.user import User
 
     user = User(id="pub-user-id", username="worldbuilder", hashed_password="hash")
     db_session.add(user)
     db_session.flush()
 
     visible_col = Collection(
-        name="My Public World", description="Public world", owner_id="pub-user-id"
+        name="My Public World", description="Public world", owner_id="pub-user-id",
     )
     hidden_col = Collection(
-        name="My Private World", description="Private world", owner_id="pub-user-id"
+        name="My Private World", description="Private world", owner_id="pub-user-id",
     )
     db_session.add(visible_col)
     db_session.add(hidden_col)
@@ -136,7 +136,7 @@ async def test_get_collection_by_non_owner_returns_403(client, db_session):
 
 @pytest.mark.anyio
 async def test_get_collection_with_shared_content_by_non_owner_still_403(
-    client, db_session
+    client, db_session,
 ):
     """PUB-06: GET /collections/{id} retorna 403 incluso con contenido compartido si no eres owner."""
     from app.models.db.collection import Collection
@@ -153,10 +153,10 @@ async def test_get_collection_with_shared_content_by_non_owner_still_403(
 @pytest.mark.anyio
 async def test_public_images_feed_shows_shared_images(client, db_session):
     """PUB-08: GET /public/images devuelve imágenes compartidas con info de entidad y owner."""
-    from app.models.db.user import User
     from app.models.db.collection import Collection
     from app.models.db.entity import Entity, EntityType
-    from app.models.db.image_generation import ImageRecord, ImageGeneration
+    from app.models.db.image_generation import ImageGeneration, ImageRecord
+    from app.models.db.user import User
 
     user = User(id="img-user-a", username="imageuser", hashed_password="hash")
     db_session.add(user)
@@ -207,10 +207,10 @@ async def test_public_images_feed_shows_shared_images(client, db_session):
 @pytest.mark.anyio
 async def test_public_profile_includes_shared_images(client, db_session):
     """PUB-09: GET /users/{username}/profile incluye shared_images además de shared_contents."""
-    from app.models.db.user import User
     from app.models.db.collection import Collection
     from app.models.db.entity import Entity, EntityType
-    from app.models.db.image_generation import ImageRecord, ImageGeneration
+    from app.models.db.image_generation import ImageGeneration, ImageRecord
+    from app.models.db.user import User
 
     user = User(id="prof-img-user", username="imgprofile", hashed_password="hash")
     db_session.add(user)

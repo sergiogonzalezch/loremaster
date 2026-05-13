@@ -10,7 +10,7 @@ async def test_list_all_users_as_admin(client, db_session):
     admin.is_admin = True
     for i in range(3):
         db_session.add(
-            User(id=f"user-{i}", username=f"user{i}", hashed_password="hash")
+            User(id=f"user-{i}", username=f"user{i}", hashed_password="hash"),
         )
     db_session.commit()
 
@@ -47,8 +47,8 @@ async def test_list_all_users_as_deleted_admin(client, db_session):
 @pytest.mark.anyio
 async def test_admin_delete_collection(client, db_session):
     """ADM-03: DELETE /admin/collections/{id} como admin retorna 204."""
-    from app.models.db.user import User
     from app.models.db.collection import Collection
+    from app.models.db.user import User
 
     admin = db_session.get(User, "test-user-id")
     admin.is_admin = True

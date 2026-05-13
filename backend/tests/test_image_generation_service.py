@@ -1,27 +1,27 @@
 # tests/test_image_generation_service.py
 
-import pytest
-from sqlalchemy.orm import Session
-from sqlmodel import select
 from unittest.mock import MagicMock, patch
 
+import pytest
 from app.core.exceptions import NoContextAvailableError
 from app.models.db.entity import Entity, EntityType
-from app.models.enums import ContentCategory, ContentStatus
 from app.models.db.entity_content import EntityContent
 from app.models.db.image_generation import ImageRecord
+from app.models.enums import ContentCategory, ContentStatus
 from app.services.image.image_generation_service import (
-    build_prompt_service,
-    generate_images_service,
-    delete_image_service,
-    get_generation_service,
     ALLOWED_IMAGE_CATEGORIES,
+    build_prompt_service,
+    delete_image_service,
+    generate_images_service,
+    get_generation_service,
 )
+from sqlalchemy.orm import Session
+from sqlmodel import select
 
 
 @pytest.fixture
 def sample_entity_content_confirmed(
-    db_session: Session, sample_entity: Entity
+    db_session: Session, sample_entity: Entity,
 ) -> EntityContent:
     """EntityContent confirmado para tests."""
     content = EntityContent(
@@ -58,7 +58,7 @@ def test_ig_01_build_prompt_with_confirmed_content(
 
 
 def test_ig_02_build_prompt_fails_for_unconfirmed_content(
-    db_session: Session, sample_entity: Entity
+    db_session: Session, sample_entity: Entity,
 ):
     """IG-02: build_prompt lanza error si el contenido no está confirmado."""
     pending_content = EntityContent(
@@ -77,17 +77,17 @@ def test_ig_02_build_prompt_fails_for_unconfirmed_content(
 
 
 def test_ig_03_build_prompt_fails_for_nonexistent_content(
-    db_session: Session, sample_entity: Entity
+    db_session: Session, sample_entity: Entity,
 ):
     """IG-03: build_prompt lanza error si el content_id no existe."""
     with pytest.raises(NoContextAvailableError):
         build_prompt_service(
-            db_session, sample_entity, "00000000-0000-0000-0000-000000000000"
+            db_session, sample_entity, "00000000-0000-0000-0000-000000000000",
         )
 
 
 def test_ig_04_build_prompt_fails_for_unsupported_category(
-    db_session: Session, sample_entity: Entity
+    db_session: Session, sample_entity: Entity,
 ):
     """IG-04: build_prompt lanza error si la categoría no es soportada."""
     # Verificar que las categorías permitidas están definidas
@@ -172,11 +172,11 @@ def test_ig_07_generate_persists_generation_record(
         batch_size=2,
     )
 
-    from sqlmodel import select
     from app.models.db.image_generation import ImageGeneration
+    from sqlmodel import select
 
     gen_record = db_session.exec(
-        select(ImageGeneration).where(ImageGeneration.id == result.generation_id)
+        select(ImageGeneration).where(ImageGeneration.id == result.generation_id),
     ).first()
     assert gen_record is not None
     assert gen_record.final_prompt == "test prompt"
@@ -207,7 +207,7 @@ def test_ig_08_delete_image_works_in_mock(
     delete_image_service(db_session, sample_entity, result.generation_id, image_id)
 
     record = db_session.exec(
-        select(ImageRecord).where(ImageRecord.id == image_id)
+        select(ImageRecord).where(ImageRecord.id == image_id),
     ).first()
 
     assert record is not None
@@ -276,12 +276,12 @@ def test_ig_10_get_generation_returns_generation_record(
 
 
 def test_ig_11_get_generation_fails_for_nonexistent(
-    db_session: Session, sample_entity: Entity
+    db_session: Session, sample_entity: Entity,
 ):
     """IG-11: get_generation lanza error si no existe."""
     with pytest.raises(NoContextAvailableError):
         get_generation_service(
-            db_session, sample_entity, "00000000-0000-0000-0000-000000000000"
+            db_session, sample_entity, "00000000-0000-0000-0000-000000000000",
         )
 
 
@@ -321,7 +321,6 @@ def test_ig_13_generate_batch_comfyui(
     sample_entity_content_confirmed: EntityContent,
 ):
     """IG-13: generate_images con backend comfyui guarda registros en DB."""
-
     fake_image_bytes = b"fake-png-bytes"
 
     mock_client = MagicMock()
@@ -331,13 +330,13 @@ def test_ig_13_generate_batch_comfyui(
         "outputs": {
             "3": {
                 "images": [
-                    {"filename": "img_001.png", "subfolder": "", "type": "output"}
-                ]
-            }
+                    {"filename": "img_001.png", "subfolder": "", "type": "output"},
+                ],
+            },
         },
     }
     mock_client.get_output_images.return_value = [
-        {"filename": "img_001.png", "subfolder": "", "type": "output", "node_id": "3"}
+        {"filename": "img_001.png", "subfolder": "", "type": "output", "node_id": "3"},
     ]
     mock_client.download_image.return_value = fake_image_bytes
 

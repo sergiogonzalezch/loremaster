@@ -1,7 +1,6 @@
 """Tests para el guardia de contenido (app.domain.content_guard)."""
 
 import pytest
-
 from app.core.exceptions import ContentNotAllowedError, GeneratedContentBlockedError
 from app.domain.content_guard import (
     check_document_content,

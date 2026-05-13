@@ -1,10 +1,9 @@
 import importlib
 
 import pytest
-from sqlmodel import select
-
 from app.models.db.collection import Collection
 from app.models.db.document import Document, DocumentStatus
+from sqlmodel import select
 
 
 @pytest.mark.anyio
@@ -24,7 +23,7 @@ async def test_ingest_txt(client, db_session, mock_rag_engine, sample_collection
 
 @pytest.mark.anyio
 async def test_ingest_pdf(
-    client, mock_rag_engine, mock_text_extractor, sample_collection
+    client, mock_rag_engine, mock_text_extractor, sample_collection,
 ):
     """DOC-02: Ingesta PDF retorna 202 con extractor mock."""
     response = await client.post(
@@ -53,16 +52,16 @@ async def test_list_documents(client, mock_rag_engine, sample_collection):
 
 @pytest.mark.anyio
 async def test_delete_document(
-    client, mock_rag_engine, sample_collection, sample_document
+    client, mock_rag_engine, sample_collection, sample_document,
 ):
     """DOC-04: Eliminar documento retorna 204, GET→404 y limpia chunks en Qdrant."""
     response = await client.delete(
-        f"/api/v1/collections/{sample_collection.id}/documents/{sample_document.id}"
+        f"/api/v1/collections/{sample_collection.id}/documents/{sample_document.id}",
     )
     assert response.status_code == 204
 
     get_response = await client.get(
-        f"/api/v1/collections/{sample_collection.id}/documents/{sample_document.id}"
+        f"/api/v1/collections/{sample_collection.id}/documents/{sample_document.id}",
     )
     assert get_response.status_code == 404
     assert len(mock_rag_engine["delete_document_chunks"]) == 1
@@ -70,7 +69,7 @@ async def test_delete_document(
 
 @pytest.mark.anyio
 async def test_ingest_qdrant_failure_marks_failed(
-    client, monkeypatch, db_session, sample_collection
+    client, monkeypatch, db_session, sample_collection,
 ):
     """DOC-05: Falla en ingest_chunks retorna 202 y marca el documento como failed."""
 
@@ -80,7 +79,7 @@ async def test_ingest_qdrant_failure_marks_failed(
     rag_engine_mod = importlib.import_module("app.engine.rag")
     monkeypatch.setattr(rag_engine_mod, "ingest_chunks", _raise_ingest)
     monkeypatch.setattr(
-        "app.services.document.document_service.ingest_chunks", _raise_ingest
+        "app.services.document.document_service.ingest_chunks", _raise_ingest,
     )
 
     response = await client.post(
@@ -90,7 +89,7 @@ async def test_ingest_qdrant_failure_marks_failed(
     assert response.status_code == 202
     # Background task ran and failed; verify final status via DB.
     doc = db_session.exec(
-        select(Document).where(Document.filename == "broken.txt")
+        select(Document).where(Document.filename == "broken.txt"),
     ).first()
     assert doc.status == DocumentStatus.failed
 
@@ -125,7 +124,7 @@ async def test_get_doc_wrong_collection_403(client, db_session, sample_document)
     db_session.refresh(another)
 
     response = await client.get(
-        f"/api/v1/collections/{another.id}/documents/{sample_document.id}"
+        f"/api/v1/collections/{another.id}/documents/{sample_document.id}",
     )
     assert response.status_code == 403
 
@@ -140,7 +139,7 @@ async def test_filter_documents_by_filename(client, mock_rag_engine, sample_coll
         )
 
     response = await client.get(
-        f"/api/v1/collections/{sample_collection.id}/documents?filename=alpha"
+        f"/api/v1/collections/{sample_collection.id}/documents?filename=alpha",
     )
     assert response.status_code == 200
     body = response.json()
@@ -160,7 +159,7 @@ async def test_filter_documents_by_status(client, mock_rag_engine, sample_collec
     )
 
     response = await client.get(
-        f"/api/v1/collections/{sample_collection.id}/documents?status=completed"
+        f"/api/v1/collections/{sample_collection.id}/documents?status=completed",
     )
     assert response.status_code == 200
     body = response.json()
@@ -170,7 +169,7 @@ async def test_filter_documents_by_status(client, mock_rag_engine, sample_collec
 
 @pytest.mark.anyio
 async def test_filter_documents_by_file_type(
-    client, mock_rag_engine, sample_collection
+    client, mock_rag_engine, sample_collection,
 ):
     """DOC-11: Filtrar documentos por file_type retorna solo los de ese tipo."""
     await client.post(
@@ -179,7 +178,7 @@ async def test_filter_documents_by_file_type(
     )
 
     response = await client.get(
-        f"/api/v1/collections/{sample_collection.id}/documents?file_type=text%2Fplain"
+        f"/api/v1/collections/{sample_collection.id}/documents?file_type=text%2Fplain",
     )
     assert response.status_code == 200
     assert response.json()["meta"]["total"] == 1
@@ -187,7 +186,7 @@ async def test_filter_documents_by_file_type(
 
 @pytest.mark.anyio
 async def test_filter_documents_created_after_future(
-    client, mock_rag_engine, sample_collection
+    client, mock_rag_engine, sample_collection,
 ):
     """DOC-12: created_after en el futuro retorna lista vacía."""
     await client.post(
@@ -196,7 +195,7 @@ async def test_filter_documents_created_after_future(
     )
 
     response = await client.get(
-        f"/api/v1/collections/{sample_collection.id}/documents?created_after=2099-01-01T00:00:00"
+        f"/api/v1/collections/{sample_collection.id}/documents?created_after=2099-01-01T00:00:00",
     )
     assert response.status_code == 200
     assert response.json()["meta"]["total"] == 0
@@ -214,7 +213,7 @@ async def test_ingest_blocked_document_returns_422(client, sample_collection):
 
 @pytest.mark.anyio
 async def test_ingest_extraction_timeout_returns_422(
-    client, monkeypatch, sample_collection
+    client, monkeypatch, sample_collection,
 ):
     """DOC-13: Extracción que supera el timeout retorna 422."""
     import time
@@ -224,10 +223,10 @@ async def test_ingest_extraction_timeout_returns_422(
         return "text"
 
     monkeypatch.setattr(
-        "app.services.document.document_service.extract_text", _slow_extract
+        "app.services.document.document_service.extract_text", _slow_extract,
     )
     monkeypatch.setattr(
-        "app.services.document.document_service._EXTRACTION_TIMEOUT_SECONDS", 0.01
+        "app.services.document.document_service._EXTRACTION_TIMEOUT_SECONDS", 0.01,
     )
 
     response = await client.post(
@@ -239,7 +238,7 @@ async def test_ingest_extraction_timeout_returns_422(
 
 @pytest.mark.anyio
 async def test_ingest_malformed_pdf_marks_422_and_allows_following_ingest(
-    client, monkeypatch, db_session, sample_collection
+    client, monkeypatch, db_session, sample_collection,
 ):
     """DOC-14: PDF malformado retorna 422 y no bloquea ingestas posteriores."""
 
@@ -249,7 +248,7 @@ async def test_ingest_malformed_pdf_marks_422_and_allows_following_ingest(
         return "texto ok"
 
     monkeypatch.setattr(
-        "app.services.document.document_service.extract_text", _broken_extract
+        "app.services.document.document_service.extract_text", _broken_extract,
     )
 
     bad = await client.post(
@@ -267,7 +266,7 @@ async def test_ingest_malformed_pdf_marks_422_and_allows_following_ingest(
 
 @pytest.mark.anyio
 async def test_ingest_qdrant_failure_sets_processing_error(
-    client, monkeypatch, db_session, sample_collection
+    client, monkeypatch, db_session, sample_collection,
 ):
     """DOC-15: Falla de ingestión deja processing_error persistido."""
 
@@ -275,7 +274,7 @@ async def test_ingest_qdrant_failure_sets_processing_error(
         raise TimeoutError("qdrant timeout")
 
     monkeypatch.setattr(
-        "app.services.document.document_service.ingest_chunks", _raise_ingest
+        "app.services.document.document_service.ingest_chunks", _raise_ingest,
     )
 
     response = await client.post(
@@ -285,7 +284,7 @@ async def test_ingest_qdrant_failure_sets_processing_error(
     assert response.status_code == 202
 
     doc = db_session.exec(
-        select(Document).where(Document.filename == "timeout.txt")
+        select(Document).where(Document.filename == "timeout.txt"),
     ).first()
     assert doc.status == DocumentStatus.failed
     assert "qdrant timeout" in (doc.processing_error or "")

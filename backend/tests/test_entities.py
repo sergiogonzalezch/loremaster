@@ -1,10 +1,9 @@
 import pytest
-from sqlmodel import select
-
 from app.models.db.collection import Collection
 from app.models.db.entity_content import EntityContent
-from app.models.enums import ContentCategory, ContentStatus
 from app.models.db.generated_text import GeneratedText
+from app.models.enums import ContentCategory, ContentStatus
+from sqlmodel import select
 
 
 @pytest.mark.anyio
@@ -27,7 +26,7 @@ async def test_list_entities(client, sample_collection):
     ]
     for payload in payloads:
         await client.post(
-            f"/api/v1/collections/{sample_collection.id}/entities", json=payload
+            f"/api/v1/collections/{sample_collection.id}/entities", json=payload,
         )
 
     response = await client.get(f"/api/v1/collections/{sample_collection.id}/entities")
@@ -65,20 +64,20 @@ async def test_delete_entity(client, sample_collection, sample_entity):
     """ENT-05: Eliminar entidad retorna 204 y luego GET retorna 404."""
     assert (
         await client.delete(
-            f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}"
+            f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}",
         )
     ).status_code == 204
 
     assert (
         await client.get(
-            f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}"
+            f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}",
         )
     ).status_code == 404
 
 
 @pytest.mark.anyio
 async def test_delete_entity_cascades_all_contents(
-    client, db_session, sample_collection, sample_entity
+    client, db_session, sample_collection, sample_entity,
 ):
     """ENT-06: Eliminar entidad hace soft-delete de EntityContent pending y confirmed."""
     gt = GeneratedText(
@@ -114,12 +113,12 @@ async def test_delete_entity_cascades_all_contents(
 
     assert (
         await client.delete(
-            f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}"
+            f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}",
         )
     ).status_code == 204
 
     contents = db_session.exec(
-        select(EntityContent).where(EntityContent.entity_id == sample_entity.id)
+        select(EntityContent).where(EntityContent.entity_id == sample_entity.id),
     ).all()
     assert len(contents) == 2
     assert all(c.is_deleted is True for c in contents)
@@ -149,7 +148,7 @@ async def test_entity_wrong_collection_404(client, db_session, sample_entity):
     db_session.refresh(col_b)
 
     response = await client.get(
-        f"/api/v1/collections/{col_b.id}/entities/{sample_entity.id}"
+        f"/api/v1/collections/{col_b.id}/entities/{sample_entity.id}",
     )
     assert response.status_code == 403
 
@@ -163,11 +162,11 @@ async def test_filter_entities_by_name(client, sample_collection):
         {"type": "faction", "name": "Fellowship", "description": ""},
     ]:
         await client.post(
-            f"/api/v1/collections/{sample_collection.id}/entities", json=payload
+            f"/api/v1/collections/{sample_collection.id}/entities", json=payload,
         )
 
     response = await client.get(
-        f"/api/v1/collections/{sample_collection.id}/entities?name=gandalf"
+        f"/api/v1/collections/{sample_collection.id}/entities?name=gandalf",
     )
     assert response.status_code == 200
     body = response.json()
@@ -187,11 +186,11 @@ async def test_filter_entities_by_type(client, sample_collection):
         {"type": "item", "name": "One Ring", "description": ""},
     ]:
         await client.post(
-            f"/api/v1/collections/{sample_collection.id}/entities", json=payload
+            f"/api/v1/collections/{sample_collection.id}/entities", json=payload,
         )
 
     response = await client.get(
-        f"/api/v1/collections/{sample_collection.id}/entities?type=character"
+        f"/api/v1/collections/{sample_collection.id}/entities?type=character",
     )
     assert response.status_code == 200
     body = response.json()
@@ -208,11 +207,11 @@ async def test_filter_entities_name_and_type_combined(client, sample_collection)
         {"type": "character", "name": "Aragorn", "description": ""},
     ]:
         await client.post(
-            f"/api/v1/collections/{sample_collection.id}/entities", json=payload
+            f"/api/v1/collections/{sample_collection.id}/entities", json=payload,
         )
 
     response = await client.get(
-        f"/api/v1/collections/{sample_collection.id}/entities?name=arwen&type=character"
+        f"/api/v1/collections/{sample_collection.id}/entities?name=arwen&type=character",
     )
     assert response.status_code == 200
     body = response.json()
@@ -229,7 +228,7 @@ async def test_filter_entities_created_after_future(client, sample_collection):
     )
 
     response = await client.get(
-        f"/api/v1/collections/{sample_collection.id}/entities?created_after=2099-01-01T00:00:00"
+        f"/api/v1/collections/{sample_collection.id}/entities?created_after=2099-01-01T00:00:00",
     )
     assert response.status_code == 200
     assert response.json()["meta"]["total"] == 0
@@ -237,7 +236,7 @@ async def test_filter_entities_created_after_future(client, sample_collection):
 
 @pytest.mark.anyio
 async def test_delete_entity_cascades_generated_images(
-    client, db_session, sample_collection, sample_entity
+    client, db_session, sample_collection, sample_entity,
 ):
     """ENT-13: Eliminar entidad hace soft-delete de sus ImageGeneration e ImageRecord."""
     from app.models.db.image_generation import ImageGeneration, ImageRecord
@@ -272,7 +271,7 @@ async def test_delete_entity_cascades_generated_images(
     db_session.refresh(image)
 
     response = await client.delete(
-        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}"
+        f"/api/v1/collections/{sample_collection.id}/entities/{sample_entity.id}",
     )
     assert response.status_code == 204
 
