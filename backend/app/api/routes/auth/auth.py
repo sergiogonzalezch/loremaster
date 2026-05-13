@@ -1,7 +1,7 @@
 """Endpoints de autenticación: login, registro y logout.
 
 Implementa autenticación JWT con validación de credenciales,
-registro de usuarios con validación de username (C-5), e invalidación
+registro de usuarios con validación de username, e invalidación
 de tokens via token_version.
 """
 
