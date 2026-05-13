@@ -1,6 +1,6 @@
 """Extracción de texto desde archivos PDF y TXT.
 
-Implementa extracción de texto plano con protección contra PDF bombs (H-7):
+Implementa extracción de texto plano con protección contra PDF bombs:
 límite de páginas configurable via max_pdf_pages en Settings.
 """
 
