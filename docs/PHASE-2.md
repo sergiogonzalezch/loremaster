@@ -144,40 +144,62 @@ Si un modelo supera al baseline (llama3.2:3b) en **≥ 0.5 puntos** en el promed
 
 ---
 
-## Feature futuro: per-category model switch
+## Feature: Per-Query Model Selection
 
-### Contexto del backend
+### Contexto y decisión de diseño
 
-Actualmente hay un único modelo global:
+Los datos de Phase 2 muestran que `mistral` supera al baseline solo en `scene` (+0.50, exactamente en el umbral). Un switch automático por categoría configurable via `.env` sería poco visible para el usuario y no le daría control real.
+
+**Enfoque adoptado:** el usuario selecciona el modelo activamente antes de generar cada draft. Si el resultado no le convence, puede generar otro draft con un modelo distinto y confirmar el mejor. Esto encaja naturalmente con el sistema de drafts ya existente.
+
+Sin recomendaciones hardcodeadas en el código: la lista viene de Ollama en tiempo real y el usuario decide basándose en sus propios criterios.
+
+---
+
+### Flujo de usuario
 
 ```
-Settings.ollama_model = "llama3.2:latest"
+[Usuario abre panel de generación]
     ↓
-llm.py → OllamaLLM(model=settings.ollama_model)
+Selector de modelo (carga desde GET /api/v1/models)
+    ↓ elige "mistral"
+[Genera draft]  ←  llama rag_pipeline con model="mistral"
     ↓
-rag_pipeline.py → generation_chain = llm | StrOutputParser()
+Draft creado — muestra badge "Generado con: mistral"
+    ↓ (no le convence)
+[Genera otro draft]  ←  elige "llama3.2"
     ↓
-generation_service.py → invoke_generation_pipeline(...)
+Dos drafts pendientes → confirma el mejor
 ```
 
-### Diseño propuesto
+---
 
-El cambio es mínimo y backward-compatible. Tres puntos de toque:
+### Plan de implementación
 
-**1. `Settings` — añadir overrides opcionales por categoría**
+#### Paso B1 — Backend: endpoint de modelos disponibles
+
+**Archivo nuevo:** `app/api/routes/models/models.py`
+
+- `GET /api/v1/models` — consulta `{ollama_base_url}/api/tags` y retorna la lista de modelos instalados localmente
+- Si Ollama no responde → 503 con mensaje en español
+- Sin lógica de recomendaciones: devuelve nombre, tamaño, y si es el modelo por defecto
 
 ```python
-# app/core/config/__init__.py
-ollama_model: str = "llama3.2:latest"                    # modelo por defecto (sin cambios)
-ollama_model_overrides: dict[str, str] = {}               # overrides por categoría
-# Ejemplo en .env:
-# OLLAMA_MODEL_OVERRIDES='{"chapter": "llama3.1:8b", "backstory": "gemma2:9b"}'
+class ModelInfo(BaseModel):
+    name: str
+    size: int           # bytes, para info del usuario
+    is_default: bool    # True si coincide con settings.ollama_model
 ```
 
-**2. `llm.py` — factory con caché por model string**
+Registrar el router en `app/main.py` bajo `/api/v1/models`.
+
+---
+
+#### Paso B2 — Backend: factory LLM con caché
+
+**Archivo:** `app/engine/llm.py`
 
 ```python
-# app/engine/llm.py
 import functools
 
 @functools.lru_cache(maxsize=8)
@@ -188,61 +210,120 @@ def get_llm(model: str) -> OllamaLLM:
         temperature=settings.temperature,
         num_predict=settings.max_tokens,
     )
-
-# Instancia por defecto para compatibilidad hacia atrás
-llm = get_llm(settings.ollama_model)
 ```
 
-**3. `rag_pipeline.py` — resolver modelo por categoría en invoke**
+`OllamaLLM` es stateless — el caché evita instanciar el mismo objeto N veces sin beneficio. El `llm` global existente se mantiene como fallback para el pipeline RAG libre.
+
+---
+
+#### Paso B3 — Backend: propagar `model` por la cadena de llamadas
+
+Cambios en cascada, todos pequeños:
+
+| Archivo | Cambio |
+|---|---|
+| `models/schemas/entity_content.py` | `GenerateContentRequest` → añadir `model: str \| None = None` |
+| `engine/rag_pipeline.py` | `invoke_generation_pipeline` acepta `model: str \| None`; si hay modelo → crea chain con `get_llm(model)`, si no → usa `generation_chain` global |
+| `services/entity/generation_service.py` | `generate()` acepta y propaga `model` |
+| `api/routes/entities/content.py` | pasa `request.model` a `generation_service.generate()` |
+
+---
+
+#### Paso B4 — Backend: registrar modelo usado en DB
+
+**Archivo:** `app/models/db/generated_text.py`
 
 ```python
-# app/engine/rag_pipeline.py
-def invoke_generation_pipeline(
-    ...,
-    category: ContentCategory,
-) -> tuple[str, int]:
-    model = settings.ollama_model_overrides.get(category.value, settings.ollama_model)
-    llm_instance = get_llm(model)
-    generation_chain = llm_instance | StrOutputParser()
-    ...
+model_used: str = Field(default=settings.ollama_model, max_length=100)
 ```
 
-### Por qué este diseño
+- `generation_service.generate()` escribe `model_used = model or settings.ollama_model` al crear el `GeneratedText`
+- `EntityContentResponse` añade `model_used: str | None` para que el frontend lo muestre
+- **Alembic migration** para la columna (nullable con valor por defecto para registros existentes)
 
-- **Cero breaking changes**: `ollama_model_overrides` defecto vacío → comportamiento idéntico al actual.
-- **Sin rediseño**: no hay repositorio de LLMs ni inyección de dependencias nueva — solo un dict y una función cacheada.
-- **Configurable vía .env**: los overrides se pueden cambiar sin tocar código.
-- **Lazy init**: los modelos alternativos solo se cargan si hay un override configurado.
+---
 
-> Este feature **no se implementa** hasta que los datos de Phase 2 confirmen que algún modelo supera al baseline por ≥ 0.5 puntos en una categoría. Sin datos no hay justificación.
+#### Paso F1 — Frontend: API method
+
+**Archivo nuevo:** `src/api/endpoints/models.ts`
+
+```typescript
+export async function getModels(): Promise<ModelInfo[]>
+```
+
+---
+
+#### Paso F2 — Frontend: componente `ModelSelector`
+
+**Archivo nuevo:** `src/components/ModelSelector.tsx`
+
+- Dropdown que carga `/api/v1/models` al montarse
+- Muestra nombre del modelo; marca el modelo por defecto
+- Persiste la última selección en `localStorage` (key: `lm_selected_model`)
+- Si la carga falla → oculta el selector sin bloquear la generación (usa el modelo por defecto)
+
+---
+
+#### Paso F3 — Frontend: integración en generación y cards
+
+| Archivo | Cambio |
+|---|---|
+| `EntityContentsPanel.tsx` | Integra `ModelSelector`; pasa `model` seleccionado al llamar `generateContent()` |
+| `ContentCard.tsx` | Muestra badge pequeño con `model_used` en drafts pendientes |
+
+---
+
+### Scope total
+
+| Capa | Archivos nuevos | Archivos modificados |
+|---|:---:|:---:|
+| Backend | 2 (`models.py`, migración Alembic) | 5 |
+| Frontend | 2 (`models.ts`, `ModelSelector.tsx`) | 2 |
+
+**Sin cambios en:** pipeline RAG libre (`rag_query.py`), sistema de confirmación de drafts, estructura de colecciones.
 
 ---
 
 ## Orden de trabajo
 
+### Comparativa de modelos (completado ✅)
+
+| Paso | Actividad | Estado |
+|---|---|---|
+| 1 | `ollama pull llama3.1` + `ollama pull qwen2.5` + `ollama pull mistral` | ✅ |
+| 2 | Ejecutar runner.py para cada modelo nuevo (3 runs) | ✅ |
+| 3 | Ejecutar judge.py con gemma2 en cada run nuevo (3 evals) | ✅ |
+| 4 | Implementar `reporter.py` | ✅ |
+| 5 | Generar reporte con los 4 modelos → `docs/phase2-model-comparison.md` | ✅ |
+| 6 | Decisión: solo `scene` supera umbral (+0.50, mistral) | ✅ |
+
+### Feature per-query model selection (pendiente)
+
 | Paso | Actividad | Prerequisito |
 |---|---|---|
-| 1 | `ollama pull llama3.1` + `ollama pull qwen2.5` + `ollama pull mistral` | Ollama activo |
-| 2 | Ejecutar runner.py para cada modelo nuevo (3 runs) | Paso 1 |
-| 3 | Ejecutar judge.py con gemma2 en cada run nuevo (3 evals) | Paso 2 |
-| 4 | Implementar `reporter.py` | — |
-| 5 | Generar reporte con los 4 modelos (baseline + 3 nuevos) | Pasos 3 y 4 |
-| 6 | Decidir qué categorías justifican switch (umbral 0.5) | Paso 5 |
-| 7 | Implementar per-category switch en backend **si aplica** | Paso 6 |
-| 8 | Actualizar smoke tests si se toca el backend | Paso 7 |
-| 9 | Merge `feature/model-harness` → `dev` | Pasos 5-8 |
+| B1 | `GET /api/v1/models` — endpoint lista modelos Ollama | — |
+| B2 | `get_llm(model)` factory con `lru_cache` en `llm.py` | — |
+| B3 | Propagar `model` por la cadena: schema → service → pipeline | B2 |
+| B4 | Columna `model_used` en `GeneratedText` + migración Alembic | — |
+| F1 | `getModels()` en `api/endpoints/models.ts` | B1 |
+| F2 | Componente `ModelSelector` con localStorage | F1 |
+| F3 | Integrar `ModelSelector` en panel + badge en `ContentCard` | F2, B3, B4 |
+| T1 | Actualizar tests afectados por los cambios de backend | B1–B4 |
+| M | Merge `feature/model-harness` → `dev` | Todo |
 
 ---
 
 ## Entregables
 
-| Entregable | Descripción |
-|---|---|
-| 3 runs de generación | llama3.1:8b, gemma2:9b, qwen2.5:7b contra los 10 TCs |
-| 3 evals con gemma2 | Scores D1-D4 para cada run nuevo |
-| `reporter.py` | Script que genera reporte markdown multi-modelo |
-| `docs/phase2-model-comparison.md` | Reporte final con ranking y recomendaciones |
-| Backend switch (condicional) | Solo si datos justifican; diseño ya documentado arriba |
+| Entregable | Descripción | Estado |
+|---|---|---|
+| 3 runs de generación | llama3.1:8b, qwen2.5:7b, mistral contra los 10 TCs | ✅ |
+| 3 evals con gemma2 | Scores D1-D4 para cada run nuevo | ✅ |
+| `reporter.py` | Script que genera reporte markdown multi-modelo | ✅ |
+| `docs/phase2-model-comparison.md` | Reporte final con ranking y recomendaciones | ✅ |
+| `GET /api/v1/models` | Endpoint que lista modelos Ollama instalados | pendiente |
+| Per-query model selection | UI + backend para elegir modelo por generación | pendiente |
+| `model_used` en drafts | Trazabilidad del modelo por draft generado | pendiente |
 
 ---
 
