@@ -1,0 +1,96 @@
+{
+  "run_id": "2026-05-14_15-08_qwen3.5_9b_0.7",
+  "model": "qwen3.5:9b",
+  "temperature": 0.7,
+  "total_cases": 12,
+  "tipo_correct": 0,
+  "english_correct": 0,
+  "results": [
+    {
+      "tc_id": "tc-01",
+      "tipo_ok": false,
+      "english_ok": false,
+      "response_time_sec": 28.67,
+      "error": null
+    },
+    {
+      "tc_id": "tc-02",
+      "tipo_ok": false,
+      "english_ok": false,
+      "response_time_sec": 0.0,
+      "error": "HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=120)"
+    },
+    {
+      "tc_id": "tc-03",
+      "tipo_ok": false,
+      "english_ok": false,
+      "response_time_sec": 0.0,
+      "error": "HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=120)"
+    },
+    {
+      "tc_id": "tc-04",
+      "tipo_ok": false,
+      "english_ok": false,
+      "response_time_sec": 0.0,
+      "error": "HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=120)"
+    },
+    {
+      "tc_id": "tc-05",
+      "tipo_ok": false,
+      "english_ok": false,
+      "response_time_sec": 0.0,
+      "error": "HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=120)"
+    },
+    {
+      "tc_id": "tc-06",
+      "tipo_ok": false,
+      "english_ok": false,
+      "response_time_sec": 0.0,
+      "error": "HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=120)"
+    },
+    {
+      "tc_id": "tc-07",
+      "tipo_ok": false,
+      "english_ok": false,
+      "response_time_sec": 65.12,
+      "error": null
+    },
+    {
+      "tc_id": "tc-08",
+      "tipo_ok": false,
+      "english_ok": false,
+      "response_time_sec": 19.51,
+      "error": null
+    },
+    {
+      "tc_id": "tc-09",
+      "tipo_ok": false,
+      "english_ok": false,
+      "response_time_sec": 17.82,
+      "error": null
+    },
+    {
+      "tc_id": "tc-10",
+      "tipo_ok": false,
+      "english_ok": false,
+      "response_time_sec": 17.56,
+      "error": null
+    },
+    {
+      "tc_id": "tc-11",
+      "tipo_ok": false,
+      "english_ok": false,
+      "response_time_sec": 17.56,
+      "error": null
+    },
+    {
+      "tc_id": "tc-12",
+      "tipo_ok": false,
+      "english_ok": false,
+      "response_time_sec": 18.19,
+      "error": null
+    }
+  ],
+  "tipo_pct": 0.0,
+  "english_pct": 0.0
+}

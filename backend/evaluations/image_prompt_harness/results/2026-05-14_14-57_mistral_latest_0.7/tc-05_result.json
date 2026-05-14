@@ -1,0 +1,19 @@
+{
+  "run_id": "2026-05-14_14-57_mistral_latest_0.7",
+  "tc_id": "tc-05",
+  "entity_type": "creature",
+  "category": "backstory",
+  "expected_types": [
+    "demon",
+    "devil",
+    "fiend",
+    "beast"
+  ],
+  "model": "mistral:latest",
+  "temperature": 0.7,
+  "output": " dragon, red-dark skin with black pulsing veins, horns that twist over centuries, obsidian chains trailing on hot ground, eyes burning with black flames, long and curved black claws",
+  "response_time_sec": 6.08,
+  "tipo_ok": false,
+  "english_ok": true,
+  "error": null
+}

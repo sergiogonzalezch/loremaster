@@ -1,0 +1,18 @@
+{
+  "run_id": "2026-05-14_14-59_llama3.1_latest_0.7",
+  "tc_id": "tc-02",
+  "entity_type": "character",
+  "category": "extended_description",
+  "expected_types": [
+    "alien",
+    "extraterrestrial",
+    "being"
+  ],
+  "model": "llama3.1:latest",
+  "temperature": 0.7,
+  "output": "alien, blue scaly skin, white eyes without visible pupil, thin body, long limbs, four thin arms with filiform fingers, silver plate tunic with luminous circuits embroidered on it, elongated head, short antennae on forehead that vibrate slightly when speaking.",
+  "response_time_sec": 8.14,
+  "tipo_ok": true,
+  "english_ok": true,
+  "error": null
+}

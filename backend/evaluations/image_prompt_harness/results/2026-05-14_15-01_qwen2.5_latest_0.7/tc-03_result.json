@@ -1,0 +1,20 @@
+{
+  "run_id": "2026-05-14_15-01_qwen2.5_latest_0.7",
+  "tc_id": "tc-03",
+  "entity_type": "character",
+  "category": "scene",
+  "expected_types": [
+    "robot",
+    "android",
+    "cyborg",
+    "machine",
+    "automaton"
+  ],
+  "model": "qwen2.5:latest",
+  "temperature": 0.7,
+  "output": "robot, metallic body, graphite color, fluorescent lighting, servo motors emit constant humming noise, control panel with blinking red and green indicators on chest, red camera lenses for eyes, precise and calculated movements on steel floor",
+  "response_time_sec": 5.9,
+  "tipo_ok": true,
+  "english_ok": true,
+  "error": null
+}

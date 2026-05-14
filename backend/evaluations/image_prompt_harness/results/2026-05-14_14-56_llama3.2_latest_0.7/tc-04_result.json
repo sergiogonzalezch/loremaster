@@ -1,0 +1,16 @@
+{
+  "run_id": "2026-05-14_14-56_llama3.2_latest_0.7",
+  "tc_id": "tc-04",
+  "entity_type": "creature",
+  "category": "extended_description",
+  "expected_types": [
+    "dragon"
+  ],
+  "model": "llama3.2:latest",
+  "temperature": 0.7,
+  "output": "dragon, large, scaly body, amber and gold color, membranous wings, 20m wide, four twisted horn protrusions, long tail, sharp bone tip, luminous green eyes, vertical pupil, orange glow from throat during breathing.",
+  "response_time_sec": 3.5,
+  "tipo_ok": true,
+  "english_ok": true,
+  "error": null
+}

@@ -101,7 +101,7 @@ def run(model: str, temperature: float, ollama_url: str) -> None:
         if english_ok:
             summary["english_correct"] += 1
 
-        status = "ERROR" if error else f"tipo={'✓' if tipo_ok else '✗'} en={'✓' if english_ok else '✗'}"
+        status = "ERROR" if error else f"tipo={'OK' if tipo_ok else 'FAIL'} en={'OK' if english_ok else 'FAIL'}"
         print(f"{status} ({elapsed:.1f}s)")
 
         result = {
@@ -139,8 +139,8 @@ def run(model: str, temperature: float, ollama_url: str) -> None:
     )
 
     print(
-        f"\nResumen — tipo: {summary['tipo_correct']}/{total} ({summary['tipo_pct']}%) "
-        f"| inglés: {summary['english_correct']}/{total} ({summary['english_pct']}%)"
+        f"\nResumen - tipo: {summary['tipo_correct']}/{total} ({summary['tipo_pct']}%) "
+        f"| ingles: {summary['english_correct']}/{total} ({summary['english_pct']}%)"
     )
     print(f"Resultados en: {out_dir}")
 

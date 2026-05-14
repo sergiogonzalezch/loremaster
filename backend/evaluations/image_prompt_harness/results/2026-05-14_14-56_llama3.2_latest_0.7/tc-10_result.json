@@ -1,0 +1,19 @@
+{
+  "run_id": "2026-05-14_14-56_llama3.2_latest_0.7",
+  "tc_id": "tc-10",
+  "entity_type": "item",
+  "category": "extended_description",
+  "expected_types": [
+    "sword",
+    "blade",
+    "weapon",
+    "longsword"
+  ],
+  "model": "llama3.2:latest",
+  "temperature": 0.7,
+  "output": "sword, silver-plated steel blade with luminous runes along the edge, bronze wing-like guard, spherical pommel containing a blue quartz gemstone emitting a faint cold glow, leather-wrapped handle wrapped in black cowhide and silver thread, 90 cm long with a central channel along its entire length",
+  "response_time_sec": 3.58,
+  "tipo_ok": true,
+  "english_ok": true,
+  "error": null
+}

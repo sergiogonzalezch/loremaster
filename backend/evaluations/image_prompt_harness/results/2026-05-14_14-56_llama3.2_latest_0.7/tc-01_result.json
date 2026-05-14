@@ -1,0 +1,21 @@
+{
+  "run_id": "2026-05-14_14-56_llama3.2_latest_0.7",
+  "tc_id": "tc-01",
+  "entity_type": "character",
+  "category": "extended_description",
+  "expected_types": [
+    "human",
+    "man",
+    "woman",
+    "warrior",
+    "person",
+    "soldier"
+  ],
+  "model": "llama3.2:latest",
+  "temperature": 0.7,
+  "output": "human, robust build, weathered skin, dark black hair, sweaty forehead, leather armor, iron reinforcements, brown, silver eyes, wide armoured shoulder guards, chest plate, long sword at belt, round shield on left arm, grey expression",
+  "response_time_sec": 3.44,
+  "tipo_ok": true,
+  "english_ok": true,
+  "error": null
+}

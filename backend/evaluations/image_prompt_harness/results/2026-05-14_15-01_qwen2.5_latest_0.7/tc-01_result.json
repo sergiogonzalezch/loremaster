@@ -1,0 +1,21 @@
+{
+  "run_id": "2026-05-14_15-01_qwen2.5_latest_0.7",
+  "tc_id": "tc-01",
+  "entity_type": "character",
+  "category": "extended_description",
+  "expected_types": [
+    "human",
+    "man",
+    "woman",
+    "warrior",
+    "person",
+    "soldier"
+  ],
+  "model": "qwen2.5:latest",
+  "temperature": 0.7,
+  "output": "human, robust build, weathered skin, black hair, sweaty forehead, leather armor with iron reinforcements on shoulders and chest, long sword at waist, round shield on left arm, gray eyes, cautious and determined expression",
+  "response_time_sec": 12.94,
+  "tipo_ok": true,
+  "english_ok": true,
+  "error": null
+}

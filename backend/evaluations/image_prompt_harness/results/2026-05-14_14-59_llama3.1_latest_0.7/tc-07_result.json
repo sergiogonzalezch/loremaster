@@ -1,0 +1,20 @@
+{
+  "run_id": "2026-05-14_14-59_llama3.1_latest_0.7",
+  "tc_id": "tc-07",
+  "entity_type": "location",
+  "category": "scene",
+  "expected_types": [
+    "forest",
+    "woods",
+    "jungle",
+    "grove",
+    "woodland"
+  ],
+  "model": "llama3.1:latest",
+  "temperature": 0.7,
+  "output": "city, ancient trees with silver bark, green emerald moss on the ground, twisted roots, moist earth, golden light columns through dense vegetation, circular bright spots on the ground, blue and white flowers in clearings, thin fog near the ground between large tree trunks.",
+  "response_time_sec": 8.17,
+  "tipo_ok": false,
+  "english_ok": true,
+  "error": null
+}

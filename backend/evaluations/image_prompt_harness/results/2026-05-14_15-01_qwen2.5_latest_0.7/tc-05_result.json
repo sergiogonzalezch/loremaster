@@ -1,0 +1,19 @@
+{
+  "run_id": "2026-05-14_15-01_qwen2.5_latest_0.7",
+  "tc_id": "tc-05",
+  "entity_type": "creature",
+  "category": "backstory",
+  "expected_types": [
+    "demon",
+    "devil",
+    "fiend",
+    "beast"
+  ],
+  "model": "qwen2.5:latest",
+  "temperature": 0.7,
+  "output": "monster, dark skin with black pulsating veins, twisted horns that grew over centuries, obsidian chains dragging on hot ground, eyes burning with black flames, long and curved black claws",
+  "response_time_sec": 5.73,
+  "tipo_ok": false,
+  "english_ok": true,
+  "error": null
+}

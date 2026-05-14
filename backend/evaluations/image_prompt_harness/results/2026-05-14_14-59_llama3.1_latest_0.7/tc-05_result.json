@@ -1,0 +1,19 @@
+{
+  "run_id": "2026-05-14_14-59_llama3.1_latest_0.7",
+  "tc_id": "tc-05",
+  "entity_type": "creature",
+  "category": "backstory",
+  "expected_types": [
+    "demon",
+    "devil",
+    "fiend",
+    "beast"
+  ],
+  "model": "llama3.1:latest",
+  "temperature": 0.7,
+  "output": "mythological being, dark red skin, black veins, twisted horns, obsidian chains, scorched earth, black flames, burning surroundings, black lava rocks, hot environment, palpitating atmosphere",
+  "response_time_sec": 6.62,
+  "tipo_ok": false,
+  "english_ok": true,
+  "error": null
+}

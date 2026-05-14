@@ -1,0 +1,22 @@
+{
+  "run_id": "2026-05-14_14-57_mistral_latest_0.7",
+  "tc_id": "tc-12",
+  "entity_type": "character",
+  "category": "backstory",
+  "expected_types": [
+    "human",
+    "woman",
+    "man",
+    "mage",
+    "wizard",
+    "elf",
+    "person"
+  ],
+  "model": "mistral:latest",
+  "temperature": 0.7,
+  "output": " human, beige linen worn and brown leather sandals, red corded hair, grey apprentice robe with green trim and leather shoulder bag filled with rolled parchments, hands with minor burns",
+  "response_time_sec": 6.52,
+  "tipo_ok": true,
+  "english_ok": true,
+  "error": null
+}

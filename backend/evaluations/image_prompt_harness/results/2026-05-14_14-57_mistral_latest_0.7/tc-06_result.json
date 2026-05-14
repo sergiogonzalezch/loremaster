@@ -1,0 +1,20 @@
+{
+  "run_id": "2026-05-14_14-57_mistral_latest_0.7",
+  "tc_id": "tc-06",
+  "entity_type": "location",
+  "category": "extended_description",
+  "expected_types": [
+    "city",
+    "town",
+    "metropolis",
+    "settlement",
+    "fortress"
+  ],
+  "model": "mistral:latest",
+  "temperature": 0.7,
+  "output": " city, rocky plateau, grey rock, white limestone, crenelated walls, terraced streets, red-tiled rooftops, white facades, blue crystal chandeliers, main squares",
+  "response_time_sec": 6.19,
+  "tipo_ok": true,
+  "english_ok": true,
+  "error": null
+}

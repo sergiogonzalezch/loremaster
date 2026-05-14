@@ -1,0 +1,16 @@
+{
+  "run_id": "2026-05-14_14-59_llama3.1_latest_0.7",
+  "tc_id": "tc-04",
+  "entity_type": "creature",
+  "category": "extended_description",
+  "expected_types": [
+    "dragon"
+  ],
+  "model": "llama3.1:latest",
+  "temperature": 0.7,
+  "output": "mythological being, colosal, escamas color ámbar, escamas color oro viejo, membranosas, veinte metros, cuatro cuernos retorcidos de hueso marfil, cabeza angular, cola larga, hueso afilado, ojos verde luminoso, pupila vertical, resplandor anaranjado",
+  "response_time_sec": 10.61,
+  "tipo_ok": false,
+  "english_ok": false,
+  "error": null
+}

@@ -1,0 +1,16 @@
+{
+  "run_id": "2026-05-14_14-57_mistral_latest_0.7",
+  "tc_id": "tc-04",
+  "entity_type": "creature",
+  "category": "extended_description",
+  "expected_types": [
+    "dragon"
+  ],
+  "model": "mistral:latest",
+  "temperature": 0.7,
+  "output": " dragon, colossal, amber and old gold scales, membranous wings (20 meters when spread), twisted ivory horns (4), long tail with afiladed bone tip, luminescent green eyes (vertical pupil), associated element (fire)",
+  "response_time_sec": 7.1,
+  "tipo_ok": true,
+  "english_ok": true,
+  "error": null
+}

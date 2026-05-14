@@ -1,0 +1,20 @@
+{
+  "run_id": "2026-05-14_14-59_llama3.1_latest_0.7",
+  "tc_id": "tc-06",
+  "entity_type": "location",
+  "category": "extended_description",
+  "expected_types": [
+    "city",
+    "town",
+    "metropolis",
+    "settlement",
+    "fortress"
+  ],
+  "model": "llama3.1:latest",
+  "temperature": 0.7,
+  "output": "city, meseta of grey rock, towers of white limestone, walls with battlements, cobblestone streets, terraced, central citadel, commercial districts, red tile roofs, white facades, blue glass lanterns, night-time lighting, human scale, urban atmosphere, trees, buildings, furniture (none mentioned), decoration (none mentioned), visible symbols (none mentioned)",
+  "response_time_sec": 10.88,
+  "tipo_ok": true,
+  "english_ok": true,
+  "error": null
+}

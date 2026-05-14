@@ -1,0 +1,21 @@
+{
+  "run_id": "2026-05-14_14-56_llama3.2_latest_0.7",
+  "tc_id": "tc-11",
+  "entity_type": "item",
+  "category": "backstory",
+  "expected_types": [
+    "artifact",
+    "relic",
+    "orb",
+    "amulet",
+    "talisman",
+    "sphere"
+  ],
+  "model": "llama3.2:latest",
+  "temperature": 0.7,
+  "output": "sphere, obsidian, dark, metallic, iron, three clawed base, silver, spiral symbols, black, weathered, no period decorative elements, no frames, no mounts.",
+  "response_time_sec": 3.22,
+  "tipo_ok": true,
+  "english_ok": true,
+  "error": null
+}

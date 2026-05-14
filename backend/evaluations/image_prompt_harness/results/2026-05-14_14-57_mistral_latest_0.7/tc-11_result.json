@@ -1,0 +1,21 @@
+{
+  "run_id": "2026-05-14_14-57_mistral_latest_0.7",
+  "tc_id": "tc-11",
+  "entity_type": "item",
+  "category": "backstory",
+  "expected_types": [
+    "artifact",
+    "relic",
+    "orb",
+    "amulet",
+    "talisman",
+    "sphere"
+  ],
+  "model": "mistral:latest",
+  "temperature": 0.7,
+  "output": " shadow orb, polished obsidian, size of clenched fist, swirling dark mist inside, black iron base with three claws, spiral engravings of arcane symbols (silver), cold radiating up to several meters",
+  "response_time_sec": 7.1,
+  "tipo_ok": false,
+  "english_ok": true,
+  "error": null
+}

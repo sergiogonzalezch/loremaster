@@ -1,0 +1,22 @@
+{
+  "run_id": "2026-05-14_15-01_qwen2.5_latest_0.7",
+  "tc_id": "tc-12",
+  "entity_type": "character",
+  "category": "backstory",
+  "expected_types": [
+    "human",
+    "woman",
+    "man",
+    "mage",
+    "wizard",
+    "elf",
+    "person"
+  ],
+  "model": "qwen2.5:latest",
+  "temperature": 0.7,
+  "output": "human, wearing worn beige linen clothing, brown leather sandals, curly brown hair tied with a red cord, carrying a gray apprentice tunic with green borders and a leather bag filled with rolled parchments, hands showing light burns indicative of spellcasting without gloves, located in Havan markets",
+  "response_time_sec": 9.07,
+  "tipo_ok": true,
+  "english_ok": true,
+  "error": null
+}

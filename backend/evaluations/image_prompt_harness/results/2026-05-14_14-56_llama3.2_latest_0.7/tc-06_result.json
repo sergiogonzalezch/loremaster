@@ -1,0 +1,20 @@
+{
+  "run_id": "2026-05-14_14-56_llama3.2_latest_0.7",
+  "tc_id": "tc-06",
+  "entity_type": "location",
+  "category": "extended_description",
+  "expected_types": [
+    "city",
+    "town",
+    "metropolis",
+    "settlement",
+    "fortress"
+  ],
+  "model": "llama3.2:latest",
+  "temperature": 0.7,
+  "output": "city, stone walls, rock plateau, grey, stone towers with white limestone, fortified walls with battlements, cobblestone streets descending to terraces, central citadel, commercial districts at the base, red tile roofs contrasting with white facades of buildings, faroals with azure glass, night-time illumination, plazas illuminated",
+  "response_time_sec": 3.69,
+  "tipo_ok": true,
+  "english_ok": true,
+  "error": null
+}

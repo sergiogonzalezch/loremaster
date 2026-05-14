@@ -1,0 +1,20 @@
+{
+  "run_id": "2026-05-14_15-01_qwen2.5_latest_0.7",
+  "tc_id": "tc-06",
+  "entity_type": "location",
+  "category": "extended_description",
+  "expected_types": [
+    "city",
+    "town",
+    "metropolis",
+    "settlement",
+    "fortress"
+  ],
+  "model": "qwen2.5:latest",
+  "temperature": 0.7,
+  "output": "city, rocky plateau, gray rock, white limestone towers, fortified with battlements, cobblestone streets in terraces, central citadel, commercial districts at the base, red tile roofs, white facades, blue crystal lanterns illuminating main squares at night",
+  "response_time_sec": 7.38,
+  "tipo_ok": true,
+  "english_ok": true,
+  "error": null
+}

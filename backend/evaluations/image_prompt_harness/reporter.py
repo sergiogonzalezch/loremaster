@@ -57,8 +57,8 @@ def generate_report(summaries: list[dict]) -> str:
         lines.append("| Caso | Tipo | Inglés | Error |")
         lines.append("| --- | --- | --- | --- |")
         for r in s.get("results", []):
-            tipo = "✓" if r["tipo_ok"] else "✗"
-            english = "✓" if r["english_ok"] else "✗"
+            tipo = "OK" if r["tipo_ok"] else "FAIL"
+            english = "OK" if r["english_ok"] else "FAIL"
             error = r["error"] or "—"
             lines.append(f"| {r['tc_id']} | {tipo} | {english} | {error} |")
         lines.append("")

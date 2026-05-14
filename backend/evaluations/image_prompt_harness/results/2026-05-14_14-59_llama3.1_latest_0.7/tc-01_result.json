@@ -1,0 +1,21 @@
+{
+  "run_id": "2026-05-14_14-59_llama3.1_latest_0.7",
+  "tc_id": "tc-01",
+  "entity_type": "character",
+  "category": "extended_description",
+  "expected_types": [
+    "human",
+    "man",
+    "woman",
+    "warrior",
+    "person",
+    "soldier"
+  ],
+  "model": "llama3.1:latest",
+  "temperature": 0.7,
+  "output": "human, robust build, weathered skin, black hair, sweaty forehead, dark hooded cloak, gray eyes, leather armor, iron reinforcements, long sword, round shield, \n\nNote: I removed \"complexion\" and \"sudorosa\" as they are not specific enough visual details.",
+  "response_time_sec": 16.32,
+  "tipo_ok": true,
+  "english_ok": true,
+  "error": null
+}
