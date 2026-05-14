@@ -1,0 +1,13 @@
+id: TC-05
+name: "Objeto sin información directa — backstory con contexto irrelevante"
+category: backstory
+entity_type: item
+entity_name: "La Piedra Brasa"
+entity_description: "Artefacto de origen desconocido encontrado en las ruinas de Velmoor."
+context_quality: irrelevant
+simulated_context:
+  - "Las técnicas de forja utilizadas en el reino de Velmoor durante la era media incluían el uso de aleaciones de hierro volcánico. Los herreros del gremio real eran los únicos autorizados a trabajar con estos materiales."
+  - "El comercio de artefactos mágicos en los mercados de Ashveil fue regulado por decreto real en el año 847. Los vendedores debían registrar cada pieza ante el tribunal de magia."
+query: "¿Cuál es el origen de la Piedra Brasa y quién la creó?"
+notes: "Peor caso de recuperación RAG: contexto temáticamente relacionado (Velmoor, artefactos) pero sin información específica sobre el ítem. Verifica que el modelo genera con nota de limitaciones en lugar de rechazar."
+expected_failure_mode: "El modelo rechaza generar citando falta de contexto, o inventa completamente sin señalarlo."

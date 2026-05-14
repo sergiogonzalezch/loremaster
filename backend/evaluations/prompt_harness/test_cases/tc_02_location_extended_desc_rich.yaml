@@ -1,0 +1,14 @@
+id: TC-02
+name: "Lugar con descripción detallada — extended_description"
+category: extended_description
+entity_type: location
+entity_name: "La Torre Fracturada"
+entity_description: "Torre arcana parcialmente derrumbada sobre el promontorio de Ashveil."
+context_quality: rich
+simulated_context:
+  - "La Torre Fracturada se alza sobre el promontorio de Ashveil. Sus cinco pisos superiores están derrumbados hacia el este desde el Día del Quiebre. La piedra original, de color gris azulado, contrasta con las incrustaciones de cristal negro que crecen en las grietas."
+  - "El interior conserva las bibliotecas del tercer piso intactas. Las estanterías de madera petrificada sostienen pergaminos sellados con cera carmesí. El suelo está cubierto de polvo fino excepto por un sendero desgastado que lleva directamente a la sala central."
+  - "La Torre emite un zumbido grave audible a menos de cien metros. Los lugareños afirman que se intensifica durante las lunas nuevas. La vegetación tiene un radio de cinco metros sin crecimiento alrededor de la base."
+query: "Describe el estado actual de la Torre Fracturada: apariencia exterior, interior y ambiente."
+notes: "Verifica diferenciación con backstory. El output debe centrarse en el estado presente, no en la historia de la torre."
+expected_failure_mode: "El modelo deriva hacia la historia de la torre o el Día del Quiebre en lugar de describir el estado presente."

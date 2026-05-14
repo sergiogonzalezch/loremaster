@@ -1,0 +1,15 @@
+id: TC-03
+name: "Facción con historia compleja — chapter"
+category: chapter
+entity_type: faction
+entity_name: "El Pacto de Hierro"
+entity_description: "Orden de guerreros con código estricto de lealtad vitalicia, fundada tras una batalla catastrófica."
+context_quality: rich
+simulated_context:
+  - "El Pacto de Hierro fue fundado hace doscientos años por siete guerreros que sobrevivieron a la batalla de las Llanuras Grises. Su código fundacional, grabado en placas de hierro negro, estipula que ningún miembro puede abandonar el Pacto mientras viva."
+  - "La jerarquía se organiza en tres rangos: Forjados (reclutas), Templados (veteranos) y el Yunque (consejo de siete). El Yunque toma decisiones por unanimidad; si no hay acuerdo en siete días, el miembro de menor antigüedad abdica."
+  - "El símbolo del Pacto es un martillo cruzado con una cadena rota. Sus miembros llevan la marca tatuada en la muñeca izquierda al ascender a Templado. El uniforme es cota de malla oscura sin adornos."
+  - "El Pacto intervino en la guerra de sucesión del reino de Orenmoor hace treinta años, apoyando al heredero legítimo. A cambio recibieron el control de la fortaleza de Duskhold, que sirve como sede central desde entonces."
+query: "Escribe el capítulo en que el Yunque delibera si aceptar una misión que viola el código fundacional."
+notes: "Verifica inicio-desarrollo-cierre y longitud sustancial (objetivo 6-10 párrafos). El Yunque debe tener tensión interna recognocible."
+expected_failure_mode: "Output corto sin estructura de capítulo, o descripción de la deliberación sin tensión narrativa real."

@@ -1,0 +1,15 @@
+id: TC-08
+name: "Personaje + chapter — máxima exigencia de longitud y estructura"
+category: chapter
+entity_type: character
+entity_name: "Kael Dawnbreaker"
+entity_description: "Paladín excomunicado que sirvió al Pacto de Hierro y ahora sirve al Eco del Vacío."
+context_quality: rich
+simulated_context:
+  - "Kael Dawnbreaker fue ordenado paladín a los diecinueve años en la Orden del Alba. Era conocido por su disciplina y su fe inquebrantable en Solaris."
+  - "La Caída ocurrió durante el asedio de Velmoor. Solo y herido en el templo profanado, pronunció el Juramento Oscuro para sobrevivir."
+  - "Tres meses después, el Archipaladín Serevane firmó la carta de excomunión en silencio. Kael adoptó el nombre de Caballero Sin Luz."
+  - "El Pacto de Hierro emitió una orden de captura. Algunos excompañeros lo buscan para redimirlo; otros, para ejecutarlo."
+query: "Escribe el capítulo en que Kael regresa a Velmoor por primera vez desde la noche del Juramento."
+notes: "El caso más exigente del harness. Con llama3.2 es donde más probable es un output truncado. Verifica 6-10 párrafos y estructura inicio-desarrollo-cierre recognocible."
+expected_failure_mode: "Output de 2-3 párrafos sin cierre claro. Pérdida de coherencia narrativa a mitad del texto."

@@ -1,0 +1,13 @@
+id: TC-09
+name: "Criatura con descripción parcial — extended_description específica vs genérica"
+category: extended_description
+entity_type: creature
+entity_name: "El Gusano del Velo"
+entity_description: "Criatura interdimensional de forma inestable."
+context_quality: sparse
+simulated_context:
+  - "El Gusano del Velo es una criatura de origen desconocido que habita en las zonas de tránsito entre planos. Los escasos testimonios describen una forma alargada que parece no tener contorno fijo."
+  - "Cuando el Gusano se aproxima, los testigos reportan una distorsión visual en el aire, similar al calor del pavimento pero de tono violáceo. El sonido ambiental disminuye progresivamente antes de su aparición."
+query: "Describe los rasgos físicos y el comportamiento observable del Gusano del Velo."
+notes: "D2 (especificidad narrativa) es la dimensión clave. Verifica si el modelo usa la distorsión violácea y la disminución de sonido del contexto, o produce una descripción genérica de criatura dimensional."
+expected_failure_mode: "Output genérico ('una criatura de contornos difusos que viaja entre dimensiones') sin usar los detalles sensoriales específicos del contexto."
