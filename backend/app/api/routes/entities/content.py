@@ -52,7 +52,7 @@ def generate_content(
     Aplica guardrails de entrada y salida.
     """
     try:
-        return generation_service.generate(session, entity, category, request.query)
+        return generation_service.generate(session, entity, category, request.query, request.model)
     except PendingLimitExceededError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
     except ContentNotAllowedError as e:

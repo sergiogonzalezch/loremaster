@@ -45,6 +45,12 @@ def test_compare_importable():
     assert callable(compare._load_results)
 
 
+def test_reporter_importable():
+    reporter = _import_harness_module("reporter")
+    assert callable(reporter.generate_report)
+    assert callable(reporter.main)
+
+
 def test_test_cases_valid():
     tc_dir = _HARNESS_DIR / "test_cases"
     yamls = sorted(tc_dir.glob("*.yaml"))

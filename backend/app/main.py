@@ -25,6 +25,7 @@ from app.api.routes import (
     image_router,
     media_router,
     metadata_router,
+    models_router,
     public_router,
     rag_query_router,
     users_router,
@@ -130,6 +131,7 @@ app.include_router(entities_router, prefix="/api/v1")
 app.include_router(content_router, prefix="/api/v1")
 app.include_router(image_router, prefix="/api/v1")
 app.include_router(metadata_router, prefix="/api/v1")
+app.include_router(models_router, prefix="/api/v1")
 app.include_router(users_router, prefix="/api/v1")
 app.include_router(public_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")

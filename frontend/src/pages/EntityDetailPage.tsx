@@ -23,6 +23,7 @@ import ImagePanel from "../components/ImagePanel";
 import EntityEditForm from "../components/EntityEditForm";
 import LoadingSpinner from "../components/LoadingSpinner";
 import MarkdownContent from "../components/MarkdownContent";
+import ModelSelector from "../components/ModelSelector";
 import TokenCounter from "../components/TokenCounter";
 import { useGenerate } from "../hooks/useGenerate";
 import type { Collection, Entity, EntityContent } from "../types";
@@ -76,6 +77,7 @@ export default function EntityDetailPage() {
   const [selectedContentForImage, setSelectedContentForImage] =
     useState<EntityContent | null>(null);
   const [contentsRefreshTrigger, setContentsRefreshTrigger] = useState(0);
+  const [selectedModel, setSelectedModel] = useState<string | undefined>(undefined);
 
   const availableCategories = useMemo<ContentCategory[]>(
     () => (entity ? (categoryMap[entity.type] ?? []) : []),
@@ -187,7 +189,7 @@ export default function EntityDetailPage() {
       collectionId,
       entityId,
       selectedCategory,
-      { query: trimmedQuery },
+      { query: trimmedQuery, model: selectedModel },
     );
     if (result) {
       setContentsRefreshTrigger((t) => t + 1);
@@ -210,7 +212,7 @@ export default function EntityDetailPage() {
       collectionId,
       entityId,
       selectedCategory,
-      { query: lastSubmittedQuery.trim() },
+      { query: lastSubmittedQuery.trim(), model: selectedModel },
     );
     if (result) {
       setContentsRefreshTrigger((t) => t + 1);
@@ -302,23 +304,29 @@ export default function EntityDetailPage() {
       )}
 
       <Form onSubmit={handleGenerate} className="mb-4">
-        <Form.Group className="mb-2">
-          <Form.Label className="fw-semibold">Categoría</Form.Label>
-          <Form.Select
-            value={selectedCategory}
-            onChange={(e) =>
-              setSelectedCategory(e.target.value as ContentCategory)
-            }
+        <div className="d-flex gap-3 flex-wrap mb-2">
+          <Form.Group>
+            <Form.Label className="fw-semibold">Categoría</Form.Label>
+            <Form.Select
+              value={selectedCategory}
+              onChange={(e) =>
+                setSelectedCategory(e.target.value as ContentCategory)
+              }
+              disabled={generating}
+              style={{ maxWidth: 280 }}
+            >
+              {availableCategories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {CATEGORY_LABELS[cat]}
+                </option>
+              ))}
+            </Form.Select>
+          </Form.Group>
+          <ModelSelector
             disabled={generating}
-            style={{ maxWidth: 280 }}
-          >
-            {availableCategories.map((cat) => (
-              <option key={cat} value={cat}>
-                {CATEGORY_LABELS[cat]}
-              </option>
-            ))}
-          </Form.Select>
-        </Form.Group>
+            onChange={setSelectedModel}
+          />
+        </div>
         <div className="d-flex gap-2 align-items-start flex-wrap">
           <Form.Control
             as="textarea"

@@ -29,6 +29,7 @@ def generate(
     entity: Entity,
     category: ContentCategory,
     query: str,
+    model: str | None = None,
 ) -> EntityContentResponse:
     """Genera contenido RAG para una entidad mediante el pipeline LLM.
 
@@ -43,6 +44,7 @@ def generate(
         entity: Entidad destino para la que se genera el contenido.
         category: Categoría del contenido a generar.
         query: Consulta/prompt del usuario.
+        model: Modelo Ollama a usar. Si es None usa el modelo por defecto del servidor.
 
     Returns:
         EntityContentResponse con el contenido generado y sus metadatos.
@@ -92,6 +94,7 @@ def generate(
         ),
         query=query,
         extra_context=extra_context,
+        model=model,
     )
     check_generated_output(answer)
 
@@ -103,6 +106,7 @@ def generate(
         raw_content=answer,
         sources_count=sources_count,
         token_count=max(1, len(answer) // 4),
+        model_used=model or settings.ollama_model,
     )
     session.add(generated_text)
     session.flush()
@@ -164,6 +168,7 @@ def generate(
         query=generated_text.query,
         sources_count=generated_text.sources_count,
         token_count=generated_text.token_count,
+        model_used=generated_text.model_used,
         status=content.status,
         created_at=content.created_at,
         confirmed_at=content.confirmed_at,

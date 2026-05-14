@@ -1,5 +1,7 @@
 """Configuración del modelo LLM (Ollama) y cadena de procesamiento para RAG."""
 
+import functools
+
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 from langchain_ollama import OllamaLLM
@@ -24,13 +26,19 @@ _PROMPT = PromptTemplate.from_template(
 )
 """Plantilla de prompt para consultas RAG."""
 
-llm = OllamaLLM(
-    model=settings.ollama_model,
-    base_url=settings.ollama_base_url,
-    temperature=settings.temperature,
-    num_predict=settings.max_tokens,
-)
-"""Instancia del modelo Ollama configurada con los parámetros de la aplicación."""
+@functools.lru_cache(maxsize=8)
+def get_llm(model: str) -> OllamaLLM:
+    """Retorna una instancia cacheada de OllamaLLM para el modelo dado."""
+    return OllamaLLM(
+        model=model,
+        base_url=settings.ollama_base_url,
+        temperature=settings.temperature,
+        num_predict=settings.max_tokens,
+    )
+
+
+llm = get_llm(settings.ollama_model)
+"""Instancia del modelo Ollama por defecto, configurada con los parámetros de la aplicación."""
 
 chain = _PROMPT | llm | StrOutputParser()
 """Cadena de procesamiento LangChain: prompt → LLM → parser de salida."""

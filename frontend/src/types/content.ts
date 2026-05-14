@@ -17,6 +17,7 @@ export interface EntityContent {
   query: string;
   sources_count: number;
   token_count: number;
+  model_used: string | null;
   status: ContentStatus;
   is_shared: boolean;
   created_at: string;
@@ -27,6 +28,7 @@ export interface EntityContent {
 /** Payload para generar contenido. */
 export interface GenerateContentRequest {
   query: string;
+  model?: string;
 }
 
 /** Payload para actualizar contenido. */

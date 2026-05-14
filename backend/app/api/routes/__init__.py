@@ -9,6 +9,7 @@ from app.api.routes.health import router as health_router
 from app.api.routes.images import image_router
 from app.api.routes.media import router as media_router
 from app.api.routes.metadata import router as metadata_router
+from app.api.routes.models import models_router
 from app.api.routes.public import public_router
 from app.api.routes.users import users_router
 
@@ -24,6 +25,7 @@ __all__ = [
     "image_router",
     "media_router",
     "metadata_router",
+    "models_router",
     "public_router",
     "rag_query_router",
     "users_router",

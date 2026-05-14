@@ -8,4 +8,5 @@ export * from "./entities";
 export * from "./contents";
 export * from "./generate";
 export * from "./metadata";
+export * from "./models";
 export * from "./images";

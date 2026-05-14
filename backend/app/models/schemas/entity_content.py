@@ -41,6 +41,7 @@ class EntityContentResponse(BaseModel):
     query: str | None = None
     sources_count: int = 0
     token_count: int = 0
+    model_used: str | None = None
     status: ContentStatus
     is_shared: bool = False
     created_at: datetime
@@ -60,10 +61,12 @@ class GenerateContentRequest(BaseModel):
 
     Attributes:
         query: Consulta o prompt del usuario para la generación.
+        model: Modelo Ollama a usar. Si es None usa el modelo por defecto del servidor.
 
     """
 
     query: str = Field(..., min_length=5, max_length=2000)
+    model: str | None = Field(default=None, max_length=100)
 
 
 class UpdateContentRequest(BaseModel):
