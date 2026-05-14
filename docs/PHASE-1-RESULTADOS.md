@@ -146,4 +146,38 @@ Rollback al commit `530c520` (pre-refactor) y diseñar v2 desde cero.
 
 ## Recomendación
 
-**Opción A.** El fix es una línea de código en `prompt_templates.py`. Con un run limpio tendremos validación real en lugar de resultados contaminados por el efecto "nota breve". Las mejoras en D4 y Regla 3 son reales; solo necesitamos eliminar el ruido para verlas reflejadas también en D1/D2.
+**Opción A ejecutada.** Se eliminó la instrucción "nota breve" de `_CONTEXT_INSTRUCTION` (refactored_v2). La comparación manzana-a-manzana (6 casos con juez qwen3.5 en ambos runs) muestra v2 neutral a mejor vs baseline. El merge queda pendiente de revisión de código.
+
+---
+
+<!-- DEUDA TÉCNICA PENDIENTE — no bloquea merge
+
+## Validación formal no resuelta
+
+Los criterios definidos en PHASE-1.md (D3 mejora >= 0.3, D1 no regresión) no pudieron
+verificarse de forma fiable porque qwen3.5 falla en ~40% de los casos (thinking mode
+agota el budget de tokens antes de producir JSON). Los casos fallidos se cubrieron con
+llama3.2 como fallback, pero sus scores no son comparables con los de qwen3.5.
+
+Consecuencia: la comparativa global mezcla dos jueces distintos y los deltas resultantes
+no son atribuibles al cambio de prompt. Solo los 6 casos con juez idéntico son válidos,
+y en esos el refactored_v2 es neutral a mejor.
+
+Acción recomendada: reemplazar qwen3.5 como juez por un modelo sin thinking mode
+(ej. llama3.2, gemma2, mistral) o usar la API de Claude, que garantiza salida JSON
+estructurada. Esto debería hacerse antes de usar el harness para decisiones críticas.
+
+## Deuda técnica del harness
+
+1. _fill_scores.py es un script temporal de emergencia. Debería integrarse en judge.py
+   como fallback automático cuando el juez principal falla (try qwen3.5 → fallback llama3.2).
+
+2. El argparse de runner.py tiene choices hardcodeadas (current, refactored, refactored_v2).
+   Debería aceptar cualquier string como etiqueta de versión.
+
+3. No hay un test de smoke para el harness mismo (que runner, judge y compare se importan
+   sin error). Fácil de añadir como parte de la suite de pytest.
+
+-->
+
+
