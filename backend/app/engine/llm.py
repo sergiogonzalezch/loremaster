@@ -17,8 +17,7 @@ _PROMPT = PromptTemplate.from_template(
     _SAFETY_INSTRUCTION
     + "Eres un asistente experto en narrativa y worldbuilding.\n"
     + "Usa la información del contexto para responder. "
-    + "Si el contexto es insuficiente, genera con lo disponible "
-    + "y añade al final una nota breve indicando qué información adicional enriquecería la respuesta.\n"
+    + "Si el contexto es insuficiente, genera con lo disponible.\n"
     + "Extensión: 2-3 párrafos.\n\n"
     + "<context>\n{context}\n</context>\n\n"
     + "<question>\n{query}\n</question>"
