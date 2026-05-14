@@ -30,7 +30,7 @@ _COMBINED_TYPE_OPTIONS: dict[EntityType, str] = {
     EntityType.creature: "dragon, beast, spirit, demon, angel, mythological being, monster, animal, insect, plant",
     EntityType.location: "city, fortress, temple, forest, mountain, ruin, ship, planet, dimension",
     EntityType.faction: "kingdom, clan, brotherhood, order, guild, corporation, religion, movement",
-    EntityType.item: "sword, bow, wand, shield, armor, relic, artifact, jewelry, amulet, potion",
+    EntityType.item: "sword, bow, wand, shield, armor, relic, artifact, orb, sphere, jewelry, amulet, potion",
 }
 """Opciones de tipo específico por entidad para el prompt combinado."""
 
@@ -137,12 +137,18 @@ def build_combined_prompt(
         "colors, shapes, textures, sizes",
     )
     ignore = _IGNORA_BY_CATEGORY.get(category, "IGNORE: narrative, history.")
+    backstory_hint = (
+        "IMPORTANT: The very first item MUST be a type from the list above, even in historical or backstory text.\n"
+        if category == ContentCategory.backstory
+        else ""
+    )
 
     return (
         f"From the following text, extract the specific type of {entity_en} and ALL visual attributes mentioned.\n"
         f"Output as a single comma-separated list: start with the specific type ({type_options}),\n"
         f"then ALL visual details — {attrs}.\n"
         f"{ignore}\n"
+        f"{backstory_hint}"
         f"ENGLISH ONLY. No explanation, no sentences, no extra lines.\n"
         f"Example: human, tall, dark hooded cloak, silver eyes, weathered skin\n\n"
         f"TEXT:\n---\n{content_text}\n---"

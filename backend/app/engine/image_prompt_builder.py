@@ -11,7 +11,7 @@ from langchain_core.output_parsers import StrOutputParser
 
 from app.core.config import settings
 from app.domain.image_prompt_rules import build_combined_prompt
-from app.engine.llm import llm
+from app.engine.llm import get_llm
 from app.models.db.entity import EntityType
 from app.models.enums import ContentCategory
 
@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 
 _llm_semaphore = threading.Semaphore(settings.max_concurrent_llm_calls)
 
-_generation_chain = llm | StrOutputParser()
-"""Cadena de generación de prompts visuales (prompt → LLM → parser)."""
+_generation_chain = get_llm(settings.image_prompt_model) | StrOutputParser()
+"""Cadena de extracción visual (prompt → image_prompt_model → parser)."""
 
 QUALITY_SUFFIX = "high quality, masterpiece, sharp focus, professional digital art"
 """Sufijo de calidad añadido a todos los prompts visuales."""

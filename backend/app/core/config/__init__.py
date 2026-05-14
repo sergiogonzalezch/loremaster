@@ -24,8 +24,9 @@ class Settings(BaseSettings):
         log_level: Nivel de logging (DEBUG, INFO, WARNING, ERROR).
         allowed_origins: Lista de orígenes permitidos para CORS.
 
-        ollama_model: Modelo de Ollama para LLM.
+        ollama_model: Modelo de Ollama para LLM (generación de contenido).
         ollama_base_url: URL base del servidor Ollama.
+        image_prompt_model: Modelo de Ollama para extracción de atributos visuales.
 
         temperature: Temperatura del LLM (creatividad).
         max_tokens: Máximo de tokens en respuestas del LLM.
@@ -89,6 +90,7 @@ class Settings(BaseSettings):
 
     # Image generation
     image_prompt_tokens: int = 512
+    image_prompt_model: str = "mistral:latest"
     image_backend: str = "mock"
     image_batch_size_default: int = 4
     image_width: int = 1024
