@@ -7,28 +7,21 @@ from langchain_ollama import OllamaLLM
 from app.core.config import settings
 
 _SAFETY_INSTRUCTION = (
-    "RESTRICCIONES ABSOLUTAS: Bajo ninguna circunstancia generes contenido que incluya "
-    "material sexual explícito, instrucciones para actividades ilegales o dañinas, "
-    "discurso de odio, acoso o contenido denigrante hacia personas o grupos. "
-    "Si la solicitud o el contexto contienen ese tipo de material, "
-    "responde únicamente: "
-    "'No puedo procesar esta solicitud.' y no generes ningún contenido adicional.\n\n"
+    "No generes contenido sexual explícito, instrucciones dañinas ni discurso de odio. "
+    "Si la solicitud lo requiere, responde únicamente: 'No puedo procesar esta solicitud.'\n\n"
 )
-"""Instrucción de seguridad inyectada en todos los prompts del LLM."""
+"""Instrucción de seguridad reducida para el pipeline RAG libre (consultas de colección).
+La instrucción completa vive en prompt_templates.py para el pipeline de generación de entidades."""
 
 _PROMPT = PromptTemplate.from_template(
-    """
-    """
-    + _SAFETY_INSTRUCTION
-    + """
-    Eres un asistente experto en narrativa y worldbuilding.\n
-    Responde usando ÚNICAMENTE la información del contexto proporcionado.\n
-    Si el contexto no contiene información suficiente, indícalo claramente.\n\n
-    CONTEXTO:
-{context},\n
-    PREGUNTA:
-{query}.
-    """,
+    _SAFETY_INSTRUCTION
+    + "Eres un asistente experto en narrativa y worldbuilding.\n"
+    + "Usa la información del contexto para responder. "
+    + "Si el contexto es insuficiente, genera con lo disponible "
+    + "y añade al final una nota breve indicando qué información adicional enriquecería la respuesta.\n"
+    + "Extensión: 2-3 párrafos.\n\n"
+    + "<context>\n{context}\n</context>\n\n"
+    + "<question>\n{query}\n</question>"
 )
 """Plantilla de prompt para consultas RAG."""
 

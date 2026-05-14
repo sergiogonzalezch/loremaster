@@ -18,14 +18,14 @@ _TYPE_EXTRACT_SUFFIX = f". {ENGLISH_RESPONSE_INSTRUCTION} with only one word or 
 _ATTRIBUTE_EXTRACT_SUFFIX = "Respond IN ENGLISH only with the list of visual attributes, without explanation."
 """Sufijo para extracción de atributos visuales."""
 
-_BASE_EXTRACT = "extract ALL visual attributes that the text EXPLICITLY mentions. "
-"""Instrucción base para extraer atributos visuales."""
+_BASE_EXTRACT = (
+    "extract ALL visual attributes that the text EXPLICITLY mentions. "
+    "Include every visual detail; do not summarize or skip any."
+)
+"""Instrucción base para extraer atributos visuales (fusiona la antigua _NO_SKIP)."""
 
-_NO_SKIP = "DO NOT summarize, DO NOT skip. Every visual detail must be included. "
-"""Instrucción para no omitir detalles visuales."""
-
-_FORMAT_ATTRS = f"ONLY loose attributes in ENGLISH, NO complete sentences. {ENGLISH_RESPONSE_INSTRUCTION}. "
-"""Formato de salida esperado: atributos sueltos en inglés."""
+_FORMAT_ATTRS = "Output: comma-separated attributes only. No complete sentences. "
+"""Formato de salida esperado: atributos sueltos en inglés, sin redundar el idioma."""
 
 _IGNORA_BY_CATEGORY = {
     ContentCategory.extended_description: "IGNORE: narrative, motivations, history, names.",
@@ -186,12 +186,11 @@ def _build_instruction(entity_type: EntityType, category: ContentCategory) -> st
     ignore = _IGNORA_BY_CATEGORY.get(category, "IGNORE: narrative, history.")
 
     return (
-        f"{prefix} {entity_desc}, {_BASE_EXTRACT}"
-        f"{_NO_SKIP}"
-        f"{_FORMAT_ATTRS}"
-        f"Include ALL: {attrs}. "
+        f"ENGLISH ONLY. {_FORMAT_ATTRS}"
+        f"{prefix} {entity_desc}. "
+        f"{_BASE_EXTRACT} "
+        f"Include: {attrs}. "
         f"{type_label} "
-        f"Format: list of attributes separated by comma. "
         f"{ignore}"
     )
 
