@@ -1,33 +1,14 @@
 """Reglas de dominio para extracción de atributos visuales para generación de imágenes.
 
-Estas instrucciones guían al LLM para extraer atributos visuales del texto
-sin resumir, omitir o filtrar — solo extraer lo que el texto menciona explícitamente.
+Construye el prompt combinado que extrae tipo específico y atributos visuales del texto
+en una sola llamada LLM, produciendo una lista comma-separated directamente usable
+como prompt positivo para modelos de imagen (Flux, Stable Diffusion, etc.).
 """
 
 from app.models.db.entity import EntityType
 from app.models.enums import ContentCategory
 
-# === CONSTANTES REUTILIZABLES ===
-
-ENGLISH_RESPONSE_INSTRUCTION = "Respond IN ENGLISH"
-"""Instrucción de respuesta en inglés para los prompts del LLM."""
-
-_TYPE_EXTRACT_SUFFIX = f". {ENGLISH_RESPONSE_INSTRUCTION} with only one word or short term: "
-"""Sufijo para extracción del tipo específico de entidad."""
-
-_ATTRIBUTE_EXTRACT_SUFFIX = "Respond IN ENGLISH only with the list of visual attributes, without explanation."
-"""Sufijo para extracción de atributos visuales."""
-
-_BASE_EXTRACT = (
-    "extract ALL visual attributes that the text EXPLICITLY mentions. "
-    "Include every visual detail; do not summarize or skip any."
-)
-"""Instrucción base para extraer atributos visuales (fusiona la antigua _NO_SKIP)."""
-
-_FORMAT_ATTRS = "Output: comma-separated attributes only. No complete sentences. "
-"""Formato de salida esperado: atributos sueltos en inglés, sin redundar el idioma."""
-
-_IGNORA_BY_CATEGORY = {
+_IGNORA_BY_CATEGORY: dict[ContentCategory, str] = {
     ContentCategory.extended_description: "IGNORE: narrative, motivations, history, names.",
     ContentCategory.backstory: "IGNORE: names, dates, historical events, motivations.",
     ContentCategory.scene: "IGNORE: dialogue, thoughts, emotions.",
@@ -35,7 +16,7 @@ _IGNORA_BY_CATEGORY = {
 }
 """Instrucciones de ignorado por categoría de contenido."""
 
-_ENTITY_NAME_EN = {
+_ENTITY_NAME_EN: dict[EntityType, str] = {
     EntityType.character: "character",
     EntityType.creature: "creature",
     EntityType.location: "location",
@@ -44,50 +25,16 @@ _ENTITY_NAME_EN = {
 }
 """Nombres en inglés de cada tipo de entidad."""
 
-_TYPE_LABEL_BY_ENTITY = {
-    EntityType.character: "Include the ENTITY TYPE: robot, android, cyborg, human, alien, demon, angel, beast, mythical creature.",
-    EntityType.creature: "Include the CREATURE TYPE: dragon, beast, spirit, demon, angel, mythological being, monster, animal, insect, plant.",
-    EntityType.location: "Include the LOCATION TYPE: city, fortress, temple, forest, mountain, ruin, ship, planet, dimension.",
-    EntityType.faction: "Include the FACTION TYPE: kingdom, clan, brotherhood, order, guild, corporation, religion, movement.",
-    EntityType.item: "Include the OBJECT TYPE: weapon, armor, tool, relic, artifact, jewelry, instrument, vehicle.",
+_COMBINED_TYPE_OPTIONS: dict[EntityType, str] = {
+    EntityType.character: "human, alien, robot, android, cyborg, demon, angel, beast, mythical creature",
+    EntityType.creature: "dragon, beast, spirit, demon, angel, mythological being, monster, animal, insect, plant",
+    EntityType.location: "city, fortress, temple, forest, mountain, ruin, ship, planet, dimension",
+    EntityType.faction: "kingdom, clan, brotherhood, order, guild, corporation, religion, movement",
+    EntityType.item: "sword, bow, wand, shield, armor, relic, artifact, jewelry, amulet, potion",
 }
-"""Etiquetas de tipo por entidad para el prompt del LLM."""
+"""Opciones de tipo específico por entidad para el prompt combinado."""
 
-_TYPE_EXTRACT_PROMPT = {
-    EntityType.character: (
-        f"From the following text, identify the specific type of being described. "
-        f"{_TYPE_EXTRACT_SUFFIX}robot, android, cyborg, human, alien, "
-        "demon, angel, beast, mythical creature, or other that appears explicitly. "
-        "If no specific type is clear, respond 'character'."
-    ),
-    EntityType.creature: (
-        f"From the following text, identify the specific type of creature. "
-        f"{_TYPE_EXTRACT_SUFFIX}dragon, beast, spirit, demon, angel, "
-        "mythological being, monster, animal, insect, plant, or other that appears explicitly. "
-        "If no specific type is clear, respond 'creature'."
-    ),
-    EntityType.location: (
-        f"From the following text, identify the specific type of location. "
-        f"{_TYPE_EXTRACT_SUFFIX}city, fortress, temple, forest, mountain, "
-        "ruin, ship, planet, dimension, village, town, prison, library, or other that appears explicitly. "
-        "If no specific type is clear, respond 'location'."
-    ),
-    EntityType.faction: (
-        f"From the following text, identify the specific type of faction. "
-        f"{_TYPE_EXTRACT_SUFFIX}kingdom, clan, brotherhood, order, guild, "
-        "corporation, religion, movement, army, cult, or other that appears explicitly. "
-        "If no specific type is clear, respond 'faction'."
-    ),
-    EntityType.item: (
-        f"From the following text, identify the specific type of object. "
-        f"{_TYPE_EXTRACT_SUFFIX}sword, bow, wand, shield, armor, "
-        "relic, artifact, jewelry, amulet, potion, book, instrument, vehicle, or other that appears explicitly. "
-        "If no specific type is clear, respond 'item'."
-    ),
-}
-"""Prompts de extracción de tipo específico por entidad."""
-
-_ATTRIBUTOS_BY_ENTITY_CATEGORY = {
+_ATTRIBUTOS_BY_ENTITY_CATEGORY: dict[tuple[EntityType, ContentCategory], str] = {
     (EntityType.character, ContentCategory.extended_description): (
         "colors, materials, body shapes, textures, sizes, clothing, accessories, equipment, "
         "marks, distinctive details, facial expressions, posture, physical conditions, items carried, "
@@ -102,7 +49,8 @@ _ATTRIBUTOS_BY_ENTITY_CATEGORY = {
         "lighting on character, surrounding environment mentioned, action performed, position in space"
     ),
     (EntityType.character, ContentCategory.chapter): (
-        "position in space, clothing, accessories, visible expression, lighting, atmosphere, " "surrounding environment mentioned"
+        "position in space, clothing, accessories, visible expression, lighting, atmosphere, "
+        "surrounding environment mentioned"
     ),
     (EntityType.creature, ContentCategory.extended_description): (
         "species, body type, colors (all mentioned), textures (skin/fur/scales), "
@@ -114,9 +62,12 @@ _ATTRIBUTOS_BY_ENTITY_CATEGORY = {
         "atmosphere of the place, surrounding environment mentioned"
     ),
     (EntityType.creature, ContentCategory.scene): (
-        "position, action, visible body language, interaction with environment, lighting, surrounding environment mentioned"
+        "position, action, visible body language, interaction with environment, "
+        "lighting, surrounding environment mentioned"
     ),
-    (EntityType.creature, ContentCategory.chapter): ("position, action, environment, lighting, atmosphere, surrounding environment mentioned"),
+    (EntityType.creature, ContentCategory.chapter): (
+        "position, action, environment, lighting, atmosphere, surrounding environment mentioned"
+    ),
     (EntityType.location, ContentCategory.extended_description): (
         "environment type, architectural style, materials (all), colors mentioned, distinctive elements, "
         "typical lighting, scale, atmosphere, natural elements, furniture, decoration, visible symbols"
@@ -126,10 +77,12 @@ _ATTRIBUTOS_BY_ENTITY_CATEGORY = {
         "current vs past state, distinctive symbols, elements that changed, elements that remain"
     ),
     (EntityType.location, ContentCategory.scene): (
-        "foreground elements, lighting, climate, atmosphere, action occurring, surrounding environment, " "colors mentioned, textures"
+        "foreground elements, lighting, climate, atmosphere, action occurring, "
+        "surrounding environment, colors mentioned, textures"
     ),
     (EntityType.location, ContentCategory.chapter): (
-        "space description, architectural style, materials, lighting, atmosphere, elements present, colors, textures"
+        "space description, architectural style, materials, lighting, atmosphere, "
+        "elements present, colors, textures"
     ),
     (EntityType.faction, ContentCategory.extended_description): (
         "emblem/heraldry style, main symbol, secondary symbols, color palette (all), "
@@ -137,12 +90,16 @@ _ATTRIBUTOS_BY_ENTITY_CATEGORY = {
         "insignias, uniforms, decoration, band colors"
     ),
     (EntityType.faction, ContentCategory.backstory): (
-        "period style, original symbols, founding colors, visible power elements, " "historical emblems, period clothing, associated architecture"
+        "period style, original symbols, founding colors, visible power elements, "
+        "historical emblems, period clothing, associated architecture"
     ),
     (EntityType.faction, ContentCategory.scene): (
-        "visible symbol, dominant colors, member presence, uniforms, insignia, visible weapons, " "atmosphere, member expressions"
+        "visible symbol, dominant colors, member presence, uniforms, insignia, "
+        "visible weapons, atmosphere, member expressions"
     ),
-    (EntityType.faction, ContentCategory.chapter): ("visible symbol, colors, presence, atmosphere, visible uniforms"),
+    (EntityType.faction, ContentCategory.chapter): (
+        "visible symbol, colors, presence, atmosphere, visible uniforms"
+    ),
     (EntityType.item, ContentCategory.extended_description): (
         "object type, main material, secondary materials, colors (all), texture, condition, size, "
         "decorative elements, indicators (glow, runes, energy, magic), engraved symbols, marks, "
@@ -152,55 +109,41 @@ _ATTRIBUTOS_BY_ENTITY_CATEGORY = {
         "original appearance, period materials, original colors, visible engraved symbols, "
         "condition at that time, period decorative elements, frames, mounts"
     ),
-    (EntityType.item, ContentCategory.scene): ("how displayed, position, lighting, character interaction, visible state, glow, visible damage"),
-    (EntityType.item, ContentCategory.chapter): ("presence, position, lighting, visible state, colors"),
+    (EntityType.item, ContentCategory.scene): (
+        "how displayed, position, lighting, character interaction, visible state, glow, visible damage"
+    ),
+    (EntityType.item, ContentCategory.chapter): (
+        "presence, position, lighting, visible state, colors"
+    ),
 }
 """Atributos visuales esperados por combinación de tipo de entidad y categoría."""
 
-_PREFIX_BY_CATEGORY = {
-    ContentCategory.extended_description: "From the following text describing",
-    ContentCategory.backstory: "From the following backstory text of",
-    ContentCategory.scene: "From the following scene",
-    ContentCategory.chapter: "From the following chapter, extract visual attributes in the opening scene of",
-}
-"""Prefijos de instrucción por categoría de contenido."""
 
+def build_combined_prompt(
+    entity_type: EntityType,
+    category: ContentCategory,
+    content_text: str,
+) -> str:
+    """Construye el prompt para extraer tipo y atributos visuales en una sola llamada LLM.
 
-# === FUNCIONES CONSTRUCTORAS ===
-
-
-def _build_instruction(entity_type: EntityType, category: ContentCategory) -> str:
-    """Construye la instrucción del LLM para una combinación entity_type + category."""
-    prefix = _PREFIX_BY_CATEGORY.get(category, "From the following text")
+    La salida esperada del LLM es una lista comma-separated con el tipo como primer
+    elemento, directamente usable como prompt positivo para modelos de imagen.
+    Ejemplo de salida: human, tall, dark hooded cloak, silver eyes, weathered skin
+    """
+    type_options = _COMBINED_TYPE_OPTIONS.get(entity_type, entity_type.value)
     entity_en = _ENTITY_NAME_EN.get(entity_type, entity_type.value)
-    if category == ContentCategory.chapter:
-        entity_desc = f"{entity_en} that the text mentions"
-    else:
-        entity_desc = f"a {entity_en}"
-
     attrs = _ATTRIBUTOS_BY_ENTITY_CATEGORY.get(
         (entity_type, category),
         "colors, shapes, textures, sizes",
     )
-    type_label = _TYPE_LABEL_BY_ENTITY.get(entity_type, "")
     ignore = _IGNORA_BY_CATEGORY.get(category, "IGNORE: narrative, history.")
 
     return (
-        f"ENGLISH ONLY. {_FORMAT_ATTRS}"
-        f"{prefix} {entity_desc}. "
-        f"{_BASE_EXTRACT} "
-        f"Include: {attrs}. "
-        f"{type_label} "
-        f"{ignore}"
+        f"From the following text, extract the specific type of {entity_en} and ALL visual attributes mentioned.\n"
+        f"Output as a single comma-separated list: start with the specific type ({type_options}),\n"
+        f"then ALL visual details — {attrs}.\n"
+        f"{ignore}\n"
+        f"ENGLISH ONLY. No explanation, no sentences, no extra lines.\n"
+        f"Example: human, tall, dark hooded cloak, silver eyes, weathered skin\n\n"
+        f"TEXT:\n---\n{content_text}\n---"
     )
-
-
-# === DICCIONARIO CONSTRUIDO ===
-
-_llm_instruction_by_entity_category = {
-    (entity_type, category): _build_instruction(entity_type, category)
-    for entity_type in EntityType
-    for category in ContentCategory
-    if (entity_type, category) in _ATTRIBUTOS_BY_ENTITY_CATEGORY
-}
-"""Instrucciones del LLM indexadas por (EntityType, ContentCategory)."""

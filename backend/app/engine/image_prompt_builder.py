@@ -1,7 +1,7 @@
 """Motor para construcción de prompts visuales para generación de imágenes.
 
-Fusiona: prompt_builder + image_pipeline.
-Usa LLM para extraer tipo específico + atributos visuales del contenido confirmado.
+Usa LLM para extraer tipo específico y atributos visuales del contenido confirmado
+en una sola llamada, produciendo un prompt directamente usable por modelos de imagen.
 """
 
 import logging
@@ -10,11 +10,7 @@ import threading
 from langchain_core.output_parsers import StrOutputParser
 
 from app.core.config import settings
-from app.domain.image_prompt_rules import (
-    _ATTRIBUTE_EXTRACT_SUFFIX,
-    _TYPE_EXTRACT_PROMPT,
-    _llm_instruction_by_entity_category,
-)
+from app.domain.image_prompt_rules import build_combined_prompt
 from app.engine.llm import llm
 from app.models.db.entity import EntityType
 from app.models.enums import ContentCategory
@@ -54,18 +50,17 @@ def _extract_with_llm(
     entity_type: EntityType,
     category: ContentCategory,
     target_tokens: int,
-) -> tuple[str, str]:
-    """Usa el LLM para extraer tipo específico y atributos visuales del contenido.
+) -> str:
+    """Usa el LLM para extraer tipo y atributos visuales en una sola llamada.
 
-    Retorna una tupla (tipo_especifico, atributos).
+    Retorna una cadena comma-separated directamente usable como prompt de imagen.
+    Formato: <tipo>, <atributo1>, <atributo2>, ...
 
     Raises:
         RuntimeError: Si el LLM no está disponible.
 
     """
-    instruction_key = (entity_type, category)
-    llm_instruction = _llm_instruction_by_entity_category[instruction_key]
-    type_prompt = _TYPE_EXTRACT_PROMPT.get(entity_type, "")
+    prompt = build_combined_prompt(entity_type, category, content_text)
 
     logger.debug(
         "_extract_with_llm: entity_type=%s category=%s target_tokens=%d text_len=%d",
@@ -77,25 +72,7 @@ def _extract_with_llm(
 
     try:
         with _llm_semaphore:
-            chain = _generation_chain
-
-            tipo_result = chain.invoke(
-                f"{type_prompt}\n\nTEXT:\n---\n{content_text}\n---",
-            )
-            tipo_especifico = tipo_result.strip().lower() if tipo_result else ""
-            if not tipo_especifico:
-                tipo_especifico = entity_type.value
-
-            attributes_prompt = f"""{llm_instruction}
-
-TEXT TO ANALYZE:
----
-{content_text}
----
-
-{_ATTRIBUTE_EXTRACT_SUFFIX}"""
-
-            result = chain.invoke(attributes_prompt)
+            result = _generation_chain.invoke(prompt)
     except Exception as e:
         logger.exception("LLM extraction failed")
         msg = "LLM service unavailable"
@@ -107,18 +84,16 @@ TEXT TO ANALYZE:
             entity_type,
             category,
         )
-        return tipo_especifico, ""
+        return entity_type.value
 
     attributes = _truncate_to_tokens(result.strip(), target_tokens)
     logger.info(
-        "Extracted %d tokens for entity_type=%s category=%s, tipo=%s",
+        "Extracted %d tokens for entity_type=%s category=%s",
         _estimate_tokens(attributes),
         entity_type,
         category,
-        tipo_especifico,
     )
-
-    return tipo_especifico, attributes
+    return attributes
 
 
 def build_visual_prompt(
@@ -129,7 +104,7 @@ def build_visual_prompt(
 ) -> dict[str, str | int]:
     """Construye un prompt visual para generación de imagen usando LLM.
 
-    El prompt NO incluye el nombre de la entidad - solo atributos visuales
+    El prompt NO incluye el nombre de la entidad — solo atributos visuales
     que los modelos de imagen pueden interpretar correctamente.
 
     Args:
@@ -138,8 +113,6 @@ def build_visual_prompt(
         category: Categoría del contenido
         max_tokens: Límite de tokens para el prompt (default 512).
             El límite de 512 es el máximo del text encoder de Stable Diffusion.
-            Reservamos 15 tokens (~60 chars) para prefijo (tipo
-            específico) y sufijo (quality).
 
     Returns:
         {
@@ -152,27 +125,17 @@ def build_visual_prompt(
         RuntimeError: Si el LLM no está disponible
 
     """
-    tipo_especifico, llm_attributes = _extract_with_llm(
+    suffix_tokens = _estimate_tokens(QUALITY_SUFFIX)
+    available = max(10, max_tokens - suffix_tokens - 5)
+
+    attributes = _extract_with_llm(
         content_text=confirmed_content,
         entity_type=entity_type,
         category=category,
-        target_tokens=max_tokens - 15,
+        target_tokens=available,
     )
 
-    prefix = f"{tipo_especifico}, "
-    suffix_tokens = _estimate_tokens(QUALITY_SUFFIX)
-    prefix_tokens = _estimate_tokens(prefix)
-    overhead = prefix_tokens + suffix_tokens + 5
-    available = max(10, max_tokens - overhead)
-
-    attributes = _truncate_to_tokens(llm_attributes, available)
-
-    parts = [prefix]
-    if attributes:
-        parts.append(attributes)
-    parts.append(QUALITY_SUFFIX)
-
-    prompt = ", ".join(p.strip().rstrip(",") for p in parts if p.strip())
+    prompt = f"{attributes}, {QUALITY_SUFFIX}"
     token_count = _estimate_tokens(prompt)
 
     return {
