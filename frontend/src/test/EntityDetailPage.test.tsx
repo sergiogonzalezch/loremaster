@@ -146,6 +146,7 @@ describe("EntityDetailPage", () => {
         query: "query de prueba",
         sources_count: 1,
         token_count: 0,
+        model_used: null,
         category: "backstory" as const,
         content: "contenido de prueba",
         raw_content: null,

@@ -24,6 +24,7 @@ const SAMPLE_CONTENT: EntityContent = {
   query: "Historia del personaje",
   sources_count: 2,
   token_count: 10,
+  model_used: null,
   category: "backstory",
   content: "Texto de prueba",
   raw_content: null,

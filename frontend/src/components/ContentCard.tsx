@@ -186,6 +186,19 @@ export default function ContentCard({
                     >
                       {content.sources_count} fuentes
                     </Badge>
+                    {content.model_used && (
+                      <Badge
+                        style={{
+                          background: "transparent",
+                          color: "var(--lm-text-muted, #888)",
+                          border: "1px solid var(--lm-border, #444)",
+                          fontSize: "0.65rem",
+                        }}
+                        title={`Generado con ${content.model_used}`}
+                      >
+                        {content.model_used}
+                      </Badge>
+                    )}
                     {content.token_count > 0 && (
                       <Badge
                         style={{
