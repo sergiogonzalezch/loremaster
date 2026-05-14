@@ -1,0 +1,11 @@
+id: tc-04
+entity_type: creature
+category: extended_description
+expected_types: [dragon]
+content: |
+  Auranthos es una criatura colosal de escamas color ámbar y oro viejo. Sus alas
+  membranosas se extienden veinte metros a cada lado cuando las despliega por completo.
+  Cuatro cuernos retorcidos de hueso marfil emergen de su cabeza angular. Su cola larga
+  termina en una punta de hueso afilada. Sus ojos son de un verde luminoso con pupila
+  vertical. Del interior de su garganta emerge ocasionalmente un resplandor anaranjado
+  cuando respira.

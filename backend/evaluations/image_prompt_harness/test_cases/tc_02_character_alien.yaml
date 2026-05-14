@@ -1,0 +1,10 @@
+id: tc-02
+entity_type: character
+category: extended_description
+expected_types: [alien, extraterrestrial, being]
+content: |
+  Zyx es un ser de piel azulada con textura escamosa y ojos completamente blancos sin
+  pupila visible. Su cuerpo es delgado pero sus extremidades son desproporcionadamente
+  largas. Posee cuatro brazos finos que terminan en dedos filiformes. Viste una túnica
+  plateada con circuitos luminiscentes grabados en la tela. Su cabeza alargada presenta
+  antenas cortas en la frente que vibran levemente al hablar.

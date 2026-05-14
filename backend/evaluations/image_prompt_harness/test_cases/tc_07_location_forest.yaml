@@ -1,0 +1,10 @@
+id: tc-07
+entity_type: location
+category: scene
+expected_types: [forest, woods, jungle, grove, woodland]
+content: |
+  La luz del amanecer se filtraba entre los árboles centenarios de corteza plateada.
+  El suelo estaba cubierto de musgo verde esmeralda y raíces retorcidas que emergían
+  entre la tierra húmeda. Columnas de luz dorada atravesaban la espesa vegetación
+  creando círculos luminosos en el suelo. Flores azules y blancas crecían en los
+  claros. Una niebla tenue flotaba a ras del suelo entre los troncos enormes.

@@ -1,0 +1,10 @@
+id: tc-11
+entity_type: item
+category: backstory
+expected_types: [artifact, relic, orb, amulet, talisman, sphere]
+content: |
+  En sus orígenes, el Orbe de Sombra era una esfera perfecta de obsidiana pulida del
+  tamaño de un puño cerrado. En su interior giraban volutas de niebla oscura que nunca
+  se disipaban. Estaba montado sobre una base de hierro negro con tres garras que lo
+  sostenían. Símbolos arcanos de plata recorrían la superficie del orbe en espiral.
+  Cuando fue creado, irradiaba un frío perceptible a varios metros de distancia.

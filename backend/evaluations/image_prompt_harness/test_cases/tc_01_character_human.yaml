@@ -1,0 +1,10 @@
+id: tc-01
+entity_type: character
+category: extended_description
+expected_types: [human, man, woman, warrior, person, soldier]
+content: |
+  Kael es un guerrero de complexión robusta, con piel curtida por años de batallas al sol.
+  Su cabello negro cae en mechones sobre su frente sudorosa. Viste una armadura de cuero
+  endurecido con refuerzos de hierro en los hombros y el pecho. Lleva una espada larga
+  al cinto y un escudo redondo en el brazo izquierdo. Sus ojos grises observan el horizonte
+  con expresión cautelosa y determinada.

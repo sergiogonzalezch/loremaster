@@ -1,0 +1,10 @@
+id: tc-03
+entity_type: character
+category: scene
+expected_types: [robot, android, cyborg, machine, automaton]
+content: |
+  La unidad mecánica avanzó por el corredor iluminado. Su cuerpo metálico color grafito
+  reflejaba la luz de los paneles fluorescentes. Los servomotores en sus articulaciones
+  emitían un leve zumbido constante. En su pecho, un panel de control con indicadores
+  rojos y verdes parpadeaba rítmicamente. Sus ojos eran lentes de cámara de color rojo
+  intenso. Avanzaba con movimientos precisos y calculados sobre el suelo de acero.

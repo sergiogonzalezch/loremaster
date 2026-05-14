@@ -1,0 +1,11 @@
+id: tc-08
+entity_type: location
+category: extended_description
+expected_types: [ruin, ruins, temple, abandoned, structure]
+content: |
+  Las ruinas del templo de Arkon se extendían sobre la colina pelada. Columnas de
+  mármol negro parcialmente derrumbadas marcaban el perímetro del antiguo recinto.
+  El suelo de losas hexagonales estaba cubierto de grietas por las que crecía hierba
+  amarillenta. Relieves de figuras serpentinas decoraban los fragmentos de pared que
+  aún permanecían en pie. Una cúpula rota dejaba ver el cielo gris a través de sus
+  costillas de piedra negra.

@@ -1,0 +1,11 @@
+id: tc-12
+entity_type: character
+category: backstory
+expected_types: [human, woman, man, mage, wizard, elf, person]
+content: |
+  Desde pequeña, Seris creció en los mercados de Havan vistiendo ropas de lino beige
+  desgastadas y sandalias de cuero marrón. Su cabello castaño rizado siempre estuvo
+  recogido con un cordón rojo. Cuando ingresó a la academia portaba una túnica de
+  aprendiz gris con ribetes verdes y una bolsa de cuero al hombro llena de pergaminos
+  enrollados. Sus manos mostraban ya entonces las quemaduras leves propias de quien
+  practica magia sin guantes.

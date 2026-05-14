@@ -1,0 +1,11 @@
+id: tc-10
+entity_type: item
+category: extended_description
+expected_types: [sword, blade, weapon, longsword]
+content: |
+  La espada Lúminar tiene una hoja de acero blanco plateado con grabados de runas
+  luminosas a lo largo del filo. La guarda es de bronce con forma de alas extendidas.
+  El pomo esférico contiene una gema de cuarzo azul que emite un tenue resplandor frío.
+  La empuñadura está envuelta en cuero negro con hilo de plata trenzado. La hoja mide
+  aproximadamente noventa centímetros y presenta un canal central que recorre toda su
+  longitud.

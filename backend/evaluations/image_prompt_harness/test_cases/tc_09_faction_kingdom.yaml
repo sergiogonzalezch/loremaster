@@ -1,0 +1,11 @@
+id: tc-09
+entity_type: faction
+category: extended_description
+expected_types: [kingdom, empire, realm, nation, order]
+content: |
+  El Reino de Vaelthor exhibe su emblema en todas las formas: un sol dorado sobre fondo
+  azul cobalto, rodeado de ocho estrellas plateadas. Sus soldados visten túnicas azules
+  con bordados dorados en los puños y el cuello. Los estandartes de seda azul y oro
+  ondean en las torres de cada ciudad bajo su control. Los sellos reales están grabados
+  en oro macizo con el sol central en relieve. Los escudos de sus caballeros muestran
+  el mismo emblema sobre acero pulido.

@@ -1,0 +1,11 @@
+id: tc-06
+entity_type: location
+category: extended_description
+expected_types: [city, town, metropolis, settlement, fortress]
+content: |
+  Valdris es una ciudad amurallada construida sobre una meseta de roca gris.
+  Sus torres de piedra caliza blanca se elevan por encima de las murallas almenadas.
+  Las calles empedradas descienden en terrazas desde la ciudadela central hasta los
+  barrios comerciales en la base. Los tejados de teja roja contrastan con las fachadas
+  blancas de los edificios. Por las noches, farolas de cristal azulado iluminan
+  las plazas principales.

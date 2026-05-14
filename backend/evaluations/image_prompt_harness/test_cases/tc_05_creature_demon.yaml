@@ -1,0 +1,11 @@
+id: tc-05
+entity_type: creature
+category: backstory
+expected_types: [demon, devil, fiend, beast]
+content: |
+  En los primeros tiempos, Varath surgió de las grietas del mundo inferior con piel
+  de color rojo oscuro surcada de venas negras palpitantes. Sus cuernos, entonces
+  pequeños, crecían retorcidos a lo largo de siglos de tormento. Llevaba cadenas de
+  obsidiana que arrastraba por el suelo candente dejando marcas. Sus ojos ardían con
+  llamas negras que consumían la luz a su alrededor. Garras largas y curvadas de
+  color negro adornaban sus manos.
