@@ -150,8 +150,7 @@ def main() -> None:
     parser.add_argument(
         "--prompt-version",
         default="current",
-        choices=["current", "refactored", "refactored_v2"],
-        help="Etiqueta de la versión del prompt (default: current)",
+        help="Etiqueta de la versión del prompt (default: current). Acepta cualquier string.",
     )
     parser.add_argument("--temperature", type=float, default=0.7, help="Temperatura del modelo (default: 0.7)")
     parser.add_argument("--ollama-url", default="http://localhost:11434", help="URL base de Ollama")

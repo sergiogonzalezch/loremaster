@@ -169,6 +169,7 @@ def main() -> None:
     )
     parser.add_argument("--mode", choices=["manual", "llm"], default="manual", help="Modo de evaluación (default: manual)")
     parser.add_argument("--judge-model", default="llama3.2", help="Modelo juez para --mode llm (default: llama3.2)")
+    parser.add_argument("--fallback-judge-model", default=None, help="Modelo fallback si el juez principal no devuelve JSON válido (default: ninguno)")
     parser.add_argument("--ollama-url", default="http://localhost:11434", help="URL base de Ollama")
     args = parser.parse_args()
 
@@ -202,17 +203,31 @@ def main() -> None:
 
         if args.mode == "manual":
             scores = _score_manual(result, tc)
+            judge_used = "manual"
         else:
             print(f"  Evaluando {result['tc_id']} con LLM-as-judge ({args.judge_model})... ", end="", flush=True)
+            judge_used = args.judge_model
             try:
                 scores = _score_llm(result, tc, args.judge_model, args.ollama_url)
                 avg = sum(scores[d] for d in _DIMENSIONS) / len(_DIMENSIONS)
                 print(f"promedio={avg:.2f}")
             except Exception as exc:
-                print(f"ERROR: {exc}")
-                continue
+                if args.fallback_judge_model:
+                    print(f"ERROR, reintentando con {args.fallback_judge_model}... ", end="", flush=True)
+                    try:
+                        scores = _score_llm(result, tc, args.fallback_judge_model, args.ollama_url)
+                        judge_used = args.fallback_judge_model
+                        avg = sum(scores[d] for d in _DIMENSIONS) / len(_DIMENSIONS)
+                        print(f"promedio={avg:.2f} [fallback]")
+                    except Exception as exc2:
+                        print(f"ERROR también en fallback: {exc2}")
+                        continue
+                else:
+                    print(f"ERROR: {exc}")
+                    continue
 
         result["scores"] = scores
+        result["_judge_model"] = judge_used
         result_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
         evaluated += 1
 
