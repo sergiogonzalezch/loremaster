@@ -1,0 +1,14 @@
+id: TC-07
+name: "Relación entre personaje y facción — query relacional"
+category: extended_description
+entity_type: character
+entity_name: "Kael Dawnbreaker"
+entity_description: "Paladín excomunicado, exmiembro del Pacto de Hierro."
+context_quality: rich
+simulated_context:
+  - "Kael Dawnbreaker fue Templado del Pacto de Hierro durante seis años antes del asedio de Velmoor."
+  - "El Yunque del Pacto emitió una orden de captura contra Kael tres semanas después de su excomunión por la Orden del Alba, citando violación del artículo cuarto del código fundacional."
+  - "Algunos Forjados más jóvenes admiran en secreto la decisión de Kael en Velmoor, argumentando que la supervivencia es la primera ley del guerrero."
+query: "¿Cómo ve actualmente el Pacto de Hierro a Kael, y qué opiniones existen sobre él dentro de la organización?"
+notes: "Caso de uso de crossover relacional. Verifica si el modelo maneja queries relacionales sin confundir entidades ni mezclando información del Pacto con la Orden del Alba."
+expected_failure_mode: "El modelo mezcla información del Pacto con la Orden del Alba, o produce una descripción genérica sin usar los detalles del contexto."

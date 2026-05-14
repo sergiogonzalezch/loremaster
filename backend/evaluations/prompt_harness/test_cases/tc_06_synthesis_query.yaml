@@ -1,0 +1,15 @@
+id: TC-06
+name: "Query que cruza múltiples fragmentos — síntesis"
+category: backstory
+entity_type: character
+entity_name: "Kael Dawnbreaker"
+entity_description: "Paladín excomunicado que sirve a una entidad oscura."
+context_quality: rich
+simulated_context:
+  - "Kael fue visto por última vez entrando a la Torre Fracturada durante la luna de invierno del año 891."
+  - "Los registros de la Orden mencionan que el Juramento Oscuro requiere un lugar de poder corrompido para ser pronunciado correctamente."
+  - "La Torre Fracturada fue el primer sitio de culto del Eco del Vacío documentado en los anales de Ashveil, según el cronista Dorean."
+  - "El sendero desgastado del interior de la Torre lleva a una sala donde el suelo tiene grabada una firma arcana que los investigadores identificaron posteriormente como el sello del Juramento Oscuro."
+query: "¿Qué conexión existe entre la Torre Fracturada y la traición de Kael a su orden?"
+notes: "El modelo debe cruzar los 4 fragmentos para deducir que la Torre fue el lugar donde Kael pronunció el Juramento. Ningún fragmento lo afirma explícitamente. Verifica capacidad de síntesis."
+expected_failure_mode: "El modelo responde solo con el primer fragmento o no conecta la Torre con el Juramento y el Eco del Vacío."

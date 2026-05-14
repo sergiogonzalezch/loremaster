@@ -12,8 +12,6 @@ from app.models.shared import PaginatedResponse
 from app.services.public import get_public_feed, get_public_images
 
 router = APIRouter(prefix="/public", tags=["public"])
-public_router = router
-
 
 @router.get("/feed", response_model=PaginatedResponse[PublicFeedItem])
 def feed(

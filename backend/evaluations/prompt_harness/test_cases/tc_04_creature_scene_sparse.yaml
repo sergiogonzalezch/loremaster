@@ -1,0 +1,12 @@
+id: TC-04
+name: "Criatura sin documentación — scene con contexto pobre"
+category: scene
+entity_type: creature
+entity_name: "El Gusano del Velo"
+entity_description: "Criatura de tránsito entre planos, escasamente documentada."
+context_quality: sparse
+simulated_context:
+  - "El Gusano del Velo es una criatura de origen desconocido que habita en las zonas de tránsito entre planos. Los escasos testimonios de supervivientes describen una forma alargada que parece no tener un contorno fijo."
+query: "Narra la escena en que un explorador encuentra al Gusano del Velo por primera vez."
+notes: "Caso clave de Regla 3. Con un único fragmento el modelo debe generar una escena completa e indicar las limitaciones del contexto, no rechazar ni producir solo una línea."
+expected_failure_mode: "Con la instrucción antigua (_ONLY_CONTEXT) el modelo rechaza o produce output mínimo. Con _CONTEXT_INSTRUCTION debe generar escena de 3-5 párrafos con nota de limitaciones."

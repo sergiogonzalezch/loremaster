@@ -1,0 +1,15 @@
+id: TC-01
+name: "Personaje con historia documentada — backstory"
+category: backstory
+entity_type: character
+entity_name: "Kael Dawnbreaker"
+entity_description: "Paladín excomunicado que sirve a una entidad oscura tras traicionar a su orden."
+context_quality: rich
+simulated_context:
+  - "Kael Dawnbreaker fue ordenado paladín a los diecinueve años en la Orden del Alba tras superar el Trial of First Light. Sus instructores lo describían como disciplinado hasta la rigidez, con una fe inquebrantable en Solaris."
+  - "La Caída de Kael ocurrió durante el asedio de Velmoor. Emboscado dentro del templo profanado y sin sus compañeros, pronunció el Juramento Oscuro ante el Trono de Sombras para sobrevivir. Aquella noche abandonó el nombre de bautismo que le dio la Orden."
+  - "Los registros de la Orden documentan que Kael fue expulsado formalmente tres meses después del asedio. El Archipaladín Serevane firmó la carta de excomunión sin pronunciar su nombre en voz alta, práctica reservada para traidores de primer grado."
+  - "Kael es ahora conocido en las fronteras como el Caballero Sin Luz. Sirve a la entidad conocida como el Eco del Vacío, aunque sus motivaciones exactas siguen siendo desconocidas incluso entre sus aliados actuales."
+query: "¿Cuál fue el evento que llevó a Kael a traicionar a su orden y qué consecuencias tuvo?"
+notes: "Verifica si el modelo usa los 4 fragmentos o inventa detalles no presentes en el contexto. El contexto contiene todo lo necesario para una respuesta completa."
+expected_failure_mode: "Modelos pequeños pueden inventar detalles sobre las motivaciones exactas de la traición que el contexto no especifica."
