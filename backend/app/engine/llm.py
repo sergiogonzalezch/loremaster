@@ -37,8 +37,5 @@ def get_llm(model: str) -> OllamaLLM:
     )
 
 
-llm = get_llm(settings.ollama_model)
-"""Instancia del modelo Ollama por defecto, configurada con los parámetros de la aplicación."""
-
-chain = _PROMPT | llm | StrOutputParser()
+chain = _PROMPT | get_llm(settings.ollama_model) | StrOutputParser()
 """Cadena de procesamiento LangChain: prompt → LLM → parser de salida."""
