@@ -41,6 +41,7 @@ class EntityContentResponse(BaseModel):
     query: str | None = None
     sources_count: int = 0
     token_count: int = 0
+    model_used: str | None = None
     status: ContentStatus
     is_shared: bool = False
     created_at: datetime

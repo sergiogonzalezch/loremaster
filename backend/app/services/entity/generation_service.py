@@ -106,6 +106,7 @@ def generate(
         raw_content=answer,
         sources_count=sources_count,
         token_count=max(1, len(answer) // 4),
+        model_used=model or settings.ollama_model,
     )
     session.add(generated_text)
     session.flush()
@@ -167,6 +168,7 @@ def generate(
         query=generated_text.query,
         sources_count=generated_text.sources_count,
         token_count=generated_text.token_count,
+        model_used=generated_text.model_used,
         status=content.status,
         created_at=content.created_at,
         confirmed_at=content.confirmed_at,
