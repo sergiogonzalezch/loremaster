@@ -49,6 +49,7 @@ class Settings(BaseSettings):
         storage_backend: Backend de almacenamiento (local, s3, r2).
         storage_base_url: URL base para servir archivos multimedia.
         profile_image_max_size_mb: Tamaño máximo de avatar en MB.
+        document_max_upload_mb: Tamaño máximo de documento subido en MB.
 
         qdrant_url: URL del servidor Qdrant.
 
@@ -107,6 +108,7 @@ class Settings(BaseSettings):
     storage_backend: str = "local"  # local | s3 | r2
     storage_base_url: str = "http://localhost:8000/media"
     profile_image_max_size_mb: float = 5.0
+    document_max_upload_mb: int = 50
 
     # Vector DB (Qdrant)
     qdrant_url: str = "http://localhost:6333"

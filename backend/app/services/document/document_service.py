@@ -45,7 +45,6 @@ def _sanitize_for_log(filename: str) -> str:
 
 logger = logging.getLogger(__name__)
 
-MAX_BYTES = 50 * 1024 * 1024
 _EXTRACTION_TIMEOUT_SECONDS = 30
 
 
@@ -78,7 +77,7 @@ async def ingest_document_service(
         content = FileValidator.validate_document(
             data,
             allowed_types=DOCUMENT_MIME_TYPES,
-            max_bytes=MAX_BYTES,
+            max_bytes=settings.document_max_upload_mb * 1024 * 1024,
         )
     except ValueError as e:
         msg = str(e)
