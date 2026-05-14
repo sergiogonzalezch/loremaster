@@ -9,7 +9,7 @@ from langchain_core.output_parsers import StrOutputParser
 
 from app.core.config import settings
 from app.domain.prompt_templates import render_prompt
-from app.engine.llm import chain, llm
+from app.engine.llm import chain, get_llm
 from app.engine.rag import retrieve_context
 from app.models.enums import ContentCategory
 
@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 
 _llm_semaphore = threading.Semaphore(settings.max_concurrent_llm_calls)
 
-generation_chain = llm | StrOutputParser()
+# Cadena por defecto — usada cuando no se especifica modelo en la request
+generation_chain = get_llm(settings.ollama_model) | StrOutputParser()
 
 # Errores transitorios de red/transporte que indican un servicio caído (Qdrant, Ollama).
 # Errores de programación (TypeError, ValueError de validación) deben burbujear sin capturar.
@@ -83,6 +84,7 @@ def invoke_generation_pipeline(
     entity_ctx: EntityContext,
     query: str,
     extra_context: str = "",
+    model: str | None = None,
 ) -> tuple[str, int]:
     """Pipeline RAG consciente de entidades usando plantillas de prompt específicas por categoría.
 
@@ -93,11 +95,13 @@ def invoke_generation_pipeline(
         NoContextAvailableError: Si no hay contexto ni chunks ni extra_context.
 
     """
+    effective_model = model or settings.ollama_model
     logger.debug(
-        "invoke_generation_pipeline: collection=%s entity='%s' category=%s threshold=%.2f top_k=%d query='%.80s'",
+        "invoke_generation_pipeline: collection=%s entity='%s' category=%s model=%s threshold=%.2f top_k=%d query='%.80s'",
         collection_id,
         entity_ctx.name,
         entity_ctx.category,
+        effective_model,
         settings.rag_score_threshold,
         settings.top_k,
         query,
@@ -118,9 +122,15 @@ def invoke_generation_pipeline(
         query=query,
     )
 
+    active_chain = (
+        get_llm(effective_model) | StrOutputParser()
+        if model
+        else generation_chain
+    )
+
     try:
         with _llm_semaphore:
-            answer = generation_chain.invoke(rendered_prompt)
+            answer = active_chain.invoke(rendered_prompt)
     except _TRANSPORT_ERRORS as e:
         logger.exception(
             "LLM generation failed for entity '%s' collection %s",
@@ -131,9 +141,10 @@ def invoke_generation_pipeline(
         raise RuntimeError(msg) from e
 
     logger.info(
-        "Generation pipeline completed for entity '%s' (category=%s) using %d chunk(s)",
+        "Generation pipeline completed for entity '%s' (category=%s, model=%s) using %d chunk(s)",
         entity_ctx.name,
         entity_ctx.category,
+        effective_model,
         num_chunks,
     )
     return answer, num_chunks

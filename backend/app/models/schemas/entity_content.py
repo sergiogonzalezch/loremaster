@@ -60,10 +60,12 @@ class GenerateContentRequest(BaseModel):
 
     Attributes:
         query: Consulta o prompt del usuario para la generación.
+        model: Modelo Ollama a usar. Si es None usa el modelo por defecto del servidor.
 
     """
 
     query: str = Field(..., min_length=5, max_length=2000)
+    model: str | None = Field(default=None, max_length=100)
 
 
 class UpdateContentRequest(BaseModel):

@@ -29,6 +29,7 @@ def generate(
     entity: Entity,
     category: ContentCategory,
     query: str,
+    model: str | None = None,
 ) -> EntityContentResponse:
     """Genera contenido RAG para una entidad mediante el pipeline LLM.
 
@@ -43,6 +44,7 @@ def generate(
         entity: Entidad destino para la que se genera el contenido.
         category: Categoría del contenido a generar.
         query: Consulta/prompt del usuario.
+        model: Modelo Ollama a usar. Si es None usa el modelo por defecto del servidor.
 
     Returns:
         EntityContentResponse con el contenido generado y sus metadatos.
@@ -92,6 +94,7 @@ def generate(
         ),
         query=query,
         extra_context=extra_context,
+        model=model,
     )
     check_generated_output(answer)
 
