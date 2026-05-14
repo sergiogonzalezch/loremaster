@@ -130,3 +130,104 @@ build_visual_prompt()
 - `test_image_generation_service.py` — 13/13 ✅ (IG-01 a IG-13)
 - Suite completa backend — 183/183 ✅
 - `ruff check app` — sin errores ✅
+
+---
+
+# Mejoras Post-Harness — Evaluación comparativa de modelos
+
+**Fecha:** 2026-05-14
+**Commit base (snapshot):** ver historial git
+**Archivos modificados:**
+- `backend/app/core/config/__init__.py`
+- `backend/app/engine/image_prompt_builder.py`
+- `backend/app/domain/image_prompt_rules.py`
+
+## Contexto
+
+Se ejecutó el `image_prompt_harness` contra los 6 modelos Ollama disponibles con 12 casos de prueba, evaluando dos métricas: **tipo correcto** (primer token) y **en inglés** (sin tokens función en español).
+
+### Resultados del harness
+
+| Modelo | Tipo correcto | En inglés |
+|---|---|---|
+| mistral:latest | 10/12 (83.3%) | **12/12 (100.0%)** |
+| llama3.2:latest | 10/12 (83.3%) | 11/12 (91.7%) |
+| qwen2.5:latest | 10/12 (83.3%) | 11/12 (91.7%) |
+| gemma2:9b | 10/12 (83.3%) | 11/12 (91.7%) |
+| llama3.1:latest | 8/12 (66.7%) | 11/12 (91.7%) |
+| qwen3.5:9b | 0/12 (0.0%) | 0/12 (0.0%) — modelo de razonamiento |
+
+`qwen3.5:9b` es incompatible: envuelve su salida en `<think>...</think>` y causa timeouts frecuentes.
+
+### Fallos por causa raíz
+
+| Caso | Causa |
+|---|---|
+| tc-05 creature/backstory | La categoría `backstory` orienta al modelo hacia contexto narrativo; la instrucción de tipo no era suficientemente explícita. Fallaba en 4/5 modelos. |
+| tc-11 item/backstory | `_COMBINED_TYPE_OPTIONS` para item no incluía `orb` ni `sphere`, que sí estaban en `expected_types`. Contradicción de datos. |
+| tc-02 character/alien | Solo llama3.2 falla; error de consistencia del modelo, no del prompt. |
+| tc-12 character/backstory inglés | Solo llama3.2; se "contagia" del español en backstory. |
+
+---
+
+## Mejora 1 — Modelo independiente para image prompts
+
+### Problema
+El builder usaba el global `llm` (instancia del modelo de generación de contenido, `ollama_model`). El modelo elegido para narrativa no es necesariamente el mejor para extracción estructurada en inglés. Acoplar ambas decisiones degrada la calidad del auto prompt cuando el usuario usa modelos como llama3.1.
+
+### Solución
+Añadir `image_prompt_model` a Settings (por defecto `mistral:latest`, el único con 100% inglés). El builder usa `get_llm(settings.image_prompt_model)` — la fábrica ya existente de PHASE-2 — sin duplicar ninguna lógica.
+
+```python
+# config/__init__.py — añadido en sección Image generation
+image_prompt_model: str = "mistral:latest"
+
+# image_prompt_builder.py — antes
+from app.engine.llm import llm
+_generation_chain = llm | StrOutputParser()
+
+# image_prompt_builder.py — después
+from app.engine.llm import get_llm
+_generation_chain = get_llm(settings.image_prompt_model) | StrOutputParser()
+```
+
+**Impacto:** El modelo de generación de contenido (`ollama_model`) y el de extracción visual (`image_prompt_model`) son configurables independientemente. Sin cambio de API pública.
+
+---
+
+## Mejora 2 — Corrección de datos en opciones de tipo para item
+
+### Problema
+`_COMBINED_TYPE_OPTIONS[EntityType.item]` no incluía `orb` ni `sphere`. El harness esperaba esos valores en tc-11 pero el prompt los excluía implícitamente al listar solo las opciones válidas.
+
+### Solución
+```python
+# antes
+EntityType.item: "sword, bow, wand, shield, armor, relic, artifact, jewelry, amulet, potion",
+
+# después
+EntityType.item: "sword, bow, wand, shield, armor, relic, artifact, orb, sphere, jewelry, amulet, potion",
+```
+
+---
+
+## Mejora 3 — Refuerzo de instrucción de tipo en categoría backstory
+
+### Problema
+En backstory, el modelo a veces producía un descriptor visual como primer token en lugar del tipo de entidad. La instrucción `"start with the specific type"` no era suficientemente explícita cuando el texto tenía fuerte carga narrativa.
+
+### Solución
+`build_combined_prompt()` añade una línea de refuerzo condicional solo cuando `category == ContentCategory.backstory`:
+
+```
+IMPORTANT: The very first item MUST be a type from the list above, even in historical or backstory text.
+```
+
+---
+
+## Impacto acumulado en fases anteriores
+
+| Fase | Impacto |
+|---|---|
+| **PHASE-1** (RAG content generation) | Ninguno. Archivos completamente separados. |
+| **PHASE-2** (per-query model selection) | Ninguno. Se reutiliza `get_llm()` sin modificarla. El `chain` global del RAG no cambia. |
