@@ -32,7 +32,7 @@ _SPARSE_CASES = {"TC-04", "TC-05"}
 
 def _load_results(run_dir: Path) -> dict[str, dict]:
     results = {}
-    for path in run_dir.glob("tc_*_result.json"):
+    for path in run_dir.glob("tc*_result.json"):
         with path.open(encoding="utf-8") as f:
             r = json.load(f)
             results[r["tc_id"]] = r
@@ -106,7 +106,7 @@ def main() -> None:
     tgt_meta = _load_summary(target_dir)
 
     print(f"\n{'=' * 65}")
-    print(f"COMPARATIVA: {base_meta.get('prompt_version', 'baseline')} → {tgt_meta.get('prompt_version', 'target')}")
+    print(f"COMPARATIVA: {base_meta.get('prompt_version', 'baseline')} -> {tgt_meta.get('prompt_version', 'target')}")
     print(f"  Baseline : modelo={base_meta.get('model', '?')}  temp={base_meta.get('temperature', '?')}")
     print(f"  Target   : modelo={tgt_meta.get('model', '?')}  temp={tgt_meta.get('temperature', '?')}")
     print(f"{'=' * 65}")
@@ -121,9 +121,9 @@ def main() -> None:
         note = ""
         if dim == "D3" and b is not None and t is not None:
             passes = (t - b) >= _D3_THRESHOLD
-            note = "  ✓ umbral" if passes else "  ✗ umbral"
+            note = "  PASS umbral" if passes else "  FAIL umbral"
             dim_results["D3_ok"] = passes
-        print(f"  {dim} {_DIM_NAMES[dim]:<30} {_fmt(b)} → {_fmt(t)}  ({delta}){note}")
+        print(f"  {dim} {_DIM_NAMES[dim]:<30} {_fmt(b)} -> {_fmt(t)}  ({delta}){note}")
         dim_results[dim] = {"base": b, "target": t}
 
     # --- Por categoría (D3) ---
@@ -134,14 +134,14 @@ def main() -> None:
     for cat in all_cats:
         b = base_by_cat.get(cat)
         t = tgt_by_cat.get(cat)
-        print(f"  {cat:<25} {_fmt(b)} → {_fmt(t)}  ({_delta_str(b, t)})")
+        print(f"  {cat:<25} {_fmt(b)} -> {_fmt(t)}  ({_delta_str(b, t)})")
 
     # --- Regla 3: rechazos en contexto pobre ---
     base_rej = _rejection_count(baseline, _SPARSE_CASES)
     tgt_rej = _rejection_count(target, _SPARSE_CASES)
     rule3_ok = tgt_rej == 0
     print("\nRegla 3 — rechazos en TC-04/TC-05:")
-    print(f"  Baseline: {base_rej}  →  Target: {tgt_rej}  {'✓' if rule3_ok else '✗'}")
+    print(f"  Baseline: {base_rej}  ->  Target: {tgt_rej}  {'PASS' if rule3_ok else 'FAIL'}")
 
     # --- Criterios de validación ---
     d1_b = dim_results.get("D1", {}).get("base")
@@ -150,14 +150,14 @@ def main() -> None:
     d3_ok = dim_results.get("D3_ok", False)
 
     print("\nCriterios de validación del refactor (ver PHASE-1.md):")
-    print(f"  D3 mejora ≥ {_D3_THRESHOLD}:            {'✓' if d3_ok else '✗'}")
-    print(f"  D1 no empeora:              {'✓' if d1_ok else '✗'}")
-    print(f"  TC-04/TC-05 sin rechazos:   {'✓' if rule3_ok else '✗'}")
+    print(f"  D3 mejora >= {_D3_THRESHOLD}:           {'PASS' if d3_ok else 'FAIL'}")
+    print(f"  D1 no empeora:              {'PASS' if d1_ok else 'FAIL'}")
+    print(f"  TC-04/TC-05 sin rechazos:   {'PASS' if rule3_ok else 'FAIL'}")
 
     if d3_ok and d1_ok and rule3_ok:
-        print("\n  → REFACTOR VALIDADO")
+        print("\n  -> REFACTOR VALIDADO")
     else:
-        print("\n  → REFACTOR PENDIENTE DE REVISIÓN")
+        print("\n  -> REFACTOR PENDIENTE DE REVISIÓN")
     print()
 
 

@@ -128,13 +128,17 @@ def _score_manual(result: dict, tc: dict) -> dict:
     return scores
 
 
+_MAX_OUTPUT_CHARS = 800
+
+
 def _score_llm(result: dict, tc: dict, judge_model: str, ollama_url: str) -> dict:
     context = "\n\n".join(f"[{i + 1}] {f}" for i, f in enumerate(tc["simulated_context"]))
+    output_text = (result["output"] or "[VACÍO]")[:_MAX_OUTPUT_CHARS]
     prompt = _JUDGE_PROMPT.format(
         context=context,
         query=tc["query"],
         category=tc["category"],
-        output=result["output"] or "[VACÍO]",
+        output=output_text,
     )
     response = requests.post(
         f"{ollama_url}/api/generate",
@@ -142,9 +146,9 @@ def _score_llm(result: dict, tc: dict, judge_model: str, ollama_url: str) -> dic
             "model": judge_model,
             "prompt": prompt,
             "stream": False,
-            "options": {"temperature": 0, "num_predict": 512},
+            "options": {"temperature": 0, "num_predict": -1},
         },
-        timeout=120,
+        timeout=300,
     )
     response.raise_for_status()
     raw = response.json()["response"].strip()
@@ -175,7 +179,7 @@ def main() -> None:
         print(f"Directorio no encontrado: {run_dir}")
         sys.exit(1)
 
-    result_files = sorted(run_dir.glob("tc_*_result.json"))
+    result_files = sorted(run_dir.glob("tc*_result.json"))
     if not result_files:
         print(f"No se encontraron resultados en {run_dir}")
         sys.exit(1)

@@ -20,9 +20,7 @@ _DATA_INSTRUCTION = (
 _PREAMBLE = "Eres un escritor experto en narrativa y worldbuilding. "
 _CONTEXT_INSTRUCTION = (
     "Usa la información del contexto proporcionado. "
-    "Si el contexto es escaso, genera con lo disponible y añade al final "
-    "una nota breve indicando qué información adicional enriquecería el resultado. "
-    "No rechaces la generación por falta de contexto."
+    "Si el contexto es escaso, genera con lo disponible sin rechazar la solicitud."
 )
 # entity_name y entity_type van en la zona de DATOS (<entity>), no en instrucciones.
 _ENTITY_SECTION = "\n\n<entity>\n{entity_name} ({entity_type})\n</entity>"
