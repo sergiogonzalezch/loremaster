@@ -244,6 +244,7 @@ async def test_ingest_extraction_timeout_returns_422(
         _slow_extract,
     )
     from app.core.config import settings
+
     monkeypatch.setattr(settings, "document_extraction_timeout_seconds", 0.01)
 
     response = await client.post(

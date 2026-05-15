@@ -45,6 +45,7 @@ def _sanitize_for_log(filename: str) -> str:
 
 logger = logging.getLogger(__name__)
 
+
 async def ingest_document_service(
     session: Session,
     data: UploadFile,
