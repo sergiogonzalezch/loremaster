@@ -5,13 +5,11 @@
  * colecciones, perfil público, admin (si aplica) y logout.
  */
 
-import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Container, Dropdown } from "react-bootstrap";
 import { useClerk } from "@clerk/clerk-react";
 import { useAuth } from "../hooks/useAuth";
 import SafeImage from "./SafeImage";
-import { getMyAvatar } from "../api/users";
 import { clerkKey } from "../utils/clerkConfig";
 
 /** Círculo con las iniciales del usuario como avatar fallback. */
@@ -62,21 +60,10 @@ function ClerkLogoutItem({ onLocalLogout }: { onLocalLogout: () => void }) {
 }
 
 export default function AppNavbar() {
-  const { user, logout } = useAuth();
+  const { user, logout, avatarUrl } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const from = (location.state as { from?: string })?.from ?? location.pathname;
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!user) {
-      setAvatarUrl(null);
-      return;
-    }
-    getMyAvatar()
-      .then((r) => setAvatarUrl(r.avatar_url ?? null))
-      .catch(() => {});
-  }, [user]);
 
   function handleLocalLogout() {
     logout();

@@ -14,7 +14,7 @@ import {
   type ReactNode,
 } from "react";
 import { logoutApi } from "../api/auth";
-import { getMyProfile } from "../api/users";
+import { getMyProfile, getMyAvatar } from "../api/users";
 
 /** Datos del usuario obtenidos del backend. */
 interface AuthUser {
@@ -30,6 +30,8 @@ interface AuthContextValue {
   loading: boolean;
   login: () => Promise<void>;
   logout: () => void;
+  avatarUrl: string | null;
+  setAvatarUrl: (url: string | null) => void;
 }
 
 /* eslint-disable react-refresh/only-export-components */
@@ -46,6 +48,7 @@ export const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const logoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const logout = useCallback(() => {
@@ -55,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     void logoutApi().catch(() => {});
     setUser(null);
+    setAvatarUrl(null);
   }, []);
 
   function scheduleLogout(expiresAt: string | null | undefined) {
@@ -76,6 +80,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           is_admin: profile.is_admin ?? false,
         });
         scheduleLogout(profile.expires_at);
+        return getMyAvatar()
+          .then((r) => setAvatarUrl(r.avatar_url ?? null))
+          .catch(() => {});
       })
       .catch(() => {
         setUser(null);
@@ -104,7 +111,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, logout, avatarUrl, setAvatarUrl }}
+    >
       {children}
     </AuthContext.Provider>
   );

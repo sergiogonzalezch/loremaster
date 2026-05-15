@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 import {
   Container,
   Row,
@@ -31,6 +32,7 @@ import type { UserProfile, UpdateProfileRequest } from "../types/user";
  */
 export default function ProfilePage() {
   const navigate = useNavigate();
+  const { setAvatarUrl: setContextAvatarUrl } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -86,7 +88,9 @@ export default function ProfilePage() {
     try {
       const result = await uploadMyAvatar(file);
       const url = result.avatar_url;
-      setAvatarUrl(url ? `${url}?t=${Date.now()}` : "");
+      const busted = url ? `${url}?t=${Date.now()}` : "";
+      setAvatarUrl(busted);
+      setContextAvatarUrl(busted || null);
     } catch (e) {
       setError(parseApiError(e).text);
     } finally {
@@ -103,6 +107,7 @@ export default function ProfilePage() {
     try {
       await deleteMyAvatar();
       setAvatarUrl("");
+      setContextAvatarUrl(null);
     } catch (e) {
       setError(parseApiError(e).text);
     }

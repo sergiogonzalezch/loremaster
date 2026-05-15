@@ -36,6 +36,7 @@ export default function PublicFeedPage() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [selectedItem, setSelectedItem] = useState<PublicFeedItem | null>(null);
   const [selectedImage, setSelectedImage] = useState<PublicImageItem | null>(
     null,
@@ -43,6 +44,7 @@ export default function PublicFeedPage() {
 
   /**
    * Carga el feed público y las imágenes compartidas en paralelo.
+   * Se re-ejecuta al cambiar de página o cuando el usuario vuelve a la pestaña.
    */
   useEffect(() => {
     const ctrl = new AbortController();
@@ -67,7 +69,18 @@ export default function PublicFeedPage() {
       })
       .finally(() => setLoading(false));
     return () => ctrl.abort();
-  }, [page]);
+  }, [page, refreshKey]);
+
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.visibilityState === "visible") {
+        setRefreshKey((k) => k + 1);
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
 
   return (
     <Container fluid="lg" className="py-5">

@@ -42,6 +42,7 @@ export default function PublicProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [selectedContent, setSelectedContent] =
     useState<SharedContentItem | null>(null);
   const [selectedImage, setSelectedImage] = useState<SharedImageItem | null>(
@@ -56,7 +57,18 @@ export default function PublicProfilePage() {
       .then(setProfile)
       .catch((e) => setError(parseApiError(e).text))
       .finally(() => setLoading(false));
-  }, [username]);
+  }, [username, refreshKey]);
+
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.visibilityState === "visible") {
+        setRefreshKey((k) => k + 1);
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
 
   const initials = (profile?.display_name ?? profile?.username ?? "?")
     .slice(0, 2)
