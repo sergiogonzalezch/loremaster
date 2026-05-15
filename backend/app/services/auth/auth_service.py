@@ -63,3 +63,32 @@ def invalidate_session(session: Session, user_id: str) -> None:
         user.token_version += 1
         session.add(user)
         session.commit()
+
+
+def get_or_create_clerk_user(session: Session, payload: dict) -> User:
+    """Retorna el User local vinculado al Clerk JWT, creándolo si no existe.
+
+    El 'sub' del Clerk JWT (e.g. 'user_2abc...') es el ID primario.
+    hashed_password queda vacío porque Clerk gestiona las credenciales.
+    """
+    user_id = payload["sub"]
+    user = session.get(User, user_id)
+    if user:
+        return user
+
+    email = payload.get("email", "")
+    username = (
+        payload.get("username")
+        or (email.split("@")[0] if email else None)
+        or user_id
+    )
+    user = User(
+        id=user_id,
+        username=username,
+        email=email,
+        hashed_password="",
+    )
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    return user

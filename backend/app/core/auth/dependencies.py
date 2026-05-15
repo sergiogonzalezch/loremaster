@@ -1,7 +1,7 @@
 """Dependencias de autenticación para FastAPI.
 
 Provee funciones de dependencia para proteger endpoints:
-- get_current_user: Autenticación JWT (local) o Clerk (producción)
+- get_current_user: Autenticación JWT local (cookie HttpOnly)
 - get_admin_user: Autorización de administrador
 """
 
@@ -11,7 +11,6 @@ from fastapi import Depends, HTTPException, Request
 from sqlmodel import Session
 
 from app.core.auth import verify_token
-from app.core.auth.clerk import decode_clerk_token
 from app.core.config import settings
 from app.database import get_session
 from app.models.db.user import User
@@ -23,11 +22,10 @@ def get_current_user(
 ) -> dict:
     """Obtiene el usuario autenticado desde la cookie HttpOnly.
 
-    Lee el JWT de la cookie 'access_token' en lugar del header Authorization.
-    Valida firma, existencia de usuario, soft-delete y token_version.
-
-    En producción (environment="production"), delega la verificación
-    a Clerk pero sigue leyendo de la cookie local.
+    Lee el JWT local de la cookie 'access_token'. En todos los entornos
+    (local, demo, production) la cookie contiene un JWT propio firmado con
+    SECRET_KEY — el Clerk JWT nunca se almacena en cookie; solo llega por
+    header Authorization en POST /auth/clerk/sync y se descarta tras el sync.
 
     Args:
         request: Objeto Request para acceder a cookies.
@@ -44,19 +42,6 @@ def get_current_user(
     token = request.cookies.get(settings.cookie_access_name)
     if not token:
         raise HTTPException(status_code=401, detail="No autorizado")
-
-    if settings.environment == "production":
-        payload = decode_clerk_token(token)
-        user = session.get(User, payload.get("sub"))
-        if not user or user.is_deleted:
-            raise HTTPException(status_code=401, detail="No autorizado")
-        # Verificar token_version si existe en el token de Clerk (custom claim)
-        if "version" in payload and not hmac.compare_digest(
-            str(user.token_version),
-            str(payload.get("version", 0)),
-        ):
-            raise HTTPException(status_code=401, detail="Sesión inválida")
-        return payload
 
     payload = verify_token(token)
 
