@@ -13,6 +13,7 @@ import {
 import { getPublicProfile } from "../api/users";
 import StarfieldCanvas from "../components/StarfieldCanvas";
 import AppNavbar from "../components/AppNavbar";
+import AppFooter from "../components/AppFooter";
 import MarkdownContent from "../components/MarkdownContent";
 import PublicContentModal from "../components/PublicContentModal";
 import PublicImageModal from "../components/PublicImageModal";
@@ -87,7 +88,15 @@ export default function PublicProfilePage() {
   return (
     <>
       <StarfieldCanvas />
-      <div style={{ position: "relative", zIndex: 1, minHeight: "100vh" }}>
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         <AppNavbar />
 
         <Container fluid="lg" className="py-5">
@@ -360,6 +369,7 @@ export default function PublicProfilePage() {
             </>
           ) : null}
         </Container>
+        <AppFooter />
       </div>
 
       {selectedContent && (
