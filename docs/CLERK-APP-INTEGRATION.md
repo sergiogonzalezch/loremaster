@@ -2,23 +2,26 @@
 
 Guía para conectar Lore Master con Clerk como proveedor de autenticación externo.
 
-> **Última actualización:** 2026-05-14  
-> **Estado:** Backend ~80%. Pendiente: `/auth/clerk/sync`, `get_or_create_clerk_user`, fix bug en `get_current_user`. Frontend: 0% (sin SDK Clerk instalado).
+> **Última actualización:** 2026-05-15  
+> **Estado:** Backend 100% implementado. Frontend 100% implementado. Pendiente: `test_auth_clerk.py`.
 
 ---
 
-## Estado actual (2026-05-14)
+## Estado actual (2026-05-15)
 
 | Componente | Archivo | Estado |
 |---|---|---|
 | `JWKSManager` + `decode_clerk_token()` | `core/auth/clerk.py` | ✅ Implementado |
 | Settings `clerk_jwks_url` + `clerk_audience` | `core/config/__init__.py` | ✅ Implementado |
 | `GET /auth/clerk/verify` | `routes/auth/auth_clerk.py` | ✅ Implementado |
-| Cookies HttpOnly + CSRF (Fase 13) | `core/auth/` | ✅ Implementado |
-| **`POST /auth/clerk/sync`** | `routes/auth/auth_clerk.py` | ❌ Falta |
-| **`get_or_create_clerk_user()`** | `services/auth/auth_service.py` | ❌ Falta |
-| **Bug en `get_current_user`** | `core/auth/dependencies.py` | ❌ Falta fix |
-| SDK Clerk en frontend | `frontend/` | ❌ Sin empezar |
+| Cookies HttpOnly + CSRF | `core/auth/` | ✅ Implementado |
+| **`POST /auth/clerk/sync`** | `routes/auth/auth_clerk.py` | ✅ Implementado |
+| **`get_or_create_clerk_user()`** | `services/auth/auth_service.py` | ✅ Implementado |
+| **Bug en `get_current_user`** | `core/auth/dependencies.py` | ✅ Corregido |
+| SDK Clerk + `ClerkProvider` + `ClerkBridge` | `frontend/src/App.tsx` | ✅ Implementado |
+| `VITE_CLERK_PUBLISHABLE_KEY` | `frontend/.env` + `clerkConfig.ts` | ✅ Implementado |
+| `clerkSync.ts` | `frontend/src/api/clerkSync.ts` | ✅ Implementado |
+| **`test_auth_clerk.py`** | `backend/tests/test_auth_clerk.py` | ❌ Pendiente |
 
 ---
 
@@ -66,26 +69,16 @@ La arquitectura usa un **patrón puente**: el JWT de Clerk nunca se almacena en 
 
 > **Importante:** El Clerk JWT **nunca** se almacena en cookie. Solo llega por header en el paso 3 y se descarta después de la validación. La cookie siempre contiene un JWT local.
 
-### 1.3 Fix necesario en `get_current_user` (bug actual)
+### 1.3 ~~Fix necesario en `get_current_user`~~ ✅ Corregido
 
 **Archivo:** `backend/app/core/auth/dependencies.py`
 
-El código actual tiene un branch de producción que intenta llamar `decode_clerk_token(token)` sobre la cookie `access_token`. Esto es incorrecto porque la cookie siempre contiene un **JWT local** (firmado con `SECRET_KEY`), nunca el Clerk JWT. Llamar `decode_clerk_token()` sobre un JWT local falla porque Clerk no conoce `SECRET_KEY`.
+El bug original tenía un branch de producción que llamaba `decode_clerk_token(token)` sobre la cookie `access_token`, lo cual es incorrecto: la cookie siempre contiene un **JWT local** (firmado con `SECRET_KEY`), nunca el Clerk JWT.
+
+El código actual ya es correcto: `get_current_user` usa `verify_token()` en todos los entornos. El Clerk JWT solo llega por header en `/sync` y se descarta tras la validación. `decode_clerk_token` no está importado en `dependencies.py`; se usa únicamente en `auth_clerk.py`.
 
 ```python
-# ANTES (bug — intenta decodificar JWT local como si fuera Clerk JWT):
-def get_current_user(request, session):
-    token = request.cookies.get(settings.cookie_access_name)
-    if not token:
-        raise HTTPException(401, "No autorizado")
-    if settings.environment == "production":          # ← INCORRECTO
-        payload = decode_clerk_token(token)           # ← falla con JWT local
-        user = session.get(User, payload.get("sub"))
-        ...
-    payload = verify_token(token)
-    ...
-
-# DESPUÉS (correcto — cookie siempre tiene JWT local):
+# Estado actual — correcto:
 def get_current_user(request, session):
     token = request.cookies.get(settings.cookie_access_name)
     if not token:
@@ -99,13 +92,11 @@ def get_current_user(request, session):
     return payload
 ```
 
-Todas las invariantes de seguridad se mantienen: soft-delete check, timing-safe `token_version` comparison. El import de `decode_clerk_token` en `dependencies.py` puede eliminarse (ya no se usa aquí; `decode_clerk_token` solo se usa en `auth_clerk.py`).
-
-### 1.4 Provisioning de usuarios — `get_or_create_clerk_user`
+### 1.4 Provisioning de usuarios — `get_or_create_clerk_user` ✅
 
 **Archivo:** `backend/app/services/auth/auth_service.py`
 
-Con Clerk, el usuario existe en el proveedor externo pero **no en la BD local** hasta el primer `/sync`. Añadir esta función al servicio de auth:
+Con Clerk, el usuario existe en el proveedor externo pero **no en la BD local** hasta el primer `/sync`. La función ya está implementada y exportada desde `services/auth/__init__.py`:
 
 ```python
 def get_or_create_clerk_user(session: Session, payload: dict) -> User:
@@ -141,7 +132,7 @@ Exportar desde `backend/app/services/auth/__init__.py`.
 
 > **No usar** `create_user()` existente: hace hash de password y valida unicidad de username contra la BD, incompatible con el flujo Clerk.
 
-### 1.5 Endpoint `POST /auth/clerk/sync`
+### 1.5 Endpoint `POST /auth/clerk/sync` ✅
 
 **Archivo:** `backend/app/api/routes/auth/auth_clerk.py`
 
@@ -181,7 +172,9 @@ def sync_clerk_user(
 
 **Rate limiting:** Cubierto por `RateLimitMiddleware` global (30 req/min).
 
-### 1.6 Tests — `backend/tests/test_auth_clerk.py` (nuevo)
+### 1.6 Tests — `backend/tests/test_auth_clerk.py` ❌ Pendiente
+
+Este es el único ítem faltante. El archivo aún no existe.
 
 | ID | Escenario | Resultado esperado |
 |---|---|---|
@@ -200,7 +193,7 @@ Actualmente `get_current_user` consulta `token_version` en la BD en cada request
 
 ---
 
-## Parte 2 — Frontend (pendiente, siguiente fase)
+## Parte 2 — Frontend ✅ Implementado
 
 ### 2.1 Instalar el SDK
 
@@ -324,30 +317,28 @@ function LogoutButton() {
 
 ---
 
-## Resumen de cambios por fase
+## Resumen de cambios implementados
 
-### Fase actual — Backend
+### Backend ✅ Completo
 
-| Área | Archivo | Acción |
+| Área | Archivo | Estado |
 |---|---|---|
-| Config | `backend/.env` | Añadir `ENVIRONMENT`, `CLERK_JWKS_URL`, `CLERK_AUDIENCE` |
-| Backend (fix) | `core/auth/dependencies.py` | Eliminar branch `production` de `get_current_user` |
-| Backend | `services/auth/auth_service.py` | Añadir `get_or_create_clerk_user()` |
-| Backend | `services/auth/__init__.py` | Exportar `get_or_create_clerk_user` |
-| Backend | `routes/auth/auth_clerk.py` | Añadir `POST /auth/clerk/sync` |
-| Tests | `tests/test_auth_clerk.py` | Nuevo archivo con 6 tests |
+| Config | `backend/.env` + `.env.example` | ✅ `CLERK_JWKS_URL`, `CLERK_AUDIENCE` añadidos |
+| Backend (fix) | `core/auth/dependencies.py` | ✅ Branch `production` eliminado; `verify_token()` uniforme |
+| Backend | `services/auth/auth_service.py` | ✅ `get_or_create_clerk_user()` implementado |
+| Backend | `services/auth/__init__.py` | ✅ `get_or_create_clerk_user` exportado |
+| Backend | `routes/auth/auth_clerk.py` | ✅ `POST /auth/clerk/sync` implementado |
+| Tests | `tests/test_auth_clerk.py` | ❌ Pendiente (único ítem faltante) |
 
-### Siguiente fase — Frontend
+### Frontend ✅ Completo
 
-| Área | Archivo | Acción |
+| Área | Archivo | Estado |
 |---|---|---|
-| Config | `frontend/.env` | Añadir `VITE_CLERK_PUBLISHABLE_KEY` |
-| Frontend | `main.tsx` | Envolver con `ClerkProvider` |
-| Frontend | `api/clerkSync.ts` | Crear función para sincronizar sesión |
-| Frontend | `App.tsx` | Llamar `syncClerkSession` post-login |
-| Frontend | `ProtectedRoute.tsx` | Usar `useUser()` de Clerk |
-| Frontend | `LoginPage.tsx` | Reemplazar formulario manual con `<SignIn>` |
-| Frontend | `Layout.tsx` | Usar `useUser()` / `useClerk().signOut()` |
+| Config | `frontend/.env` + `clerkConfig.ts` | ✅ `VITE_CLERK_PUBLISHABLE_KEY` configurado |
+| SDK | `App.tsx` | ✅ `ClerkProvider` envuelve la app |
+| Bridge | `App.tsx` → `ClerkBridge` | ✅ Sincroniza sesión Clerk → backend post-login |
+| API | `api/clerkSync.ts` | ✅ `syncClerkSession()` implementado |
+| Auth guard | `ProtectedRoute.tsx` | ✅ Usa `VITE_CLERK_PUBLISHABLE_KEY` para Clerk |
 
 ---
 
