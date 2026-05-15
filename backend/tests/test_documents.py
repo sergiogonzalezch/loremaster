@@ -243,10 +243,8 @@ async def test_ingest_extraction_timeout_returns_422(
         "app.services.document.document_service.extract_text",
         _slow_extract,
     )
-    monkeypatch.setattr(
-        "app.services.document.document_service._EXTRACTION_TIMEOUT_SECONDS",
-        0.01,
-    )
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "document_extraction_timeout_seconds", 0.01)
 
     response = await client.post(
         f"/api/v1/collections/{sample_collection.id}/documents",

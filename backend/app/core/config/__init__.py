@@ -50,6 +50,7 @@ class Settings(BaseSettings):
         storage_base_url: URL base para servir archivos multimedia.
         profile_image_max_size_mb: Tamaño máximo de avatar en MB.
         document_max_upload_mb: Tamaño máximo de documento subido en MB.
+        document_extraction_timeout_seconds: Timeout para extracción de texto de documentos.
 
         qdrant_url: URL del servidor Qdrant.
 
@@ -116,6 +117,7 @@ class Settings(BaseSettings):
     storage_base_url: str = "http://localhost:8000/media"
     profile_image_max_size_mb: float = 5.0
     document_max_upload_mb: int = 50
+    document_extraction_timeout_seconds: int = 30
 
     # Vector DB (Qdrant)
     qdrant_url: str = "http://localhost:6333"

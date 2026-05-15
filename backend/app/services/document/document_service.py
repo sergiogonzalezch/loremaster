@@ -45,9 +45,6 @@ def _sanitize_for_log(filename: str) -> str:
 
 logger = logging.getLogger(__name__)
 
-_EXTRACTION_TIMEOUT_SECONDS = 30
-
-
 async def ingest_document_service(
     session: Session,
     data: UploadFile,
@@ -101,7 +98,7 @@ async def ingest_document_service(
     try:
         extracted_text = await asyncio.wait_for(
             loop.run_in_executor(None, extract_text, content, data.content_type),
-            timeout=_EXTRACTION_TIMEOUT_SECONDS,
+            timeout=settings.document_extraction_timeout_seconds,
         )
     except TimeoutError:
         logger.exception(
