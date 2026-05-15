@@ -40,11 +40,7 @@ def _load_results(run_dir: Path) -> dict[str, dict]:
 
 
 def _avg_dim(results: dict, dim: str) -> float | None:
-    scores = [
-        r["scores"][dim]
-        for r in results.values()
-        if r.get("scores") and dim in r["scores"]
-    ]
+    scores = [r["scores"][dim] for r in results.values() if r.get("scores") and dim in r["scores"]]
     return round(sum(scores) / len(scores), 2) if scores else None
 
 

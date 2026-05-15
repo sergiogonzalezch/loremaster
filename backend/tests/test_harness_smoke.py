@@ -13,8 +13,7 @@ import yaml
 _HARNESS_DIR = Path(__file__).parent.parent / "evaluations" / "prompt_harness"
 _IMAGE_HARNESS_DIR = Path(__file__).parent.parent / "evaluations" / "image_prompt_harness"
 
-_REQUIRED_TC_FIELDS = ("id", "name", "category", "entity_name", "entity_type",
-                       "context_quality", "simulated_context", "query")
+_REQUIRED_TC_FIELDS = ("id", "name", "category", "entity_name", "entity_type", "context_quality", "simulated_context", "query")
 
 
 def _import_harness_module(name: str):
@@ -68,10 +67,8 @@ def test_test_cases_valid():
         tc = yaml.safe_load(path.read_text(encoding="utf-8"))
         for field in _REQUIRED_TC_FIELDS:
             assert field in tc, f"{path.name}: falta campo '{field}'"
-        assert isinstance(tc["simulated_context"], list), \
-            f"{path.name}: 'simulated_context' debe ser lista"
-        assert len(tc["simulated_context"]) >= 1, \
-            f"{path.name}: 'simulated_context' no puede estar vacío"
+        assert isinstance(tc["simulated_context"], list), f"{path.name}: 'simulated_context' debe ser lista"
+        assert len(tc["simulated_context"]) >= 1, f"{path.name}: 'simulated_context' no puede estar vacío"
 
 
 # ── Image Prompt Harness ──────────────────────────────────────────────────────
@@ -106,9 +103,6 @@ def test_image_harness_cases_valid():
         tc = yaml.safe_load(path.read_text(encoding="utf-8"))
         for field in _IMAGE_REQUIRED_TC_FIELDS:
             assert field in tc, f"{path.name}: falta campo '{field}'"
-        assert isinstance(tc["expected_types"], list), \
-            f"{path.name}: 'expected_types' debe ser lista"
-        assert len(tc["expected_types"]) >= 1, \
-            f"{path.name}: 'expected_types' no puede estar vacío"
-        assert tc["content"].strip(), \
-            f"{path.name}: 'content' no puede estar vacío"
+        assert isinstance(tc["expected_types"], list), f"{path.name}: 'expected_types' debe ser lista"
+        assert len(tc["expected_types"]) >= 1, f"{path.name}: 'expected_types' no puede estar vacío"
+        assert tc["content"].strip(), f"{path.name}: 'content' no puede estar vacío"

@@ -122,11 +122,7 @@ def invoke_generation_pipeline(
         query=query,
     )
 
-    active_chain = (
-        get_llm(effective_model) | StrOutputParser()
-        if model
-        else generation_chain
-    )
+    active_chain = get_llm(effective_model) | StrOutputParser() if model else generation_chain
 
     try:
         with _llm_semaphore:

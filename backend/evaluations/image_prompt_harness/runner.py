@@ -121,21 +121,21 @@ def run(model: str, temperature: float, ollama_url: str) -> None:
         result_path = out_dir / f"{tc_id}_result.json"
         result_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
 
-        summary["results"].append({
-            "tc_id": tc_id,
-            "tipo_ok": tipo_ok,
-            "english_ok": english_ok,
-            "response_time_sec": round(elapsed, 2),
-            "error": error,
-        })
+        summary["results"].append(
+            {
+                "tc_id": tc_id,
+                "tipo_ok": tipo_ok,
+                "english_ok": english_ok,
+                "response_time_sec": round(elapsed, 2),
+                "error": error,
+            }
+        )
 
     total = len(test_cases)
     summary["tipo_pct"] = round(summary["tipo_correct"] / total * 100, 1) if total else 0.0
     summary["english_pct"] = round(summary["english_correct"] / total * 100, 1) if total else 0.0
 
-    (out_dir / "run_summary.json").write_text(
-        json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    (out_dir / "run_summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
 
     print(
         f"\nResumen - tipo: {summary['tipo_correct']}/{total} ({summary['tipo_pct']}%) "

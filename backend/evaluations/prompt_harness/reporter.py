@@ -61,11 +61,7 @@ def _avg(values: list) -> float | None:
 
 
 def _dim_avg(run: dict, dim: str) -> float | None:
-    scores = [
-        r["scores"][dim]
-        for r in run["results"].values()
-        if r.get("scores") and dim in r["scores"]
-    ]
+    scores = [r["scores"][dim] for r in run["results"].values() if r.get("scores") and dim in r["scores"]]
     return _avg(scores)
 
 
@@ -81,11 +77,7 @@ def _category_avg(run: dict, dim: str) -> dict[str, float]:
 
 
 def _response_stats(run: dict) -> dict:
-    times = [
-        r["response_time_sec"]
-        for r in run["results"].values()
-        if r.get("response_time_sec") is not None
-    ]
+    times = [r["response_time_sec"] for r in run["results"].values() if r.get("response_time_sec") is not None]
     if not times:
         return {"avg": None, "min": None, "max": None}
     return {
@@ -115,11 +107,7 @@ def generate_report(
     baseline = runs[baseline_idx]
     baseline_label = labels[baseline_idx]
 
-    all_cats = sorted({
-        r.get("category", "unknown")
-        for run in runs
-        for r in run["results"].values()
-    })
+    all_cats = sorted({r.get("category", "unknown") for run in runs for r in run["results"].values()})
     all_tc_ids = sorted({tc for run in runs for tc in run["results"]})
 
     # ── Encabezado ─────────────────────────────────────────────────────────────
@@ -187,9 +175,7 @@ def generate_report(
         base_cat = _category_avg(baseline, "D3").get(cat) or 0
         delta = best_score - base_cat if best_score >= 0 else 0
         flag = " ⚡" if delta >= _SWITCH_THRESHOLD and best_label != baseline_label else ""
-        lines.append(
-            f"| `{cat}` | " + " | ".join(cat_scores) + f" | `{best_label}`{flag} |"
-        )
+        lines.append(f"| `{cat}` | " + " | ".join(cat_scores) + f" | `{best_label}`{flag} |")
 
     lines += ["", "---", ""]
 
@@ -215,9 +201,7 @@ def generate_report(
     ]
 
     for tc_id in all_tc_ids:
-        tc_info = next(
-            (run["results"][tc_id] for run in runs if tc_id in run["results"]), {}
-        )
+        tc_info = next((run["results"][tc_id] for run in runs if tc_id in run["results"]), {})
         cat = tc_info.get("category", "?")[:8]
         ctx = tc_info.get("context_quality", "?")[:8]
 

@@ -142,6 +142,7 @@ async def test_sync_existing_user_is_idempotent(clerk_client, db_session):
 
     # Solo existe un user con ese ID
     from sqlmodel import select
+
     users = db_session.exec(select(User).where(User.id == "user_clerk_123")).all()
     assert len(users) == 1
 

@@ -13,6 +13,7 @@ from app.services.public import get_public_feed, get_public_images
 
 router = APIRouter(prefix="/public", tags=["public"])
 
+
 @router.get("/feed", response_model=PaginatedResponse[PublicFeedItem])
 def feed(
     pagination: Annotated[PaginationParams, Depends()],

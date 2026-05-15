@@ -77,11 +77,7 @@ def get_or_create_clerk_user(session: Session, payload: dict) -> User:
         return user
 
     email = payload.get("email", "")
-    username = (
-        payload.get("username")
-        or (email.split("@")[0] if email else None)
-        or user_id
-    )
+    username = payload.get("username") or (email.split("@")[0] if email else None) or user_id
     user = User(
         id=user_id,
         username=username,

@@ -126,13 +126,15 @@ def run(model: str, prompt_version: str, temperature: float, ollama_url: str) ->
         result_path = out_dir / f"{tc_id.lower()}_result.json"
         result_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
 
-        summary["results"].append({
-            "tc_id": tc_id,
-            "status": status,
-            "rejected": rejected,
-            "response_time_sec": round(elapsed, 2),
-            "error": error,
-        })
+        summary["results"].append(
+            {
+                "tc_id": tc_id,
+                "status": status,
+                "rejected": rejected,
+                "response_time_sec": round(elapsed, 2),
+                "error": error,
+            }
+        )
 
     summary_path = out_dir / "run_summary.json"
     summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")

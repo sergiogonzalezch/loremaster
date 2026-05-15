@@ -70,9 +70,7 @@ async def test_list_models_requires_auth(monkeypatch):
         lambda url, **kwargs: _MockOkResponse(),
     )
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as unauthenticated_client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as unauthenticated_client:
         resp = await unauthenticated_client.get("/api/v1/models")
 
     assert resp.status_code in (401, 403)

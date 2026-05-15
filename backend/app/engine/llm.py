@@ -26,6 +26,7 @@ _PROMPT = PromptTemplate.from_template(
 )
 """Plantilla de prompt para consultas RAG."""
 
+
 @functools.lru_cache(maxsize=8)
 def get_llm(model: str) -> OllamaLLM:
     """Retorna una instancia cacheada de OllamaLLM para el modelo dado."""
