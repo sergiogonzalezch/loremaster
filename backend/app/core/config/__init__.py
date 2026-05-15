@@ -29,13 +29,13 @@ class Settings(BaseSettings):
         image_prompt_model: Modelo de Ollama para extracción de atributos visuales.
 
         temperature: Temperatura del LLM (creatividad).
-        max_tokens: Máximo de tokens en respuestas del LLM.
-        max_concurrent_llm_calls: Límite de llamadas concurrentes al LLM.
-        max_pending_contents: Máximo de contenidos pendientes por entidad.
-        rate_limit_per_minute: Límite de requests por minuto por usuario.
+        max_tokens: Máximo de tokens en respuestas del LLM (Ollama num_predict, output).
+        max_concurrent_llm_calls: Semáforo de llamadas simultáneas a Ollama (default 1).
+        max_pending_contents: Máximo de contenidos en estado pending por entidad/categoría.
+        rate_limit_per_minute: Límite de requests por minuto por IP (middleware global).
 
-        image_prompt_tokens: Tokens máximos para prompts de imagen.
-        image_backend: Backend de generación de imágenes (mock, comfyui).
+        image_prompt_tokens: Tokens máximos para prompts de imagen (truncate hacia ComfyUI).
+        image_backend: Backend de generación (mock para tests/local, comfyui en producción).
         image_batch_size_default: Tamaño de batch por defecto.
         image_width: Ancho de imagen generada.
         image_height: Alto de imagen generado.
@@ -68,6 +68,13 @@ class Settings(BaseSettings):
         clerk_jwks_url: URL JWKS de Clerk para producción.
         clerk_audience: Audience de Clerk.
 
+        cookie_access_name: Nombre de la cookie HttpOnly que contiene el JWT local.
+        cookie_csrf_name: Nombre de la cookie CSRF (double-submit pattern).
+        cookie_secure: True en producción/demo (HTTPS obligatorio). False solo en local.
+        cookie_samesite: Política SameSite (Strict | Lax | None).
+        cookie_domain: Dominio de las cookies; None usa el dominio actual del request.
+        cookie_path: Path de las cookies (default /).
+
         database_url: URL de conexión a la base de datos.
 
     """
@@ -92,7 +99,7 @@ class Settings(BaseSettings):
     # Image generation
     image_prompt_tokens: int = 512
     image_prompt_model: str = "mistral:latest"
-    image_backend: str = "mock"
+    image_backend: str = "comfyui"
     image_batch_size_default: int = 4
     image_width: int = 1024
     image_height: int = 1024
@@ -127,7 +134,7 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
 
-    # Cookies Scurity
+    # Cookies Security
     cookie_access_name: str = "access_token"
     cookie_csrf_name: str = "csrf_token"
     cookie_secure: bool = False  # True en producción/demo (HTTPS)
