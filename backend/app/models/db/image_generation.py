@@ -70,7 +70,7 @@ class ImageGeneration(SQLModel, SoftDeleteMixin, table=True):
     prompt_token_count: int = SQLField(default=0)
 
     batch_size: int = SQLField(default=4)
-    backend: str = SQLField(default="mock", max_length=20)
+    backend: str = SQLField(default="comfyui", max_length=20)
     width: int = SQLField(default=1024)
     height: int = SQLField(default=1024)
 
