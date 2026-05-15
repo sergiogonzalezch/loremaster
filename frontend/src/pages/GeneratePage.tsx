@@ -158,7 +158,7 @@ export default function GeneratePage() {
                   size="sm"
                   className="me-2 lm-spinner-inline"
                 />
-                Generando...
+                Generando…
               </>
             ) : (
               "Generar"
@@ -188,7 +188,7 @@ export default function GeneratePage() {
         <div className="lm-llm-loading mb-4">
           <div className="lm-llm-loading-bar" />
           <small className="text-muted">
-            Analizando documentos y generando texto con el LLM...
+            Analizando documentos y generando texto con el LLM…
           </small>
         </div>
       )}

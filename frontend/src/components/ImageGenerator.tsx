@@ -114,11 +114,11 @@ export default function ImageGenerator({
               }}
               disabled={building || loading}
             >
-              <option value="">Selecciona un contenido...</option>
+              <option value="">Selecciona un contenido…</option>
               {confirmedContents.map((content) => (
                 <option key={content.id} value={content.id}>
                   {CATEGORY_LABELS[content.category]} -{" "}
-                  {content.content.substring(0, 50)}...
+                  {content.content.substring(0, 50)}…
                 </option>
               ))}
             </Form.Select>
@@ -133,7 +133,7 @@ export default function ImageGenerator({
             {building ? (
               <>
                 <Spinner animation="border" size="sm" className="me-1" />
-                Construyendo prompt...
+                Construyendo prompt…
               </>
             ) : (
               "Construir prompt automático"
@@ -190,7 +190,7 @@ export default function ImageGenerator({
                 {loading ? (
                   <>
                     <Spinner animation="border" size="sm" className="me-1" />
-                    Generando...
+                    Generando…
                   </>
                 ) : (
                   `Generar ${batchSize} imagen${batchSize > 1 ? "es" : ""}`

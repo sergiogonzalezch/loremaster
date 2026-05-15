@@ -3,7 +3,7 @@ import { Alert, Button, Card, Badge, Modal } from "react-bootstrap";
 import LoadingSpinner from "./LoadingSpinner";
 import SafeImage from "./SafeImage";
 import { listImageGenerations, deleteImage, shareImage } from "../api/images";
-import type { ImageGenerationItem, ImageRecordData } from "../types";
+import type { ImageGenerationItem, ImageRecord } from "../types";
 import { formatDate } from "../utils/formatters";
 import { CATEGORY_LABELS } from "../utils/constants";
 
@@ -27,9 +27,7 @@ export default function ImageGallery({
   const [error, setError] = useState<string | null>(null);
   const [selectedGeneration, setSelectedGeneration] =
     useState<ImageGenerationItem | null>(null);
-  const [selectedImage, setSelectedImage] = useState<ImageRecordData | null>(
-    null,
-  );
+  const [selectedImage, setSelectedImage] = useState<ImageRecord | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [sharing, setSharing] = useState(false);
 
@@ -52,14 +50,14 @@ export default function ImageGallery({
     return () => controller.abort();
   }, [fetchGenerations, refreshTrigger]);
 
-  const getImageUrl = (img: ImageRecordData): string => {
+  const getImageUrl = (img: ImageRecord): string => {
     if (img.storage_path) {
       return `${MEDIA_BASE}/media/${img.storage_path}`;
     }
     return img.image_url || "";
   };
 
-  const handleDownload = useCallback(async (img: ImageRecordData) => {
+  const handleDownload = useCallback(async (img: ImageRecord) => {
     const fetchUrl = img.storage_path
       ? `/media/${img.storage_path}`
       : img.image_url || "";
@@ -183,11 +181,19 @@ export default function ImageGallery({
                 {gen.images.map((img) => (
                   <div
                     key={img.id}
+                    role="button"
+                    tabIndex={0}
                     className="lm-image-thumbnail"
                     style={{ minWidth: 120, cursor: "pointer" }}
                     onClick={() => {
                       setSelectedGeneration(gen);
                       setSelectedImage(img);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        setSelectedGeneration(gen);
+                        setSelectedImage(img);
+                      }
                     }}
                   >
                     <SafeImage
@@ -372,9 +378,15 @@ export default function ImageGallery({
                 {selectedGeneration.images.map((img) => (
                   <div
                     key={img.id}
+                    role="button"
+                    tabIndex={0}
                     className="text-center"
                     style={{ cursor: "pointer" }}
                     onClick={() => setSelectedImage(img)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ")
+                        setSelectedImage(img);
+                    }}
                   >
                     <SafeImage
                       src={getImageUrl(img)}

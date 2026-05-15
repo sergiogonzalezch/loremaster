@@ -201,6 +201,8 @@ export default function PublicProfilePage() {
                     {profile.shared_images.map((img) => (
                       <Col key={img.id} xs={6} sm={4} md={3}>
                         <div
+                          role="button"
+                          tabIndex={0}
                           style={{
                             position: "relative",
                             borderRadius: 8,
@@ -210,6 +212,10 @@ export default function PublicProfilePage() {
                             cursor: "pointer",
                           }}
                           onClick={() => setSelectedImage(img)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ")
+                              setSelectedImage(img);
+                          }}
                         >
                           {img.image_url ? (
                             <SafeImage

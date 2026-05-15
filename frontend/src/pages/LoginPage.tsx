@@ -155,12 +155,11 @@ function LocalLoginPage() {
                       type="text"
                       value={loginForm.username_or_email}
                       onChange={(e) =>
-                        setLoginForm({
-                          ...loginForm,
+                        setLoginForm((prev) => ({
+                          ...prev,
                           username_or_email: e.target.value,
-                        })
+                        }))
                       }
-                      autoFocus
                       required
                       disabled={loading}
                     />
@@ -171,7 +170,10 @@ function LocalLoginPage() {
                       type="password"
                       value={loginForm.password}
                       onChange={(e) =>
-                        setLoginForm({ ...loginForm, password: e.target.value })
+                        setLoginForm((prev) => ({
+                          ...prev,
+                          password: e.target.value,
+                        }))
                       }
                       required
                       disabled={loading}
@@ -186,12 +188,11 @@ function LocalLoginPage() {
                       type="text"
                       value={registerForm.username}
                       onChange={(e) =>
-                        setRegisterForm({
-                          ...registerForm,
+                        setRegisterForm((prev) => ({
+                          ...prev,
                           username: e.target.value,
-                        })
+                        }))
                       }
-                      autoFocus
                       required
                       disabled={loading}
                     />
@@ -202,10 +203,10 @@ function LocalLoginPage() {
                       type="email"
                       value={registerForm.email}
                       onChange={(e) =>
-                        setRegisterForm({
-                          ...registerForm,
+                        setRegisterForm((prev) => ({
+                          ...prev,
                           email: e.target.value,
-                        })
+                        }))
                       }
                       required
                       disabled={loading}
@@ -217,10 +218,10 @@ function LocalLoginPage() {
                       type="password"
                       value={registerForm.password}
                       onChange={(e) =>
-                        setRegisterForm({
-                          ...registerForm,
+                        setRegisterForm((prev) => ({
+                          ...prev,
                           password: e.target.value,
-                        })
+                        }))
                       }
                       required
                       disabled={loading}

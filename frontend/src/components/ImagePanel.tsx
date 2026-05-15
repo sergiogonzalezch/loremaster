@@ -82,6 +82,8 @@ function ImageGrid({
               <img
                 src={url}
                 alt=""
+                role="button"
+                tabIndex={0}
                 className="img-fluid rounded"
                 style={{
                   width: "100%",
@@ -90,10 +92,13 @@ function ImageGrid({
                   cursor: "pointer",
                 }}
                 onClick={() => onSelect(gen, img)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") onSelect(gen, img);
+                }}
               />
             ) : (
               <div className="image-placeholder">
-                <span>Generando...</span>
+                <span>Generando…</span>
               </div>
             )}
             <button
@@ -337,7 +342,7 @@ export default function ImagePanel({
       return (
         <div className="text-center py-4">
           <Spinner animation="border" size="sm" className="me-2" />
-          Cargando...
+          Cargando…
         </div>
       );
     }
@@ -389,7 +394,7 @@ export default function ImagePanel({
             {building ? (
               <>
                 <Spinner animation="border" size="sm" className="me-1" />
-                Construyendo...
+                Construyendo…
               </>
             ) : promptData ? (
               "Listo"
@@ -479,7 +484,7 @@ export default function ImagePanel({
               {generating ? (
                 <>
                   <Spinner animation="border" size="sm" className="me-2" />
-                  Generando...
+                  Generando…
                 </>
               ) : (
                 `Generar ${batchSize} imagen${batchSize > 1 ? "es" : ""}`
@@ -507,7 +512,7 @@ export default function ImagePanel({
       return (
         <div className="text-center py-4">
           <Spinner animation="border" size="sm" className="me-2" />
-          Cargando...
+          Cargando…
         </div>
       );
     }

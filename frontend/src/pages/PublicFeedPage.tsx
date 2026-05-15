@@ -126,6 +126,8 @@ export default function PublicFeedPage() {
                 {images.map((img) => (
                   <Col key={img.image_id} xs={6} sm={4} md={3} lg={2}>
                     <div
+                      role="button"
+                      tabIndex={0}
                       style={{
                         position: "relative",
                         borderRadius: 8,
@@ -135,6 +137,10 @@ export default function PublicFeedPage() {
                         cursor: "pointer",
                       }}
                       onClick={() => setSelectedImage(img)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ")
+                          setSelectedImage(img);
+                      }}
                     >
                       {img.image_url ? (
                         <SafeImage

@@ -135,7 +135,7 @@ export default function GenerateTab({ collectionId, refreshKey }: Props) {
                       size="sm"
                       className="me-2 lm-spinner-inline"
                     />
-                    Generando...
+                    Generando…
                   </>
                 ) : (
                   "✦ Generar"
@@ -170,7 +170,7 @@ export default function GenerateTab({ collectionId, refreshKey }: Props) {
             <div className="lm-llm-loading h-100">
               <div className="lm-llm-loading-bar" />
               <small className="text-muted">
-                Analizando documentos y redactando respuesta...
+                Analizando documentos y redactando respuesta…
               </small>
             </div>
           </div>

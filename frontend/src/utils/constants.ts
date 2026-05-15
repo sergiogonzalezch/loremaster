@@ -38,9 +38,3 @@ export const CATEGORY_LABELS: Record<ContentCategory, string> = {
   scene: "Escena",
   chapter: "Capítulo",
 };
-
-/** Longitud mínima de la query para generación de contenido. */
-export const MIN_QUERY_LENGTH = 5;
-
-/** Límite máximo de tokens para generación de contenido. */
-export const MAX_GENERATION_TOKENS = 2000;

@@ -360,7 +360,7 @@ export default function EntityDetailPage() {
                   size="sm"
                   className="me-1 lm-spinner-inline"
                 />
-                Generando...
+                Generando…
               </>
             ) : (
               "Generar"
@@ -411,7 +411,7 @@ export default function EntityDetailPage() {
         <div className="lm-llm-loading mb-4">
           <div className="lm-llm-loading-bar" />
           <small className="text-muted">
-            Procesando prompt con el modelo y preparando un nuevo borrador...
+            Procesando prompt con el modelo y preparando un nuevo borrador…
           </small>
         </div>
       )}

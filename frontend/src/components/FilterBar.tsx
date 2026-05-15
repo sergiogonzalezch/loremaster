@@ -1,13 +1,4 @@
-import type { ReactNode } from "react";
 import { Form } from "react-bootstrap";
-
-interface FilterBarProps {
-  children: ReactNode;
-}
-
-export default function FilterBar({ children }: FilterBarProps) {
-  return <Form.Group style={{ minWidth: 240 }}>{children}</Form.Group>;
-}
 
 interface PageSizeSelectProps {
   value: number;

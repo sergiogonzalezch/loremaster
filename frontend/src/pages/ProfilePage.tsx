@@ -331,7 +331,7 @@ export default function ProfilePage() {
                   {saving ? (
                     <>
                       <Spinner animation="border" size="sm" className="me-2" />
-                      Guardando...
+                      Guardando…
                     </>
                   ) : (
                     "Guardar cambios"

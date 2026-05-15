@@ -2,12 +2,6 @@
  * Tipos TypeScript para imágenes generadas (espejo del backend).
  */
 
-/** Estado de una imagen en el sistema. */
-export type ImageStatus = "pending" | "confirmed" | "discarded";
-
-/** Backends soportados para generación de imágenes. */
-export type ImageBackend = "mock" | "comfyui";
-
 /** Registro individual de una imagen generada. */
 export interface ImageRecord {
   id: string;
@@ -27,8 +21,6 @@ export interface ImageRecord {
   is_deleted: boolean;
   deleted_at: string | null;
 }
-
-export type ImageRecordData = ImageRecord;
 
 /** Generación de imágenes (batch) con sus registros. */
 export interface ImageGenerationItem {

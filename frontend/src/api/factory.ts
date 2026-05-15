@@ -10,28 +10,9 @@ import { buildQuery } from "./query";
 import { trimStringValues } from "../utils/strings";
 
 export { buildQuery } from "./query";
-export { trimStringValues } from "../utils/strings";
-
-/** Parámetros de paginación para listados. */
-export interface PaginationParams {
-  page?: number;
-  page_size?: number;
-  order?: "asc" | "desc";
-}
-
-/** Parámetros de filtro por rango de fechas. */
-export interface DateFilterParams {
-  created_after?: string;
-  created_before?: string;
-}
-
-/** Construye una ruta uniendo segmentos no vacíos. */
-export function buildPath(parts: (string | undefined)[]): string {
-  return parts.filter(Boolean).join("/");
-}
 
 /** Construye una URL con query params a partir de un path base. */
-export function buildPaginatedPath(
+function buildPaginatedPath(
   basePath: string,
   params: Record<string, unknown> = {},
 ): string {

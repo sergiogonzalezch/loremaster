@@ -529,7 +529,6 @@ export default function CollectionsPage() {
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 required
-                autoFocus
               />
             </Form.Group>
             <Form.Group className="mb-3">
@@ -575,7 +574,6 @@ export default function CollectionsPage() {
                 onChange={(e) => setCreateName(e.target.value)}
                 placeholder="Nombre de la colección"
                 required
-                autoFocus
               />
             </Form.Group>
             <Form.Group>

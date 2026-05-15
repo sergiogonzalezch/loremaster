@@ -33,7 +33,7 @@ interface Shooter {
   tail: { x: number; y: number }[];
 }
 
-export interface StarfieldCollectionsEvent {
+interface StarfieldCollectionsEvent {
   collections: { id: string; name: string }[];
   nav: (id: string) => void;
 }

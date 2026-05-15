@@ -211,7 +211,7 @@ export default function AdminPage() {
                       </div>
                     </td>
                     <td className="py-3 text-muted">
-                      {u.email ?? <span style={{ opacity: 0.4 }}>—</span>}
+                      {u.email ?? <span style={{ opacity: 0.4 }}>-</span>}
                     </td>
                     <td className="py-3">
                       {u.is_admin ? (

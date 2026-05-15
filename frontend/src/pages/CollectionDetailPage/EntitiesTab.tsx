@@ -273,6 +273,8 @@ export default function EntitiesTab({ collectionId }: Props) {
                 </td>
                 <td>
                   <span
+                    role="button"
+                    tabIndex={0}
                     className="text-primary fw-semibold"
                     style={{ cursor: "pointer" }}
                     onClick={() =>
@@ -280,6 +282,12 @@ export default function EntitiesTab({ collectionId }: Props) {
                         `/collections/${collectionId}/entities/${entity.id}`,
                       )
                     }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter")
+                        navigate(
+                          `/collections/${collectionId}/entities/${entity.id}`,
+                        );
+                    }}
                   >
                     {entity.name}
                   </span>
@@ -374,7 +382,6 @@ export default function EntitiesTab({ collectionId }: Props) {
                 }
                 placeholder="Nombre de la entidad"
                 required
-                autoFocus
               />
             </Form.Group>
             <Form.Group>

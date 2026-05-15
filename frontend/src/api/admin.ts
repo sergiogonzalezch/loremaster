@@ -5,15 +5,13 @@
 import { apiGet, apiDelete, buildQuery } from "./factory";
 import type { UserAdminRecord } from "../types/user";
 
-/** Metadata de paginación para respuestas de administración. */
-export interface AdminMeta {
+interface AdminMeta {
   page: number;
   page_size: number;
   total: number;
 }
 
-/** Respuesta paginada de usuarios para el panel de administración. */
-export interface AdminUsersResponse {
+interface AdminUsersResponse {
   data: UserAdminRecord[];
   meta: AdminMeta;
 }
@@ -28,9 +26,4 @@ export function getAdminUsers(
 /** Elimina un usuario por ID (soft-delete, solo admin). */
 export function adminDeleteUser(userId: string): Promise<void> {
   return apiDelete<void>(`/admin/users/${userId}`);
-}
-
-/** Elimina una colección por ID (solo admin). */
-export function adminDeleteCollection(collectionId: string): Promise<void> {
-  return apiDelete<void>(`/admin/collections/${collectionId}`);
 }
