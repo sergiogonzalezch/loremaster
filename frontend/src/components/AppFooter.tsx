@@ -84,7 +84,7 @@ export default function AppFooter() {
             ✦ ── ── ── ── ── ── ── ── ── ── ✦
           </span>
           <span className="lm-footer-copy">
-            © {YEAR} LoreMaster — open source bajo MIT
+            © {YEAR} LoreMaster, open source bajo MIT
           </span>
         </div>
       </Container>

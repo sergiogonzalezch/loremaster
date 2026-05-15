@@ -153,36 +153,9 @@ export default function PublicFeedPage() {
                           }}
                         />
                       ) : (
-                        <div
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            background: "var(--lm-surface)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            color: "var(--lm-muted)",
-                            fontSize: "0.75rem",
-                          }}
-                        >
-                          Sin imagen
-                        </div>
+                        <div className="lm-img-placeholder">Sin imagen</div>
                       )}
-                      <div
-                        style={{
-                          position: "absolute",
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          padding: "4px 6px",
-                          background: "rgba(0,0,0,0.65)",
-                          fontSize: "0.65rem",
-                          color: "#fff",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                      >
+                      <div className="lm-img-caption">
                         <Link
                           to={`/users/${img.owner_username}`}
                           style={{

@@ -261,6 +261,50 @@ a:hover {
   transform: translateY(-3px);
 }
 
+/* Shared avatar initials circle */
+.lm-avatar-initials {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--lm-font-head);
+  font-weight: 700;
+  color: #000;
+  flex-shrink: 0;
+  background: linear-gradient(
+    135deg,
+    var(--lm-accent) 0%,
+    rgba(255, 200, 50, 0.3) 100%
+  );
+}
+
+/* Inline image placeholder for missing images */
+.lm-img-placeholder {
+  width: 100%;
+  height: 100%;
+  background: var(--lm-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--lm-text-muted);
+  font-size: 0.75rem;
+}
+
+/* Absolute caption bar overlaid on image cards */
+.lm-img-caption {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 4px 6px;
+  background: rgba(0, 0, 0, 0.65);
+  font-size: 0.65rem;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Shared image cards (public feed & profile) */
 .lm-shared-image-card {
   cursor: pointer;

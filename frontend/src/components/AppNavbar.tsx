@@ -17,21 +17,8 @@ function InitialsCircle({ username }: { username: string }) {
   const initials = username.slice(0, 2).toUpperCase();
   return (
     <div
-      style={{
-        width: 32,
-        height: 32,
-        borderRadius: "50%",
-        background:
-          "linear-gradient(135deg, var(--lm-accent) 0%, rgba(255,200,50,0.3) 100%)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: "0.7rem",
-        fontFamily: "var(--lm-font-head)",
-        fontWeight: 700,
-        color: "#000",
-        flexShrink: 0,
-      }}
+      className="lm-avatar-initials"
+      style={{ width: 32, height: 32, fontSize: "0.7rem" }}
     >
       {initials}
     </div>

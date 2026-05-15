@@ -152,19 +152,11 @@ export default function AdminPage() {
                           />
                         ) : (
                           <div
+                            className="lm-avatar-initials"
                             style={{
                               width: 32,
                               height: 32,
-                              borderRadius: "50%",
-                              background:
-                                "linear-gradient(135deg, var(--lm-accent) 0%, rgba(157,111,232,0.3) 100%)",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
                               fontSize: "0.65rem",
-                              fontWeight: 700,
-                              color: "#000",
-                              flexShrink: 0,
                             }}
                           >
                             {u.username.slice(0, 2).toUpperCase()}

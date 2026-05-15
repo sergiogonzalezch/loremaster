@@ -127,21 +127,8 @@ export default function PublicProfilePage() {
                   />
                 ) : (
                   <div
-                    style={{
-                      width: 72,
-                      height: 72,
-                      borderRadius: "50%",
-                      background:
-                        "linear-gradient(135deg, var(--lm-accent) 0%, rgba(255,200,50,0.3) 100%)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "1.5rem",
-                      fontFamily: "var(--lm-font-head)",
-                      fontWeight: 700,
-                      color: "#000",
-                      flexShrink: 0,
-                    }}
+                    className="lm-avatar-initials"
+                    style={{ width: 72, height: 72, fontSize: "1.5rem" }}
                   >
                     {initials}
                   </div>
@@ -237,36 +224,9 @@ export default function PublicProfilePage() {
                               }}
                             />
                           ) : (
-                            <div
-                              style={{
-                                width: "100%",
-                                height: "100%",
-                                background: "var(--lm-surface)",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                color: "var(--lm-muted)",
-                                fontSize: "0.75rem",
-                              }}
-                            >
-                              Sin imagen
-                            </div>
+                            <div className="lm-img-placeholder">Sin imagen</div>
                           )}
-                          <div
-                            style={{
-                              position: "absolute",
-                              bottom: 0,
-                              left: 0,
-                              right: 0,
-                              padding: "4px 6px",
-                              background: "rgba(0,0,0,0.65)",
-                              fontSize: "0.65rem",
-                              color: "#fff",
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                            }}
-                          >
+                          <div className="lm-img-caption">
                             {img.entity_name}
                             {" · "}
                             {ENTITY_TYPE_LABELS[
