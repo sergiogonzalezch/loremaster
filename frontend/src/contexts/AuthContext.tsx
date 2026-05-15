@@ -104,6 +104,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           is_admin: profile.is_admin ?? false,
         });
         scheduleLogout(profile.expires_at);
+        return getMyAvatar()
+          .then((r) => setAvatarUrl(r.avatar_url ?? null))
+          .catch(() => {});
       })
       .catch(() => {
         setUser(null);
