@@ -261,6 +261,24 @@ a:hover {
   transform: translateY(-3px);
 }
 
+/* Shared image cards (public feed & profile) */
+.lm-shared-image-card {
+  cursor: pointer;
+  transition:
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    transform 0.22s ease;
+}
+
+.lm-shared-image-card:hover {
+  border-color: var(--lm-border-accent) !important;
+  box-shadow:
+    0 0 0 1px var(--lm-border-accent),
+    var(--lm-shadow),
+    0 0 30px var(--lm-accent-glow) !important;
+  transform: translateY(-3px);
+}
+
 /* ─── Buttons ────────────────────────────────────────────────────────────────*/
 .btn {
   font-family: var(--lm-font-head);

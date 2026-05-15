@@ -203,13 +203,13 @@ export default function PublicProfilePage() {
                         <div
                           role="button"
                           tabIndex={0}
+                          className="lm-shared-image-card"
                           style={{
                             position: "relative",
                             borderRadius: 8,
                             overflow: "hidden",
                             border: "1px solid var(--lm-border)",
                             aspectRatio: "1",
-                            cursor: "pointer",
                           }}
                           onClick={() => setSelectedImage(img)}
                           onKeyDown={(e) => {
