@@ -26,9 +26,7 @@ import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
 
 /** Clave pública de Clerk — define qué flujo de auth usa el frontend. */
-export const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as
-  | string
-  | undefined;
+export const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string | undefined;
 
 /**
  * Detecta el login con Clerk y sincroniza la sesión con el backend.
