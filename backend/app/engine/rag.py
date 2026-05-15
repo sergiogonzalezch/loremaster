@@ -53,7 +53,7 @@ def _ensure_qdrant_collection(collection_id: str) -> None:
             ),
         )
         if not _collection_exists(name):
-            msg = f"Qdrant collection '{name}' could not be created. " "Check Qdrant connectivity and configuration."
+            msg = f"Qdrant collection '{name}' could not be created. Check Qdrant connectivity and configuration."
             raise RuntimeError(
                 msg,
             )

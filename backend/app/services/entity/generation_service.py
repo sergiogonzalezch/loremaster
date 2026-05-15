@@ -84,7 +84,7 @@ def generate(
 
     extra_context = ""
     if entity.description:
-        extra_context = f"Información actual de '{entity.name}' ({entity.type}):\n" f"{entity.description}\n\n"
+        extra_context = f"Información actual de '{entity.name}' ({entity.type}):\n{entity.description}\n\n"
 
     answer, sources_count = invoke_generation_pipeline(
         collection_id=entity.collection_id,

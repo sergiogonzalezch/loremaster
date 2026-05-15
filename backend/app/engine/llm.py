@@ -22,7 +22,7 @@ _PROMPT = PromptTemplate.from_template(
     + "Si el contexto es insuficiente, genera con lo disponible.\n"
     + "Extensión: 2-3 párrafos.\n\n"
     + "<context>\n{context}\n</context>\n\n"
-    + "<question>\n{query}\n</question>"
+    + "<question>\n{query}\n</question>",
 )
 """Plantilla de prompt para consultas RAG."""
 

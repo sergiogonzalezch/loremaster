@@ -58,7 +58,7 @@ def build_prompt(
     except NoContextAvailableError as e:
         raise HTTPException(
             status_code=422,
-            detail=("El contenido indicado no existe, no está confirmado " "o no pertenece a esta entidad."),
+            detail=("El contenido indicado no existe, no está confirmado o no pertenece a esta entidad."),
         ) from e
     except Exception as e:
         logger.exception("Error inesperado en build_prompt")
@@ -97,7 +97,7 @@ def generate_images(
     except NoContextAvailableError as e:
         raise HTTPException(
             status_code=422,
-            detail=("El contenido indicado no existe, no está confirmado " "o no pertenece a esta entidad."),
+            detail=("El contenido indicado no existe, no está confirmado o no pertenece a esta entidad."),
         ) from e
     except ValueError as e:
         raise HTTPException(

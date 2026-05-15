@@ -120,7 +120,7 @@ def delete_collection(
         ) from e
     if not vectors_cleaned:
         logger.warning(
-            "Collection %s soft-deleted but Qdrant vectors were NOT removed " "— manual cleanup needed.",
+            "Collection %s soft-deleted but Qdrant vectors were NOT removed — manual cleanup needed.",
             collection.id,
         )
     return Response(status_code=204)

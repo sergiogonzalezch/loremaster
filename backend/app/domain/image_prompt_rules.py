@@ -49,7 +49,7 @@ _ATTRIBUTOS_BY_ENTITY_CATEGORY: dict[tuple[EntityType, ContentCategory], str] = 
         "lighting on character, surrounding environment mentioned, action performed, position in space"
     ),
     (EntityType.character, ContentCategory.chapter): (
-        "position in space, clothing, accessories, visible expression, lighting, atmosphere, " "surrounding environment mentioned"
+        "position in space, clothing, accessories, visible expression, lighting, atmosphere, surrounding environment mentioned"
     ),
     (EntityType.creature, ContentCategory.extended_description): (
         "species, body type, colors (all mentioned), textures (skin/fur/scales), "
@@ -61,7 +61,7 @@ _ATTRIBUTOS_BY_ENTITY_CATEGORY: dict[tuple[EntityType, ContentCategory], str] = 
         "atmosphere of the place, surrounding environment mentioned"
     ),
     (EntityType.creature, ContentCategory.scene): (
-        "position, action, visible body language, interaction with environment, " "lighting, surrounding environment mentioned"
+        "position, action, visible body language, interaction with environment, lighting, surrounding environment mentioned"
     ),
     (EntityType.creature, ContentCategory.chapter): ("position, action, environment, lighting, atmosphere, surrounding environment mentioned"),
     (EntityType.location, ContentCategory.extended_description): (
@@ -73,10 +73,10 @@ _ATTRIBUTOS_BY_ENTITY_CATEGORY: dict[tuple[EntityType, ContentCategory], str] = 
         "current vs past state, distinctive symbols, elements that changed, elements that remain"
     ),
     (EntityType.location, ContentCategory.scene): (
-        "foreground elements, lighting, climate, atmosphere, action occurring, " "surrounding environment, colors mentioned, textures"
+        "foreground elements, lighting, climate, atmosphere, action occurring, surrounding environment, colors mentioned, textures"
     ),
     (EntityType.location, ContentCategory.chapter): (
-        "space description, architectural style, materials, lighting, atmosphere, " "elements present, colors, textures"
+        "space description, architectural style, materials, lighting, atmosphere, elements present, colors, textures"
     ),
     (EntityType.faction, ContentCategory.extended_description): (
         "emblem/heraldry style, main symbol, secondary symbols, color palette (all), "
@@ -84,10 +84,10 @@ _ATTRIBUTOS_BY_ENTITY_CATEGORY: dict[tuple[EntityType, ContentCategory], str] = 
         "insignias, uniforms, decoration, band colors"
     ),
     (EntityType.faction, ContentCategory.backstory): (
-        "period style, original symbols, founding colors, visible power elements, " "historical emblems, period clothing, associated architecture"
+        "period style, original symbols, founding colors, visible power elements, historical emblems, period clothing, associated architecture"
     ),
     (EntityType.faction, ContentCategory.scene): (
-        "visible symbol, dominant colors, member presence, uniforms, insignia, " "visible weapons, atmosphere, member expressions"
+        "visible symbol, dominant colors, member presence, uniforms, insignia, visible weapons, atmosphere, member expressions"
     ),
     (EntityType.faction, ContentCategory.chapter): ("visible symbol, colors, presence, atmosphere, visible uniforms"),
     (EntityType.item, ContentCategory.extended_description): (

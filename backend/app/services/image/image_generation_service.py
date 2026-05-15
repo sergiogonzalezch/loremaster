@@ -161,7 +161,7 @@ def _generate_mock_images(
         image_id = str(_uuid.uuid4())
         seed = seed_base + i
         placeholder_url = (
-            f"https://placehold.co/{settings.image_width}x{settings.image_height}/1a1a2e/9d6fe8" f"?text={entity.name.replace(' ', '+')}+{i+1}"
+            f"https://placehold.co/{settings.image_width}x{settings.image_height}/1a1a2e/9d6fe8?text={entity.name.replace(' ', '+')}+{i+1}"
         )
         images.append((image_id, placeholder_url, seed))
     return images
@@ -306,7 +306,7 @@ def build_prompt_service(
         raise NoContextAvailableError
 
     if content.category not in ALLOWED_IMAGE_CATEGORIES:
-        msg = f"Categoría '{content.category.value}' no soportada para " f"generación de imágenes"
+        msg = f"Categoría '{content.category.value}' no soportada para generación de imágenes"
         raise ValueError(
             msg,
         )
@@ -404,7 +404,7 @@ def generate_images_service(
         )
 
     else:
-        msg = f"Backend '{params.backend}' no soportado. " "Usar: 'mock' o 'comfyui'"
+        msg = f"Backend '{params.backend}' no soportado.  Usar: 'mock' o 'comfyui'"
         raise ValueError(
             msg,
         )
