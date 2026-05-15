@@ -1,4 +1,4 @@
-﻿# Lore Master — Frontend
+# Lore Master — Frontend
 
 SPA React para interactuar con la API de Lore Master. Permite gestionar colecciones de documentos, entidades narrativas y generar contenido con RAG por categoría.
 
@@ -56,84 +56,90 @@ Si `VITE_CLERK_PUBLISHABLE_KEY` está definida, la app usa Clerk para autenticac
 ```
 src/
 ├── api/
-│   ├── apiClient.ts        → apiFetch<T> con ApiError / ApiAbortError; 401 → evento custom auth:unauthorized (sin full-reload)
-│   ├── auth.ts             → login() / register() / logoutApi() — POST /auth/login, /auth/register, /auth/logout
-│   ├── clerkSync.ts        → syncClerkSession(clerkToken) — POST /auth/clerk/sync con JWT de Clerk en header
-│   ├── collections.ts      → CRUD de colecciones
-│   ├── documents.ts        → upload (FormData), listado y eliminación de documentos
-│   ├── entities.ts         → CRUD de entidades
-│   ├── contents.ts         → generate / list / edit / confirm / discard / share / delete EntityContent
-│   ├── generate.ts         → consulta RAG libre (POST /collections/{id}/query)
-│   ├── imageGeneration.ts  → buildPrompt / generate / list / get / shareImage / deleteImage
-│   ├── users.ts            → getMyProfile() / updateMyProfile() / getPublicProfile() / getPublicFeed() / getPublicImages() / getMyAvatar() / uploadMyAvatar() / deleteMyAvatar()
-│   ├── query.ts            → buildQuery() — utilidad para construir query strings de URL
-│   └── index.ts            → barrel export (no incluye query.ts — uso interno)
+│   ├── apiClient.ts   → apiFetch<T> con ApiError / ApiAbortError; 401 → evento custom auth:unauthorized
+│   ├── factory.ts     → apiGet, apiPost, apiPatch, apiDelete — helpers CRUD tipados
+│   ├── query.ts       → buildQuery() — constructor de query strings de URL
+│   ├── admin.ts       → listUsers() / deleteUser()
+│   ├── auth.ts        → login() / register() / logoutApi()
+│   ├── clerkSync.ts   → syncClerkSession(clerkToken) — POST /auth/clerk/sync con JWT en header
+│   ├── collections.ts → CRUD de colecciones
+│   ├── documents.ts   → upload (FormData), listado y eliminación de documentos
+│   ├── entities.ts    → CRUD de entidades
+│   ├── contents.ts    → generate / list / edit / confirm / discard / share / delete EntityContent
+│   ├── generate.ts    → consulta RAG libre (POST /collections/{id}/query)
+│   ├── images.ts      → buildPrompt / generate / list / get / shareImage / deleteImage
+│   ├── metadata.ts    → getAvailableModels() y otros endpoints de metadatos
+│   ├── models.ts      → tipos de modelos LLM disponibles
+│   ├── users.ts       → getMyProfile() / updateMyProfile() / getPublicProfile() / getPublicFeed() / getPublicImages() / getMyAvatar() / uploadMyAvatar() / deleteMyAvatar()
+│   └── index.ts       → barrel export
 ├── components/
-│   ├── AppNavbar.tsx          → Navbar: logo, link Colecciones, dropdown de usuario; modo Clerk usa ClerkLogoutItem (useClerk solo dentro de ClerkProvider)
-│   ├── ContentCard.tsx        → Card de EntityContent con acciones según estado
-│   ├── ConfirmModal.tsx       → Modal de confirmación reutilizable
-│   ├── Layout.tsx             → AppNavbar + Outlet + StarfieldCanvas
-│   ├── LoadingSpinner.tsx     → Spinner centrado con texto opcional
-│   ├── MarkdownContent.tsx    → Renderizado markdown sanitizado
-│   ├── ProtectedRoute.tsx     → Guard dual: modo Clerk usa useUser() (evita race condition), modo local usa useAuth().user
-│   ├── PublicContentModal.tsx → Modal de lectura completa de EntityContent compartido (markdown, badges, owner link)
-│   ├── PublicImageModal.tsx   → Modal de imagen compartida: imagen, seed, prompts, descarga
-│   ├── StarfieldCanvas.tsx    → Fondo animado canvas: estrellas de fondo + estrellas de colecciones (evento lm:collections) + estrellas fugaces
-│   └── TokenCounter.tsx       → Estimación de tokens (aviso a los 400)
-├── App.tsx                → Raíz: ClerkBridge (sincroniza sesión Clerk→backend), UnauthorizedHandler (escucha auth:unauthorized → navigate /login sin reload)
+│   ├── AdminRoute.tsx          → Guard de ruta: redirige a / si el usuario no es admin
+│   ├── AppNavbar.tsx           → Navbar: logo, link Colecciones, dropdown de usuario; modo Clerk usa ClerkLogoutItem
+│   ├── ConfirmModal.tsx        → Modal de confirmación reutilizable
+│   ├── ContentCard.tsx         → Card de EntityContent con acciones según estado
+│   ├── EntityContentsPanel.tsx → Panel de contenidos de entidad por categoría (lista + generación)
+│   ├── EntityEditForm.tsx      → Formulario de edición inline de entidad
+│   ├── FilterBar.tsx           → PageSizeSelect + OrderSelect — filtros de listado reutilizables
+│   ├── ImageGallery.tsx        → Galería de imágenes generadas con acciones de compartir/eliminar
+│   ├── ImageGenerator.tsx      → Flujo build-prompt → generate; batch 1-4 imágenes
+│   ├── ImagePanel.tsx          → Panel de imágenes de entidad: galería + generador
+│   ├── Layout.tsx              → AppNavbar + Outlet + StarfieldCanvas
+│   ├── LoadingSpinner.tsx      → Spinner centrado con texto opcional
+│   ├── MarkdownContent.tsx     → Renderizado markdown sanitizado (rehype-sanitize)
+│   ├── ModelSelector.tsx       → Selector de modelo LLM para generación
+│   ├── PaginationControls.tsx  → Controles de paginación reutilizables
+│   ├── ProtectedRoute.tsx      → Guard dual: modo Clerk usa useUser(), modo local usa useAuth().user
+│   ├── PublicContentModal.tsx  → Modal de lectura de EntityContent compartido (markdown, badges, owner)
+│   ├── PublicImageModal.tsx    → Modal de imagen compartida: imagen, seed, prompts, descarga
+│   ├── SafeImage.tsx           → img con fallback ante error de carga
+│   ├── StarfieldCanvas.tsx     → Fondo animado canvas: estrellas + estrellas fugaces
+│   └── TokenCounter.tsx        → Estimación de tokens (aviso a los 400)
 ├── contexts/
-│   └── AuthContext.tsx     → AuthProvider + AuthContext: verifica sesión via GET /users/me al montar, auto-logout timer, server logout al cerrar sesión
+│   └── AuthContext.tsx    → AuthProvider + AuthContext: verifica sesión via GET /users/me, auto-logout timer
 ├── hooks/
-│   ├── useAuth.ts                      → Acceso al contexto de autenticación (lanza si se usa fuera de AuthProvider)
-│   ├── useCollectionDocumentsStatus.ts → Monitoriza estado de documentos; refresca automáticamente cada 3s si hay documentos procesando
-│   ├── useDebouncedValue.ts            → Debounce de un valor con delay configurable (default 300 ms)
-│   ├── useEntityContents.ts            → Fetching/refresco de contenidos de una entidad
-│   └── useGenerate.ts                  → Wrapper cancellable para llamadas LLM (AbortSignal)
+│   ├── useApiError.ts                      → Manejo centralizado de errores de API (estado + setter)
+│   ├── useAuth.ts                          → Acceso al contexto de autenticación
+│   ├── useCollectionDocumentsStatus.ts     → Monitoriza estado de documentos; polling cada 3s si hay procesando
+│   ├── useDebouncedValue.ts                → Debounce de un valor con delay configurable (default 300 ms)
+│   ├── useDeleteConfirm.ts                 → Lógica de confirmación de eliminación (estado modal + callback)
+│   ├── useEntityContents.ts                → Fetching/refresco de contenidos de una entidad
+│   ├── useFormSubmit.ts                    → Estado de guardado de formularios (loading, error, success)
+│   ├── useGenerate.ts                      → Wrapper cancellable para llamadas LLM (AbortSignal)
+│   └── usePagination.ts                    → Estado de paginación: página actual, pageSize, callbacks
 ├── pages/
-│   ├── LoginPage.tsx             → Dual: modo Clerk muestra <SignIn /> de Clerk; modo local muestra formulario login/registro con tabs
-│   ├── CollectionsPage.tsx       → Listado, creación y eliminación de colecciones propias
-│   ├── CollectionDetailPage.tsx  → Tabs: Documentos / Entidades / Generar texto
-│   ├── EntityDetailPage.tsx      → Detalle de entidad + generación de contenido por categoría
-│   ├── GeneratePage.tsx          → Consulta RAG libre contra una colección
-│   ├── ProfilePage.tsx           → Perfil propio editable: display_name, bio, avatar, email; botón ← Volver
-│   ├── AdminPage.tsx             → Panel de administración: tabla de usuarios con avatar, email, rol, estado; link al perfil público; eliminar usuario (sin auto-eliminación)
-│   ├── PublicFeedPage.tsx        → Feed público: galería de imágenes compartidas + cards de contenido paginadas (abre modales al hacer clic)
-│   └── PublicProfilePage.tsx     → Perfil público de un usuario: galería de imágenes + cards de contenido compartido; botón Compartir (copia URL) + engranaje (→ /profile, solo owner)
+│   ├── CollectionDetailPage/
+│   │   ├── index.tsx        → Tab container: Documentos / Entidades / Generar texto
+│   │   ├── DocumentsTab.tsx → Upload PDF/TXT, tabla con estado de procesado
+│   │   ├── EntitiesTab.tsx  → Tabla de entidades con badges y navegación al detalle
+│   │   └── GenerateTab.tsx  → Consulta RAG libre contra la colección
+│   ├── AdminPage.tsx         → Tabla de usuarios con avatar, email, rol, estado; eliminar usuario
+│   ├── CollectionsPage.tsx   → Listado, creación y eliminación de colecciones propias
+│   ├── EntityDetailPage.tsx  → Card editable + generación de contenido por categoría + imágenes
+│   ├── GeneratePage.tsx      → Consulta RAG libre con manejo de errores 422/503
+│   ├── LoginPage.tsx         → Dual: modo Clerk muestra <SignIn />; modo local muestra formulario con tabs
+│   ├── ProfilePage.tsx       → Formulario editable: display_name, bio, avatar, email
+│   ├── PublicFeedPage.tsx    → Feed público paginado: galería de imágenes + cards de contenido
+│   └── PublicProfilePage.tsx → Perfil público: galería de imágenes + contenidos compartidos
 ├── types/
-│   ├── collection.ts       → Collection (incluye owner_id), CreateCollectionRequest, CollectionListResponse
-│   ├── content.ts           → EntityContent, PaginatedResponse<T>, request types
-│   ├── document.ts          → Document, DocumentListResponse
-│   ├── entity.ts            → Entity, CreateEntityRequest, UpdateEntityRequest, EntityListResponse
-│   ├── generate.ts          → GenerateTextRequest, GenerateTextResponse
-│   ├── imageGeneration.ts   → BuildPromptRequest/Response, GenerateImagesRequest/Response, ImageGenerationItem, ImageRecordData
-│   ├── user.ts              → UserProfile, UpdateProfileRequest, SharedContentItem, PublicFeedItem, SharedImageItem, PublicImageItem, PublicProfile, AvatarResponse, UserAdminRecord (con avatar_url)
-│   └── index.ts             → barrel export
-├── test/
-│   ├── setup.ts                              → Configura @testing-library/jest-dom globalmente
-│   ├── errors.test.ts                        → getErrorMessage + parseApiError
-│   ├── tokens.test.ts                        → estimateTokens + QUERY_TOKEN_WARN_AT
-│   ├── formatters.test.ts                    → formatDate
-│   ├── constants.test.ts                     → ENTITY_CATEGORY_MAP, badges, labels, límites
-│   ├── ConfirmModal.test.tsx                 → Render, show/hide, callbacks, variante
-│   ├── TokenCounter.test.tsx                 → Conteo, umbral de advertencia, warnAt custom
-│   ├── MarkdownContent.test.tsx              → Sanitización XSS: script, onerror, javascript:, markdown estándar
-│   ├── ContentCard.test.tsx                  → Estados pending/confirmed/discarded, busy-lock, rollback optimista
-│   ├── CollectionsPage.test.tsx              → CRUD colecciones, modal, paginación auto-back
-│   ├── CollectionDetailPage.test.tsx         → Tabs documentos/entidades, estados de carga
-│   ├── EntityDetailPage.test.tsx             → Generación, límite borradores, error 404
-│   ├── GeneratePage.test.tsx                 → Consulta RAG libre, errores 422/503
-│   ├── useGenerate.test.ts                   → run, cancel, reset, AbortSignal, doble llamada
-│   ├── useEntityContents.test.ts             → fetch, loading, error, filtros, setError
-│   ├── useCollectionDocumentsStatus.test.ts  → Polling lifecycle: inicio, activo, se detiene, ApiAbortError
-│   └── useDebouncedValue.test.ts             → valor inicial, delay no cumplido, delay cumplido
-└── utils/
-    ├── clerkConfig.ts → clerkKey: constante con VITE_CLERK_PUBLISHABLE_KEY; fichero separado para cumplir Fast Refresh
-    ├── constants.ts   → ENTITY_TYPE_BADGE/LABELS, ENTITY_CATEGORY_MAP, CATEGORY_LABELS,
-    │                    MAX_PENDING_CONTENTS, constantes de tokens
-    ├── enums.ts       → DocumentStatus, EntityType, ContentCategory, ContentStatus
-    ├── errors.ts      → getErrorMessage(), parseApiError() — mensajes en español
-    ├── formatters.ts  → formatDate() locale es-ES
-    └── tokens.ts      → estimateTokens(), QUERY_TOKEN_WARN_AT
+│   ├── collection.ts  → Collection (incluye owner_id), CreateCollectionRequest, CollectionListResponse
+│   ├── content.ts     → EntityContent, PaginatedResponse<T>, request types
+│   ├── document.ts    → Document, DocumentListResponse
+│   ├── entity.ts      → Entity, CreateEntityRequest, UpdateEntityRequest, EntityListResponse
+│   ├── generate.ts    → GenerateTextRequest, GenerateTextResponse
+│   ├── images.ts      → BuildPromptRequest/Response, GenerateImagesRequest/Response, ImageGenerationItem, ImageRecordData
+│   ├── user.ts        → UserProfile, UpdateProfileRequest, SharedContentItem, PublicProfile, UserAdminRecord
+│   └── index.ts       → barrel export
+├── utils/
+│   ├── clerkConfig.ts → clerkKey con VITE_CLERK_PUBLISHABLE_KEY (fichero separado para Fast Refresh)
+│   ├── constants.ts   → ENTITY_TYPE_BADGE/LABELS, ENTITY_CATEGORY_MAP, CATEGORY_LABELS, MAX_PENDING_CONTENTS
+│   ├── enums.ts       → DocumentStatus, EntityType, ContentCategory, ContentStatus
+│   ├── errors.ts      → getErrorMessage(), parseApiError() — mensajes en español
+│   ├── formatters.ts  → formatDate() locale es-ES
+│   ├── strings.ts     → helpers de manipulación de strings
+│   ├── token.ts       → utilidades de token de sesión
+│   └── tokens.ts      → estimateTokens(), QUERY_TOKEN_WARN_AT
+├── App.tsx   → Raíz: ClerkBridge (sincroniza sesión Clerk→backend), UnauthorizedHandler (auth:unauthorized → /login)
+└── main.tsx  → Entry point: monta App en #root
 ```
 
 ## Tests

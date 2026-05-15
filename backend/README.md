@@ -25,33 +25,98 @@ Copia el archivo de ejemplo y ajusta los valores:
 cp .env.example .env
 ```
 
+**General**
+
 | Variable | Por defecto | Propósito |
 |---|---|---|
-| `COMPOSE_PROFILES` | *(vacío)* | Perfiles Docker activos. Vacío = solo qdrant+redis. `postgres` = también levanta PostgreSQL |
-| `DATABASE_URL` | `sqlite:///./loremaster.db` | SQLite en dev; `postgresql://loremaster:loremaster@localhost:5433/loremaster` en prod |
-| `QDRANT_URL` | `http://localhost:6333` | Base de datos vectorial |
+| `PROJECT_NAME` | `Lore Master API` | Nombre del proyecto (docs Swagger y metadatos) |
+| `ENVIRONMENT` | `local` | Entorno: `local`, `demo`, `production`, `test` |
+| `LOG_LEVEL` | `INFO` | Nivel de logging: `DEBUG`, `INFO`, `WARNING`, `ERROR` |
+| `ALLOWED_ORIGINS` | `["http://localhost:3000","http://localhost:5173"]` | Orígenes permitidos por CORS |
+
+**Base de datos**
+
+| Variable | Por defecto | Propósito |
+|---|---|---|
+| `COMPOSE_PROFILES` | *(vacío)* | Perfiles Docker activos. Vacío = solo qdrant. `postgres` = también levanta PostgreSQL |
+| `DATABASE_URL` | `sqlite:///./loremaster.db` | SQLite en dev; `postgresql://user:pass@host:5433/db` en prod |
+
+**LLM (Ollama)**
+
+| Variable | Por defecto | Propósito |
+|---|---|---|
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Endpoint de Ollama |
-| `OLLAMA_MODEL` | `llama3.2:latest` | Modelo LLM |
-| `MAX_TOKENS` | `2000` | Máximo de tokens en la respuesta del LLM |
-| `TEMPERATURE` | `0.7` | Temperatura del LLM |
+| `OLLAMA_MODEL` | `llama3.2:latest` | Modelo LLM para generación de contenido |
+| `MAX_TOKENS` | `2000` | Máximo de tokens en la respuesta del LLM (`num_predict`) |
+| `TEMPERATURE` | `0.7` | Temperatura del LLM (creatividad) |
 | `MAX_CONCURRENT_LLM_CALLS` | `1` | Peticiones simultáneas máximas al LLM (semáforo) |
+| `MAX_PENDING_CONTENTS` | `5` | Máximo de contenidos en estado `pending` por entidad/categoría |
+| `RATE_LIMIT_PER_MINUTE` | `30` | Máximo de requests por minuto por IP |
+
+**Embeddings y RAG**
+
+| Variable | Por defecto | Propósito |
+|---|---|---|
+| `QDRANT_URL` | `http://localhost:6333` | Base de datos vectorial |
 | `EMBEDDING_MODEL` | `paraphrase-multilingual-MiniLM-L12-v2` | Modelo de embeddings |
 | `EMBEDDING_DIMS` | `384` | Dimensiones del vector de embedding |
 | `CHUNK_SIZE` | `512` | Tamaño de chunk en caracteres |
-| `CHUNK_OVERLAP` | `50` | Solapamiento entre chunks en caracteres |
+| `CHUNK_OVERLAP` | `50` | Solapamiento entre chunks |
 | `TOP_K` | `4` | Chunks de contexto recuperados por RAG |
+| `RAG_SCORE_THRESHOLD` | `0.3` | Score mínimo de similitud coseno para incluir un chunk |
 | `MAX_PDF_PAGES` | `100` | Límite de páginas para PDFs (prevención de PDF bombs) |
-| `RATE_LIMIT_PER_MINUTE` | `30` | Máximo de requests por minuto por IP (protección contra brute force) |
-| `ALLOWED_ORIGINS` | `["http://localhost:3000","http://localhost:5173"]` | Orígenes permitidos por CORS |
-| `REDIS_URL` | `redis://redis:6379/0` | Caché semántico (staged) |
-| `CACHE_TTL` | `3600` | TTL del caché en segundos (staged) |
-| `SECRET_KEY` | `your-secret-key` | Clave de firma para tokens JWT. **Obligatorio cambiar en producción** (el servidor rechaza el valor por defecto si `ENVIRONMENT != local`). |
+
+**Generación de imágenes**
+
+| Variable | Por defecto | Propósito |
+|---|---|---|
+| `IMAGE_PROMPT_MODEL` | `mistral:latest` | Modelo Ollama para extraer atributos visuales del lore |
+| `IMAGE_PROMPT_TOKENS` | `512` | Tokens máximos para el prompt visual (límite del text encoder SD/Flux) |
+| `IMAGE_BACKEND` | `comfyui` | Motor de generación: `comfyui` (producción) o `mock` (tests/local sin ComfyUI) |
+| `IMAGE_BATCH_SIZE_DEFAULT` | `4` | Imágenes por defecto por generación |
+| `IMAGE_WIDTH` | `1024` | Ancho de las imágenes generadas |
+| `IMAGE_HEIGHT` | `1024` | Alto de las imágenes generadas |
+| `IMAGE_SEED_BASE` | `42` | Semilla base para reproducibilidad del batch |
+| `COMFYUI_URL` | `http://localhost:8188` | Endpoint del servidor ComfyUI |
+| `COMFYUI_TIMEOUT` | `300` | Segundos máximos para que ComfyUI genere una imagen |
+| `COMFYUI_REQUEST_TIMEOUT` | `30.0` | Timeout en segundos por request HTTP individual a ComfyUI |
+
+**Almacenamiento**
+
+| Variable | Por defecto | Propósito |
+|---|---|---|
+| `MEDIA_ROOT` | `./media` | Directorio raíz para archivos multimedia |
+| `STORAGE_BACKEND` | `local` | Backend de almacenamiento: `local`, `s3`, `r2` |
+| `STORAGE_BASE_URL` | `http://localhost:8000/media` | URL base para servir archivos multimedia |
+| `PROFILE_IMAGE_MAX_SIZE_MB` | `5` | Tamaño máximo de avatar en MB |
+| `DOCUMENT_MAX_UPLOAD_MB` | `50` | Tamaño máximo de documentos subidos (PDF/TXT) en MB |
+| `DOCUMENT_EXTRACTION_TIMEOUT_SECONDS` | `30` | Timeout en segundos para extracción de texto de documentos |
+
+**Auth — JWT**
+
+| Variable | Por defecto | Propósito |
+|---|---|---|
+| `SECRET_KEY` | *(requerida)* | Clave de firma JWT. Mín. 32 chars en entornos no locales. **Cambiar en producción** |
 | `ALGORITHM` | `HS256` | Algoritmo de firma JWT |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | `60` | Duración del token JWT en minutos (1 h) |
+
+**Auth — Cookies**
+
+| Variable | Por defecto | Propósito |
+|---|---|---|
+| `COOKIE_ACCESS_NAME` | `access_token` | Nombre de la cookie HttpOnly con el JWT local |
+| `COOKIE_CSRF_NAME` | `csrf_token` | Nombre de la cookie CSRF (double-submit pattern) |
+| `COOKIE_SECURE` | `False` | `True` en producción/demo (requiere HTTPS) |
+| `COOKIE_SAMESITE` | `Strict` | Política SameSite: `Strict`, `Lax` o `None` |
+| `COOKIE_DOMAIN` | *(vacío)* | Dominio de las cookies; vacío = dominio actual del request |
+| `COOKIE_PATH` | `/` | Path de las cookies |
+
+**Auth — Clerk**
+
+| Variable | Por defecto | Propósito |
+|---|---|---|
 | `CLERK_JWKS_URL` | *(ver `.env.example`)* | URL JWKS de Clerk (entornos `demo` y `production` con Clerk activo) |
 | `CLERK_AUDIENCE` | *(ver `.env.example`)* | Audience de Clerk (entornos `demo` y `production` con Clerk activo) |
-
-> Las variables de S3/LocalStack y ComfyUI aparecen en `.env.example` pero los servicios no están integrados aún.
 
 ## Base de datos: dev vs producción
 
@@ -92,12 +157,11 @@ make run
 | Servicio | Puerto (host) | Propósito | Profile |
 |---|---|---|---|
 | Qdrant | 6333 | Base de datos vectorial | *(siempre)* |
-| Redis | 6379 | Caché semántico (staged) | *(siempre)* |
 | PostgreSQL | 5433 | Metadatos relacionales (prod) | `postgres` |
 | sqlite-web | 8080 | Visor web SQLite (`loremaster.db`) | `tools` |
 
 ```bash
-# Solo infra base (dev — qdrant + redis)
+# Solo infra base (dev — qdrant)
 docker-compose up -d
 
 # Infra base + postgres (prod-local)
@@ -131,24 +195,26 @@ pytest -k "test_create"             # por nombre
 
 | Archivo | Tests | Cobertura |
 |---|---|---|
-| `test_content_guard.py` | 32 | Patrones regex: inputs válidos/inválidos, Unicode, routing de excepciones |
+| `test_content_guard.py` | 38 | Patrones regex, Unicode, leet-speak, `check_prompt_length` (min 10 chars), routing de excepciones |
 | `test_entity_content.py` | 25 | Ciclo de vida EntityContent: pending → confirmed/discarded, límite de borradores |
 | `test_collections.py` | 18 | CRUD de colecciones, ownership, unique constraint por usuario |
-| `test_documents.py` | 16 | Upload PDF/TXT, background ingest, Qdrant failure, malformed PDF |
+| `test_documents.py` | 17 | Upload PDF/TXT, filename > 255 chars → 422, background ingest, Qdrant failure, malformed PDF |
 | `test_image_generation_service.py` | 13 | Build-prompt, generación por batch, guardrails de imagen |
 | `test_entities.py` | 13 | CRUD de entidades, nombre reservado tras soft-delete |
 | `test_auth.py` | 12 | Registro, login, logout (invalida token), versión desfasada → 401, errores de autenticación |
-| `test_public_feed.py` | 9 | Feed público `/public/feed` e `/public/images`, perfiles públicos, ownership 403 |
 | `test_rag_query.py` | 9 | Consulta RAG, Qdrant caído → 503, LLM failure → semáforo liberado |
+| `test_public_feed.py` | 9 | Feed público `/public/feed` e `/public/images`, perfiles públicos, ownership 403 |
+| `test_harness_smoke.py` | 9 | Smoke tests del harness de evaluación de prompts (reporter, judge, runner) |
 | `test_generation_service.py` | 8 | Generación por categoría, prompt templates, moderación |
 | `test_prompt_builder.py` | 7 | Estrategias de contexto, flag `truncated`, ranking de fuentes |
-| `test_auth_clerk.py` | 7 | `/sync` sin header → 401, token inválido → 401, user nuevo → creado + cookies, idempotencia, username fallback email, `/verify` user válido, `/verify` soft-deleted → 401 |
+| `test_auth_clerk.py` | 7 | `/sync` sin header → 401, token inválido → 401, user nuevo → creado + cookies, idempotencia, `/verify` soft-deleted → 401 |
 | `test_admin.py` | 6 | Listado usuarios, cascade delete de colección y usuario, guardrail auto-eliminación |
-| `test_users.py` | 4 | Perfil `/users/me` GET/PATCH |
+| `test_users.py` | 4 | Perfil `/users/me` GET/PATCH, avatar upload/delete |
+| `test_models.py` | 3 | Smoke tests de modelos DB (instanciación SQLModel y relaciones básicas) |
 | `test_deletion_service.py` | 2 | Cascade soft-delete: documentos, entidades, contenidos, vectores Qdrant |
 | `test_content_management_service.py` | 1 | `_discard_sibling_contents` no afecta otras categorías |
 
-**Total: 194 tests.**
+**Total: 201 tests.**
 
 ## Endpoints
 
@@ -195,7 +261,7 @@ Las colecciones son siempre **privadas**: solo el owner puede leerlas o modifica
 
 | Método | Ruta | Descripción | Status |
 |---|---|---|---|
-| `POST` | `/collections/{id}/documents` | Subir documento PDF/TXT (máx. 50 MB) | 201 |
+| `POST` | `/collections/{id}/documents` | Subir documento PDF/TXT (máx. 50 MB, nombre máx. 255 chars) | 202 |
 | `GET` | `/collections/{id}/documents` | Listar documentos (excluye estado `processing`) | 200 |
 | `GET` | `/collections/{id}/documents/{doc_id}` | Obtener documento | 200 |
 | `DELETE` | `/collections/{id}/documents/{doc_id}` | Eliminar documento | 204 |
@@ -324,6 +390,65 @@ El script busca el usuario activo (no soft-deleted) por username y establece `is
 | `check_generated_output(text)` | Tras recibir la respuesta del LLM | Mismo conjunto de patrones |
 
 Las violaciones de entrada elevan `ContentNotAllowedError` (→ HTTP 422); las de salida elevan `GeneratedContentBlockedError` (→ HTTP 422). Cada rechazo se persiste en la tabla `moderation_log` (`layer`, `snippet`, `created_at`).
+
+## Estructura de `app/`
+
+```
+app/
+├── main.py              # Punto de entrada FastAPI; ensamblado de routers y middlewares
+├── database.py          # Engine SQLAlchemy y get_session()
+├── api/
+│   ├── middlewares/     # RateLimitMiddleware, SecurityHeadersMiddleware
+│   └── routes/
+│       ├── admin/       # admin.py — /admin/users, /admin/collections/{id}, /admin/users/{id}
+│       ├── auth/        # auth.py (login/register/logout), auth_clerk.py (/sync, /verify)
+│       ├── collections/ # collections.py (CRUD), rag_query.py (POST /query)
+│       ├── documents/   # documents.py (upload, list, delete, retry, SSE events)
+│       ├── entities/    # entities.py (CRUD), content.py (generate, confirm, discard, share)
+│       ├── images/      # image_generation.py (build-prompt, generate, list, share, delete)
+│       ├── models/      # models.py — GET /models (lista modelos Ollama disponibles)
+│       ├── public/      # public.py — /public/feed, /public/images
+│       └── users/       # users.py — /users/me, /users/me/avatar, /users/{username}/profile
+├── core/
+│   ├── auth/            # JWT (create/verify), CSRF, Clerk (JWKS), get_current_user
+│   ├── config/          # Settings (Pydantic) — todas las variables de entorno
+│   ├── database/        # SoftDeleteMixin, soft_delete(), db_commit(), paginate_with_sort()
+│   ├── exceptions/      # Excepciones de dominio tipadas (20 clases)
+│   ├── storage/         # FileValidator (magic bytes, EXIF strip, límites de tamaño)
+│   ├── api/             # PaginationParams, DateRangeParams, filtros compartidos
+│   └── lifespan.py      # Startup/shutdown de Qdrant y colecciones por defecto
+├── domain/
+│   ├── content_guard.py       # check_user_input, check_generated_output, check_prompt_length
+│   ├── category_rules.py      # Categorías válidas por tipo de entidad
+│   ├── prompt_templates.py    # Plantillas Jinja2 por categoría
+│   └── image_prompt_rules.py  # Reglas de atributos visuales por tipo de entidad
+├── engine/
+│   ├── llm.py                  # call_ollama() con semáforo y timeout
+│   ├── rag.py                  # ingest_chunks, delete_document_chunks, query_qdrant
+│   ├── rag_pipeline.py         # rag_query() — orquesta RAG completo
+│   ├── extractor.py            # extract_text() — PDF → texto, TXT → texto
+│   ├── image_prompt_builder.py # build_visual_prompt(), _truncate_to_tokens()
+│   └── comfyui_client.py       # ComfyUIClient — genera imágenes vía WebSocket
+├── models/
+│   ├── enums.py          # ContentCategory, ContentStatus
+│   ├── shared.py         # PaginatedResponse[T]
+│   ├── db/               # Modelos SQLModel: User, Collection, Document, Entity,
+│   │                     #   EntityContent, GeneratedText, ImageGeneration, ImageRecord,
+│   │                     #   ModerationLog
+│   └── schemas/          # Pydantic I/O: collection, document, entity, entity_content,
+│                         #   image_generation, rag_query, user, public
+└── services/
+    ├── auth/             # authenticate_user, create_user, get_or_create_clerk_user
+    ├── collection/       # CRUD de colecciones
+    ├── document/         # ingest_document_service, process_ingest_background
+    ├── entity/           # CRUD entidades, generación y ciclo de vida de contenidos
+    ├── image/            # build_prompt_service, generate_images_service
+    ├── moderation/       # log_moderation_event()
+    ├── profile/          # get/update perfil, avatar upload/delete
+    ├── public/           # feed público, perfiles públicos
+    ├── cascade_service.py  # Cascade soft-delete de colecciones completas
+    └── deletion_service.py # Cascade soft-delete de usuarios
+```
 
 ## Migraciones
 
