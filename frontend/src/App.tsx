@@ -65,11 +65,29 @@ function ClerkBridge() {
   return null;
 }
 
+/** Redirige al login via React Router cuando apiClient emite auth:unauthorized. */
+function UnauthorizedHandler() {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  useEffect(() => {
+    function handleUnauthorized() {
+      logout();
+      navigate("/login", { replace: true });
+    }
+    window.addEventListener("auth:unauthorized", handleUnauthorized);
+    return () => window.removeEventListener("auth:unauthorized", handleUnauthorized);
+  }, [logout, navigate]);
+
+  return null;
+}
+
 /** Árbol de rutas compartido por los dos modos de auth (local y Clerk). */
 function AppRoutes() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <UnauthorizedHandler />
         {clerkKey && <ClerkBridge />}
         <Routes>
           <Route path="/login" element={<LoginPage />} />

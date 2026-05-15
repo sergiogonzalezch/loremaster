@@ -101,8 +101,8 @@ export async function apiFetch<T>(
   if (response.status === 401) {
     const isAlreadyOnLogin = window.location.pathname === "/login";
     if (!isAlreadyOnLogin) {
-      // 401 fuera de /login = sesión expirada o token inválido
-      window.location.href = "/login";
+      // 401 fuera de /login = sesión expirada; navegar sin full-reload via evento
+      window.dispatchEvent(new CustomEvent("auth:unauthorized"));
       throw new ApiError(401, "Sesión expirada. Inicia sesión de nuevo.");
     }
     // 401 en /login = credenciales incorrectas (login fallido)
