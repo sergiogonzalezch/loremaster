@@ -4,6 +4,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
+from app.models.enums import ContentCategory
+
 
 class BuildPromptRequest(BaseModel):
     """Esquema para generar un prompt automático a partir de un contenido.
@@ -138,7 +140,7 @@ class ImageGenerationResponse(BaseModel):
     entity_id: str
     collection_id: str
     content_id: str | None = None
-    category: str
+    category: ContentCategory
     auto_prompt: str
     final_prompt: str
     prompt_token_count: int
@@ -217,7 +219,7 @@ class ImageGenerationListItem(BaseModel):
     entity_id: str
     collection_id: str
     content_id: str | None = None
-    category: str
+    category: ContentCategory
     auto_prompt: str
     final_prompt: str
     batch_size: int
