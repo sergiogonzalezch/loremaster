@@ -471,7 +471,43 @@ La integración real con ComfyUI está funcional en `services/image/image_genera
 - [ ] Imágenes usan contexto RAG para coherencia con el lore
 - [ ] Storage S3 funcional (LocalStack) — en su lugar, almacenamiento local funcional
 - [x] CRUD de entidades completo
-- [ ] README actualizado con instrucciones de ComfyUI y S3
+- [x] README backend y frontend actualizados (2026-05-14)
+
+---
+
+## Nota — Integración Clerk + Mejoras de Auth (implementado Semanas 7-8, 2026-05-14)
+
+Implementación completa del modo dual de autenticación (local / Clerk):
+
+### Backend
+
+- [x] `POST /api/v1/auth/clerk/sync` — intercambia JWT de Clerk (header `Authorization: Bearer`) por cookie de sesión local (JWT HS256); crea usuario local si no existe
+- [x] `GET /api/v1/auth/clerk/verify` — verifica JWT de Clerk y confirma existencia del usuario en BD
+- [x] `get_or_create_clerk_user(session, payload)` en `services/auth/auth_service.py` — crea User local con `hashed_password=""` si no existe, idempotente
+- [x] Bug fix crítico: `get_current_user` en `dependencies.py` usaba `decode_clerk_token()` sobre la cookie (que contiene un JWT local, no de Clerk) → revertido a `verify_token()` en todos los entornos
+- [x] 7 nuevos tests en `test_auth_clerk.py` (CLERK-01 a CLERK-06 + variante sin username) — total backend: **194 tests**
+
+### Frontend
+
+- [x] `@clerk/clerk-react` instalado y condicionado a `VITE_CLERK_PUBLISHABLE_KEY`
+- [x] `ClerkBridge` en `App.tsx` — detecta login Clerk, llama `/sync`, actualiza `AuthContext`, navega a `/`
+- [x] `ProtectedRoute` con modo dual: `useUser()` de Clerk (evita race condition) o `useAuth().user` (modo local)
+- [x] `LoginPage` con modo dual: `<SignIn />` de Clerk o formulario propio con tabs
+- [x] `AppNavbar` con `ClerkLogoutItem` separado (cumple restricción de `useClerk()` dentro de `ClerkProvider`)
+- [x] `clerkSync.ts` — `syncClerkSession(token)` — `POST /auth/clerk/sync`
+- [x] `clerkConfig.ts` — `clerkKey` exportado como módulo separado (cumple Fast Refresh)
+- [x] Fix: 401 ya no causa flash en blanco — `apiClient.ts` emite `CustomEvent("auth:unauthorized")`, `UnauthorizedHandler` navega con React Router sin reload
+- [x] Total frontend: **121 tests** pasando
+
+### Seguridad y Auditoría (2026-05-12/13)
+
+- [x] Auditoría de seguridad completa documentada en `docs/AUDIT-SECURITY.md` y `docs/AUDIT-SECURITY-REVIEW3-2026-05-12.md`
+- [x] `REVIEW-2026-05-13.md` — revisión de arquitectura y decisiones de diseño
+- [x] Tokens viajan exclusivamente por cookie HttpOnly (nunca `localStorage`, nunca header en peticiones normales)
+- [x] CSRF doble-submit cookie activo en todas las mutaciones (POST/PUT/PATCH/DELETE)
+- [x] `token_version` con `hmac.compare_digest` — invalidación de sesiones por logout
+- [x] Soft-delete verificado en `get_current_user` — usuarios eliminados no pueden autenticarse
+- [x] Rate limiting por IP en middleware global
 
 ---
 
@@ -482,8 +518,8 @@ Sistema completo de autenticación y seguridad implementado durante Fase 2 (Sema
 ### Autenticación y Usuarios
 
 - [x] `core/auth/__init__.py` — JWT: creación, verificación y hash de contraseñas (bcrypt)
-- [x] `core/auth/clerk.py` — `JWKSManager` con caché TTL 1h thread-safe; `decode_clerk_token()` para producción
-- [x] `core/auth/dependencies.py` — `get_current_user` (local o Clerk según `environment`), `get_current_user_optional`, `get_admin_user`
+- [x] `core/auth/clerk.py` — `JWKSManager` con caché TTL 1h thread-safe; `decode_clerk_token()` — solo en `/auth/clerk/sync`
+- [x] `core/auth/dependencies.py` — `get_current_user` usa siempre `verify_token()` (JWT local en cookie, uniforme en todos los entornos); `get_admin_user`
 - [x] `core/auth/csrf.py` — CSRF token via cookie doble-submit
 - [x] `models/db/user.py` — Modelo `User` con `username`, `email`, `hashed_password`, `is_admin`, `token_version` (para invalidación de sesiones)
 - [x] `api/routes/auth/` — registro, login, logout, refresh con cookies HttpOnly

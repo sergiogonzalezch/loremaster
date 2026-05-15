@@ -1,9 +1,12 @@
 ﻿# 1. Resumen Ejecutivo
 
-> ⚠️ **NOTA SOBRE DIAGRAMAS**: Los diagramas referenciados en este documento fueron creados en versiones anteriores del proyecto y no reflejan el estado actual. Pendiente de recrear:
-> - ERD (no incluye `users`, `image_generations`, `image_records`, `generated_texts`, `moderation_log`, campos `is_shared`, `owner_id`)
-> - Diagramas de flujo y secuencia de HU-01 (omiten auth + `owner_id`), HU-04 (flujo de dos pasos), HU-06 (compartir contenido)
-> - Diagrama de arquitectura general (no refleja multi-tenancy ni rutas públicas)
+> ⚠️ **NOTA SOBRE DIAGRAMAS** — Pendiente de recrear (2026-05-14):
+> - **ERD**: no incluye `users`, `image_generations`, `image_records`, `generated_texts`, `moderation_log`; faltan campos `is_shared`, `owner_id`, `token_version`, `avatar_path`, `display_name`, `bio`.
+> - **HU-01** (flujo y secuencia): omiten auth (`get_current_user`) y asignación de `owner_id`.
+> - **HU-04** (flujo y secuencia): no refleja flujo de dos pasos `build-prompt → generate`.
+> - **HU-06** (compartir contenido): no existe diagrama para el endpoint `PATCH .../share`.
+> - **Arquitectura general**: no refleja multi-tenancy, rutas públicas, ni integración Clerk (modo dual local / Clerk).
+> - **Flujo de autenticación (NUEVO)**: diagrama pendiente para los dos modos — modo local (formulario → JWT local → cookie) y modo Clerk (Clerk JWT → `/auth/clerk/sync` → JWT local → cookie).
 > **→ Los diagramas necesitan ser recreados para reflejar el estado actual.**
 
 ## ¿Qué es Lore Master?
@@ -359,7 +362,7 @@ loremaster/
 │   │   ├── main.py                        # FastAPI app, CORS, lifespan, registro de routers
 │   │   ├── database.py                    # SQLModel engine + dependencia get_session
 │   │   ├── api/routes/
-│   │   │   ├── auth/                      # Registro, login y logout JWT local (POST /auth/logout incrementa token_version)
+│   │   │   ├── auth/                      # auth.py: registro/login/logout JWT local; auth_clerk.py: POST /sync (Clerk JWT → cookie local), GET /verify
 │   │   │   ├── collections/                # HU-01: CRUD colecciones (solo owner) + HU-03: consulta RAG libre por colección
 │   │   │   ├── documents/                 # HU-02: ingestión PDF/TXT
 │   │   │   ├── entities/                   # HU-05: CRUD entidades + HU-06: contenidos RAG por categoría
@@ -392,8 +395,9 @@ loremaster/
 │   │   ├── core/                          # Infraestructura y dependencias transversales
 │   │   │   ├── __init__.py                # Minimal; evita imports circulares
 │   │   │   ├── lifespan.py                # Startup: migraciones Alembic + health checks
-│   │   │   ├── auth/                      # JWT, password hashing, dependencies
-│   │   │   │   └── dependencies.py        # get_current_user, get_admin_user
+│   │   │   ├── auth/                      # JWT, password hashing, CSRF, Clerk
+│   │   │   │   ├── dependencies.py        # get_current_user (siempre verify_token → JWT local), get_admin_user
+│   │   │   │   └── clerk.py               # JWKSManager (caché TTL 1h), decode_clerk_token() — solo para /sync
 │   │   │   ├── config/                    # Pydantic Settings (lee .env)
 │   │   │   ├── database/                  # Mixins, utils, soft_delete, dependencies
 │   │   │   │   ├── mixins.py              # UUIDPrimaryKey, TimestampedModel
@@ -442,7 +446,7 @@ loremaster/
 │   │   └── dataset/
 │   │       ├── golden_dataset.json        # Casos: RAG, CRUD, entity_content, guardrail, imagen, feed
 │   │       └── golden_seed.txt            # Documento semilla (Mundo de Valdorath)
-│   ├── tests/                             # pytest con SQLite in-memory; stubs de engine.rag y LLM (175 tests)
+│   ├── tests/                             # pytest con SQLite in-memory; stubs de engine.rag y LLM (194 tests)
 │   ├── Makefile                           # Comandos: run, test, format, lint, install, clean, clean-all. Centraliza pycache en `.pycache/` (PYTHONPYCACHEPREFIX)
 │   ├── requirements.txt
 │   ├── requirements-dev.txt
@@ -450,11 +454,12 @@ loremaster/
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── App.tsx                        # BrowserRouter + rutas + AuthProvider
+│   │   ├── App.tsx                        # BrowserRouter + rutas + AuthProvider + ClerkBridge (sync Clerk→backend) + UnauthorizedHandler (401→navigate sin reload)
 │   │   ├── api/                           # Capa de acceso al backend
 │   │   │   ├── apiClient.ts               # fetch wrapper: apiFetch<T>, ApiError, ApiAbortError
 │   │   │   ├── factory.ts                 # Factory pattern para endpoints CRUD reutilizables
 │   │   │   ├── auth.ts                    # login() / register() / logoutApi()
+│   │   │   ├── clerkSync.ts               # syncClerkSession(clerkToken) — POST /auth/clerk/sync
 │   │   │   ├── collections.ts / documents.ts / entities.ts / contents.ts / generate.ts
 │   │   │   ├── images.ts                  # buildPrompt, generate, list, get, shareImage, deleteImage
 │   │   │   ├── users.ts                   # getMyProfile, updateMyProfile, getPublicProfile, getPublicFeed,
@@ -464,7 +469,7 @@ loremaster/
 │   │   │   ├── query.ts                   # buildQuery() — utilidad interna para query strings de URL
 │   │   │   └── index.ts                   # Re-exporta todos los módulos de api/ (no incluye query.ts)
 │   │   ├── pages/
-│   │   │   ├── LoginPage.tsx              # Formulario con tabs login/registro
+│   │   │   ├── LoginPage.tsx              # Dual: modo Clerk → <SignIn /> de Clerk; modo local → formulario login/registro con tabs
 │   │   │   ├── CollectionsPage.tsx        # Listado, creación y eliminación de colecciones
 │   │   │   ├── CollectionDetailPage/      # Tabs: Documentos / Entidades / Generar texto
 │   │   │   │   ├── index.tsx
@@ -491,13 +496,13 @@ loremaster/
 │   │   │   ├── LoadingSpinner.tsx         # Spinner centrado con texto opcional
 │   │   │   ├── MarkdownContent.tsx        # Markdown sanitizado (remark-gfm + rehype-sanitize)
 │   │   │   ├── PaginationControls.tsx     # Controles de paginación reutilizables
-│   │   │   ├── ProtectedRoute.tsx         # Guard: redirige a /login si no hay sesión
+│   │   │   ├── ProtectedRoute.tsx         # Guard dual: modo Clerk usa useUser() (evita race), modo local usa useAuth().user
 │   │   │   ├── PublicContentModal.tsx     # Modal de texto compartido (markdown, badges, link al autor)
 │   │   │   ├── PublicImageModal.tsx       # Modal de imagen: imagen, seed, prompts, descarga
 │   │   │   ├── StarfieldCanvas.tsx        # Fondo canvas: estrellas + fugaces (evento lm:collections)
 │   │   │   └── TokenCounter.tsx           # Estimación de tokens (aviso a los 400)
 │   │   ├── contexts/
-│   │   │   └── AuthContext.tsx            # AuthProvider + AuthContext: { id, username, is_admin } -- valida exp al init, auto-logout timer, server logout al cerrar sesión
+│   │   │   └── AuthContext.tsx            # AuthProvider: verifica sesión via GET /users/me al montar (cookie HttpOnly), auto-logout timer, server logout al cerrar sesión
 │   │   ├── hooks/
 │   │   │   ├── useAuth.ts                       # Acceso al contexto de autenticación
 │   │   │   ├── useApiError.ts                   # Manejo centralizado de errores de API
@@ -513,8 +518,8 @@ loremaster/
 │   │   │   ├── collection.ts / content.ts / document.ts / entity.ts / generate.ts
 │   │   │   ├── images.ts / user.ts
 │   │   │   └── index.ts
-│   │   └── utils/                         # enums.ts, constants.ts, errors.ts (mensajes en español),
-│   │                                      # formatters.ts, strings.ts, token.ts, tokens.ts
+│   │   └── utils/                         # clerkConfig.ts, enums.ts, constants.ts, errors.ts (mensajes en español),
+│   │                                      # formatters.ts, strings.ts, tokens.ts
 │   └── package.json
 │
 ├── docker-compose.yml
