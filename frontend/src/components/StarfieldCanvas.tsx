@@ -10,7 +10,6 @@ interface CollectionStar {
   r: number;
   phase: number;
   blinkSpeed: number;
-  hovered: boolean;
   alpha: number;
 }
 
@@ -35,7 +34,6 @@ interface Shooter {
 
 interface StarfieldCollectionsEvent {
   collections: { id: string; name: string }[];
-  nav: (id: string) => void;
 }
 
 function randPos(existing: { nx: number; ny: number }[]): {
@@ -65,7 +63,6 @@ export default function StarfieldCanvas() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    // Re-bind to a const so closures below see a non-nullable type
     const el: HTMLCanvasElement = canvas;
     const ctx = el.getContext("2d")!;
 
@@ -74,14 +71,9 @@ export default function StarfieldCanvas() {
     let bgStars: BgStar[] = [];
     let collectionStars: CollectionStar[] = [];
     let shooters: Shooter[] = [];
-    let navigateFn: ((id: string) => void) | null = null;
     let animId: number;
 
-    function setCollections(
-      cols: { id: string; name: string }[],
-      nav: (id: string) => void,
-    ) {
-      navigateFn = nav;
+    function setCollections(cols: { id: string; name: string }[]) {
       const existing: { nx: number; ny: number }[] = [];
       collectionStars = cols.map((col) => {
         const prev = collectionStars.find((s) => s.id === col.id);
@@ -101,7 +93,6 @@ export default function StarfieldCanvas() {
           r: 3.2 + Math.random() * 1.4,
           phase: Math.random() * Math.PI * 2,
           blinkSpeed: 0.016 + Math.random() * 0.012,
-          hovered: false,
           alpha: 0,
         };
       });
@@ -109,35 +100,10 @@ export default function StarfieldCanvas() {
 
     function handleCollectionsEvent(e: Event) {
       const detail = (e as CustomEvent<StarfieldCollectionsEvent>).detail;
-      setCollections(detail.collections, detail.nav);
+      setCollections(detail.collections);
     }
 
     window.addEventListener("lm:collections", handleCollectionsEvent);
-
-    function handleMouseMove(e: MouseEvent) {
-      const rect = el.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
-      let any = false;
-      collectionStars.forEach((s) => {
-        s.hovered = Math.hypot(mx - s.x, my - s.y) < 38;
-        if (s.hovered) any = true;
-      });
-      el.style.cursor = any ? "pointer" : "default";
-    }
-
-    function handleClick(e: MouseEvent) {
-      if (!navigateFn) return;
-      const rect = el.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
-      collectionStars.forEach((s) => {
-        if (Math.hypot(mx - s.x, my - s.y) < 38) navigateFn!(s.id);
-      });
-    }
-
-    el.addEventListener("mousemove", handleMouseMove);
-    el.addEventListener("click", handleClick);
 
     function initBgStars() {
       const palette: [number, number, number][] = [
@@ -194,15 +160,13 @@ export default function StarfieldCanvas() {
         if (s.alpha < 1) s.alpha = Math.min(1, s.alpha + 0.012);
         s.phase += s.blinkSpeed;
         const blink = (Math.sin(s.phase) + 1) / 2;
-        const boost = s.hovered ? 1.4 : 1;
         const a = s.alpha;
 
         // Outer nebula glow
-        const gr1 = s.r * (10 + blink * 8) * boost;
+        const gr1 = s.r * (10 + blink * 8);
         const g1 = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, gr1);
-        const ha = s.hovered ? 0.24 : 0.1;
-        g1.addColorStop(0, `rgba(201,162,39,${(ha + blink * 0.08) * a})`);
-        g1.addColorStop(0.5, `rgba(180,140,30,${ha * 0.4 * a})`);
+        g1.addColorStop(0, `rgba(201,162,39,${(0.1 + blink * 0.08) * a})`);
+        g1.addColorStop(0.5, `rgba(180,140,30,${0.04 * a})`);
         g1.addColorStop(1, "rgba(0,0,0,0)");
         ctx.beginPath();
         ctx.arc(s.x, s.y, gr1, 0, Math.PI * 2);
@@ -210,7 +174,7 @@ export default function StarfieldCanvas() {
         ctx.fill();
 
         // Mid glow
-        const gr2 = s.r * (5 + blink * 4) * boost;
+        const gr2 = s.r * (5 + blink * 4);
         const g2 = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, gr2);
         g2.addColorStop(0, `rgba(255,230,120,${(0.55 + blink * 0.3) * a})`);
         g2.addColorStop(1, "rgba(0,0,0,0)");
@@ -221,12 +185,12 @@ export default function StarfieldCanvas() {
 
         // Core
         ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r * boost, 0, Math.PI * 2);
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(255,248,200,${(0.9 + blink * 0.1) * a})`;
         ctx.fill();
 
         // Cross flares
-        const fLen = s.r * (9 + blink * 7) * boost;
+        const fLen = s.r * (9 + blink * 7);
         const flares: [number, number][] = [
           [1, 0],
           [0, 1],
@@ -235,7 +199,7 @@ export default function StarfieldCanvas() {
         ];
         flares.forEach(([dx, dy], fi) => {
           if (fi > 1 && blink < 0.5) return;
-          const fA = (fi > 1 ? blink * 0.35 : 0.55 + blink * 0.3) * boost * a;
+          const fA = (fi > 1 ? blink * 0.35 : 0.55 + blink * 0.3) * a;
           const fg = ctx.createLinearGradient(
             s.x - dx * fLen,
             s.y - dy * fLen,
@@ -254,25 +218,10 @@ export default function StarfieldCanvas() {
         });
 
         // Name label
-        const lx = s.x + s.r * 5 + 8;
-        const ly = s.y + 4;
-        const labelA = (s.hovered ? 1 : 0.55 + blink * 0.3) * a;
-        if (s.hovered) {
-          ctx.font = '600 12px "Space Grotesk",sans-serif';
-          const tw = ctx.measureText(s.name).width + 16;
-          ctx.fillStyle = "rgba(7,7,14,0.75)";
-          ctx.beginPath();
-          ctx.rect(lx - 8, ly - 14, tw, 20);
-          ctx.fill();
-          ctx.strokeStyle = "rgba(201,162,39,0.4)";
-          ctx.lineWidth = 0.8;
-          ctx.stroke();
-        } else {
-          ctx.font = '500 11px "Space Grotesk",sans-serif';
-        }
-        ctx.fillStyle = `rgba(225,210,150,${labelA})`;
+        ctx.font = '500 11px "Space Grotesk",sans-serif';
+        ctx.fillStyle = `rgba(225,210,150,${(0.55 + blink * 0.3) * a})`;
         ctx.textAlign = "left";
-        ctx.fillText(s.name, lx, ly);
+        ctx.fillText(s.name, s.x + s.r * 5 + 8, s.y + 4);
       });
     }
 
@@ -337,8 +286,6 @@ export default function StarfieldCanvas() {
       cancelAnimationFrame(animId);
       window.removeEventListener("resize", resize);
       window.removeEventListener("lm:collections", handleCollectionsEvent);
-      el.removeEventListener("mousemove", handleMouseMove);
-      el.removeEventListener("click", handleClick);
     };
   }, []);
 
@@ -349,7 +296,7 @@ export default function StarfieldCanvas() {
         position: "fixed",
         inset: 0,
         zIndex: 0,
-        pointerEvents: "auto",
+        pointerEvents: "none",
         opacity: 0.7,
       }}
     />

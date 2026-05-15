@@ -161,13 +161,21 @@ export default function CollectionsPage() {
   useEffect(() => {
     window.dispatchEvent(
       new CustomEvent("lm:collections", {
-        detail: {
-          collections,
-          nav: (id: string) => navigate(`/collections/${id}`),
-        },
+        detail: { collections },
       }),
     );
-  }, [collections, navigate]);
+  }, [collections]);
+
+  // Clear collection stars when leaving this page
+  useEffect(() => {
+    return () => {
+      window.dispatchEvent(
+        new CustomEvent("lm:collections", {
+          detail: { collections: [] },
+        }),
+      );
+    };
+  }, []);
 
   function toggleSelect(id: string) {
     setSelectedIds((prev) => {
