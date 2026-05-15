@@ -341,7 +341,7 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 ### Filtrado de Contenido
 
 - [x] `check_user_input()` en `content_guard.py` valida el contenido confirmado antes de construir el prompt visual (keywords bloqueadas: sexual explícito, discurso de odio, armas, drogas, acoso)
-- [ ] Rechazo de prompts menores a 10 caracteres — no implementado
+- [x] Rechazo de prompts menores a 10 caracteres — `min_length=10` enforced en schemas `RagQueryRequest`, `GenerateContentRequest`, `GenerateImagesRequest` (`feat(validation)` 2026-05-14)
 - [x] Retorna razón de rechazo al cliente (HTTP 422 con mensaje descriptivo en español)
 
 ### Endpoint de Imagenes (Mock)
@@ -485,7 +485,7 @@ Implementación completa del modo dual de autenticación (local / Clerk):
 - [x] `GET /api/v1/auth/clerk/verify` — verifica JWT de Clerk y confirma existencia del usuario en BD
 - [x] `get_or_create_clerk_user(session, payload)` en `services/auth/auth_service.py` — crea User local con `hashed_password=""` si no existe, idempotente
 - [x] Bug fix crítico: `get_current_user` en `dependencies.py` usaba `decode_clerk_token()` sobre la cookie (que contiene un JWT local, no de Clerk) → revertido a `verify_token()` en todos los entornos
-- [x] 7 nuevos tests en `test_auth_clerk.py` (CLERK-01 a CLERK-06 + variante sin username) — total backend: **194 tests**
+- [x] 7 nuevos tests en `test_auth_clerk.py` (CLERK-01 a CLERK-06 + variante sin username) — total backend: **201 tests**
 
 ### Frontend
 
@@ -540,6 +540,25 @@ Sistema completo de autenticación y seguridad implementado durante Fase 2 (Sema
 - [x] `api/routes/media.py` — servicio de imágenes estáticas con control de acceso (propias o compartidas)
 - [x] Endpoint `PATCH .../share` — marcar/desmarcar imagen como pública
 - [x] `services/moderation/moderation_service.py` + `models/db/moderation_log.py` — registro de moderación
+
+---
+
+## Nota — Correcciones de calidad y consistencia (2026-05-15)
+
+Fixes de consistencia entre capas y eliminación de código muerto aplicados sobre el estado de Semana 8:
+
+### Backend
+
+- [x] **DOC-17 — filename > 255 chars → 422**: `Document.filename` validado en servicio antes de persistir; previene error DB-level en PostgreSQL (`VARCHAR(255)`). Mensaje: `"Nombre de archivo requerido o demasiado largo (máx. 255 caracteres)"`
+- [x] **Timeout extraído a settings**: `_EXTRACTION_TIMEOUT_SECONDS = 30` (hardcoded en `document_service.py`) movido a `settings.document_extraction_timeout_seconds`; variable `DOCUMENT_EXTRACTION_TIMEOUT_SECONDS` añadida a `.env` y `.env.example`
+- [x] **Schema tipado**: `ImageGenerationResponse.category` e `ImageGenerationListItem.category` cambiados de `str` a `ContentCategory` para type safety
+- [x] **DB default alineado**: `ImageGeneration.backend` default corregido de `"mock"` a `"comfyui"` — consistente con `settings.image_backend`
+- [x] **Dead code eliminado**: `backend/app/core/database/mixins.py` borrado — contenía `generate_id()`, `utc_now()` y `SoftDeleteMixin` duplicado, nunca importados en ningún fichero de `app/` ni `tests/`
+- [x] Total backend: **201 tests** (18 archivos; 7 tests de `test_auth_clerk.py` ya contados)
+- [x] `LIMITERS.md` actualizado: `Document.filename` max=255 chars y `document_extraction_timeout_seconds=30s` documentados en §2 y §4
+
+### Documentación
+- [x] `backend/README.md` y `frontend/README.md` actualizados con estructura de proyecto actual, variables `.env` completas y test counts
 
 ---
 

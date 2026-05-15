@@ -1,6 +1,6 @@
 ﻿# 1. Resumen Ejecutivo
 
-> ⚠️ **NOTA SOBRE DIAGRAMAS** — Pendiente de recrear (2026-05-14):
+> ⚠️ **NOTA SOBRE DIAGRAMAS** — Pendiente de recrear (2026-05-15):
 > - **ERD**: no incluye `users`, `image_generations`, `image_records`, `generated_texts`, `moderation_log`; faltan campos `is_shared`, `owner_id`, `token_version`, `avatar_path`, `display_name`, `bio`.
 > - **HU-01** (flujo y secuencia): omiten auth (`get_current_user`) y asignación de `owner_id`.
 > - **HU-04** (flujo y secuencia): no refleja flujo de dos pasos `build-prompt → generate`.
@@ -151,6 +151,7 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 - Acepta PDF (`application/pdf`) y TXT (`text/plain`) hasta 50 MB
 - Rechaza formatos inválidos con `HTTP 400`
+- Rechaza archivos sin nombre o con nombre > 255 caracteres con `HTTP 422` (límite de `VARCHAR(255)` en PostgreSQL)
 - El documento se asocia a una colección (`collection_id`)
 - El procesamiento es síncrono en el MVP (asíncrono en versiones futuras)
 - El contenido queda disponible para consultas RAG dentro de la colección
@@ -400,8 +401,7 @@ loremaster/
 │   │   │   │   └── clerk.py               # JWKSManager (caché TTL 1h), decode_clerk_token() — solo para /sync
 │   │   │   ├── config/                    # Pydantic Settings (lee .env)
 │   │   │   ├── database/                  # Mixins, utils, soft_delete, dependencies
-│   │   │   │   ├── mixins.py              # UUIDPrimaryKey, TimestampedModel
-│   │   │   │   ├── soft_delete.py         # SoftDeleteMixin
+│   │   │   │   ├── soft_delete.py         # SoftDeleteMixin (UUIDPrimaryKey + TimestampedModel aquí también)
 │   │   │   │   ├── utils.py               # pagination helpers
 │   │   │   │   └── dependencies.py
 │   │   │   ├── api/                       # Query params, filters, schema_mixin
@@ -446,7 +446,7 @@ loremaster/
 │   │   └── dataset/
 │   │       ├── golden_dataset.json        # Casos: RAG, CRUD, entity_content, guardrail, imagen, feed
 │   │       └── golden_seed.txt            # Documento semilla (Mundo de Valdorath)
-│   ├── tests/                             # pytest con SQLite in-memory; stubs de engine.rag y LLM (194 tests)
+│   ├── tests/                             # pytest con SQLite in-memory; stubs de engine.rag y LLM (201 tests)
 │   ├── Makefile                           # Comandos: run, test, format, lint, install, clean, clean-all. Centraliza pycache en `.pycache/` (PYTHONPYCACHEPREFIX)
 │   ├── requirements.txt
 │   ├── requirements-dev.txt
@@ -663,7 +663,7 @@ DATABASE_URL=postgresql://user:pass@postgres:5432/loremaster
 |---|---|---|
 | **users** | id (UUID PK), username (unique), hashed_password, email (unique), display_name, bio, avatar_path, is_admin, token_version, created_at, is_deleted, deleted_at | Campos de perfil opcionales. `is_admin` designado vía `scripts/make_admin.py`, nunca por API pública. Un admin soft-deleted no puede autenticarse. `token_version` se incrementa en cada logout para invalidar tokens previos. |
 | **collections** | id (UUID PK), name, description, owner_id (FK → users), is_public, created_at, updated_at, is_deleted, deleted_at | `UNIQUE(name, owner_id)`. `owner_id` nullable para datos migrados. `is_public=False` por defecto; el contenido se comparte de forma selectiva a nivel de ítem. |
-| **documents** | id (UUID PK), collection_id (FK), filename, file_type, chunk_count, status, created_at, is_deleted, deleted_at | El texto vive en Qdrant, no en esta tabla. `status`: processing \| completed \| failed. |
+| **documents** | id (UUID PK), collection_id (FK), filename (VARCHAR 255), file_type, chunk_count, status, created_at, is_deleted, deleted_at | El texto vive en Qdrant, no en esta tabla. `status`: processing \| completed \| failed. `filename` validado en servicio: vacío o > 255 chars → HTTP 422. |
 | **entities** | id (UUID PK), collection_id (FK), type (ENUM), name, description, created_at, updated_at, is_deleted, deleted_at | `type`: character \| creature \| location \| faction \| item. Nombre único por colección: `uq_entity_collection_name`. Los nombres de entidades eliminadas quedan reservados. |
 | **generated_texts** | id (UUID PK), entity_id (FK), collection_id (FK), category, query, raw_content, sources_count, token_count, created_at | Salida bruta del LLM antes de cualquier edición del usuario. Vinculada 1:1 con `entity_contents`. |
 | **entity_contents** | id (UUID PK), entity_id (FK), collection_id (FK), generated_text_id (FK), category, content, status, is_shared, confirmed_at, created_at, updated_at, is_deleted, deleted_at | `status`: pending \| confirmed \| discarded. Máx. 5 `pending` por entidad y por categoría. Confirmar descarta los demás `pending` de esa categoría. `is_shared`: solo `confirmed` puede compartirse. |
