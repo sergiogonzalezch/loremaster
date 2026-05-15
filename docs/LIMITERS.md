@@ -1,6 +1,6 @@
 # LIMITERS.md — Mapa completo de límites, validaciones y constantes
 
-> Última actualización: 2026-05-14
+> Última actualización: 2026-05-15
 > Rama: `main`
 > Regla de conversión usada en todo el documento: **1 token ≈ 4 caracteres** (estimación del engine en `image_prompt_builder._estimate_tokens`).
 
@@ -76,6 +76,7 @@ FLUJO IMAGEN (paralelo al flujo principal):
 | `UpdateProfileRequest.bio` | max=500 | 500 | — | Schema Pydantic | Biografía | Solo Schema |
 | `UpdateProfileRequest.email` | max=255 | 255 | — | Schema Pydantic | Email | Solo Schema |
 | `page_size` (paginación) | ge=1, le=100 | — | — | `core/api/params.py` | Todos los listados | Query param |
+| `Document.filename` max | 255 chars | — | — | Service (`document_service.py`) | Nombre de archivo subido (límite de VARCHAR(255) en PostgreSQL) | Service |
 | `DOCUMENT_MAX_UPLOAD_MB` | 50 MB | — | — | Settings | Archivos subidos (PDF/TXT) | Service |
 | `PROFILE_IMAGE_MAX_SIZE_MB` | 5 MB | — | — | Settings | Avatar de usuario | Service |
 | `MAX_PDF_PAGES` | 100 páginas | — | — | Settings | Prevención PDF bomb | Service |
@@ -105,6 +106,7 @@ FLUJO IMAGEN (paralelo al flujo principal):
 | `CHUNK_OVERLAP` | 50 chars | 50 | ~12 | Solapamiento entre chunks consecutivos | RAG / Qdrant |
 | `TOP_K` | 4 chunks | ~2 048 ctx total | ~512 ctx total | Chunks recuperados por similitud en cada query RAG | RAG |
 | `rag_score_threshold` | 0.3 | — | — | Score mínimo de similitud para incluir chunk como contexto | RAG |
+| `document_extraction_timeout_seconds` | 30 s | — | — | Settings → `document_service.py` | Timeout de extracción de texto (PDF/TXT); configurable vía `DOCUMENT_EXTRACTION_TIMEOUT_SECONDS` | Service |
 | `rate_limit_per_minute` | 30 req/min | — | — | Requests por IP/usuario por minuto (middleware global) | Middleware |
 | `max_pending_contents` | 5 | — | — | Máximo de contenidos en estado `pending` por entidad/categoría | Domain |
 | `max_concurrent_llm_calls` | 1 | — | — | Semáforo de llamadas simultáneas a Ollama | Engine |
@@ -189,6 +191,6 @@ El límite de 100 000 chars nunca es alcanzable a través de la API normal porqu
 | Generación imagen — `final_prompt` | ✅ min=10, max=2 000 chars | — (va directo a ComfyUI) | ✅ DB max=2 000 chars | ✅ OK |
 | Edición contenido | ✅ min=1, max=10 000 chars | — (texto de usuario) | ✅ content max=10 000 | ✅ OK |
 | Perfil usuario | ✅ display_name 100, bio 500 | — | ✅ DB iguales | ✅ OK |
-| Upload documento | ✅ max 50 MB, max 100 páginas | — | ✅ raw_text TEXT sin límite | ✅ OK |
+| Upload documento | ✅ filename max=255 chars, max 50 MB, max 100 páginas | — | ✅ raw_text TEXT sin límite | ✅ OK |
 | Guardrails contenido | ✅ `_BLOCKED_PATTERNS` en input | ✅ `_OUTPUT_BLOCKED_PATTERNS` en output | — | ✅ OK |
 | Anti-ReDoS (`_MAX_TEXT_LENGTH`) | ✅ inactivo en uso normal de API | ✅ inactivo en uso normal de API | — | ✅ OK (red de seguridad) |
