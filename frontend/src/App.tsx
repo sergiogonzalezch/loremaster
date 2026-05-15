@@ -76,7 +76,8 @@ function UnauthorizedHandler() {
       navigate("/login", { replace: true });
     }
     window.addEventListener("auth:unauthorized", handleUnauthorized);
-    return () => window.removeEventListener("auth:unauthorized", handleUnauthorized);
+    return () =>
+      window.removeEventListener("auth:unauthorized", handleUnauthorized);
   }, [logout, navigate]);
 
   return null;

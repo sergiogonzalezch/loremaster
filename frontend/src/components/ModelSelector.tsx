@@ -12,7 +12,9 @@ interface Props {
 
 function formatSize(bytes: number): string {
   const gb = bytes / 1_073_741_824;
-  return gb >= 1 ? `${gb.toFixed(1)} GB` : `${(bytes / 1_048_576).toFixed(0)} MB`;
+  return gb >= 1
+    ? `${gb.toFixed(1)} GB`
+    : `${(bytes / 1_048_576).toFixed(0)} MB`;
 }
 
 export default function ModelSelector({ disabled, onChange }: Props) {
@@ -41,8 +43,8 @@ export default function ModelSelector({ disabled, onChange }: Props) {
       .catch(() => {
         // Si Ollama no responde, el selector permanece oculto y el backend usa su default
       });
-  // onChange is stable (useCallback in parent), safe to include
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // onChange is stable (useCallback in parent), safe to include
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!visible) return null;

@@ -46,11 +46,7 @@ function InitialsCircle({ username }: { username: string }) {
  * Componente separado para que useClerk() solo se llame dentro de
  * ClerkProvider — evita errores en el modo local (sin Clerk).
  */
-function ClerkLogoutItem({
-  onLocalLogout,
-}: {
-  onLocalLogout: () => void;
-}) {
+function ClerkLogoutItem({ onLocalLogout }: { onLocalLogout: () => void }) {
   const { signOut } = useClerk();
 
   async function handleLogout() {

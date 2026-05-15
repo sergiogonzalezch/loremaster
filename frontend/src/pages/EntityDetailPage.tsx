@@ -77,7 +77,9 @@ export default function EntityDetailPage() {
   const [selectedContentForImage, setSelectedContentForImage] =
     useState<EntityContent | null>(null);
   const [contentsRefreshTrigger, setContentsRefreshTrigger] = useState(0);
-  const [selectedModel, setSelectedModel] = useState<string | undefined>(undefined);
+  const [selectedModel, setSelectedModel] = useState<string | undefined>(
+    undefined,
+  );
 
   const availableCategories = useMemo<ContentCategory[]>(
     () => (entity ? (categoryMap[entity.type] ?? []) : []),
@@ -322,10 +324,7 @@ export default function EntityDetailPage() {
               ))}
             </Form.Select>
           </Form.Group>
-          <ModelSelector
-            disabled={generating}
-            onChange={setSelectedModel}
-          />
+          <ModelSelector disabled={generating} onChange={setSelectedModel} />
         </div>
         <div className="d-flex gap-2 align-items-start flex-wrap">
           <Form.Control
