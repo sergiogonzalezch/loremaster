@@ -10,10 +10,12 @@ import {
   Tabs,
   Tab,
 } from "react-bootstrap";
+import { SignIn } from "@clerk/clerk-react";
 import { login, register } from "../api/auth";
 import { useAuth } from "../hooks/useAuth";
 import { parseApiError } from "../utils/errors";
 import StarfieldCanvas from "../components/StarfieldCanvas";
+import { clerkKey } from "../App";
 
 interface LoginForm {
   username_or_email: string;
@@ -27,14 +29,34 @@ interface RegisterForm {
 }
 
 /**
- * Página de inicio de sesión y registro de usuarios.
+ * Página de autenticación con Clerk (demo/production).
+ *
+ * ClerkBridge en App.tsx detecta el login y sincroniza la sesión con el
+ * backend antes de navegar a "/". Esta página solo muestra el widget de Clerk.
+ */
+function ClerkLoginPage() {
+  return (
+    <>
+      <StarfieldCanvas />
+      <Container
+        className="d-flex align-items-center justify-content-center"
+        style={{ minHeight: "100vh", position: "relative", zIndex: 1 }}
+      >
+        <SignIn />
+      </Container>
+    </>
+  );
+}
+
+/**
+ * Página de inicio de sesión y registro de usuarios (modo local).
  *
  * Permite autenticarse con nombre de usuario o correo electrónico,
  * o crear una nueva cuenta. Muestra un fondo animado de estrellas
  * y un formulario centralizado con pestañas para alternar entre
  * los modos de login y registro.
  */
-export default function LoginPage() {
+function LocalLoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login: contextLogin } = useAuth();
@@ -53,12 +75,6 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  /**
-   * Envía las credenciales de login al backend y, si son válidas,
-   * almacena el token en el contexto de autenticación.
-   *
-   * @param e - Evento del formulario de login.
-   */
   async function handleLogin(e: FormEvent) {
     e.preventDefault();
     setError(null);
@@ -75,12 +91,6 @@ export default function LoginPage() {
     }
   }
 
-  /**
-   * Registra un nuevo usuario y, tras el éxito, muestra un mensaje
-   * de confirmación y cambia automáticamente a la pestaña de login.
-   *
-   * @param e - Evento del formulario de registro.
-   */
   async function handleRegister(e: FormEvent) {
     e.preventDefault();
     setError(null);
@@ -239,4 +249,8 @@ export default function LoginPage() {
       </Container>
     </>
   );
+}
+
+export default function LoginPage() {
+  return clerkKey ? <ClerkLoginPage /> : <LocalLoginPage />;
 }

@@ -8,9 +8,11 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Container, Dropdown } from "react-bootstrap";
+import { useClerk } from "@clerk/clerk-react";
 import { useAuth } from "../hooks/useAuth";
 import SafeImage from "./SafeImage";
 import { getMyAvatar } from "../api/users";
+import { clerkKey } from "../App";
 
 /** Círculo con las iniciales del usuario como avatar fallback. */
 function InitialsCircle({ username }: { username: string }) {
@@ -38,6 +40,31 @@ function InitialsCircle({ username }: { username: string }) {
   );
 }
 
+/**
+ * Item de logout para el modo Clerk.
+ *
+ * Componente separado para que useClerk() solo se llame dentro de
+ * ClerkProvider — evita errores en el modo local (sin Clerk).
+ */
+function ClerkLogoutItem({
+  onLocalLogout,
+}: {
+  onLocalLogout: () => void;
+}) {
+  const { signOut } = useClerk();
+
+  async function handleLogout() {
+    onLocalLogout();
+    await signOut();
+  }
+
+  return (
+    <Dropdown.Item onClick={() => void handleLogout()}>
+      Cerrar sesión
+    </Dropdown.Item>
+  );
+}
+
 export default function AppNavbar() {
   const { user, logout } = useAuth();
   const location = useLocation();
@@ -55,7 +82,7 @@ export default function AppNavbar() {
       .catch(() => {});
   }, [user]);
 
-  function handleLogout() {
+  function handleLocalLogout() {
     logout();
     navigate("/feed", { replace: true });
   }
@@ -154,9 +181,13 @@ export default function AppNavbar() {
                 <Dropdown.Divider
                   style={{ borderColor: "rgba(255,255,255,0.2)" }}
                 />
-                <Dropdown.Item onClick={handleLogout}>
-                  Cerrar sesión
-                </Dropdown.Item>
+                {clerkKey ? (
+                  <ClerkLogoutItem onLocalLogout={handleLocalLogout} />
+                ) : (
+                  <Dropdown.Item onClick={handleLocalLogout}>
+                    Cerrar sesión
+                  </Dropdown.Item>
+                )}
               </Dropdown.Menu>
             </Dropdown>
           </div>
