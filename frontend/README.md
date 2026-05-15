@@ -29,13 +29,16 @@ npm run dev     # http://localhost:5173
 
 ## Variables de entorno
 
-El archivo `.env` (opcional en local) permite sobreescribir la URL de la API:
+El archivo `.env` (opcional en local) permite sobreescribir la URL de la API y activar el modo Clerk:
 
 ```env
 VITE_API_BASE_URL=http://localhost:8000/api/v1
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_...   # opcional: activa modo Clerk
 ```
 
 El proxy de Vite redirige `/api/*` → `http://localhost:8000` en desarrollo, evitando CORS sin configuración adicional. En producción, `VITE_API_BASE_URL` debe apuntar al backend desplegado.
+
+Si `VITE_CLERK_PUBLISHABLE_KEY` está definida, la app usa Clerk para autenticación: `ClerkProvider` envuelve la app, `LoginPage` muestra `<SignIn />` de Clerk y `ClerkBridge` sincroniza la sesión con el backend. Sin esta variable, la app usa el formulario de login/registro propio.
 
 ## Scripts disponibles
 
@@ -53,8 +56,9 @@ El proxy de Vite redirige `/api/*` → `http://localhost:8000` en desarrollo, ev
 ```
 src/
 ├── api/
-│   ├── apiClient.ts        → apiFetch<T> con ApiError / ApiAbortError
+│   ├── apiClient.ts        → apiFetch<T> con ApiError / ApiAbortError; 401 → evento custom auth:unauthorized (sin full-reload)
 │   ├── auth.ts             → login() / register() / logoutApi() — POST /auth/login, /auth/register, /auth/logout
+│   ├── clerkSync.ts        → syncClerkSession(clerkToken) — POST /auth/clerk/sync con JWT de Clerk en header
 │   ├── collections.ts      → CRUD de colecciones
 │   ├── documents.ts        → upload (FormData), listado y eliminación de documentos
 │   ├── entities.ts         → CRUD de entidades
@@ -65,19 +69,20 @@ src/
 │   ├── query.ts            → buildQuery() — utilidad para construir query strings de URL
 │   └── index.ts            → barrel export (no incluye query.ts — uso interno)
 ├── components/
-│   ├── AppNavbar.tsx          → Navbar: logo, link Colecciones, dropdown de usuario (avatar/iniciales + username → perfil público, admin, cerrar sesión)
+│   ├── AppNavbar.tsx          → Navbar: logo, link Colecciones, dropdown de usuario; modo Clerk usa ClerkLogoutItem (useClerk solo dentro de ClerkProvider)
 │   ├── ContentCard.tsx        → Card de EntityContent con acciones según estado
 │   ├── ConfirmModal.tsx       → Modal de confirmación reutilizable
 │   ├── Layout.tsx             → AppNavbar + Outlet + StarfieldCanvas
 │   ├── LoadingSpinner.tsx     → Spinner centrado con texto opcional
 │   ├── MarkdownContent.tsx    → Renderizado markdown sanitizado
-│   ├── ProtectedRoute.tsx     → Guard: redirige a /login si useAuth().user es null
+│   ├── ProtectedRoute.tsx     → Guard dual: modo Clerk usa useUser() (evita race condition), modo local usa useAuth().user
 │   ├── PublicContentModal.tsx → Modal de lectura completa de EntityContent compartido (markdown, badges, owner link)
 │   ├── PublicImageModal.tsx   → Modal de imagen compartida: imagen, seed, prompts, descarga
 │   ├── StarfieldCanvas.tsx    → Fondo animado canvas: estrellas de fondo + estrellas de colecciones (evento lm:collections) + estrellas fugaces
 │   └── TokenCounter.tsx       → Estimación de tokens (aviso a los 400)
+├── App.tsx                → Raíz: ClerkBridge (sincroniza sesión Clerk→backend), UnauthorizedHandler (escucha auth:unauthorized → navigate /login sin reload)
 ├── contexts/
-│   └── AuthContext.tsx     → AuthProvider + AuthContext: valida exp al init, auto-logout timer, server logout al cerrar sesión
+│   └── AuthContext.tsx     → AuthProvider + AuthContext: verifica sesión via GET /users/me al montar, auto-logout timer, server logout al cerrar sesión
 ├── hooks/
 │   ├── useAuth.ts                      → Acceso al contexto de autenticación (lanza si se usa fuera de AuthProvider)
 │   ├── useCollectionDocumentsStatus.ts → Monitoriza estado de documentos; refresca automáticamente cada 3s si hay documentos procesando
@@ -85,7 +90,7 @@ src/
 │   ├── useEntityContents.ts            → Fetching/refresco de contenidos de una entidad
 │   └── useGenerate.ts                  → Wrapper cancellable para llamadas LLM (AbortSignal)
 ├── pages/
-│   ├── LoginPage.tsx             → Formulario login/registro con tabs; redirige a / tras autenticar
+│   ├── LoginPage.tsx             → Dual: modo Clerk muestra <SignIn /> de Clerk; modo local muestra formulario login/registro con tabs
 │   ├── CollectionsPage.tsx       → Listado, creación y eliminación de colecciones propias
 │   ├── CollectionDetailPage.tsx  → Tabs: Documentos / Entidades / Generar texto
 │   ├── EntityDetailPage.tsx      → Detalle de entidad + generación de contenido por categoría
@@ -122,6 +127,7 @@ src/
 │   ├── useCollectionDocumentsStatus.test.ts  → Polling lifecycle: inicio, activo, se detiene, ApiAbortError
 │   └── useDebouncedValue.test.ts             → valor inicial, delay no cumplido, delay cumplido
 └── utils/
+    ├── clerkConfig.ts → clerkKey: constante con VITE_CLERK_PUBLISHABLE_KEY; fichero separado para cumplir Fast Refresh
     ├── constants.ts   → ENTITY_TYPE_BADGE/LABELS, ENTITY_CATEGORY_MAP, CATEGORY_LABELS,
     │                    MAX_PENDING_CONTENTS, constantes de tokens
     ├── enums.ts       → DocumentStatus, EntityType, ContentCategory, ContentStatus
@@ -140,10 +146,10 @@ Los tests se encuentran en `src/test/`. Las llamadas a la API se mockean con `vi
 | ----------- | ------------------------------------------------------------------------------- | ----- |
 | Utilidades  | errors, tokens, formatters, constants                                           | 26    |
 | Componentes | ConfirmModal, TokenCounter, ContentCard, MarkdownContent                        | 32    |
-| Hooks       | useGenerate, useEntityContents, useDebouncedValue, useCollectionDocumentsStatus | 23    |
+| Hooks       | useGenerate, useEntityContents, useDebouncedValue, useCollectionDocumentsStatus | 26    |
 | Páginas     | CollectionsPage, CollectionDetailPage, EntityDetailPage, GeneratePage           | 37    |
 
-**Total: 118 tests.**
+**Total: 121 tests.**
 
 Aspectos destacados de cobertura:
 
@@ -155,22 +161,34 @@ Aspectos destacados de cobertura:
 
 ## Autenticación
 
-Flujo JWT local. Al iniciar la app, `AuthProvider` decodifica el token almacenado en `localStorage`, valida el campo `exp` y expone el usuario vía contexto. Si el token ya está expirado al cargar, se elimina inmediatamente. `ProtectedRoute` usa `useAuth().user` para redirigir a `/login` si no hay sesión activa.
+El JWT de sesión viaja siempre en una cookie HttpOnly (`access_token`). El frontend nunca lo lee directamente. Hay dos modos de autenticación según `VITE_CLERK_PUBLISHABLE_KEY`:
 
-- **Login**: `POST /api/v1/auth/login` → guarda `access_token` en `localStorage`.
-- **Registro**: `POST /api/v1/auth/register` → crea cuenta y devuelve token directamente (login implícito).
-- **Logout**: `POST /api/v1/auth/logout` → invalida la sesión en servidor (incrementa `token_version`), luego limpia `localStorage` y el estado del contexto.
-- El token se adjunta en todas las peticiones via cabecera `Authorization: Bearer <token>` dentro de `apiFetch`.
-- **`AuthContext` / `useAuth`**: estado global del usuario (`{ id, username, is_admin }`). `AuthProvider` envuelve toda la app en `App.tsx`. `useAuth()` lanza si se llama fuera del provider.
-- **`logout()`**: expuesto por `useAuth()`; llama al servidor para invalidar la sesión, elimina el token de `localStorage` y limpia el estado del contexto.
-- **Auto-logout**: `AuthProvider` programa un `setTimeout` que cierra la sesión en el momento exacto de expiración del token (60 min), sin necesidad de una llamada API fallida.
-- Utilidades de bajo nivel en `src/utils/token.ts`: `getToken()`, `setToken()`, `removeToken()` — usadas por `AuthProvider` y `apiFetch`, no directamente por componentes.
+### Modo local (sin Clerk)
+
+- **Login**: `POST /auth/login` con `{ username_or_email, password }` → backend emite cookie `access_token` + cookie `csrf_token`.
+- **Registro**: `POST /auth/register` → crea cuenta y emite cookie directamente.
+- **`ProtectedRoute`**: usa `useAuth().user` (null → redirect a `/login`).
+- **`LoginPage`**: formulario propio con tabs login/registro.
+
+### Modo Clerk (`VITE_CLERK_PUBLISHABLE_KEY` definida)
+
+- `ClerkProvider` envuelve la app. `LoginPage` muestra `<SignIn />` de Clerk.
+- Tras autenticar con Clerk, `ClerkBridge` obtiene el JWT de Clerk y llama `POST /auth/clerk/sync` (JWT en header `Authorization: Bearer`). El backend crea/recupera el usuario local y emite cookie de sesión.
+- `ClerkBridge` llama `login()` en `AuthContext` para actualizar el estado y navega a `/`.
+- **`ProtectedRoute`**: usa `useUser()` de Clerk (no espera al sync) para evitar redirect prematuro.
+
+### Comportamiento común
+
+- **`AuthProvider`** al montar llama `GET /users/me` para verificar si hay sesión activa (cookie válida). `loading=true` hasta que responde, evitando redirect prematuro en refresh.
+- **`apiFetch`**: usa `credentials: "include"` en todas las peticiones (cookies automáticas). Para mutaciones añade `X-CSRF-Token` leído de la cookie `csrf_token`.
+- **401 fuera de `/login`**: `apiClient.ts` emite `new CustomEvent("auth:unauthorized")`. `UnauthorizedHandler` (en `App.tsx`) lo captura, llama `logout()` y navega a `/login` con React Router — sin full-page reload ni flash en blanco.
+- **Auto-logout**: `AuthProvider` programa un `setTimeout` al tiempo exacto de expiración del token (60 min). Al disparar, llama `logout()` que invalida la sesión en servidor y limpia el estado.
 
 ## Pantallas
 
 | Ruta                             | Página            | Auth       | Descripción                                                                                                                                      |
 | -------------------------------- | ----------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/login`                         | Login / Registro  | No         | Formulario con tabs "Iniciar sesión" / "Registrarse"; redirige a `/` tras autenticar                                                             |
+| `/login`                         | Login / Registro  | No         | Modo local: formulario con tabs login/registro. Modo Clerk: widget `<SignIn />` de Clerk                                                         |
 | `/`                              | Colecciones       | Sí         | Cards con todas las colecciones; crear (modal) o eliminar con confirmación                                                                       |
 | `/collections/:id`               | Detalle colección | Sí         | **Documentos**: upload PDF/TXT, tabla con estado; **Entidades**: tabla con badges, navegación al detalle; **Generar texto**: consulta RAG libre  |
 | `/collections/:id/entities/:eid` | Detalle entidad   | Sí         | Card de entidad editable; formulario de generación; lista de `ContentCard`; generación de imágenes                                               |

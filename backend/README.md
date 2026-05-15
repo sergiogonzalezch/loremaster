@@ -48,8 +48,8 @@ cp .env.example .env
 | `SECRET_KEY` | `your-secret-key` | Clave de firma para tokens JWT. **Obligatorio cambiar en producción** (el servidor rechaza el valor por defecto si `ENVIRONMENT != local`). |
 | `ALGORITHM` | `HS256` | Algoritmo de firma JWT |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | `60` | Duración del token JWT en minutos (1 h) |
-| `CLERK_JWKS_URL` | *(ver `.env.example`)* | URL JWKS de Clerk (solo entorno `production`) |
-| `CLERK_AUDIENCE` | *(ver `.env.example`)* | Audience de Clerk (solo entorno `production`) |
+| `CLERK_JWKS_URL` | *(ver `.env.example`)* | URL JWKS de Clerk (entornos `demo` y `production` con Clerk activo) |
+| `CLERK_AUDIENCE` | *(ver `.env.example`)* | Audience de Clerk (entornos `demo` y `production` con Clerk activo) |
 
 > Las variables de S3/LocalStack y ComfyUI aparecen en `.env.example` pero los servicios no están integrados aún.
 
@@ -142,12 +142,13 @@ pytest -k "test_create"             # por nombre
 | `test_rag_query.py` | 9 | Consulta RAG, Qdrant caído → 503, LLM failure → semáforo liberado |
 | `test_generation_service.py` | 8 | Generación por categoría, prompt templates, moderación |
 | `test_prompt_builder.py` | 7 | Estrategias de contexto, flag `truncated`, ranking de fuentes |
+| `test_auth_clerk.py` | 7 | `/sync` sin header → 401, token inválido → 401, user nuevo → creado + cookies, idempotencia, username fallback email, `/verify` user válido, `/verify` soft-deleted → 401 |
 | `test_admin.py` | 6 | Listado usuarios, cascade delete de colección y usuario, guardrail auto-eliminación |
 | `test_users.py` | 4 | Perfil `/users/me` GET/PATCH |
 | `test_deletion_service.py` | 2 | Cascade soft-delete: documentos, entidades, contenidos, vectores Qdrant |
 | `test_content_management_service.py` | 1 | `_discard_sibling_contents` no afecta otras categorías |
 
-**Total: 175 tests.**
+**Total: 194 tests.**
 
 ## Endpoints
 
@@ -155,17 +156,24 @@ Todos bajo `/api/v1/`.
 
 ### Autenticación
 
-Autenticación local con JWT (HS256). En producción (`ENVIRONMENT=production`) se delega en Clerk via `decode_clerk_token`.
+JWT local (HS256) transportado via cookie HttpOnly. Hay dos modos de entrada:
+
+- **Modo local** (`ENVIRONMENT=local`): formulario propio (`/auth/login`, `/auth/register`).
+- **Modo Clerk** (`ENVIRONMENT=demo` o `production` con `VITE_CLERK_PUBLISHABLE_KEY`): el frontend obtiene un JWT de Clerk y lo intercambia en `/auth/clerk/sync`. El backend valida el JWT de Clerk, crea o recupera el usuario local y emite una cookie de sesión local. A partir de ese punto **todas las requests usan el JWT local**, nunca el JWT de Clerk directamente.
+
+`get_current_user` usa siempre `verify_token()` (JWT local firmado con `SECRET_KEY`) independientemente del entorno. El JWT de Clerk solo llega al backend por el header `Authorization: Bearer <token>` en `/auth/clerk/sync`, nunca en cookie.
 
 | Método | Ruta | Auth | Descripción | Status |
 |---|---|---|---|---|
-| `POST` | `/auth/register` | No | Registrar usuario nuevo y devolver token JWT | 200 |
-| `POST` | `/auth/login` | No | Autenticar usuario y devolver token JWT | 200 |
+| `POST` | `/auth/register` | No | Registrar usuario nuevo (modo local) | 200 |
+| `POST` | `/auth/login` | No | Autenticar usuario (modo local) | 200 |
 | `POST` | `/auth/logout` | Requerida | Invalidar la sesión activa incrementando `token_version` | 204 |
+| `POST` | `/auth/clerk/sync` | No (Clerk JWT en header) | Intercambia un JWT de Clerk por una cookie de sesión local | 200 |
+| `GET` | `/auth/clerk/verify` | No (Clerk JWT en header) | Verifica un JWT de Clerk y confirma que el usuario existe en BD | 200 |
 
-**Login/Register request:** `{ username_or_email, password }` / `{ username, email, password }` — **Response:** `{ access_token, token_type: "bearer" }`.
+**Login/Register request:** `{ username_or_email, password }` / `{ username, email, password }` — **Response:** `{ username }`. La sesión se establece via cookie HttpOnly `access_token` + cookie `csrf_token`.
 
-El token se envía en cabecera `Authorization: Bearer <token>`. Todos los endpoints de la API requieren autenticación salvo `/health`, `/` y los endpoints públicos (`/public/*`, `/users/{username}/profile`).
+Todos los endpoints de la API requieren autenticación salvo `/health`, `/` y los endpoints públicos (`/public/*`, `/users/{username}/profile`).
 
 **Gestión de sesiones:** cada token incluye un claim `version` que se compara contra `token_version` del usuario en DB en cada request autenticado. El logout incrementa `token_version`, invalidando todos los tokens previos del usuario. Los tokens tienen una vida útil de **60 minutos**.
 
