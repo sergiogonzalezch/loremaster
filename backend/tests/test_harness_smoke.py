@@ -8,7 +8,6 @@ import importlib.util
 import sys
 from pathlib import Path
 
-import pytest
 import yaml
 
 _HARNESS_DIR = Path(__file__).parent.parent / "evaluations" / "prompt_harness"

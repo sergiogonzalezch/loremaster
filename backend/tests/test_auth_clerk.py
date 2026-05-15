@@ -33,7 +33,6 @@ from app.database import get_session
 from app.main import _csrf_for_unsafe, app
 from app.models.db.user import User
 
-
 # ---------------------------------------------------------------------------
 # Fixture
 # ---------------------------------------------------------------------------

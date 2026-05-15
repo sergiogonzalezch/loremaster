@@ -139,12 +139,12 @@ def generate_report(
     lines += [
         "## Ranking global",
         "",
-        f"| Modelo | Rechazos | D1 | D2 | D3 | D4 | Promedio |",
-        f"|---|:---:|:---:|:---:|:---:|:---:|:---:|",
+        "| Modelo | Rechazos | D1 | D2 | D3 | D4 | Promedio |",
+        "|---|:---:|:---:|:---:|:---:|:---:|:---:|",
     ]
 
     rows = []
-    for run, label in zip(runs, labels):
+    for run, label in zip(runs, labels, strict=False):
         rejected = _rejection_count(run)
         dim_avgs = {d: _dim_avg(run, d) for d in _DIMENSIONS}
         valid = [v for v in dim_avgs.values() if v is not None]
@@ -169,7 +169,7 @@ def generate_report(
     lines += [
         "## D3 — Cumplimiento de categoría por modelo",
         "",
-        "| Categoría | " + " | ".join(f"`{l}`" for l in labels) + " | Mejor |",
+        "| Categoría | " + " | ".join(f"`{lbl}`" for lbl in labels) + " | Mejor |",
         "|---|" + ":---:|" * len(labels) + ":---|",
     ]
 
@@ -177,7 +177,7 @@ def generate_report(
         cat_scores = []
         best_score = -1.0
         best_label = "N/A"
-        for run, label in zip(runs, labels):
+        for run, label in zip(runs, labels, strict=False):
             score = _category_avg(run, "D3").get(cat)
             cat_scores.append(_fmt(score))
             if score is not None and score > best_score:
@@ -200,7 +200,7 @@ def generate_report(
         "| Modelo | Promedio (s) | Mínimo (s) | Máximo (s) |",
         "|---|:---:|:---:|:---:|",
     ]
-    for run, label in zip(runs, labels):
+    for run, label in zip(runs, labels, strict=False):
         st = _response_stats(run)
         lines.append(f"| `{label}` | {st['avg']} | {st['min']} | {st['max']} |")
 
@@ -210,7 +210,7 @@ def generate_report(
     lines += [
         "## Scores por caso (D1 / D2 / D3 / D4)",
         "",
-        "| TC | Categoría | Ctx | " + " | ".join(f"`{l}`" for l in labels) + " |",
+        "| TC | Categoría | Ctx | " + " | ".join(f"`{lbl}`" for lbl in labels) + " |",
         "|---|---|---|" + "---|" * len(labels),
     ]
 
@@ -243,8 +243,8 @@ def generate_report(
         "",
         f"Umbral: el mejor modelo alternativo debe superar al baseline en **≥ {_SWITCH_THRESHOLD}** puntos de D3.",
         "",
-        f"| Categoría | Baseline D3 | Mejor alternativo | Delta D3 | ¿Switch? |",
-        f"|---|:---:|---|:---:|:---:|",
+        "| Categoría | Baseline D3 | Mejor alternativo | Delta D3 | ¿Switch? |",
+        "|---|:---:|---|:---:|:---:|",
     ]
 
     switch_recommendations: list[tuple[str, str]] = []
@@ -253,7 +253,7 @@ def generate_report(
         base_score = _category_avg(baseline, "D3").get(cat)
         best_alt_score = -1.0
         best_alt_label = "N/A"
-        for run, label in zip(runs, labels):
+        for run, label in zip(runs, labels, strict=False):
             if label == baseline_label:
                 continue
             score = _category_avg(run, "D3").get(cat)

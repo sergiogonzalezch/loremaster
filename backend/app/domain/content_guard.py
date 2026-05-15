@@ -124,9 +124,8 @@ def check_prompt_length(text: str, min_chars: int = _MIN_PROMPT_LENGTH) -> None:
     Lanza ContentNotAllowedError si el texto es demasiado corto.
     """
     if len(text.strip()) < min_chars:
-        raise ContentNotAllowedError(
-            f"El prompt debe tener al menos {min_chars} caracteres.", text
-        )
+        msg = f"El prompt debe tener al menos {min_chars} caracteres."
+        raise ContentNotAllowedError(msg, text)
 
 
 def check_user_input(text: str) -> None:

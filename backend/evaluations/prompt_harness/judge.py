@@ -169,7 +169,11 @@ def main() -> None:
     )
     parser.add_argument("--mode", choices=["manual", "llm"], default="manual", help="Modo de evaluación (default: manual)")
     parser.add_argument("--judge-model", default="llama3.2", help="Modelo juez para --mode llm (default: llama3.2)")
-    parser.add_argument("--fallback-judge-model", default=None, help="Modelo fallback si el juez principal no devuelve JSON válido (default: ninguno)")
+    parser.add_argument(
+        "--fallback-judge-model",
+        default=None,
+        help="Modelo fallback si el juez principal no devuelve JSON válido (default: ninguno)",
+    )
     parser.add_argument("--ollama-url", default="http://localhost:11434", help="URL base de Ollama")
     args = parser.parse_args()
 
