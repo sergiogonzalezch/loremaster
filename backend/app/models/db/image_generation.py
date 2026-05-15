@@ -65,8 +65,8 @@ class ImageGeneration(SQLModel, SoftDeleteMixin, table=True):
     )
     category: str = SQLField(max_length=50)
 
-    auto_prompt: str = SQLField(max_length=1000)
-    final_prompt: str = SQLField(max_length=1000)
+    auto_prompt: str = SQLField(max_length=2000)
+    final_prompt: str = SQLField(max_length=2000)
     prompt_token_count: int = SQLField(default=0)
 
     batch_size: int = SQLField(default=4)
