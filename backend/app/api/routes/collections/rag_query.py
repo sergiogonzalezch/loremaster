@@ -13,7 +13,7 @@ from app.core.exceptions import (
     NoContextAvailableError,
 )
 from app.database import get_session
-from app.domain.content_guard import check_generated_output, check_user_input
+from app.domain.content_guard import check_generated_output, check_prompt_length, check_user_input
 from app.engine.rag_pipeline import invoke_rag_pipeline
 from app.models.db.collection import Collection
 from app.models.schemas.rag_query import RagQueryRequest, RagQueryResponse
@@ -38,6 +38,7 @@ def rag_query(
     """
     try:
         query = request.query.strip()
+        check_prompt_length(query)
         check_user_input(query)
 
         logger.info(

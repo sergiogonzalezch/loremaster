@@ -35,7 +35,7 @@
     {
       "id": "RAG-002",
       "category": "rag_query",
-      "description": "Consulta corta (menos de 5 chars) retorna 422 por validacion de longitud",
+      "description": "Consulta corta (menos de 10 chars) retorna 422 por validacion de longitud",
       "input": {
         "query": "ok"
       },

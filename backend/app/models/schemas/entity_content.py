@@ -65,7 +65,7 @@ class GenerateContentRequest(BaseModel):
 
     """
 
-    query: str = Field(..., min_length=5, max_length=2000)
+    query: str = Field(..., min_length=10, max_length=2000)
     model: str | None = Field(default=None, max_length=100)
 
 

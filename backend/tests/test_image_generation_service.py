@@ -145,7 +145,7 @@ def test_ig_06_generate_batch_size_limits(
         sample_entity,
         sample_entity_content_confirmed.id,
         auto_prompt="test auto",
-        final_prompt="test",
+        final_prompt="test prompt for generation",
         batch_size=1,
     )
     assert len(result_min.images) == 1
@@ -156,7 +156,7 @@ def test_ig_06_generate_batch_size_limits(
         sample_entity,
         sample_entity_content_confirmed.id,
         auto_prompt="test auto",
-        final_prompt="test",
+        final_prompt="test prompt for generation",
         batch_size=4,
     )
     assert len(result_max.images) == 4
@@ -206,7 +206,7 @@ def test_ig_08_delete_image_works_in_mock(
         sample_entity,
         sample_entity_content_confirmed.id,
         auto_prompt="test auto",
-        final_prompt="test",
+        final_prompt="test prompt for generation",
         batch_size=1,
     )
 
@@ -236,7 +236,7 @@ def test_ig_09_delete_image_fails_for_wrong_entity(
         sample_entity,
         sample_entity_content_confirmed.id,
         auto_prompt="test auto",
-        final_prompt="test",
+        final_prompt="test prompt for generation",
         batch_size=1,
     )
 
@@ -309,7 +309,7 @@ def test_ig_12_get_generation_validates_entity_ownership(
         sample_entity,
         sample_entity_content_confirmed.id,
         auto_prompt="test auto",
-        final_prompt="test",
+        final_prompt="test prompt for generation",
         batch_size=1,
     )
 

@@ -30,6 +30,9 @@ _LEET_TABLE = str.maketrans("013456@$", "oieasgas")
 # Limite de longitud para prevenir ReDoS/CPU-DoS
 _MAX_TEXT_LENGTH = 100_000  # 100 KB
 
+# Longitud mínima para prompts enviados al LLM
+_MIN_PROMPT_LENGTH = 10
+
 # Patrones aplicados a entrada de usuarios y documentos: bloquean cualquier mención de acciones dañinas.
 _BLOCKED_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(
@@ -113,6 +116,17 @@ def _check_text(
     for pattern in patterns:
         if pattern.search(normalized):
             raise error
+
+
+def check_prompt_length(text: str, min_chars: int = _MIN_PROMPT_LENGTH) -> None:
+    """Verifica que el prompt tenga la longitud mínima requerida.
+
+    Lanza ContentNotAllowedError si el texto es demasiado corto.
+    """
+    if len(text.strip()) < min_chars:
+        raise ContentNotAllowedError(
+            f"El prompt debe tener al menos {min_chars} caracteres.", text
+        )
 
 
 def check_user_input(text: str) -> None:

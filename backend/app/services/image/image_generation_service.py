@@ -18,7 +18,7 @@ from app.core.exceptions import (
     NoContextAvailableError,
 )
 from app.core.storage import build_generation_path, build_storage_url, save_file
-from app.domain.content_guard import check_user_input
+from app.domain.content_guard import check_prompt_length, check_user_input
 from app.engine.comfyui_client import (
     ComfyUIClient,
     inject_prompt,
@@ -345,6 +345,7 @@ def generate_images_service(
     if not content:
         raise NoContextAvailableError
 
+    check_prompt_length(final_prompt)
     check_user_input(auto_prompt)
     check_user_input(final_prompt)
 

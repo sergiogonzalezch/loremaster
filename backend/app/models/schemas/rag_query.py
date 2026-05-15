@@ -13,7 +13,7 @@ class RagQueryRequest(BaseModel):
 
     query: str = Field(
         ...,
-        min_length=5,
+        min_length=10,
         max_length=2000,
         description="Pregunta o consulta para generar texto.",
     )

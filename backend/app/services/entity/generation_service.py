@@ -13,7 +13,7 @@ from app.core.exceptions import (
     PendingLimitExceededError,
 )
 from app.domain.category_rules import validate_category_for_entity
-from app.domain.content_guard import check_generated_output, check_user_input
+from app.domain.content_guard import check_generated_output, check_prompt_length, check_user_input
 from app.engine.rag_pipeline import EntityContext, invoke_generation_pipeline
 from app.models.db.entity import Entity
 from app.models.db.entity_content import EntityContent
@@ -56,6 +56,7 @@ def generate(
 
     """
     query = query.strip()
+    check_prompt_length(query)
     check_user_input(query)
 
     if not validate_category_for_entity(entity.type, category):

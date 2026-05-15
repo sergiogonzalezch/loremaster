@@ -6,6 +6,7 @@ from app.core.exceptions import ContentNotAllowedError, GeneratedContentBlockedE
 from app.domain.content_guard import (
     check_document_content,
     check_generated_output,
+    check_prompt_length,
     check_user_input,
 )
 
@@ -156,3 +157,43 @@ def test_keyword_embedded_in_sentence_blocked():
     """Palabra clave embebida en una oración es detectada y bloqueada."""
     with pytest.raises(ContentNotAllowedError):
         check_user_input("I found some porn on the server")
+
+
+# ---------------------------------------------------------------------------
+# check_prompt_length
+# ---------------------------------------------------------------------------
+
+
+def test_prompt_length_exact_minimum_passes():
+    """Texto de exactamente 10 caracteres no lanza excepción."""
+    check_prompt_length("a" * 10)
+
+
+def test_prompt_length_above_minimum_passes():
+    """Texto por encima del mínimo no lanza excepción."""
+    check_prompt_length("¿Cómo era el sistema mágico de Valdorath?")
+
+
+def test_prompt_length_nine_chars_raises():
+    """Texto de 9 caracteres lanza ContentNotAllowedError."""
+    with pytest.raises(ContentNotAllowedError):
+        check_prompt_length("a" * 9)
+
+
+def test_prompt_length_empty_raises():
+    """Cadena vacía lanza ContentNotAllowedError."""
+    with pytest.raises(ContentNotAllowedError):
+        check_prompt_length("")
+
+
+def test_prompt_length_whitespace_only_raises():
+    """Cadena con solo espacios lanza ContentNotAllowedError (strip aplicado)."""
+    with pytest.raises(ContentNotAllowedError):
+        check_prompt_length("   ")
+
+
+def test_prompt_length_custom_min_respected():
+    """El parámetro min_chars personalizado es respetado."""
+    check_prompt_length("abc", min_chars=3)
+    with pytest.raises(ContentNotAllowedError):
+        check_prompt_length("ab", min_chars=3)
