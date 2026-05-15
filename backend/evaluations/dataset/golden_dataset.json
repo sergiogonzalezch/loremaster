@@ -653,7 +653,7 @@
         "entity_name": "Orden del Sol Naciente",
         "entity_description": "Faccion religiosa.",
         "generate_category": "backstory",
-        "generate_query": "Historia",
+        "generate_query": "Historia de la orden",
         "then": "discard"
       },
       "action": "edit",
