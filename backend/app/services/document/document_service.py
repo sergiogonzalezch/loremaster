@@ -89,6 +89,8 @@ async def ingest_document_service(
 
     if not data.filename or not data.filename.strip():
         raise MissingFilenameError
+    if len(data.filename) > 255:
+        raise MissingFilenameError
 
     logger.info(
         "Ingesting document '%s' into collection %s",

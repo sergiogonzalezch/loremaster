@@ -315,3 +315,14 @@ async def test_ingest_qdrant_failure_sets_processing_error(
     ).first()
     assert doc.status == DocumentStatus.failed
     assert "qdrant timeout" in (doc.processing_error or "")
+
+
+@pytest.mark.anyio
+async def test_ingest_filename_too_long_422(client, sample_collection):
+    """DOC-17: Filename > 255 caracteres retorna 422."""
+    long_name = "a" * 256 + ".txt"
+    response = await client.post(
+        f"/api/v1/collections/{sample_collection.id}/documents",
+        files={"file": (long_name, b"contenido", "text/plain")},
+    )
+    assert response.status_code == 422

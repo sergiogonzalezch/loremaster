@@ -79,7 +79,7 @@ async def ingest(
     except UnsupportedFileTypeError as e:
         raise HTTPException(status_code=400, detail="Unsupported file type") from e
     except MissingFilenameError as e:
-        raise HTTPException(status_code=422, detail="Filename is required") from e
+        raise HTTPException(status_code=422, detail="Nombre de archivo requerido o demasiado largo (máx. 255 caracteres)") from e
     except FileTooLargeError as e:
         raise HTTPException(status_code=400, detail="File too large") from e
     except ContentNotAllowedError as e:
