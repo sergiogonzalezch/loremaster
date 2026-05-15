@@ -12,6 +12,7 @@ import { ClerkProvider, useAuth as useClerkAuth } from "@clerk/clerk-react";
 import { AuthProvider } from "./contexts/AuthContext";
 import { useAuth } from "./hooks/useAuth";
 import { syncClerkSession } from "./api/clerkSync";
+import { clerkKey } from "./utils/clerkConfig";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
@@ -24,9 +25,6 @@ import PublicFeedPage from "./pages/PublicFeedPage";
 import PublicProfilePage from "./pages/PublicProfilePage";
 import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
-
-/** Clave pública de Clerk — define qué flujo de auth usa el frontend. */
-export const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string | undefined;
 
 /**
  * Detecta el login con Clerk y sincroniza la sesión con el backend.

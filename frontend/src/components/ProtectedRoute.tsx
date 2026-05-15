@@ -12,7 +12,7 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { useAuth } from "../hooks/useAuth";
 import LoadingSpinner from "./LoadingSpinner";
-import { clerkKey } from "../App";
+import { clerkKey } from "../utils/clerkConfig";
 
 /** Gate para el modo Clerk. Solo se renderiza dentro de ClerkProvider. */
 function ProtectedRouteClerk() {

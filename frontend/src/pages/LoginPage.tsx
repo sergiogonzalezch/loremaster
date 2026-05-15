@@ -15,7 +15,7 @@ import { login, register } from "../api/auth";
 import { useAuth } from "../hooks/useAuth";
 import { parseApiError } from "../utils/errors";
 import StarfieldCanvas from "../components/StarfieldCanvas";
-import { clerkKey } from "../App";
+import { clerkKey } from "../utils/clerkConfig";
 
 interface LoginForm {
   username_or_email: string;

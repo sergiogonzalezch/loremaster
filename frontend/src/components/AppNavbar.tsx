@@ -12,7 +12,7 @@ import { useClerk } from "@clerk/clerk-react";
 import { useAuth } from "../hooks/useAuth";
 import SafeImage from "./SafeImage";
 import { getMyAvatar } from "../api/users";
-import { clerkKey } from "../App";
+import { clerkKey } from "../utils/clerkConfig";
 
 /** Círculo con las iniciales del usuario como avatar fallback. */
 function InitialsCircle({ username }: { username: string }) {
