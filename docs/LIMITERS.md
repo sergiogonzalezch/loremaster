@@ -1,7 +1,7 @@
 # LIMITERS.md — Mapa completo de límites, validaciones y constantes
 
 > Última actualización: 2026-05-14
-> Rama: `dev`
+> Rama: `main`
 > Regla de conversión usada en todo el documento: **1 token ≈ 4 caracteres** (estimación del engine en `image_prompt_builder._estimate_tokens`).
 
 ---
@@ -16,13 +16,15 @@
                     │
           [1] Pydantic Schema — fast-fail HTTP 422
               min_length / max_length / ge / le
+              (máx API input: 2 000 chars — nunca llega a _MAX_TEXT_LENGTH)
                     │
           [2] content_guard.check_prompt_length()  ← solo prompts LLM
               _MIN_PROMPT_LENGTH = 10 chars
                     │
           [3] content_guard.check_user_input()     ← guardrails
-              _BLOCKED_PATTERNS (regex sobre texto normalizado)
-              _MAX_TEXT_LENGTH = 100 000 chars anti-ReDoS (trunca internamente)
+              _normalize() → _BLOCKED_PATTERNS (regex)
+              _MAX_TEXT_LENGTH = 100 000 chars  ← techo interno anti-ReDoS
+              (ver §4.1 para detalle de impacto)
                     │
                     ▼
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -31,22 +33,24 @@
 └───────────────────┬─────────────────────────────────────────────────┘
                     │
           [4] content_guard.check_generated_output()
-              _OUTPUT_BLOCKED_PATTERNS (regex, menos estrictos que input)
+              _normalize() → _OUTPUT_BLOCKED_PATTERNS (regex, menos estrictos)
+              _MAX_TEXT_LENGTH aplica también aquí (anti-ReDoS)
                     │
                     ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │  ALMACENAMIENTO en BD                                                 │
-│  EntityContent.content     max 10 000 chars                           │
-│  GeneratedText.raw_content max 10 000 chars                           │
-│  ImageGeneration.auto_prompt / final_prompt  max 1 000 chars ← ⚠ VER §5 │
+│  EntityContent.content      max 10 000 chars (~2 500 tok)            │
+│  GeneratedText.raw_content  max 10 000 chars (~2 500 tok)            │
+│  ImageGeneration.auto_prompt / final_prompt  max 2 000 chars ✅      │
 └─────────────────────────────────────────────────────────────────────┘
 
-FLUJO IMAGEN (paralelo):
+FLUJO IMAGEN (paralelo al flujo principal):
   build-prompt  → LLM genera auto_prompt
                 → _truncate_to_tokens(512 tok ≈ 2 048 chars)   engine
                 → frontend muestra al usuario
   generate      → usuario edita → final_prompt (schema max 2 000 chars)
                 → inject_prompt() → ComfyUI (sin truncate adicional)
+                → auto_prompt + final_prompt se persisten (DB max 2 000 chars ✅)
 ```
 
 ---
@@ -87,52 +91,91 @@ FLUJO IMAGEN (paralelo):
 | `EntityContent.content` DB | max=10 000 chars | 10 000 | ~2 500 | DB model | Contenido generado + editado | BD |
 | `GeneratedText.raw_content` DB | max=10 000 chars | 10 000 | ~2 500 | DB model | Texto bruto del LLM | BD |
 | `GeneratedText.query` DB | max=2 000 chars | 2 000 | ~500 | DB model | Query almacenada | BD |
-| `ImageGeneration.auto_prompt` DB | max=1 000 chars | 1 000 | ~250 | DB model | `auto_prompt` almacenado | BD ⚠ |
-| `ImageGeneration.final_prompt` DB | max=1 000 chars | 1 000 | ~250 | DB model | `final_prompt` almacenado | BD ⚠ |
+| `ImageGeneration.auto_prompt` DB | max=2 000 chars ✅ | 2 000 | ~500 | DB model | `auto_prompt` almacenado | BD |
+| `ImageGeneration.final_prompt` DB | max=2 000 chars ✅ | 2 000 | ~500 | DB model | `final_prompt` almacenado | BD |
 
 ---
 
 ## 4. Variables internas de infraestructura
 
-| Variable / Constante | Valor | Propósito | Nivel |
-|---|---|---|---|
-| `_MAX_TEXT_LENGTH` | 100 000 chars (~25 000 tok) | Anti-ReDoS en `content_guard._normalize()` — trunca texto masivo antes de aplicar regex. Opera silenciosamente (log warning). No es límite de API. | Domain interno |
-| `CHUNK_SIZE` | 512 chars (~128 tok) | Tamaño de cada chunk al indexar documentos en Qdrant | RAG / Qdrant |
-| `CHUNK_OVERLAP` | 50 chars (~12 tok) | Solapamiento entre chunks consecutivos | RAG / Qdrant |
-| `TOP_K` | 4 chunks | Chunks recuperados por similitud en cada query RAG (~2 048 chars de contexto total) | RAG |
-| `rag_score_threshold` | 0.3 | Score mínimo de similitud para incluir un chunk como contexto | RAG |
-| `rate_limit_per_minute` | 30 req/min | Requests por IP/usuario por minuto (middleware global) | Middleware |
-| `max_pending_contents` | 5 | Máximo de contenidos en estado `pending` por entidad/categoría | Domain |
-| `max_concurrent_llm_calls` | 1 | Semáforo de llamadas simultáneas a Ollama | Engine |
-| `access_token_expire_minutes` | 60 min | TTL del JWT de sesión | Auth |
-| `embedding_dims` | 384 | Dimensiones del vector de embedding (`paraphrase-multilingual-MiniLM-L12-v2`) | RAG / Qdrant |
-| `ModerationLog.snippet` DB | max=200 chars | Fragmento guardado al detectar contenido bloqueado | BD |
+| Variable / Constante | Valor | Chars equiv. | Tokens equiv. | Propósito | Nivel |
+|---|---|---|---|---|---|
+| `_MAX_TEXT_LENGTH` | 100 000 chars | 100 000 | ~25 000 | Anti-ReDoS interno (ver §4.1) | Domain interno |
+| `CHUNK_SIZE` | 512 chars | 512 | ~128 | Tamaño de chunk al indexar documentos en Qdrant | RAG / Qdrant |
+| `CHUNK_OVERLAP` | 50 chars | 50 | ~12 | Solapamiento entre chunks consecutivos | RAG / Qdrant |
+| `TOP_K` | 4 chunks | ~2 048 ctx total | ~512 ctx total | Chunks recuperados por similitud en cada query RAG | RAG |
+| `rag_score_threshold` | 0.3 | — | — | Score mínimo de similitud para incluir chunk como contexto | RAG |
+| `rate_limit_per_minute` | 30 req/min | — | — | Requests por IP/usuario por minuto (middleware global) | Middleware |
+| `max_pending_contents` | 5 | — | — | Máximo de contenidos en estado `pending` por entidad/categoría | Domain |
+| `max_concurrent_llm_calls` | 1 | — | — | Semáforo de llamadas simultáneas a Ollama | Engine |
+| `access_token_expire_minutes` | 60 min | — | — | TTL del JWT de sesión | Auth |
+| `embedding_dims` | 384 | — | — | Dimensiones del vector de embedding (`paraphrase-multilingual-MiniLM-L12-v2`) | RAG / Qdrant |
+| `ModerationLog.snippet` DB | max=200 chars | 200 | ~50 | Fragmento guardado al detectar contenido bloqueado | BD |
 
 ---
 
-## 5. ⚠ Conflictos detectados
+### 4.1 `_MAX_TEXT_LENGTH` — análisis detallado
 
-### CONFLICTO 1 — `ImageGeneration.auto_prompt` DB vs engine
-| Capa | Límite | Chars |
-|---|---|---|
-| Engine (`_truncate_to_tokens`) | 512 tokens | ~2 048 chars |
-| **DB model** (`ImageGeneration.auto_prompt`) | **max_length=1 000** | **1 000 chars** |
+**Valor:** `100 000 chars` (~25 000 tokens)
+**Definido en:** `backend/app/domain/content_guard.py:31`
+**Usado en:** `_normalize()`, llamada internamente por `check_user_input()`, `check_document_content()` y `check_generated_output()`
 
-**Problema:** el engine puede producir un `auto_prompt` de hasta ~2 048 chars, pero la columna de BD solo acepta 1 000. Si el `auto_prompt` supera 1 000 chars, falla al persistir.
+**Propósito — prevención de ReDoS (Regular Expression Denial of Service):**
+Las expresiones regulares con patrones anidados aplicadas sobre textos muy largos pueden ejecutarse en tiempo exponencial o cuadrático, bloqueando el worker de FastAPI. `_MAX_TEXT_LENGTH` es el techo que evita ese escenario.
 
-**Solución:** actualizar `ImageGeneration.auto_prompt` en el DB model a `max_length=2000` y generar migración.
+**Cómo funciona:**
+```python
+def _normalize(text: str) -> str:
+    if len(text) > _MAX_TEXT_LENGTH:          # 1. Comprueba longitud
+        logger.warning("Texto excede límite") # 2. Log silencioso
+        text = text[:_MAX_TEXT_LENGTH]        # 3. Trunca — no lanza excepción
+    # ... NFKD + lowercase + leet + colapso de repetidos
+```
+
+**Flujo completo donde interviene:**
+```
+Input de cualquier fuente
+        ↓
+check_user_input(text)   /   check_document_content(text)   /   check_generated_output(text)
+        ↓
+_check_text() → _normalize(text)
+        ↓
+_MAX_TEXT_LENGTH actúa aquí (trunca si > 100 000 chars)
+        ↓
+regex sobre texto ya truncado y normalizado
+```
+
+**Impacto real en producción: prácticamente nulo**
+
+El límite de 100 000 chars nunca es alcanzable a través de la API normal porque todas las entradas pasan primero por Pydantic con `max_length` máximo de 10 000 chars (edición de contenido). Ningún campo de input de usuario supera ese valor. Por tanto:
+
+| Escenario | ¿Llega a _MAX_TEXT_LENGTH? |
+|---|---|
+| Query RAG / generación (max 2 000 chars) | ✅ Nunca — 50× por debajo |
+| `final_prompt` imagen (max 2 000 chars) | ✅ Nunca — 50× por debajo |
+| Contenido editado (max 10 000 chars) | ✅ Nunca — 10× por debajo |
+| Output del LLM (max ~8 000 chars) | ✅ Nunca — ~12× por debajo |
+| Texto extraído de documentos subidos | ⚠ Teórico — un PDF/TXT grande podría generar raw_text largo, pero `check_document_content` se aplica al texto completo extraído antes del chunking. En la práctica el limite de 50 MB y 100 páginas lo contiene. |
+
+**Conclusión:** `_MAX_TEXT_LENGTH` es una red de seguridad defensiva de última línea. No impacta el comportamiento normal de la aplicación. Solo actuaría si alguien llamara directamente a las funciones del domain bypaseando la API, o si el extractor de documentos generara texto inusualmente largo. Opera en silencio (log warning) sin lanzar excepción al usuario.
 
 ---
 
-### CONFLICTO 2 — `ImageGeneration.final_prompt` DB vs schema
-| Capa | Límite | Chars |
+## 5. Conflictos — historial
+
+### ✅ RESUELTO — `ImageGeneration.auto_prompt` DB vs engine
+| Capa | Antes | Después |
 |---|---|---|
-| Schema Pydantic (`GenerateImagesRequest.final_prompt`) | max_length=2 000 | 2 000 chars |
-| **DB model** (`ImageGeneration.final_prompt`) | **max_length=1 000** | **1 000 chars** |
+| Engine (`_truncate_to_tokens`) | 512 tok ≈ ~2 048 chars | 512 tok ≈ ~2 048 chars (sin cambio) |
+| DB model `auto_prompt` | **max=1 000 chars** ⚠ | **max=2 000 chars** ✅ |
+| Migración | — | `942c4e2fc4ac_expand_image_prompt_columns_to_2000` |
 
-**Problema:** Pydantic acepta hasta 2 000 chars, pero la columna de BD solo guarda 1 000. Un `final_prompt` entre 1 001–2 000 chars pasa la validación HTTP pero falla al persistir en BD.
-
-**Solución:** actualizar `ImageGeneration.final_prompt` en el DB model a `max_length=2000` y generar migración.
+### ✅ RESUELTO — `ImageGeneration.final_prompt` DB vs schema
+| Capa | Antes | Después |
+|---|---|---|
+| Schema Pydantic `final_prompt` | max=2 000 chars | max=2 000 chars (sin cambio) |
+| DB model `final_prompt` | **max=1 000 chars** ⚠ | **max=2 000 chars** ✅ |
+| Migración | — | `942c4e2fc4ac_expand_image_prompt_columns_to_2000` |
 
 ---
 
@@ -142,9 +185,10 @@ FLUJO IMAGEN (paralelo):
 |---|---|---|---|---|
 | RAG query | ✅ min=10, max=2 000 chars | ✅ MAX_TOKENS=2 000 tok | ✅ query max=2 000, raw_content max=10 000 | ✅ OK |
 | Generación contenido | ✅ min=10, max=2 000 chars | ✅ MAX_TOKENS=2 000 tok | ✅ content max=10 000 | ✅ OK |
-| Generación imagen — `auto_prompt` | ✅ engine trunca a 512 tok | ✅ ~2 048 chars max | ⚠ DB solo 1 000 chars | ⚠ CONFLICTO |
-| Generación imagen — `final_prompt` | ✅ min=10, max=2 000 chars | — (va directo a ComfyUI) | ⚠ DB solo 1 000 chars | ⚠ CONFLICTO |
+| Generación imagen — `auto_prompt` | ✅ engine trunca a 512 tok | ✅ ~2 048 chars max | ✅ DB max=2 000 chars | ✅ OK |
+| Generación imagen — `final_prompt` | ✅ min=10, max=2 000 chars | — (va directo a ComfyUI) | ✅ DB max=2 000 chars | ✅ OK |
 | Edición contenido | ✅ min=1, max=10 000 chars | — (texto de usuario) | ✅ content max=10 000 | ✅ OK |
 | Perfil usuario | ✅ display_name 100, bio 500 | — | ✅ DB iguales | ✅ OK |
 | Upload documento | ✅ max 50 MB, max 100 páginas | — | ✅ raw_text TEXT sin límite | ✅ OK |
 | Guardrails contenido | ✅ `_BLOCKED_PATTERNS` en input | ✅ `_OUTPUT_BLOCKED_PATTERNS` en output | — | ✅ OK |
+| Anti-ReDoS (`_MAX_TEXT_LENGTH`) | ✅ inactivo en uso normal de API | ✅ inactivo en uso normal de API | — | ✅ OK (red de seguridad) |
