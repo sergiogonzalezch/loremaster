@@ -62,12 +62,13 @@ const SAMPLE_COLLECTION: Collection = {
 
 const DEFAULT_CONTENTS_HOOK = {
   contents: [] as EntityContent[],
-  setContents: vi.fn(),
   meta: { total: 0, page: 1, page_size: 10, total_pages: 0 },
   loading: false,
   error: null,
   refresh: vi.fn().mockResolvedValue(undefined),
-  setError: vi.fn(),
+  applyOptimisticUpdate: vi.fn(),
+  fetchPendingCount: vi.fn().mockResolvedValue(0),
+  clearError: vi.fn(),
 };
 
 const DEFAULT_GENERATE_HOOK = {
@@ -161,6 +162,7 @@ describe("EntityDetailPage", () => {
     mockUseEntityContents.mockReturnValue({
       ...DEFAULT_CONTENTS_HOOK,
       contents: pendingContents,
+      fetchPendingCount: vi.fn().mockResolvedValue(5),
     });
 
     renderPage();

@@ -1,10 +1,3 @@
-/**
- * Hook para cargar y refrescar los contenidos de una entidad.
- *
- * Mantiene estado de carga, error y metadatos de paginación.
- * Soporta filtros por categoría y estado, y silenciamiento del spinner.
- */
-
 import { useState, useCallback } from "react";
 import { getContents } from "../api/contents";
 import { ApiAbortError } from "../api/apiClient";
@@ -26,7 +19,6 @@ export function useEntityContents(
     total_pages: 0,
   });
 
-  /** Recarga los contenidos con los filtros y paginación indicados. */
   const refresh = useCallback(
     async (options?: {
       signal?: AbortSignal;
@@ -65,5 +57,60 @@ export function useEntityContents(
     [collectionId, entityId],
   );
 
-  return { contents, setContents, meta, loading, error, refresh, setError };
+  // Encapsula la lógica de actualización optimista: confirmar descarta los demás
+  // pendientes de la misma categoría (duplica la regla del backend para UX inmediata).
+  const applyOptimisticUpdate = useCallback(
+    (id: string, patch: Partial<EntityContent> | null) => {
+      setContents((prev) => {
+        if (patch === null) return prev.filter((c) => c.id !== id);
+        const target = prev.find((c) => c.id === id);
+        if (!target) return prev;
+        return prev.map((c) => {
+          if (c.id === id) return { ...c, ...patch };
+          if (
+            patch.status === "confirmed" &&
+            c.category === target.category &&
+            c.status === "pending"
+          ) {
+            return { ...c, status: "discarded" as const };
+          }
+          return c;
+        });
+      });
+    },
+    [],
+  );
+
+  // Consulta mínima al servidor para obtener el total real de pendientes en una
+  // categoría, sin depender de la página cargada en memoria.
+  const fetchPendingCount = useCallback(
+    async (category: ContentCategory): Promise<number> => {
+      if (!collectionId || !entityId) return 0;
+      try {
+        const res = await getContents(collectionId, entityId, {
+          category,
+          status: "pending",
+          page: 1,
+          page_size: 1,
+        });
+        return res.meta.total;
+      } catch {
+        return 0;
+      }
+    },
+    [collectionId, entityId],
+  );
+
+  const clearError = useCallback(() => setError(null), []);
+
+  return {
+    contents,
+    meta,
+    loading,
+    error,
+    refresh,
+    applyOptimisticUpdate,
+    fetchPendingCount,
+    clearError,
+  };
 }

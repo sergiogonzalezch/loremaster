@@ -160,70 +160,49 @@ export default function EntityDetailPage() {
     resetGenerate();
   }, [entityId, resetGenerate]);
 
+  // Un solo efecto anclado a entity?.id para evitar el doble render y para
+  // resetear correctamente al navegar entre entidades del mismo tipo.
   useEffect(() => {
-    setSelectedCategory("");
-  }, [entity?.type]);
+    const cats = entity ? (categoryMap[entity.type] ?? []) : [];
+    setSelectedCategory(cats[0] ?? "");
+  }, [entity?.id, categoryMap]);
 
-  useEffect(() => {
-    if (availableCategories.length > 0 && selectedCategory === "") {
-      setSelectedCategory(availableCategories[0]);
+  async function submitGenerate(queryText: string) {
+    if (
+      !collectionId ||
+      !entityId ||
+      selectedCategory === "" ||
+      queryText.trim().length < 5
+    ) {
+      return;
     }
-  }, [availableCategories, selectedCategory]);
+    const result = await runGenerateContent(
+      collectionId,
+      entityId,
+      selectedCategory,
+      { query: queryText.trim(), model: selectedModel },
+    );
+    if (result) {
+      setContentsRefreshTrigger((t) => t + 1);
+    }
+  }
 
-  /**
-   * Genera un nuevo contenido para la entidad en la categoría seleccionada.
-   *
-   * @param e - Evento del formulario de generación.
-   */
   async function handleGenerate(e: FormEvent) {
     e.preventDefault();
-    if (
-      !collectionId ||
-      !entityId ||
-      selectedCategory === "" ||
-      query.trim().length < 5
-    ) {
-      return;
-    }
-    const trimmedQuery = query.trim();
-    setLastSubmittedQuery(trimmedQuery);
-    const result = await runGenerateContent(
-      collectionId,
-      entityId,
-      selectedCategory,
-      { query: trimmedQuery, model: selectedModel },
-    );
-    if (result) {
-      setContentsRefreshTrigger((t) => t + 1);
-    }
+    setLastSubmittedQuery(query.trim());
+    await submitGenerate(query);
   }
 
-  /**
-   * Reenvía el último prompt para regenerar contenido en la categoría activa.
-   */
-  async function handleRegenerate() {
-    if (
-      !collectionId ||
-      !entityId ||
-      selectedCategory === "" ||
-      lastSubmittedQuery.trim().length < 5
-    ) {
-      return;
-    }
-    const result = await runGenerateContent(
-      collectionId,
-      entityId,
-      selectedCategory,
-      { query: lastSubmittedQuery.trim(), model: selectedModel },
-    );
-    if (result) {
-      setContentsRefreshTrigger((t) => t + 1);
-    }
-  }
+  const handleRegenerate = () => submitGenerate(lastSubmittedQuery);
 
   if (loadingEntity) return <LoadingSpinner />;
   if (entityError) return <Alert variant="danger">{entityError}</Alert>;
   if (!entity || !collectionId || !entityId) return null;
+
+  const generateAlertConfig =
+    generateError != null
+      ? parseApiError(generateError, "Error al generar contenido")
+      : null;
 
   return (
     <div className="lm-page">
@@ -280,18 +259,15 @@ export default function EntityDetailPage() {
       </Card>
 
       <p className="lm-section-title">Generar contenido</p>
-      {generateError != null &&
-        (() => {
-          const { variant, text } = parseApiError(
-            generateError,
-            "Error al generar contenido",
-          );
-          return (
-            <Alert variant={variant} onClose={resetGenerate} dismissible>
-              {text}
-            </Alert>
-          );
-        })()}
+      {generateAlertConfig != null && (
+        <Alert
+          variant={generateAlertConfig.variant}
+          onClose={resetGenerate}
+          dismissible
+        >
+          {generateAlertConfig.text}
+        </Alert>
+      )}
       {generateCancelled && (
         <Alert variant="secondary" dismissible>
           Generación cancelada.

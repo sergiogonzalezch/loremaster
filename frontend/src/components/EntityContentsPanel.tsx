@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Alert, Card, Form, Nav } from "react-bootstrap";
 import ContentCard from "./ContentCard";
 import { PageSizeSelect } from "./FilterBar";
@@ -30,8 +30,16 @@ export default function EntityContentsPanel({
   onPendingCountChange,
   onOpenImagePanel,
 }: Props) {
-  const { contents, setContents, meta, loading, error, refresh, setError } =
-    useEntityContents(collectionId, entityId);
+  const {
+    contents,
+    meta,
+    loading,
+    error,
+    refresh,
+    applyOptimisticUpdate,
+    fetchPendingCount,
+    clearError,
+  } = useEntityContents(collectionId, entityId);
 
   const [categoryFilter, setCategoryFilter] = useState<ContentCategory | "">(
     "",
@@ -42,17 +50,17 @@ export default function EntityContentsPanel({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  const pendingInCategory = useMemo(
-    () =>
-      contents.filter(
-        (c) => c.status === "pending" && c.category === selectedCategory,
-      ).length,
-    [contents, selectedCategory],
-  );
-
+  // Consulta al servidor el total real de pendientes en la categoría seleccionada.
+  // Evita el bug de contar solo los ítems de la página visible cuando hay >pageSize pendientes.
   useEffect(() => {
-    onPendingCountChange(pendingInCategory);
-  }, [pendingInCategory, onPendingCountChange]);
+    if (!selectedCategory) {
+      onPendingCountChange(0);
+      return;
+    }
+    fetchPendingCount(selectedCategory as ContentCategory).then(
+      onPendingCountChange,
+    );
+  }, [selectedCategory, refreshTrigger, fetchPendingCount, onPendingCountChange]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -65,28 +73,6 @@ export default function EntityContentsPanel({
     });
     return () => controller.abort();
   }, [categoryFilter, statusFilter, page, pageSize, refresh, refreshTrigger]);
-
-  const handleOptimisticUpdate = useCallback(
-    (id: string, patch: Partial<EntityContent> | null) => {
-      setContents((prev) => {
-        if (patch === null) return prev.filter((c) => c.id !== id);
-        const target = prev.find((c) => c.id === id);
-        if (!target) return prev;
-        return prev.map((c) => {
-          if (c.id === id) return { ...c, ...patch };
-          if (
-            patch.status === "confirmed" &&
-            c.category === target.category &&
-            c.status === "pending"
-          ) {
-            return { ...c, status: "discarded" as const };
-          }
-          return c;
-        });
-      });
-    },
-    [setContents],
-  );
 
   const handleContentAction = useCallback(async () => {
     await Promise.all([
@@ -155,7 +141,7 @@ export default function EntityContentsPanel({
         </Card.Body>
       </Card>
       {error && (
-        <Alert variant="danger" onClose={() => setError(null)} dismissible>
+        <Alert variant="danger" onClose={clearError} dismissible>
           {error}
         </Alert>
       )}
@@ -176,7 +162,7 @@ export default function EntityContentsPanel({
               collectionId={collectionId}
               entityId={entityId}
               onAction={handleContentAction}
-              onOptimisticUpdate={handleOptimisticUpdate}
+              onOptimisticUpdate={applyOptimisticUpdate}
               onOpenImagePanel={onOpenImagePanel}
             />
           ))}

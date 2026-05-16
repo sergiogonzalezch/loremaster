@@ -113,12 +113,12 @@ describe("useEntityContents", () => {
     );
   });
 
-  it("setError(null) limpia el error existente", async () => {
+  it("clearError() limpia el error existente", async () => {
     mockGetContents.mockRejectedValue(new Error("fallo"));
     const { result } = renderHook(() => useEntityContents("col-1", "ent-1"));
     await act(() => result.current.refresh());
     expect(result.current.error).not.toBeNull();
-    act(() => result.current.setError(null));
+    act(() => result.current.clearError());
     expect(result.current.error).toBeNull();
   });
 });
