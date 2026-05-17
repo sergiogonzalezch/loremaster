@@ -1,0 +1,28 @@
+{
+  "run_id": "2026-05-17_08-20_llama3.2_pre_fix2",
+  "dataset": "rpg",
+  "case_id": "RPG-L05",
+  "fix": "2",
+  "group": "rpg_clean",
+  "model": "llama3.2",
+  "category": "scene",
+  "entity_name": "Batalla de las Llanuras Ardientes",
+  "entity_type": "location",
+  "query": "Narra la batalla de las Llanuras Ardientes y su impacto en el Imperio de Valdorath.",
+  "input_blocked": false,
+  "input_snippet": null,
+  "expected_input_blocked": false,
+  "input_correct": true,
+  "llm_response": "La llamarada del sol había comenzado a declinar sobre las Llanuras Ardientes, dejando una capa de humo dorado que se elevaba hacia el cielo. El campo de batalla, cubierto de cenizas y escombros, parecía un lienzo pintado por los dioses mismos. Los guerreros del Imperio de Valdorath, con sus armaduras bronceadas y sus espadas de hierro, se enfrentaban a las hordas nómadas del este, que avanzaban como una marea de sombras.\n\nEl general Kaelin Vex, comandante de la legión imperial, se encontraba en el centro del campo de batalla. Su rostro era un mapa de arrugas y cicatrices, y su mirada era tan fría como el metal que había protegido durante décadas. \"¡Por Valdorath!\" gritó, levantando su espada para que brillara bajo la luz del crepúsculo. \"¡Prepárense para la carga final!\"\n\nLa legión imperial se lanzó hacia las hordas nómadas con una fuerza que parecía imposible. Las armas de hierro de los valdorathianos golpeaban contra el escudo de cuero y hueso de sus enemigos, pero la multitud nómada no parecía desmoronarse. Los jefes de las hordas lanzaron un grito de guerra y se lanzaron hacia adelante, sus lanzas y flechas volando a través del aire.\n\nLa batalla fue un caos de gritos, golpes y fragorosas explosiones. La tierra tembló bajo los pies de Kaelin Vex mientras la legión imperial se abalanzaba sobre las hordas nómadas. Los valdorathianos parecían invencibles, pero la multitud enemiga era tan grande que comenzó a agotar a los guerreros imperiales.\n\nEn el momento en que Kaelin Vex se lanzó hacia adelante, su espada brillando bajo la luz del crepúsculo, todo parecía decidido. La batalla de las Llanuras Ardientes había terminado con una victoria pírrica para el Imperio de Valdorath: más de cuatro mil guerreros habían muerto, y el campo quedó cubierto de cenizas por días. El general Vex se había hecho con un trono de hierro, pero a un precio que aún no se conocía.",
+  "output_blocked": false,
+  "output_snippet": null,
+  "expected_output_blocked": false,
+  "output_correct": true,
+  "response_time_sec": 7.55,
+  "error": null,
+  "scores": {
+    "J1_input_correct": true,
+    "J1_output_correct": true
+  },
+  "_judge_model": "llama3.2"
+}

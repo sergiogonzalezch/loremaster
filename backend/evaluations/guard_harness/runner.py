@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Runner del guard_harness — evaluación de pipeline completa con Ollama.
+"""Runner del guard_harness -evaluación de pipeline completa con Ollama.
 
 Ejecuta tres modos de dataset contra la pipeline de moderación:
-  adversarial — check_user_input → Ollama → check_generated_output (casos dañinos)
-  rpg         — check_user_input → render_prompt → Ollama → check_generated_output (legítimos)
-  bypass      — check_user_input con técnicas de evasión (sin LLM)
+  adversarial -check_user_input → Ollama → check_generated_output (casos dañinos)
+  rpg         -check_user_input → render_prompt → Ollama → check_generated_output (legítimos)
+  bypass      -check_user_input con técnicas de evasión (sin LLM)
 
 Guardar resultados en evaluations/guard_harness/results/{run_id}/.
 
@@ -102,12 +102,12 @@ def _save_result(out_dir: Path, case_id: str, result: dict) -> None:
 
 
 def _print_status(case_id: str, fix: str, input_correct: bool, output_correct: bool | None) -> None:
-    i_sym = "✓" if input_correct else "✗"
+    i_sym = "OK" if input_correct else "XX"
     if output_correct is None:
-        o_sym = "—"
+        o_sym = "--"
     else:
-        o_sym = "✓" if output_correct else "✗"
-    status = "OK" if input_correct and (output_correct is None or output_correct) else "FAIL"
+        o_sym = "OK" if output_correct else "XX"
+    status = "PASS" if input_correct and (output_correct is None or output_correct) else "FAIL"
     print(f"  {case_id:<14} fix#{fix}  input:{i_sym}  output:{o_sym}  [{status}]")
 
 
@@ -293,8 +293,8 @@ def run_bypass(
         }
         _save_result(out_dir, case_id, result)
 
-        sym = "✓" if correct else "✗"
-        bypass_flag = "  ← BYPASS ACTIVO" if is_active_bypass else ""
+        sym = "OK" if correct else "XX"
+        bypass_flag = "  <- BYPASS ACTIVO" if is_active_bypass else ""
         print(f"  {case_id:<14} fix#{case['fix']}  blocked:{str(blocked):<5} [{sym}]{bypass_flag}")
 
         summary_rows.append(result)
@@ -313,7 +313,7 @@ def _print_section(title: str) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Guard Harness Runner — evaluación de pipeline con Ollama"
+        description="Guard Harness Runner -evaluación de pipeline con Ollama"
     )
     parser.add_argument(
         "--dataset",
@@ -329,7 +329,7 @@ def main() -> None:
     parser.add_argument(
         "--run-tag",
         default="current",
-        help="Etiqueta de la corrida — usar 'pre_fix2', 'post_fix2', etc. (default: current)",
+        help="Etiqueta de la corrida -usar 'pre_fix2', 'post_fix2', etc. (default: current)",
     )
     parser.add_argument(
         "--force-llm",
@@ -354,21 +354,21 @@ def main() -> None:
     all_results: list[dict] = []
 
     if do_adv:
-        _print_section("ADVERSARIAL — check_user_input → Ollama → check_generated_output")
+        _print_section("ADVERSARIAL -- check_user_input -> Ollama -> check_generated_output")
         cases = _load_dataset("adversarial")
         print(f"  Modelo: {args.model}  |  force_llm: {args.force_llm}  |  casos: {len(cases)}")
         print()
         all_results += run_adversarial(cases, out_dir, args.model, args.ollama_url, args.force_llm, run_id)
 
     if do_rpg:
-        _print_section("RPG LEGÍTIMO — check_user_input → render_prompt → Ollama → check_generated_output")
+        _print_section("RPG LEGITIMO -- check_user_input -> render_prompt -> Ollama -> check_generated_output")
         cases = _load_dataset("rpg")
         print(f"  Modelo: {args.model}  |  casos: {len(cases)}")
         print()
         all_results += run_rpg(cases, out_dir, args.model, args.ollama_url, run_id)
 
     if do_bypass:
-        _print_section("BYPASS — check_user_input (sin LLM)")
+        _print_section("BYPASS -check_user_input (sin LLM)")
         cases = _load_dataset("bypass")
         print(f"  casos: {len(cases)}")
         print()
@@ -397,9 +397,9 @@ def main() -> None:
         if out_tested:
             print(f"                 {out_correct}/{len(out_tested)} output correcto (de los que se llamó LLM)")
         if fn_input:
-            print(f"  FN input     : {len(fn_input)} — {', '.join(r['case_id'] for r in fn_input)}")
+            print(f"  FN input     : {len(fn_input)} -{', '.join(r['case_id'] for r in fn_input)}")
         if fn_output:
-            print(f"  FN output    : {len(fn_output)} — {', '.join(r['case_id'] for r in fn_output)}")
+            print(f"  FN output    : {len(fn_output)} -{', '.join(r['case_id'] for r in fn_output)}")
 
     if rpg_results:
         in_correct  = sum(1 for r in rpg_results if r["input_correct"])
@@ -408,9 +408,9 @@ def main() -> None:
         fp_output   = [r for r in out_tested if r["output_blocked"] and not r["expected_output_blocked"]]
         print(f"  RPG legítimo : {in_correct}/{len(rpg_results)} input correcto")
         if fp_input:
-            print(f"  FP input     : {len(fp_input)} — {', '.join(r['case_id'] for r in fp_input)}")
+            print(f"  FP input     : {len(fp_input)} -{', '.join(r['case_id'] for r in fp_input)}")
         if fp_output:
-            print(f"  FP output    : {len(fp_output)} — {', '.join(r['case_id'] for r in fp_output)}")
+            print(f"  FP output    : {len(fp_output)} -{', '.join(r['case_id'] for r in fp_output)}")
 
     if byp_results:
         correct       = sum(1 for r in byp_results if r["correct"])

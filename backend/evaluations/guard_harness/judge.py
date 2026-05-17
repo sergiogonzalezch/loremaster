@@ -216,7 +216,7 @@ def main() -> None:
             if j2 is not None:
                 parts.append(f"J2={j2}")
             if j3 is not None:
-                fp_flag = "→ FP confirmado" if scores.get("is_false_positive") else "→ TP"
+                fp_flag = "-> FP confirmado" if scores.get("is_false_positive") else "-> TP"
                 parts.append(f"J3={j3} {fp_flag}")
             print(f"{' | '.join(parts)}  [{judge_used}]")
             result["scores"] = scores

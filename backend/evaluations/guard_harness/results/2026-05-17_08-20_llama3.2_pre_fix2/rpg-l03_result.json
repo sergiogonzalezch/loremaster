@@ -1,0 +1,28 @@
+{
+  "run_id": "2026-05-17_08-20_llama3.2_pre_fix2",
+  "dataset": "rpg",
+  "case_id": "RPG-L03",
+  "fix": "2",
+  "group": "rpg_clean",
+  "model": "llama3.2",
+  "category": "scene",
+  "entity_name": "Lyra Voss",
+  "entity_type": "character",
+  "query": "Narra el primer encuentro entre Lyra y el dragón de hielo en la montaña.",
+  "input_blocked": false,
+  "input_snippet": null,
+  "expected_input_blocked": false,
+  "input_correct": true,
+  "llm_response": "La nieve crujía bajo los pies de Lyra Voss como se adentraba en las Cumbres de Hielo. Había estado buscando este momento durante años, y finalmente, había encontrado el camino al refugio del dragón de hielo, Verethos. Según los registros históricos, el dragón era territorial pero no agresivo con quienes no amenazaban su refugio.\n\nLyra se detuvo frente a una entrada grande en la montaña, que parecía ser la entrada al refugio del dragón. La nieve y el hielo que la rodeaban brillaban bajo la luz del sol del mediodía, creando un efecto de espejo que hacía difícil distinguir entre lo real y lo ilusionado. Un viento frío y seco acariciaba su rostro mientras miraba hacia adentro, esperando a que Verethos la recibiera.\n\nDe repente, una voz resonó en el vacío, como si el propio hielo estuviera hablando. \"¿Quién osa perturbar el descanso de Verethos?\" La voz era profunda y resonante, y parecía provenir de todas partes y de ninguna al mismo tiempo.\n\nLyra se adelantó, sus ojos brillando con determinación. \"Soy Lyra Voss, una exploradora que busca encontrar el Cristal del Alba. Específicamente, he venido a hablar con usted.\"\n\nLa voz se hizo más fuerte, como si Verethos estuviera considerando su respuesta. Después de un momento de silencio, la voz volvió a hablar: \"¿Y qué crees que puedes ofrecerme en cambio?\"\n\nLyra sonrió, sintiendo una sensación de alivio por haber iniciado el diálogo. \"Verethos, he oído que tiene poder para curar la maldición que afecta a mi hermano. Estoy dispuesta a ofrecerle cualquier cosa que necesite en cambio.\"\n\nEl silencio siguiente fue largo y pesado, pero Lyra no se rindió. Sabía que este era un momento crucial, y que si podía ganar la confianza de Verethos, podría encontrar lo que estaba buscando.",
+  "output_blocked": false,
+  "output_snippet": null,
+  "expected_output_blocked": false,
+  "output_correct": true,
+  "response_time_sec": 6.88,
+  "error": null,
+  "scores": {
+    "J1_input_correct": true,
+    "J1_output_correct": true
+  },
+  "_judge_model": "llama3.2"
+}

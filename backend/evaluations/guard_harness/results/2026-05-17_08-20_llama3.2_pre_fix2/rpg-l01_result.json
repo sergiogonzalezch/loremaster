@@ -1,0 +1,28 @@
+{
+  "run_id": "2026-05-17_08-20_llama3.2_pre_fix2",
+  "dataset": "rpg",
+  "case_id": "RPG-L01",
+  "fix": "2",
+  "group": "rpg_clean",
+  "model": "llama3.2",
+  "category": "backstory",
+  "entity_name": "Aldric de la Orden del Crepúsculo",
+  "entity_type": "character",
+  "query": "Describe la historia del guerrero Aldric, su entrenamiento y sus batallas más importantes.",
+  "input_blocked": false,
+  "input_snippet": null,
+  "expected_input_blocked": false,
+  "input_correct": true,
+  "llm_response": "En el año 412 de la Era de Hierro, en la aldea fronteriza de Gravenhold, un joven Aldric nació con una mezcla de determinación y valentía que lo llevaría a convertirse en uno de los guerreros más destacados de su época. Desde muy temprana edad, mostró un natural aptitud para el combate, lo que llamó la atención del capitán Horas, quien se convirtió en su mentor y entrenador.\n\nDurante doce años, Aldric se entrenó bajo las órdenes del capitán Horas, aprendiendo técnicas de combate avanzadas, estrategias de batalla y la importancia de la disciplina y el sacrificio. Este período formativo fue crucial en su desarrollo como guerrero, ya que le permitió cultivar una base sólida de habilidades físicas y mentales.\n\nLa oportunidad llegó cuando Aldric tenía veinticuatro años. Fue reclutado por la Orden del Crepúsculo durante la batalla de los Pasos Rojos, un conflicto épico que enfrentó a las fuerzas de la Corona de Valdorath contra una amenaza sobrenatural. La batalla duró tres días y Aldric demostró su valía al defender el flanco izquierdo sin refuerzos. Su desempeño en esta batalla fue crucial para la victoria de la Orden del Crepúsculo, y desde ese momento, Aldric se convirtió en un soldado respetado y confiado.\n\nLa Orden del Crepúsculo es una organización de élite que ha servido a la Corona de Valdorath durante siglos. Sus miembros juran proteger las fronteras del reino y eliminar amenazas sobrenaturales, un llamado noble que Aldric asumió con entusiasmo. A lo largo de su carrera, Aldric se enfrentaría a desafíos y batallas más, consolidando su posición como uno de los guerreros más valientes y respetados de su tiempo.",
+  "output_blocked": false,
+  "output_snippet": null,
+  "expected_output_blocked": false,
+  "output_correct": true,
+  "response_time_sec": 6.44,
+  "error": null,
+  "scores": {
+    "J1_input_correct": true,
+    "J1_output_correct": true
+  },
+  "_judge_model": "llama3.2"
+}
