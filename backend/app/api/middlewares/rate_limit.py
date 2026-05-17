@@ -50,7 +50,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if request.url.path in _EXEMPT_PATHS:
             return await call_next(request)
 
-        if settings.environment == "test":
+        if not settings.rate_limit_enabled or settings.environment == "test":
             return await call_next(request)
 
         if request.method in ("GET", "HEAD", "OPTIONS"):
