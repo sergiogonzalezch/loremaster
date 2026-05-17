@@ -65,6 +65,12 @@ _BLOCKED_PATTERNS: tuple[re.Pattern[str], ...] = (
         r"\b(promueve|incentiva|practica|ejecuta|fomenta|realiza|incita|ordena)\s+.{0,25}(acoso|harass(?:ment)?|denigra(?:r|cion)?|denigrate|humill(?:ar|acion))\b",
         re.IGNORECASE,
     ),
+    # BYP-L05 — noun+noun: "terrorist bomb instructions" no contiene verbo antes de "bomb"
+    re.compile(r"\b(bomb|bomba)\s+(instructions?|steps?|tutorial|guide|recipe)\b", re.IGNORECASE),
+    # Fix #4 option C — pares estrechos FR/DE/IT (cubren BYP-M01/M02/M03)
+    re.compile(r"\b(fabriquer|construire)\s+(une?\s+)?bombe?\b", re.IGNORECASE),
+    re.compile(r"\bbaue?n?\s+.{0,20}bombe?\b", re.IGNORECASE),
+    re.compile(r"\bsintetizz\w+\s+.{0,25}metanfetamina\b", re.IGNORECASE),
 )
 """Patrones para bloquear contenido en entrada de usuarios y documentos."""
 
@@ -85,13 +91,15 @@ _OUTPUT_BLOCKED_PATTERNS: tuple[re.Pattern[str], ...] = (
         r"\b(como|instrucciones?\s+para|ejecutar?|planear?|organizar?|fomentar?|incitar?)\s+.{0,25}genocid(?:e|io)\b",
         re.IGNORECASE,
     ),
+    # how to añadido — cubre output tipo "how to build a bomb"; hacer/construir amplían verbo
     re.compile(
-        r"\b(c[oó]mo|instrucciones?)\s+(para\s+)?(make|build|fabricar|crear)\s+((a|an|un|una)\s+)?(bomb|bomba|weapon|arma)\b",
+        r"\b(c[oó]mo|how\s+to|instrucciones?)\s+(para\s+)?(make|build|fabricar|crear|hacer|construir)\s+((a|an|un|una)\s+)?(bomb|bomba|weapons?|armas?)\b",
         re.IGNORECASE,
     ),
-    # metanfetamina añadido — cubre el sustantivo completo, antes solo "meth" era detectado
+    # gap .{0,40} — cubre "synthesis process for methamphetamine" (palabras entre verbo y sustantivo)
+    # preparar/producir añadidos para cubrir variantes de producción
     re.compile(
-        r"\b(synthesize|sintetizar|s[íi]ntesis|fabricar|cocinar)\s+(drugs?|drogas?|meth|metanfetamina|methamphetamine)\b",
+        r"\b(synthesize|synthesis|sintetizar|s[íi]ntesis|fabricar|cocinar|preparar|producir)\s+.{0,40}\b(drugs?|drogas?|meth|metanfetamina|methamphetamine)\b",
         re.IGNORECASE,
     ),
     # acoso/humillación requieren verbo directivo — permite al LLM narrar villanos que usan humillación
@@ -100,6 +108,11 @@ _OUTPUT_BLOCKED_PATTERNS: tuple[re.Pattern[str], ...] = (
         r"\b(promueve|incentiva|practica|ejecuta|fomenta|realiza|incita|ordena)\s+.{0,25}(acoso|harass(?:ment)?|denigra(?:r|cion)?|denigrate|humill(?:ar|acion))\b",
         re.IGNORECASE,
     ),
+    # BYP-L05 y Fix #4 en output: mismos patrones que input
+    re.compile(r"\b(bomb|bomba)\s+(instructions?|steps?|tutorial|guide|recipe)\b", re.IGNORECASE),
+    re.compile(r"\b(fabriquer|construire)\s+(une?\s+)?bombe?\b", re.IGNORECASE),
+    re.compile(r"\bbaue?n?\s+.{0,20}bombe?\b", re.IGNORECASE),
+    re.compile(r"\bsintetizz\w+\s+.{0,25}metanfetamina\b", re.IGNORECASE),
 )
 """Patrones para bloquear contenido en salida generada por el LLM."""
 
