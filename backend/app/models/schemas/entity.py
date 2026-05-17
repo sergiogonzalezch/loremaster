@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.db.entity import EntityType
 
@@ -53,6 +53,8 @@ class EntityResponse(BaseModel):
         updated_at: Fecha de última modificación.
 
     """
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: str
     collection_id: str

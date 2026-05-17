@@ -21,7 +21,6 @@ from app.core.exceptions import (
 from app.database import get_session
 from app.models.db.entity import Entity
 from app.models.enums import ContentCategory
-from app.models.schemas.entity import EntityResponse
 from app.models.schemas.entity_content import (
     EntityContentResponse,
     GenerateContentRequest,
@@ -144,7 +143,7 @@ def edit_content(
 
 @router.post(
     "/{collection_id}/entities/{entity_id}/contents/{content_id}/confirm",
-    response_model=EntityResponse,
+    response_model=EntityContentResponse,
 )
 def confirm_content(
     content_id: str,
@@ -161,8 +160,7 @@ def confirm_content(
         ) from e
     if not result:
         raise HTTPException(status_code=404, detail="Contenido no encontrado.")
-    session.refresh(entity)
-    return entity
+    return result
 
 
 @router.patch(

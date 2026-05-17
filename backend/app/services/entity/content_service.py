@@ -146,7 +146,7 @@ def confirm_content(
     session: Session,
     content_id: str,
     entity: Entity,
-) -> EntityContent | None:
+) -> EntityContentResponse | None:
     """Confirma un contenido pendiente y descarta automáticamente sus hermanos.
 
     Al confirmar, todos los contenidos pending de la misma categoría en la
@@ -158,7 +158,7 @@ def confirm_content(
         entity: Instancia de la entidad propietaria.
 
     Returns:
-        Contenido confirmado, o None si no existe o no está pending.
+        Contenido confirmado con sus metadatos, o None si no existe o no está pending.
 
     """
     content = _get_pending_content(session, content_id, entity.id, entity.collection_id)
@@ -189,7 +189,8 @@ def confirm_content(
     db_commit(session, f"confirm_content({content_id})")
     session.refresh(content)
     logger.info("EntityContent %s confirmed for entity %s", content_id, entity.id)
-    return content
+    gt = session.get(GeneratedText, content.generated_text_id)
+    return _to_response(content, gt)
 
 
 def discard_content(
@@ -312,6 +313,7 @@ def _to_response(
         sources_count=gt.sources_count if gt else 0,
         source_doc_ids=(gt.source_doc_ids or []) if gt else [],
         token_count=gt.token_count if gt else 0,
+        model_used=gt.model_used if gt else None,
         status=content.status,
         is_shared=content.is_shared,
         created_at=content.created_at,

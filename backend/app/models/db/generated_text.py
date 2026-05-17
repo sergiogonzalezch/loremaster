@@ -5,6 +5,8 @@ from datetime import UTC, datetime
 from sqlalchemy import JSON, Column, ForeignKey, String
 from sqlmodel import Field, SQLModel
 
+from app.models.enums import ContentCategory
+
 
 class GeneratedText(SQLModel, table=True):
     """Registro de una llamada al pipeline LLM de generación.
@@ -50,11 +52,11 @@ class GeneratedText(SQLModel, table=True):
             index=True,
         ),
     )
-    category: str = Field(max_length=50)
+    category: ContentCategory = Field(sa_column=Column(String(50), nullable=False))
     query: str = Field(max_length=2000)
     raw_content: str = Field(max_length=10000)
     sources_count: int = Field(default=0)
-    source_doc_ids: list = Field(default_factory=list, sa_column=Column(JSON, nullable=True))
+    source_doc_ids: list[str] = Field(default_factory=list, sa_column=Column(JSON, nullable=True))
     token_count: int = Field(default=0)
     model_used: str | None = Field(default=None, max_length=100)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

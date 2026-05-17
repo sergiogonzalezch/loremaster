@@ -32,6 +32,7 @@ const SAMPLE_CONTENT: EntityContent = {
   status: "pending",
   is_shared: false,
   created_at: "2024-01-01T00:00:00Z",
+  source_doc_ids: [],
   confirmed_at: null,
   updated_at: null,
 };

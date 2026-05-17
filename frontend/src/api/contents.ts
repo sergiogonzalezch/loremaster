@@ -10,7 +10,6 @@ import type {
   UpdateContentRequest,
 } from "../types";
 import type { ContentCategory } from "../utils/enums";
-import type { Entity } from "../types";
 
 /** Parámetros de query para listar contenidos. */
 export interface ContentsQueryParams {
@@ -75,8 +74,8 @@ export function confirmContent(
   collectionId: string,
   entityId: string,
   contentId: string,
-): Promise<Entity> {
-  return apiPost<Entity>(
+): Promise<EntityContent> {
+  return apiPost<EntityContent>(
     `${base(collectionId, entityId)}/contents/${contentId}/confirm`,
   );
 }
