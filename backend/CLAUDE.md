@@ -23,7 +23,7 @@ alembic revision --autogenerate -m "message"
 
 - **LLM:** `llama3.2:latest` via Ollama (semáforo: max 1 llamada concurrente)
 - **Vectores:** Qdrant (port 6333), embeddings `paraphrase-multilingual-MiniLM-L12-v2`
-- **Chunking:** 512 chars, 50 overlap, top_k=4
+- **Chunking:** 400 chars, 150 overlap, top_k=4
 
 ## Estructura clave
 

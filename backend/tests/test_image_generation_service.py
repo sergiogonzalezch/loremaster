@@ -97,11 +97,9 @@ def test_ig_04_build_prompt_fails_for_unsupported_category(
     sample_entity: Entity,
 ):
     """IG-04: build_prompt lanza error si la categoría no es soportada."""
-    # Verificar que las categorías permitidas están definidas
     assert ContentCategory.backstory in ALLOWED_IMAGE_CATEGORIES
     assert ContentCategory.extended_description in ALLOWED_IMAGE_CATEGORIES
     assert ContentCategory.scene in ALLOWED_IMAGE_CATEGORIES
-    assert ContentCategory.chapter in ALLOWED_IMAGE_CATEGORIES
 
 
 # ── Tests generate_images_service ───────────────────────────���────────────────────────

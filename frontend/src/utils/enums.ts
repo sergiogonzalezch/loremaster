@@ -17,8 +17,7 @@ export type EntityType =
 export type ContentCategory =
   | "backstory"
   | "extended_description"
-  | "scene"
-  | "chapter";
+  | "scene";
 
 /** Estados posibles de un contenido generado. */
 export type ContentStatus = "pending" | "confirmed" | "discarded";

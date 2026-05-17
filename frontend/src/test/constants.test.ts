@@ -18,7 +18,6 @@ const CONTENT_CATEGORIES: ContentCategory[] = [
   "backstory",
   "extended_description",
   "scene",
-  "chapter",
 ];
 
 describe("ENTITY_CATEGORY_MAP", () => {
@@ -28,17 +27,16 @@ describe("ENTITY_CATEGORY_MAP", () => {
     }
   });
 
-  it("character tiene 4 categorías", () => {
-    expect(ENTITY_CATEGORY_MAP.character).toHaveLength(4);
+  it("character tiene 3 categorías", () => {
+    expect(ENTITY_CATEGORY_MAP.character).toHaveLength(3);
   });
 
   it("location tiene 2 categorías (la más restrictiva)", () => {
     expect(ENTITY_CATEGORY_MAP.location).toHaveLength(2);
   });
 
-  it("item no incluye scene ni chapter", () => {
+  it("item no incluye scene", () => {
     expect(ENTITY_CATEGORY_MAP.item).not.toContain("scene");
-    expect(ENTITY_CATEGORY_MAP.item).not.toContain("chapter");
   });
 });
 
@@ -60,7 +58,7 @@ describe("ENTITY_TYPE_LABELS", () => {
 });
 
 describe("CATEGORY_LABELS", () => {
-  it("cubre las 4 categorías con etiquetas en español", () => {
+  it("cubre las 3 categorías con etiquetas en español", () => {
     for (const cat of CONTENT_CATEGORIES) {
       expect(typeof CATEGORY_LABELS[cat]).toBe("string");
     }

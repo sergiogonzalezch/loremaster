@@ -125,8 +125,8 @@ class Settings(BaseSettings):
     # Embeddings
     embedding_model: str = "paraphrase-multilingual-MiniLM-L12-v2"
     embedding_dims: int = 384
-    chunk_size: int = 512
-    chunk_overlap: int = 50
+    chunk_size: int = 400
+    chunk_overlap: int = 150
     top_k: int = 4
     rag_score_threshold: float = 0.3
     max_pdf_pages: int = 100  # Prevención de PDF bombs

@@ -62,18 +62,6 @@ _TEMPLATES: dict[ContentCategory, str] = {
         + _ENTITY_SECTION
         + _SECTIONS
     ),
-    ContentCategory.chapter: (
-        _SAFETY_INSTRUCTION
-        + _DATA_INSTRUCTION
-        + _PREAMBLE
-        + "Escribe un capítulo narrativo completo centrado en la entidad indicada en <entity>. "
-        + "Estructura el texto con un inicio identificable que sitúe al lector, "
-        + "un desarrollo con tensión o progresión, y un cierre que resuelva o suspenda la acción. "
-        + "Se espera un texto sustancial. Extensión: 6-10 párrafos. "
-        + _CONTEXT_INSTRUCTION
-        + _ENTITY_SECTION
-        + _SECTIONS
-    ),
 }
 
 

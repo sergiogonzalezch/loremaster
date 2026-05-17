@@ -109,15 +109,72 @@ Esto está bien diseñado. Separar por categoría con restricciones específicas
 
 ### Priorización de Fixes
 
-| Prioridad | Problema | Impacto | Esfuerzo |
-|---|---|---|---|
-| 🔴 Alta | LLM síncrono bloqueando uvicorn | Latencia/escalabilidad | Bajo (run_in_executor) |
-| 🔴 Alta | Truncación silenciosa en embedding (512 chars > 128 tokens) | Calidad RAG | Bajo (cambiar chunk_size) |
-| 🟡 Media | Usar `ChatOllama` en lugar de `OllamaLLM` | Calidad generación | Bajo |
-| 🟡 Media | `max_tokens=2000` insuficiente para `chapter` | Calidad generación | Bajo |
-| 🟡 Media | `score_threshold=0.3` demasiado permisivo | Relevancia contexto | Mínimo |
-| 🟡 Media | `chunk_overlap=50` insuficiente para narrativa | Calidad RAG | Bajo |
-| 🟢 Baja | Temperature por categoría | Calidad generación | Bajo |
-| 🟢 Baja | Metadata de fuente en contexto recuperado | Coherencia | Medio |
+| Prioridad | Problema | Impacto | Esfuerzo | Estado |
+|---|---|---|---|---|
+| 🔴 Alta | LLM síncrono bloqueando uvicorn | Latencia/escalabilidad | Bajo (run_in_executor) | ⏳ Pendiente |
+| 🔴 Alta | Truncación silenciosa en embedding (512 chars > 128 tokens) | Calidad RAG | Bajo (cambiar chunk_size) | ✅ Aplicado — chunk_size=400 (rag_params_harness 2026-05-16) |
+| 🟡 Media | Usar `ChatOllama` en lugar de `OllamaLLM` | Calidad generación | Bajo | ❌ Descartado — genera finales conversacionales incompatibles con frontend no-chat |
+| 🟡 Media | `max_tokens=2000` insuficiente para `chapter` | Calidad generación | Bajo | ❌ N/A — `chapter` eliminado como categoría (feature separado) |
+| 🟡 Media | `score_threshold=0.3` demasiado permisivo | Relevancia contexto | Mínimo | ❌ Descartado — rag_params_harness 2026-05-16: threshold≥0.35 elimina 58-85% del retrieval en este corpus |
+| 🟡 Media | `chunk_overlap=50` insuficiente para narrativa | Calidad RAG | Bajo | ✅ Aplicado — chunk_overlap=150 (rag_params_harness 2026-05-16) |
+| 🟢 Baja | Temperature por categoría | Calidad generación | Bajo | ❌ Descartado — llm_params_harness (2026-05-16): Δ neutral en 4 modelos, no justifica complejidad |
+| 🟢 Baja | Metadata de fuente en contexto recuperado | Coherencia | Medio | ⏳ Pendiente |
 
-El fix más impactante con menos riesgo es el `run_in_executor` + reducir `chunk_size` a ~400. ¿Quieres que implemente alguno de estos?
+---
+
+### Decisiones tomadas — llm_params_harness (2026-05-16)
+
+Evaluación de 4 configuraciones (baseline / solo temp / solo tokens / ambos) × 4 modelos (llama3.2, llama3.1, qwen2.5, mistral) con gemma2:9b como juez. 16 runs, 10 TC por run.
+
+**Resultados:**
+
+| Config | llama3.2 | llama3.1 | qwen2.5* | mistral |
+|---|---|---|---|---|
+| Baseline | 2.28 | 2.33 | 1.90 | 2.35 |
+| Solo temp (factual=0.55, scene=0.85) | 2.27 | 2.27 | 1.85 | 2.27 |
+| Solo tokens (factual=1200, scene=2500) | 2.23 | 2.30 | 2.02 | 2.30 |
+| Temp + tokens | 2.15 | 2.25 | 1.95 | 2.30 |
+
+*qwen2.5 con scores artificialmente bajos por fallos de parseo del juez en algunos TC.
+
+**Conclusión:** ninguna variación supera el baseline de forma significativa (Δ máximo +0.04, todos dentro del rango de ruido). La temperatura y num_predict por categoría no justifican la complejidad adicional. Valores de referencia guardados en `evaluations/llm_params_harness/runner.py` (`_FACTUAL_TEMPERATURE=0.55`, `_CREATIVE_TEMPERATURE=0.85`).
+
+**Decisión:** mantener `temperature=0.7` y `max_tokens=2000` uniformes para todas las categorías.
+
+---
+
+### Decisiones tomadas — rag_params_harness (2026-05-16)
+
+Evaluación de 6 configuraciones × 4 modelos con gemma2:9b como juez. 24 runs, 10 TC por run. Métrica principal: D1 (adherencia al contexto) + chunks/query.
+
+**Configuraciones evaluadas:**
+
+| Config | chunk_size | chunk_overlap | threshold | Chunks/q | MaxSim avg |
+|---|---|---|---|---|---|
+| baseline | 512 | 50 | 0.30 | 1.9 | 0.261 |
+| chunks_only | 400 | 150 | 0.30 | 2.1 | 0.313 |
+| threshold_only | 512 | 50 | 0.45 | 0.2 | 0.048 |
+| both (chunks+threshold) | 400 | 150 | 0.45 | 0.3 | 0.142 |
+| threshold_035 | 512 | 50 | 0.35 | 0.8 | 0.165 |
+| both_035 | 400 | 150 | 0.35 | 1.5 | 0.218 |
+
+**Resultados (modelos fiables: llama3.2, mistral):**
+
+| Config | llama3.2 | mistral | Chunks/q |
+|---|---|---|---|
+| baseline | 2.15 | 2.17 | 1.9 |
+| **chunks_only** | 2.05 | **2.40** | **2.1** |
+| threshold_035 | 2.10 | 2.27 | 0.8 |
+| both_035 | 2.12 | 2.27 | 1.5 |
+| threshold_only (0.45) | 2.17 | 2.33 | 0.2 |
+| both (0.45) | 2.35 | 2.33 | 0.3 |
+
+*Nota: los scores altos de `threshold_only` y `both` con threshold=0.45 son un artefacto del juez: con 0.2 chunks/query el LLM genera sin contexto RAG y el juez puntúa la generación libre, no la fidelidad al lore.*
+
+**Conclusiones:**
+- `chunk_size=400`: corrección técnica obligatoria — 512 chars genera 100-160 tokens en español, excediendo el límite de 128 tokens del modelo de embedding. MaxSim mejora +20% (0.261→0.313) con chunks más cortos.
+- `chunk_overlap=150`: mejora cobertura narrativa en límites de chunk (una oración de transición mide 80-120 chars; con 50 de overlap quedaba partida).
+- `threshold=0.30`: mantener — threshold≥0.35 elimina el 58% del retrieval, threshold≥0.45 elimina el 85%. Corpus con similitudes bajas (maxsim típico 0.30-0.49).
+- `top_k=4`: mantener — con chunks de 400 chars, 4 chunks = ~1 600 chars de contexto, dentro del prompt.
+
+**Decisión:** `chunk_size=400`, `chunk_overlap=150`, `threshold=0.30`, `top_k=4`. Aplicado en `config/__init__.py`, `.env.example`, `LIMITERS.md` y `CLAUDE.md`.

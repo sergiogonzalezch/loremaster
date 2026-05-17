@@ -557,27 +557,6 @@ async def test_cnt_15_generate_backstory_for_creature_returns_201(
 
 
 @pytest.mark.anyio
-async def test_cnt_16_generate_chapter_for_creature_returns_422(
-    client,
-    db_session,
-    mock_rag_engine,
-    mock_llm,
-    sample_collection,
-):
-    """CNT-16: Generar chapter para creature retorna 422 (creature no soporta chapter)."""
-    creature = _make_entity(db_session, sample_collection.id, EntityType.creature)
-
-    response = await _create_content(
-        client,
-        sample_collection.id,
-        creature.id,
-        category="chapter",
-    )
-
-    assert response.status_code == 422
-
-
-@pytest.mark.anyio
 async def test_cnt_17_generate_backstory_for_faction_returns_201(
     client,
     db_session,

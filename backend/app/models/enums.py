@@ -10,14 +10,12 @@ class ContentCategory(StrEnum):
         backstory: Historia y origen del personaje/facción/criatura/ítem.
         extended_description: Descripción detallada de apariencia, comportamiento, etc.
         scene: Escena narrativa ambientada en el mundo.
-        chapter: Capítulo de una historia centrada en la entidad.
 
     """
 
     backstory = "backstory"
     extended_description = "extended_description"
     scene = "scene"
-    chapter = "chapter"
 
 
 class ContentStatus(StrEnum):

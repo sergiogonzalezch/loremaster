@@ -24,7 +24,7 @@ export const ENTITY_TYPE_LABELS: Record<EntityType, string> = {
 
 /** Mapeo de tipos de entidad a las categorías de contenido que soportan. */
 export const ENTITY_CATEGORY_MAP: Record<EntityType, ContentCategory[]> = {
-  character: ["backstory", "extended_description", "scene", "chapter"],
+  character: ["backstory", "extended_description", "scene"],
   creature: ["backstory", "extended_description", "scene"],
   location: ["extended_description", "scene"],
   faction: ["backstory", "extended_description", "scene"],
@@ -36,5 +36,4 @@ export const CATEGORY_LABELS: Record<ContentCategory, string> = {
   backstory: "Trasfondo",
   extended_description: "Descripción extendida",
   scene: "Escena",
-  chapter: "Capítulo",
 };

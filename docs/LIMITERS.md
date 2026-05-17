@@ -102,9 +102,9 @@ FLUJO IMAGEN (paralelo al flujo principal):
 | Variable / Constante | Valor | Chars equiv. | Tokens equiv. | Propósito | Nivel |
 |---|---|---|---|---|---|
 | `_MAX_TEXT_LENGTH` | 100 000 chars | 100 000 | ~25 000 | Anti-ReDoS interno (ver §4.1) | Domain interno |
-| `CHUNK_SIZE` | 512 chars | 512 | ~128 | Tamaño de chunk al indexar documentos en Qdrant | RAG / Qdrant |
-| `CHUNK_OVERLAP` | 50 chars | 50 | ~12 | Solapamiento entre chunks consecutivos | RAG / Qdrant |
-| `TOP_K` | 4 chunks | ~2 048 ctx total | ~512 ctx total | Chunks recuperados por similitud en cada query RAG | RAG |
+| `CHUNK_SIZE` | 400 chars | 400 | ~100 | Tamaño de chunk al indexar documentos en Qdrant. Reducido de 512 para evitar truncación silenciosa del embedding (`paraphrase-multilingual-MiniLM-L12-v2` tiene límite de 128 tokens; 512 chars en español generan 100-160 tokens). | RAG / Qdrant |
+| `CHUNK_OVERLAP` | 150 chars | 150 | ~37 | Solapamiento entre chunks consecutivos. Aumentado de 50 para preservar coherencia narrativa en límites de chunk (una oración de transición mide ~80-120 chars). | RAG / Qdrant |
+| `TOP_K` | 4 chunks | ~1 600 ctx total | ~400 ctx total | Chunks recuperados por similitud en cada query RAG | RAG |
 | `rag_score_threshold` | 0.3 | — | — | Score mínimo de similitud para incluir chunk como contexto | RAG |
 | `document_extraction_timeout_seconds` | 30 s | — | — | Settings → `document_service.py` | Timeout de extracción de texto (PDF/TXT); configurable vía `DOCUMENT_EXTRACTION_TIMEOUT_SECONDS` | Service |
 | `rate_limit_per_minute` | 30 req/min | — | — | Requests por IP/usuario por minuto (middleware global) | Middleware |

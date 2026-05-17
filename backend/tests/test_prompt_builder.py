@@ -66,7 +66,6 @@ def test_pb_05_all_categories_supported():
         ContentCategory.extended_description,
         ContentCategory.backstory,
         ContentCategory.scene,
-        ContentCategory.chapter,
     ]:
         result = build_visual_prompt(
             entity_type=EntityType.character,

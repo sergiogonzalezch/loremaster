@@ -44,7 +44,6 @@ ALLOWED_IMAGE_CATEGORIES = {
     ContentCategory.extended_description,
     ContentCategory.backstory,
     ContentCategory.scene,
-    ContentCategory.chapter,
 }
 
 

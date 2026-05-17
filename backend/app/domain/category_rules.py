@@ -8,7 +8,6 @@ ENTITY_CATEGORY_MAP: dict[EntityType, list[ContentCategory]] = {
         ContentCategory.backstory,
         ContentCategory.extended_description,
         ContentCategory.scene,
-        ContentCategory.chapter,
     ],
     EntityType.creature: [
         ContentCategory.backstory,
