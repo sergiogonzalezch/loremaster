@@ -24,7 +24,7 @@ from app.models.schemas.entity_content import EntityContentResponse
 logger = logging.getLogger(__name__)
 
 
-def generate(
+async def generate(
     session: Session,
     entity: Entity,
     category: ContentCategory,
@@ -86,7 +86,7 @@ def generate(
     if entity.description:
         extra_context = f"Información actual de '{entity.name}' ({entity.type}):\n{entity.description}\n\n"
 
-    answer, sources_count, source_doc_ids = invoke_generation_pipeline(
+    answer, sources_count, source_doc_ids = await invoke_generation_pipeline(
         collection_id=entity.collection_id,
         entity_ctx=EntityContext(
             name=entity.name,

@@ -25,7 +25,7 @@ router = APIRouter(prefix="/collections", tags=["rag-query"])
 
 
 @router.post("/{collection_id}/query", response_model=RagQueryResponse)
-def rag_query(
+async def rag_query(
     request: RagQueryRequest,
     collection_id: str,
     _: Annotated[Collection, Depends(get_collection_or_404_owned)],
@@ -46,7 +46,7 @@ def rag_query(
             collection_id,
             query,
         )
-        answer, sources_count, source_doc_ids = invoke_rag_pipeline(
+        answer, sources_count, source_doc_ids = await invoke_rag_pipeline(
             collection_id=collection_id,
             query=query,
         )

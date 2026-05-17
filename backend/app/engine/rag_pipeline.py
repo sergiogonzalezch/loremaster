@@ -1,7 +1,7 @@
 """Pipeline RAG para consultas y generación de contenido con contexto vectorial."""
 
+import asyncio
 import logging
-import threading
 from dataclasses import dataclass
 
 import httpx
@@ -15,7 +15,8 @@ from app.models.enums import ContentCategory
 
 logger = logging.getLogger(__name__)
 
-_llm_semaphore = threading.Semaphore(settings.max_concurrent_llm_calls)
+# Semáforo async: la espera no bloquea el event loop ni consume un hilo del pool.
+_llm_semaphore = asyncio.Semaphore(settings.max_concurrent_llm_calls)
 
 # Cadena por defecto — usada cuando no se especifica modelo en la request
 generation_chain = get_llm(settings.ollama_model) | StrOutputParser()
@@ -34,7 +35,7 @@ class EntityContext:
     category: ContentCategory
 
 
-def invoke_rag_pipeline(
+async def invoke_rag_pipeline(
     collection_id: str,
     query: str,
     extra_context: str = "",
@@ -64,8 +65,11 @@ def invoke_rag_pipeline(
         raise RuntimeError(msg) from e
 
     try:
-        with _llm_semaphore:
-            answer = chain.invoke({"context": context, "query": query})
+        loop = asyncio.get_running_loop()
+        async with _llm_semaphore:
+            answer = await loop.run_in_executor(
+                None, lambda: chain.invoke({"context": context, "query": query})
+            )
     except _TRANSPORT_ERRORS as e:
         logger.exception("LLM generation failed for collection %s", collection_id)
         msg = "LLM service unavailable"
@@ -79,7 +83,7 @@ def invoke_rag_pipeline(
     return answer, num_chunks, source_doc_ids
 
 
-def invoke_generation_pipeline(
+async def invoke_generation_pipeline(
     collection_id: str,
     entity_ctx: EntityContext,
     query: str,
@@ -125,8 +129,9 @@ def invoke_generation_pipeline(
     active_chain = get_llm(effective_model) | StrOutputParser() if model else generation_chain
 
     try:
-        with _llm_semaphore:
-            answer = active_chain.invoke(rendered_prompt)
+        loop = asyncio.get_running_loop()
+        async with _llm_semaphore:
+            answer = await loop.run_in_executor(None, lambda: active_chain.invoke(rendered_prompt))
     except _TRANSPORT_ERRORS as e:
         logger.exception(
             "LLM generation failed for entity '%s' collection %s",

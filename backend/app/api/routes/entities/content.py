@@ -40,7 +40,7 @@ router = APIRouter(prefix="/collections", tags=["entity-content"])
     response_model=EntityContentResponse,
     status_code=201,
 )
-def generate_content(
+async def generate_content(
     category: ContentCategory,
     request: GenerateContentRequest,
     entity: Annotated[Entity, Depends(get_entity_or_404_owned)],
@@ -52,7 +52,7 @@ def generate_content(
     Aplica guardrails de entrada y salida.
     """
     try:
-        return generation_service.generate(session, entity, category, request.query, request.model)
+        return await generation_service.generate(session, entity, category, request.query, request.model)
     except PendingLimitExceededError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
     except ContentNotAllowedError as e:

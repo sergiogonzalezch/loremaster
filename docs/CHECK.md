@@ -111,7 +111,7 @@ Esto está bien diseñado. Separar por categoría con restricciones específicas
 
 | Prioridad | Problema | Impacto | Esfuerzo | Estado |
 |---|---|---|---|---|
-| 🔴 Alta | LLM síncrono bloqueando uvicorn | Latencia/escalabilidad | Bajo (run_in_executor) | ⏳ Pendiente |
+| 🔴 Alta | LLM síncrono bloqueando uvicorn | Latencia/escalabilidad | Bajo (run_in_executor) | ✅ Aplicado — asyncio.Semaphore + run_in_executor en invoke_rag_pipeline / invoke_generation_pipeline; rutas y servicio async (2026-05-16) |
 | 🔴 Alta | Truncación silenciosa en embedding (512 chars > 128 tokens) | Calidad RAG | Bajo (cambiar chunk_size) | ✅ Aplicado — chunk_size=400 (rag_params_harness 2026-05-16) |
 | 🟡 Media | Usar `ChatOllama` en lugar de `OllamaLLM` | Calidad generación | Bajo | ❌ Descartado — genera finales conversacionales incompatibles con frontend no-chat |
 | 🟡 Media | `max_tokens=2000` insuficiente para `chapter` | Calidad generación | Bajo | ❌ N/A — `chapter` eliminado como categoría (feature separado) |

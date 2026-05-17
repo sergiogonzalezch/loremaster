@@ -31,10 +31,10 @@ def _make_entity(
 
 @pytest.fixture
 def mock_pipeline(monkeypatch):
-    """Reemplaza invoke_generation_pipeline con una implementación determinista."""
+    """Reemplaza invoke_generation_pipeline con una implementación async determinista."""
     calls: list[dict] = []
 
-    def _invoke(*, collection_id, entity_ctx, query, extra_context, model=None):
+    async def _invoke(*, collection_id, entity_ctx, query, extra_context, model=None):
         calls.append(
             dict(
                 collection_id=collection_id,
@@ -57,7 +57,8 @@ def mock_pipeline(monkeypatch):
 # ── Tests ─────────────────────────────────────────────────────────────────────
 
 
-def test_gen_svc_01_persists_entity_content_with_correct_fields(
+@pytest.mark.asyncio
+async def test_gen_svc_01_persists_entity_content_with_correct_fields(
     db_session,
     sample_collection,
     mock_pipeline,
@@ -65,7 +66,7 @@ def test_gen_svc_01_persists_entity_content_with_correct_fields(
     """GEN-SVC-01: generate() persiste EntityContent con query, sources_count, content y status=pending."""
     entity = _make_entity(db_session, sample_collection.id)
 
-    result = generate(
+    result = await generate(
         db_session,
         entity,
         ContentCategory.backstory,
@@ -81,7 +82,8 @@ def test_gen_svc_01_persists_entity_content_with_correct_fields(
     assert result.category == ContentCategory.backstory
 
 
-def test_gen_svc_02_strips_whitespace_from_query(
+@pytest.mark.asyncio
+async def test_gen_svc_02_strips_whitespace_from_query(
     db_session,
     sample_collection,
     mock_pipeline,
@@ -89,7 +91,7 @@ def test_gen_svc_02_strips_whitespace_from_query(
     """GEN-SVC-02: generate() elimina espacios en los extremos de la query antes de procesar."""
     entity = _make_entity(db_session, sample_collection.id)
 
-    result = generate(
+    result = await generate(
         db_session,
         entity,
         ContentCategory.backstory,
@@ -100,7 +102,8 @@ def test_gen_svc_02_strips_whitespace_from_query(
     assert mock_pipeline[0]["query"] == "query con espacios"
 
 
-def test_gen_svc_03_raises_invalid_category_error(
+@pytest.mark.asyncio
+async def test_gen_svc_03_raises_invalid_category_error(
     db_session,
     sample_collection,
     mock_pipeline,
@@ -109,10 +112,11 @@ def test_gen_svc_03_raises_invalid_category_error(
     item = _make_entity(db_session, sample_collection.id, EntityType.item)
 
     with pytest.raises(InvalidCategoryError):
-        generate(db_session, item, ContentCategory.scene, "Escena de combate épico")
+        await generate(db_session, item, ContentCategory.scene, "Escena de combate épico")
 
 
-def test_gen_svc_04_raises_pending_limit_exceeded(
+@pytest.mark.asyncio
+async def test_gen_svc_04_raises_pending_limit_exceeded(
     db_session,
     sample_collection,
     mock_pipeline,
@@ -121,7 +125,7 @@ def test_gen_svc_04_raises_pending_limit_exceeded(
     entity = _make_entity(db_session, sample_collection.id)
 
     for i in range(settings.max_pending_contents):
-        generate(
+        await generate(
             db_session,
             entity,
             ContentCategory.backstory,
@@ -129,7 +133,7 @@ def test_gen_svc_04_raises_pending_limit_exceeded(
         )
 
     with pytest.raises(PendingLimitExceededError):
-        generate(
+        await generate(
             db_session,
             entity,
             ContentCategory.backstory,
@@ -137,7 +141,8 @@ def test_gen_svc_04_raises_pending_limit_exceeded(
         )
 
 
-def test_gen_svc_05_blocked_query_raises_content_not_allowed(
+@pytest.mark.asyncio
+async def test_gen_svc_05_blocked_query_raises_content_not_allowed(
     db_session,
     sample_collection,
 ):
@@ -145,7 +150,7 @@ def test_gen_svc_05_blocked_query_raises_content_not_allowed(
     entity = _make_entity(db_session, sample_collection.id)
 
     with pytest.raises(ContentNotAllowedError):
-        generate(
+        await generate(
             db_session,
             entity,
             ContentCategory.backstory,
@@ -153,7 +158,8 @@ def test_gen_svc_05_blocked_query_raises_content_not_allowed(
         )
 
 
-def test_gen_svc_06_passes_entity_description_to_pipeline(
+@pytest.mark.asyncio
+async def test_gen_svc_06_passes_entity_description_to_pipeline(
     db_session,
     sample_collection,
     mock_pipeline,
@@ -165,7 +171,7 @@ def test_gen_svc_06_passes_entity_description_to_pipeline(
         description="Arquera élfica del bosque eterno",
     )
 
-    generate(
+    await generate(
         db_session,
         entity,
         ContentCategory.backstory,
@@ -175,7 +181,8 @@ def test_gen_svc_06_passes_entity_description_to_pipeline(
     assert "Arquera élfica del bosque eterno" in mock_pipeline[0]["extra_context"]
 
 
-def test_gen_svc_07_pending_limit_is_per_category(
+@pytest.mark.asyncio
+async def test_gen_svc_07_pending_limit_is_per_category(
     db_session,
     sample_collection,
     mock_pipeline,
@@ -184,14 +191,14 @@ def test_gen_svc_07_pending_limit_is_per_category(
     entity = _make_entity(db_session, sample_collection.id)
 
     for i in range(settings.max_pending_contents):
-        generate(
+        await generate(
             db_session,
             entity,
             ContentCategory.backstory,
             f"Backstory del guerrero número {i}",
         )
 
-    result = generate(
+    result = await generate(
         db_session,
         entity,
         ContentCategory.scene,
@@ -202,7 +209,8 @@ def test_gen_svc_07_pending_limit_is_per_category(
     assert result.category == ContentCategory.scene
 
 
-def test_gen_svc_08_entity_without_description_sends_empty_extra_context(
+@pytest.mark.asyncio
+async def test_gen_svc_08_entity_without_description_sends_empty_extra_context(
     db_session,
     sample_collection,
     mock_pipeline,
@@ -210,7 +218,7 @@ def test_gen_svc_08_entity_without_description_sends_empty_extra_context(
     """GEN-SVC-08: Si entity.description está vacío, extra_context es cadena vacía."""
     entity = _make_entity(db_session, sample_collection.id, description="")
 
-    generate(
+    await generate(
         db_session,
         entity,
         ContentCategory.backstory,
