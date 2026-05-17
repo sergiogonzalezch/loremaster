@@ -16,6 +16,7 @@ export interface EntityContent {
   was_edited: boolean;
   query: string;
   sources_count: number;
+  source_doc_ids: string[];
   token_count: number;
   model_used: string | null;
   status: ContentStatus;

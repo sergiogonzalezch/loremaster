@@ -18,6 +18,7 @@ import {
   shareContent,
 } from "../api/contents";
 import ConfirmModal from "./ConfirmModal";
+import SourcesModal from "./SourcesModal";
 import { useDeleteConfirm } from "../hooks/useDeleteConfirm";
 import MarkdownContent from "./MarkdownContent";
 import type { EntityContent } from "../types";
@@ -56,6 +57,7 @@ export default function ContentCard({
   const [saving, setSaving] = useState(false);
 
   const [showDiscard, setShowDiscard] = useState(false);
+  const [showSources, setShowSources] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
   const deleteConfirm = useDeleteConfirm<EntityContent>({
@@ -318,6 +320,16 @@ export default function ContentCard({
               >
                 Descartar
               </Button>
+              {content.source_doc_ids.length > 0 && (
+                <Button
+                  variant="outline-secondary"
+                  size="sm"
+                  onClick={() => setShowSources(true)}
+                  disabled={busy || deleteConfirm.deleting}
+                >
+                  Fuentes
+                </Button>
+              )}
               <Button
                 variant="outline-danger"
                 size="sm"
@@ -328,7 +340,17 @@ export default function ContentCard({
               </Button>
             </div>
           ) : content.status === "discarded" ? (
-            <div className="d-flex justify-content-end">
+            <div className="d-flex justify-content-end gap-2">
+              {content.source_doc_ids.length > 0 && (
+                <Button
+                  variant="outline-secondary"
+                  size="sm"
+                  onClick={() => setShowSources(true)}
+                  disabled={busy || deleteConfirm.deleting}
+                >
+                  Fuentes
+                </Button>
+              )}
               <Button
                 variant="outline-danger"
                 size="sm"
@@ -378,6 +400,16 @@ export default function ContentCard({
                     disabled={busy || deleteConfirm.deleting}
                   >
                     Imagen
+                  </Button>
+                )}
+                {content.source_doc_ids.length > 0 && (
+                  <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    onClick={() => setShowSources(true)}
+                    disabled={busy || deleteConfirm.deleting}
+                  >
+                    Fuentes
                   </Button>
                 )}
                 <Button
@@ -449,6 +481,13 @@ export default function ContentCard({
         onCancel={deleteConfirm.cancel}
         variant="danger"
         loading={deleteConfirm.deleting}
+      />
+
+      <SourcesModal
+        show={showSources}
+        onHide={() => setShowSources(false)}
+        collectionId={collectionId}
+        sourceDocIds={content.source_doc_ids}
       />
     </>
   );
