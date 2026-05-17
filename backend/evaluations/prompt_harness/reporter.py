@@ -5,7 +5,7 @@ Uso (desde backend/ con el venv activo):
     python evaluations/prompt_harness/reporter.py \\
         --runs run1 run2 run3 \\
         --baseline run1 \\
-        --output docs/phase2-model-comparison.md \\
+        --output docs/reportes/prompt_eval.md \\
         --title "Phase 2 — Comparativa de Modelos"
 """
 
@@ -17,6 +17,7 @@ from pathlib import Path
 _HARNESS_DIR = Path(__file__).parent
 _RESULTS_DIR = _HARNESS_DIR / "results"
 _BACKEND_DIR = _HARNESS_DIR.parent.parent
+_DEFAULT_OUTPUT = Path(__file__).resolve().parents[3] / "docs" / "reportes" / "prompt_eval.md"
 
 _DIMENSIONS = ("D1", "D2", "D3", "D4")
 _DIM_NAMES = {
@@ -315,8 +316,9 @@ def main() -> None:
     )
     parser.add_argument(
         "--output",
-        default=None,
-        help="Ruta del reporte de salida (relativa a la raíz del repo, o absoluta). Sin valor: imprime a stdout.",
+        type=Path,
+        default=_DEFAULT_OUTPUT,
+        help="Ruta del reporte de salida (relativa a la raíz del repo, o absoluta).",
     )
     parser.add_argument(
         "--title",
@@ -349,15 +351,10 @@ def main() -> None:
         judge_model=args.judge_model,
     )
 
-    if args.output:
-        out_path = Path(args.output)
-        if not out_path.is_absolute():
-            out_path = _BACKEND_DIR.parent / args.output
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_text(report, encoding="utf-8")
-        print(f"Reporte guardado en: {out_path}")
-    else:
-        print(report)
+    out_path = args.output if args.output.is_absolute() else _BACKEND_DIR.parent / args.output
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(report, encoding="utf-8")
+    print(f"Reporte guardado en: {out_path}")
 
 
 if __name__ == "__main__":

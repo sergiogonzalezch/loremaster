@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 
 _RESULTS_DIR = Path(__file__).parent / "results"
+_DEFAULT_OUTPUT = Path(__file__).resolve().parents[3] / "docs" / "reportes" / "image_prompt_eval.md"
 
 
 def _load_summaries() -> list[dict]:
@@ -73,7 +74,8 @@ def main() -> None:
         return
 
     report = generate_report(summaries)
-    out_path = _RESULTS_DIR / "comparison_report.md"
+    out_path = _DEFAULT_OUTPUT
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(report, encoding="utf-8")
     print(report)
     print(f"\nReporte guardado en {out_path}")
