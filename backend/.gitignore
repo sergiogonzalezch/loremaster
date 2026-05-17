@@ -124,6 +124,11 @@ media/
 temp_uploads/
 
 # ========================
+# Evaluations — resultados generados (artefactos, no versionados)
+# ========================
+evaluations/guard_harness/results/
+
+# ========================
 # Mensajería / colas
 # ========================
 celerybeat-schedule

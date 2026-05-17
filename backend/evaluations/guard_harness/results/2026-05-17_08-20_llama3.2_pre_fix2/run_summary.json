@@ -1,9 +1,0 @@
-{
-  "run_id": "2026-05-17_08-20_llama3.2_pre_fix2",
-  "model": "llama3.2",
-  "run_tag": "pre_fix2",
-  "force_llm": false,
-  "total_cases": 44,
-  "errors": 0,
-  "results_dir": "C:\\Users\\PCG\\Documents\\Cursos\\NievaTeam\\AIEngeenering\\Proyecto\\loremaster\\backend\\evaluations\\guard_harness\\results\\2026-05-17_08-20_llama3.2_pre_fix2"
-}
