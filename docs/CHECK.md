@@ -118,7 +118,7 @@ Esto está bien diseñado. Separar por categoría con restricciones específicas
 | 🟡 Media | `score_threshold=0.3` demasiado permisivo | Relevancia contexto | Mínimo | ❌ Descartado — rag_params_harness 2026-05-16: threshold≥0.35 elimina 58-85% del retrieval en este corpus |
 | 🟡 Media | `chunk_overlap=50` insuficiente para narrativa | Calidad RAG | Bajo | ✅ Aplicado — chunk_overlap=150 (rag_params_harness 2026-05-16) |
 | 🟢 Baja | Temperature por categoría | Calidad generación | Bajo | ❌ Descartado — llm_params_harness (2026-05-16): Δ neutral en 4 modelos, no justifica complejidad |
-| 🟢 Baja | Metadata de fuente en contexto recuperado | Coherencia | Medio | ⏳ Pendiente |
+| 🟢 Baja | Metadata de fuente en contexto recuperado | Coherencia | Medio | ❌ Descartado — metadata_harness (2026-05-16): Δ máximo +0.10, D5 queda en 1.0-1.1/3.0; modelos 3-7B ignoran las cabeceras |
 
 ---
 
@@ -178,3 +178,31 @@ Evaluación de 6 configuraciones × 4 modelos con gemma2:9b como juez. 24 runs, 
 - `top_k=4`: mantener — con chunks de 400 chars, 4 chunks = ~1 600 chars de contexto, dentro del prompt.
 
 **Decisión:** `chunk_size=400`, `chunk_overlap=150`, `threshold=0.30`, `top_k=4`. Aplicado en `config/__init__.py`, `.env.example`, `LIMITERS.md` y `CLAUDE.md`.
+
+---
+
+### Decisiones tomadas — metadata_harness (2026-05-16)
+
+Evaluación de 3 configuraciones de formato de contexto × 2 modelos con gemma2:9b como juez. 6 runs, 10 TC por run. Corpus: 2 documentos (golden_seed.txt + golden_seed_2.txt, 34 chunks). 8/10 TCs recuperaron chunks de ambos archivos simultáneamente.
+
+**Configuraciones evaluadas:**
+- `baseline`: sin cabeceras de fuente (comportamiento actual de producción)
+- `meta_name`: `[Fuente: "archivo.txt"]` por chunk
+- `meta_full`: `[Fuente: "archivo.txt" · fragmento N · relevancia X.XX]` por chunk
+
+**Resultados:**
+
+| Config | llama3.2 | mistral | D5 avg | Δ global |
+|---|---|---|---|---|
+| baseline | 1.94 | 1.94 | 1.0 | — |
+| meta_name | 2.04 | 1.98 | 1.0 | +0.07 |
+| meta_full | 2.02 | 2.04 | 1.1 | +0.07 |
+
+**Conclusiones:**
+- Δ máximo entre configs: +0.10 (llama3.2 meta_name vs baseline). Umbral de adopción definido: Δ D1 ≥ +0.20 o Δ D5 ≥ +0.50. No se alcanza ninguno.
+- D5 (uso de fuente) se mantiene en 1.0 con todas las configs y sube a 1.1 únicamente con `meta_full` — ambos modelos no aprovechan las cabeceras de fuente para atribuir información en la generación.
+- La señal es consistente entre modelos: llama3.2 y mistral muestran el mismo patrón plano, descartando ruido de un único modelo.
+- El límite no es el tamaño del corpus sino la capacidad del modelo: con 8/10 TCs multi-fuente el escenario ideal se dio, y la mejora fue marginal de todas formas. Modelos 3-7B no tienen suficiente capacidad de razonamiento sobre metadata de contexto.
+- Re-evaluar si el proyecto migra a un modelo con mayor ventana de contexto y capacidad de atribución (≥13B o API externa).
+
+**Decisión:** no implementar cabeceras de fuente en `search_context`. `retrieve_context` permanece sin cambios.
