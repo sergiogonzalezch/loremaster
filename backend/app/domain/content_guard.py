@@ -24,8 +24,9 @@ from app.core.exceptions import ContentNotAllowedError, GeneratedContentBlockedE
 logger = logging.getLogger(__name__)
 
 # Sustituciones leetspeak comunes para evasión de filtros
-# 0→o, 1→i, 3→e, 4→a, 5→s, 6→g, @→a, $→s
-_LEET_TABLE = str.maketrans("013456@$", "oieasgas")
+# Base:    0→o, 1→i, 3→e, 4→a, 5→s, 6→g, @→a, $→s
+# Fix #6:  7→t, 8→b, +→t  (| omitido — demasiados FP en pipes de código/markdown)
+_LEET_TABLE = str.maketrans("013456@$78+", "oieasgastbt")
 
 # Limite de longitud para prevenir ReDoS/CPU-DoS
 _MAX_TEXT_LENGTH = 100_000  # 100 KB
@@ -39,46 +40,64 @@ _BLOCKED_PATTERNS: tuple[re.Pattern[str], ...] = (
         r"\b(porn|porno|xxx|explicit\s+sexual|sexo\s+expl[íi]cito)\b",
         re.IGNORECASE,
     ),
+    # supremacia cubre la forma nominal "supremacía" tras normalización NFKD (ía→ia)
     re.compile(
-        r"\b(hate\s+speech|supremac(?:y|ista)|genocid(?:e|io)|slur)\b",
+        r"\b(hate\s+speech|supremac(?:y|ista|ia)|slur)\b",
+        re.IGNORECASE,
+    ),
+    # genocidio solo con intención instructiva — "perpetró un genocidio" pasa; "cómo ejecutar un genocidio" bloquea
+    re.compile(
+        r"\b(como|instrucciones?\s+para|ejecutar?|planear?|organizar?|fomentar?|incitar?)\s+.{0,25}genocid(?:e|io)\b",
         re.IGNORECASE,
     ),
     re.compile(
-        r"\b(make|build|fabricar|crear)\s+((a|an|un|una)\s+)?(bomb|bomba|weapon|arma)\b",
+        r"\b(make|build|fabricar|crear|hacer)\s+((a|an|un|una)\s+)?(bomb|bomba|weapon|arma)\b",
         re.IGNORECASE,
     ),
+    # metanfetamina añadido — antes solo "meth" (inglés) estaba cubierto
     re.compile(
-        r"\b(synthesize|sintetizar|s[íi]ntesis|fabricar|cocinar)\s+(drugs?|drogas?|meth)\b",
+        r"\b(synthesize|sintetizar|s[íi]ntesis|fabricar|cocinar)\s+(drugs?|drogas?|meth|metanfetamina|methamphetamine)\b",
         re.IGNORECASE,
     ),
+    # acoso/humillación requieren verbo directivo — permite narrativa RPG ("sufría el acoso", "la humillación del prisionero")
+    # humillacion cubre la forma sustantiva "humillación" tras normalización NFKD
     re.compile(
-        r"\b(acoso|harass(?:ment)?|denigrate|denigrar|humill(?:ar|ation))\b",
+        r"\b(promueve|incentiva|practica|ejecuta|fomenta|realiza|incita|ordena)\s+.{0,25}(acoso|harass(?:ment)?|denigrar?|denigrate|humill(?:ar|acion))\b",
         re.IGNORECASE,
     ),
 )
 """Patrones para bloquear contenido en entrada de usuarios y documentos."""
 
-# Patrones aplicados a salida del LLM: arma/bomba requieren enmarcado explícito instructivo
-# para evitar falsos positivos cuando contenido narrativo de fantasía menciona armas en contexto.
+# Patrones aplicados a salida del LLM: arma/bomba y humillación requieren enmarcado instructivo
+# para evitar falsos positivos cuando el LLM narra contenido RPG legítimo.
 _OUTPUT_BLOCKED_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(
         r"\b(porn|porno|xxx|explicit\s+sexual|sexo\s+expl[íi]cito)\b",
         re.IGNORECASE,
     ),
+    # supremacia cubre "supremacía" (nominal) tras NFKD — cerraba FN con mistral (HARM-10)
     re.compile(
-        r"\b(hate\s+speech|supremac(?:y|ista)|genocid(?:e|io)|slur)\b",
+        r"\b(hate\s+speech|supremac(?:y|ista|ia)|slur)\b",
+        re.IGNORECASE,
+    ),
+    # genocidio solo con intención instructiva — permite al LLM narrar "la facción perpetró un genocidio"
+    re.compile(
+        r"\b(como|instrucciones?\s+para|ejecutar?|planear?|organizar?|fomentar?|incitar?)\s+.{0,25}genocid(?:e|io)\b",
         re.IGNORECASE,
     ),
     re.compile(
         r"\b(c[oó]mo|instrucciones?)\s+(para\s+)?(make|build|fabricar|crear)\s+((a|an|un|una)\s+)?(bomb|bomba|weapon|arma)\b",
         re.IGNORECASE,
     ),
+    # metanfetamina añadido — cubre el sustantivo completo, antes solo "meth" era detectado
     re.compile(
-        r"\b(synthesize|sintetizar|s[íi]ntesis|fabricar|cocinar)\s+(drugs?|drogas?|meth)\b",
+        r"\b(synthesize|sintetizar|s[íi]ntesis|fabricar|cocinar)\s+(drugs?|drogas?|meth|metanfetamina|methamphetamine)\b",
         re.IGNORECASE,
     ),
+    # acoso/humillación requieren verbo directivo — permite al LLM narrar villanos que usan humillación
+    # humillacion cubre "humillación" (sustantivo) tras normalización NFKD — cerraba FP con llama3.2 (RPG-FP03)
     re.compile(
-        r"\b(acoso|harass(?:ment)?|denigrate|denigrar|humill(?:ar|ation))\b",
+        r"\b(promueve|incentiva|practica|ejecuta|fomenta|realiza|incita|ordena)\s+.{0,25}(acoso|harass(?:ment)?|denigrar?|denigrate|humill(?:ar|acion))\b",
         re.IGNORECASE,
     ),
 )
@@ -92,8 +111,10 @@ def _normalize(text: str) -> str:
     1. Trunca a _MAX_TEXT_LENGTH para prevenir ReDoS.
     2. NFKD + elimina diacríticos: é→e, ó→o, caracteres de ancho completo.
     3. Lowercase.
-    4. Sustituye leetspeak (_LEET_TABLE): 0→o, 1→i, 3→e, @→a, $→s, etc.
-    5. Colapsa chars repetidos (bbooommmb→bomb) para evadir filtros por repetición.
+    4. Fix #5 — elimina separadores intercalados entre letras: b.o.m.b→bomb, b-o-m-b→bomb.
+       Lookahead/lookbehind evita colapsar separadores legítimos en frases normales.
+    5. Sustituye leetspeak (_LEET_TABLE): 0→o, 1→i, 3→e, @→a, $→s, 7→t, 8→b, +→t.
+    6. Colapsa chars repetidos (bbooommmb→bomb) para evadir filtros por repetición.
     """
     if len(text) > _MAX_TEXT_LENGTH:
         logger.warning(
@@ -102,6 +123,7 @@ def _normalize(text: str) -> str:
         )
         text = text[:_MAX_TEXT_LENGTH]
     text = "".join(c for c in unicodedata.normalize("NFKD", text) if unicodedata.category(c) != "Mn").lower()
+    text = re.sub(r"(?<=[a-z0-9])[.\-_/\\](?=[a-z0-9])", "", text)
     text = text.translate(_LEET_TABLE)
     return re.sub(r"(.)\1{2,}", r"\1", text)
 
