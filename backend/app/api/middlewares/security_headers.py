@@ -1,15 +1,19 @@
 """Middleware de headers de seguridad.
 
 Añade headers de seguridad HTTP a todas las respuestas de la API.
-Implementa protecciones contra XSS, clickjacking y MIME-sniffing.
+Implementa protecciones contra XSS, clickjacking, MIME-sniffing y
+ataques cross-window (Spectre).
 
 Headers agregados:
-    - X-Content-Type-Options: nosniff (evita MIME-sniffing)
-    - X-Frame-Options: DENY (protección contra clickjacking)
+    - X-Content-Type-Options: nosniff
+    - X-Frame-Options: DENY
     - Referrer-Policy: strict-origin-when-cross-origin
-    - Permissions-Policy: restricciones de geolocalización, micrófono, cámara
-    - Strict-Transport-Security: HSTS (solo en HTTPS)
-    - Content-Security-Policy: diferenciado por protocolo.
+    - Permissions-Policy: restricciones ampliadas de permisos de navegador
+    - Cache-Control: no-store (evita cacheo de respuestas autenticadas)
+    - Cross-Origin-Opener-Policy: same-origin (protección Spectre)
+    - Cross-Origin-Resource-Policy: same-origin
+    - Strict-Transport-Security: HSTS (HTTPS directo o via X-Forwarded-Proto)
+    - Content-Security-Policy: diferenciado por protocolo
 """
 
 from collections.abc import Callable
@@ -17,6 +21,11 @@ from collections.abc import Callable
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
+
+_PERMISSIONS_POLICY = (
+    "geolocation=(), microphone=(), camera=(), "
+    "payment=(), usb=(), display-capture=()"
+)
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -28,25 +37,25 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        """Procesa la petición añadiendo headers de seguridad.
-
-        Args:
-            request: Petición HTTP entrante.
-            call_next: Siguiente middleware/handler en la cadena.
-
-        Returns:
-            Response con headers de seguridad añadidos.
-
-        """
         response = await call_next(request)
 
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        response.headers["Permissions-Policy"] = _PERMISSIONS_POLICY
+        response.headers["Cache-Control"] = "no-store"
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
 
-        if request.url.scheme == "https":
-            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        # Detectar HTTPS tanto en conexión directa como detrás de proxy TLS
+        forwarded_proto = request.headers.get("x-forwarded-proto", "")
+        is_https = request.url.scheme == "https" or forwarded_proto == "https"
+
+        if is_https:
+            # preload solo cuando el dominio esté consolidado en HTTPS de forma permanente
+            response.headers["Strict-Transport-Security"] = (
+                "max-age=31536000; includeSubDomains"
+            )
             csp = (
                 "default-src 'self'; "
                 "script-src 'self'; "
@@ -62,10 +71,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         else:
             csp = (
                 "default-src 'self'; "
-                "script-src 'self' 'unsafe-inline'; "
+                "script-src 'self'; "
                 "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
                 "font-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; "
-                "img-src 'self' data: blob: http:; "
+                "img-src 'self' data: blob:; "
                 "connect-src 'self' http://localhost:* ws://localhost:*; "
                 "frame-ancestors 'none'; "
                 "base-uri 'self'; "

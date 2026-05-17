@@ -95,7 +95,10 @@ class Settings(BaseSettings):
     max_tokens: int = 2000
     max_concurrent_llm_calls: int = 1
     max_pending_contents: int = 5
-    rate_limit_per_minute: int = 30  # Rate limiting (30 req/min)
+    rate_limit_per_minute: int = 30       # Rate limiting base (req/min)
+    rate_limit_llm_per_minute: int = 5    # Endpoints que invocan Ollama
+    rate_limit_image_per_minute: int = 3  # Endpoints de generación de imagen
+    redis_url: str = "redis://localhost:6379"
 
     # Image generation
     image_prompt_tokens: int = 512
@@ -184,6 +187,12 @@ class Settings(BaseSettings):
             raise ValueError(
                 msg,
             )
+        if self.environment in ("production", "demo") and not self.cookie_secure:
+            msg = (
+                "COOKIE_SECURE debe ser True en entornos production/demo. "
+                "Añade COOKIE_SECURE=true al .env de producción."
+            )
+            raise ValueError(msg)
         if self.environment == "local" and not os.environ.get("ENVIRONMENT"):
             warnings.warn(
                 "ENVIRONMENT no está definida en el entorno. "
