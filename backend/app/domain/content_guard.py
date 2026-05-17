@@ -62,7 +62,7 @@ _BLOCKED_PATTERNS: tuple[re.Pattern[str], ...] = (
     # acoso/humillación requieren verbo directivo — permite narrativa RPG ("sufría el acoso", "la humillación del prisionero")
     # humillacion cubre la forma sustantiva "humillación" tras normalización NFKD
     re.compile(
-        r"\b(promueve|incentiva|practica|ejecuta|fomenta|realiza|incita|ordena)\s+.{0,25}(acoso|harass(?:ment)?|denigrar?|denigrate|humill(?:ar|acion))\b",
+        r"\b(promueve|incentiva|practica|ejecuta|fomenta|realiza|incita|ordena)\s+.{0,25}(acoso|harass(?:ment)?|denigra(?:r|cion)?|denigrate|humill(?:ar|acion))\b",
         re.IGNORECASE,
     ),
 )
@@ -97,7 +97,7 @@ _OUTPUT_BLOCKED_PATTERNS: tuple[re.Pattern[str], ...] = (
     # acoso/humillación requieren verbo directivo — permite al LLM narrar villanos que usan humillación
     # humillacion cubre "humillación" (sustantivo) tras normalización NFKD — cerraba FP con llama3.2 (RPG-FP03)
     re.compile(
-        r"\b(promueve|incentiva|practica|ejecuta|fomenta|realiza|incita|ordena)\s+.{0,25}(acoso|harass(?:ment)?|denigrar?|denigrate|humill(?:ar|acion))\b",
+        r"\b(promueve|incentiva|practica|ejecuta|fomenta|realiza|incita|ordena)\s+.{0,25}(acoso|harass(?:ment)?|denigra(?:r|cion)?|denigrate|humill(?:ar|acion))\b",
         re.IGNORECASE,
     ),
 )
@@ -137,6 +137,7 @@ def _check_text(
     normalized = _normalize(text)
     for pattern in patterns:
         if pattern.search(normalized):
+            error.pattern = pattern.pattern  # para auditoría en ModerationLog
             raise error
 
 

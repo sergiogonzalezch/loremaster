@@ -14,7 +14,7 @@ from app.core.exceptions import (
     ContentDiscardedError,
     ContentNotShareableError,
 )
-from app.domain.content_guard import check_user_input
+from app.domain.content_guard import check_generated_output, check_user_input
 from app.models.db.entity import Entity
 from app.models.db.entity_content import EntityContent
 from app.models.db.generated_text import GeneratedText
@@ -248,6 +248,7 @@ def share_content(
 
     Raises:
         ContentNotShareableError: Si el contenido no está confirmado.
+        GeneratedContentBlockedError: Si el contenido a compartir contiene material bloqueado.
 
     """
     content = _get_active_content(session, content_id, entity_id, collection_id)
@@ -255,6 +256,8 @@ def share_content(
         return None
     if content.status != ContentStatus.confirmed:
         raise ContentNotShareableError
+    if shared:
+        check_generated_output(content.content)
     content.is_shared = shared
     session.add(content)
     db_commit(session, f"share_content({content_id})")

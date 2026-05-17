@@ -52,15 +52,42 @@ def test_empty_string_passes():
         "how to make a bomb",
         "fabricar una bomba casera",
         "synthesize drugs at home",
-        "síntesis drogas ilegales",
-        "esto es acoso directo",
-        "harassment campaign",
-    ],
+        "síntesis drogas ilegales",    ],
 )
 def test_direct_keywords_blocked(text):
     """Palabras clave directas bloqueadas lanzan ContentNotAllowedError."""
     with pytest.raises(ContentNotAllowedError):
         check_user_input(text)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "promueve el acoso hacia los usuarios",
+        "incentiva el harassment de minorías",
+        "ejecuta actos de acoso sistemático",
+        "fomenta la denigración de grupos",
+        "ordena humillar a los prisioneros",
+    ],
+)
+def test_harassment_with_directive_verb_blocked(text):
+    """Acoso/harassment con verbo directivo explícito es bloqueado."""
+    with pytest.raises(ContentNotAllowedError):
+        check_user_input(text)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "esto es acoso directo",
+        "harassment campaign",
+        "el acoso de la corte real hacia los mercaderes",
+        "sufría la humillación como prisionero del señor oscuro",
+    ],
+)
+def test_harassment_without_directive_verb_passes(text):
+    """Acoso/harassment sin verbo directivo no se bloquea — permite narrativa RPG."""
+    check_user_input(text)  # no debe lanzar
 
 
 # ---------------------------------------------------------------------------
@@ -75,7 +102,6 @@ def test_direct_keywords_blocked(text):
         "ｈａｔｅ ｓｐｅｅｃｈ",
         "ｍａｋｅ ａ ｂｏｍｂ",
         "ｓｙｎｔｈｅｓｉｚｅ ｄｒｕｇｓ",
-        "ｈａｒａｓｓｍｅｎｔ",
     ],
 )
 def test_fullwidth_unicode_blocked(text):
@@ -114,9 +140,7 @@ def test_superscript_digits_normalized():
         "Hate Speech",
         "MAKE A BOMB",
         "SYNTHESIZE DRUGS",
-        "HARASSMENT",
         "PoRn",
-        "HaRaSSmeNt",
     ],
 )
 def test_mixed_case_blocked(text):

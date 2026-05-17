@@ -83,12 +83,15 @@ def render_prompt(
     """
 
     def _escape(v: str) -> str:
-        """Escapa llaves de formato y etiquetas XML de cierre."""
+        """Escapa llaves de formato y etiquetas XML de apertura y cierre."""
         return (
             v.replace("{", "{{")
             .replace("}", "}}")
+            .replace("<entity>", "[ESCAPED_ENTITY_OPEN]")
             .replace("</entity>", "[ESCAPED_ENTITY_CLOSE]")
+            .replace("<context>", "[ESCAPED_CONTEXT_OPEN]")
             .replace("</context>", "[ESCAPED_CONTEXT_CLOSE]")
+            .replace("<user_request>", "[ESCAPED_USER_REQUEST_OPEN]")
             .replace("</user_request>", "[ESCAPED_USER_REQUEST_CLOSE]")
         )
 

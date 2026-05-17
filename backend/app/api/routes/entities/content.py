@@ -55,14 +55,14 @@ async def generate_content(
     except PendingLimitExceededError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
     except ContentNotAllowedError as e:
-        log_moderation_event(session, "input", e.snippet)
+        log_moderation_event(session, "input", e.snippet, collection_id=entity.collection_id, entity_id=entity.id, operation="generate", pattern_matched=getattr(e, "pattern", None))
         raise HTTPException(status_code=422, detail=str(e)) from e
     except InvalidCategoryError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
     except NoContextAvailableError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
     except GeneratedContentBlockedError as e:
-        log_moderation_event(session, "output", e.snippet)
+        log_moderation_event(session, "output", e.snippet, collection_id=entity.collection_id, entity_id=entity.id, operation="generate", pattern_matched=getattr(e, "pattern", None))
         raise HTTPException(status_code=422, detail=str(e)) from e
     except DatabaseError as e:
         raise HTTPException(
@@ -127,7 +127,7 @@ def edit_content(
             current_user["sub"],
         )
     except ContentNotAllowedError as e:
-        log_moderation_event(session, "input", e.snippet)
+        log_moderation_event(session, "input", e.snippet, user_id=current_user["sub"], collection_id=collection_id, entity_id=entity_id, operation="edit", pattern_matched=getattr(e, "pattern", None))
         raise HTTPException(status_code=422, detail=str(e)) from e
     except ContentDiscardedError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
@@ -218,6 +218,9 @@ def share_content(
         )
     except ContentNotShareableError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
+    except GeneratedContentBlockedError as e:
+        log_moderation_event(session, "output", e.snippet, collection_id=collection_id, entity_id=entity_id, operation="share", pattern_matched=getattr(e, "pattern", None))
+        raise HTTPException(status_code=422, detail=str(e)) from e
     except DatabaseError as e:
         raise HTTPException(
             status_code=500,
