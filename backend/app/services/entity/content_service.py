@@ -310,6 +310,7 @@ def _to_response(
         raw_content=gt.raw_content if gt else None,
         query=gt.query if gt else None,
         sources_count=gt.sources_count if gt else 0,
+        source_doc_ids=(gt.source_doc_ids or []) if gt else [],
         token_count=gt.token_count if gt else 0,
         status=content.status,
         is_shared=content.is_shared,

@@ -38,10 +38,10 @@ def invoke_rag_pipeline(
     collection_id: str,
     query: str,
     extra_context: str = "",
-) -> tuple[str, int]:
+) -> tuple[str, int, list[str]]:
     """Ejecuta el pipeline RAG: busca contexto, construye prompt e invoca el LLM.
 
-    Retorna una tupla (respuesta, num_chunks).
+    Retorna (respuesta, num_chunks, source_doc_ids).
 
     Raises:
         RuntimeError: Si Qdrant o el LLM no están disponibles.
@@ -57,7 +57,7 @@ def invoke_rag_pipeline(
     )
 
     try:
-        context, num_chunks = retrieve_context(collection_id, query, extra_context)
+        context, num_chunks, source_doc_ids = retrieve_context(collection_id, query, extra_context)
     except _TRANSPORT_ERRORS as e:
         logger.exception("Vector store unavailable for collection %s", collection_id)
         msg = "Vector store unavailable"
@@ -76,7 +76,7 @@ def invoke_rag_pipeline(
         collection_id,
         num_chunks,
     )
-    return answer, num_chunks
+    return answer, num_chunks, source_doc_ids
 
 
 def invoke_generation_pipeline(
@@ -85,10 +85,10 @@ def invoke_generation_pipeline(
     query: str,
     extra_context: str = "",
     model: str | None = None,
-) -> tuple[str, int]:
+) -> tuple[str, int, list[str]]:
     """Pipeline RAG consciente de entidades usando plantillas de prompt específicas por categoría.
 
-    Retorna una tupla (respuesta, num_chunks).
+    Retorna (respuesta, num_chunks, source_doc_ids).
 
     Raises:
         RuntimeError: Si Qdrant o el LLM no están disponibles.
@@ -108,7 +108,7 @@ def invoke_generation_pipeline(
     )
 
     try:
-        context, num_chunks = retrieve_context(collection_id, query, extra_context)
+        context, num_chunks, source_doc_ids = retrieve_context(collection_id, query, extra_context)
     except _TRANSPORT_ERRORS as e:
         logger.exception("Vector store unavailable for collection %s", collection_id)
         msg = "Vector store unavailable"
@@ -143,4 +143,4 @@ def invoke_generation_pipeline(
         effective_model,
         num_chunks,
     )
-    return answer, num_chunks
+    return answer, num_chunks, source_doc_ids

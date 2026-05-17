@@ -16,10 +16,10 @@ if "app.engine.rag" not in sys.modules:
         return 1
 
     def _stub_search_context(*args, **kwargs):
-        return ["stub context"]
+        return (["stub context"], [""])
 
     def _stub_retrieve_context(*args, **kwargs):
-        return ("stub context", 1)
+        return ("stub context", 1, [])
 
     def _stub_delete_document_chunks(*args, **kwargs):
         return 0
@@ -131,7 +131,7 @@ def mock_rag_engine(monkeypatch: pytest.MonkeyPatch) -> dict:
         query: str,
         top_k: int | None = None,
         score_threshold: float | None = None,
-    ) -> list[str]:
+    ) -> tuple[list[str], list[str]]:
         calls["search_context"].append(
             {
                 "collection_id": collection_id,
@@ -140,13 +140,13 @@ def mock_rag_engine(monkeypatch: pytest.MonkeyPatch) -> dict:
                 "score_threshold": score_threshold,
             },
         )
-        return ["contexto 1", "contexto 2"]
+        return (["contexto 1", "contexto 2"], ["doc-id-mock-1", "doc-id-mock-2"])
 
     def _retrieve_context(
         collection_id: str,
         query: str,
         extra_context: str = "",
-    ) -> tuple[str, int]:
+    ) -> tuple[str, int, list[str]]:
         calls["retrieve_context"].append(
             {
                 "collection_id": collection_id,
@@ -154,7 +154,7 @@ def mock_rag_engine(monkeypatch: pytest.MonkeyPatch) -> dict:
                 "extra_context": extra_context,
             },
         )
-        return ("contexto 1\n\n---\n\ncontexto 2", 2)
+        return ("contexto 1\n\n---\n\ncontexto 2", 2, ["doc-id-mock-1", "doc-id-mock-2"])
 
     def _delete_document_chunks(collection_id: str, doc_id: str) -> int:
         calls["delete_document_chunks"].append(

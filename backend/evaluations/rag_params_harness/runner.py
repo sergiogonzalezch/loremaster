@@ -213,7 +213,7 @@ TEXTO GENERADO:
 ---
 
 Responde UNICAMENTE con JSON valido, sin texto antes ni despues:
-{{"D1": <0-3>, "D1_reason": "<razon breve>", "D2": <0-3>, "D2_reason": "<razon breve>", "D3": <0-3>, "D3_reason": "<razon breve>", "D4": <0-3>, "D4_reason": "<razon breve>"}}"""
+{{"D1": <0-3>, "D1_reason": "<razon breve>", "D2": <0-3>, "D2_reason": "<razon breve>", "D3": <0-3>, "D3_reason": "<razon breve>", "D4": <0-3>, "D4_reason": "<razon breve>"}}"""  # noqa: E501
 
 
 # ── Funciones auxiliares ───────────────────────────────────────────────────────

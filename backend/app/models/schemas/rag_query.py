@@ -26,12 +26,11 @@ class RagQueryResponse(BaseModel):
         answer: Texto generado por el LLM con contexto de los documentos.
         query: Consulta original enviada por el usuario.
         sources_count: Número de fragmentos de contexto utilizados.
+        source_doc_ids: IDs de los documentos que aportaron contexto.
 
     """
 
     answer: str = Field(..., description="Texto generado en respuesta a la consulta.")
     query: str = Field(..., description="Consulta original enviada por el usuario.")
-    sources_count: int = Field(
-        ...,
-        description="Número de fragmentos de contexto usados.",
-    )
+    sources_count: int = Field(..., description="Número de fragmentos de contexto usados.")
+    source_doc_ids: list[str] = Field(default_factory=list, description="IDs de los documentos fuente.")

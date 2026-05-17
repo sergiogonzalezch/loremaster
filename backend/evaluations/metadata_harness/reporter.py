@@ -262,8 +262,6 @@ def generate_report(results_dir: Path, output: Path, title: str) -> None:
                 lines.append(f"| {model} | — | — | — | — |")
                 continue
             multi_avg = _signal_avg(run, "multi")
-            single_avg_s1 = _signal_avg(run, "seed1_only")
-            single_avg_s2 = _signal_avg(run, "seed2_only")
             single_all = [
                 tc for tc in run["tc_results"].values()
                 if tc.get("source_signal") in ("seed1_heavy", "seed2_heavy") and tc.get("scores")

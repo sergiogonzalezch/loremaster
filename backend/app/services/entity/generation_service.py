@@ -86,7 +86,7 @@ def generate(
     if entity.description:
         extra_context = f"Información actual de '{entity.name}' ({entity.type}):\n{entity.description}\n\n"
 
-    answer, sources_count = invoke_generation_pipeline(
+    answer, sources_count, source_doc_ids = invoke_generation_pipeline(
         collection_id=entity.collection_id,
         entity_ctx=EntityContext(
             name=entity.name,
@@ -106,6 +106,7 @@ def generate(
         query=query,
         raw_content=answer,
         sources_count=sources_count,
+        source_doc_ids=source_doc_ids,
         token_count=max(1, len(answer) // 4),
         model_used=model or settings.ollama_model,
     )
@@ -168,6 +169,7 @@ def generate(
         raw_content=generated_text.raw_content,
         query=generated_text.query,
         sources_count=generated_text.sources_count,
+        source_doc_ids=generated_text.source_doc_ids or [],
         token_count=generated_text.token_count,
         model_used=generated_text.model_used,
         status=content.status,

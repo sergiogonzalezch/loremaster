@@ -21,6 +21,7 @@ class EntityContentResponse(BaseModel):
         was_edited: Indica si el contenido fue editado tras la generación.
         query: Consulta original del usuario.
         sources_count: Fragmentos de contexto utilizados.
+        source_doc_ids: IDs de los documentos fuente usados en la generación.
         token_count: Tokens estimados de la respuesta.
         status: Estado del ciclo de vida.
         is_shared: Si está compartido en el feed público.
@@ -40,6 +41,7 @@ class EntityContentResponse(BaseModel):
     was_edited: bool = False
     query: str | None = None
     sources_count: int = 0
+    source_doc_ids: list[str] = Field(default_factory=list)
     token_count: int = 0
     model_used: str | None = None
     status: ContentStatus

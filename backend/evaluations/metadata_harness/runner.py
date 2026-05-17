@@ -105,7 +105,7 @@ TEST_CASES: list[dict] = [
         "entity_type": EntityType.location,
         "entity_name": "La Torre Fracturada",
         "entity_desc": "Estructura de origen desconocido en la Llanura de las Cenizas.",
-        "query": "Que se sabe sobre la Torre Fracturada en la Llanura de las Cenizas? Que dicen distintas fuentes sobre su naturaleza y fenomenos observados?",
+        "query": "Que se sabe sobre la Torre Fracturada en la Llanura de las Cenizas? Que dicen distintas fuentes sobre su naturaleza y fenomenos observados?",  # noqa: E501
         "source_signal": "multi",
     },
     {
@@ -206,7 +206,7 @@ TEXTO GENERADO:
 ---
 
 Responde UNICAMENTE con JSON valido, sin texto antes ni despues:
-{{"D1": <0-3>, "D1_reason": "<razon breve>", "D2": <0-3>, "D2_reason": "<razon breve>", "D3": <0-3>, "D3_reason": "<razon breve>", "D4": <0-3>, "D4_reason": "<razon breve>", "D5": <0-3>, "D5_reason": "<razon breve>"}}"""
+{{"D1": <0-3>, "D1_reason": "<razon breve>", "D2": <0-3>, "D2_reason": "<razon breve>", "D3": <0-3>, "D3_reason": "<razon breve>", "D4": <0-3>, "D4_reason": "<razon breve>", "D5": <0-3>, "D5_reason": "<razon breve>"}}"""  # noqa: E501
 
 
 # ── Funciones auxiliares ───────────────────────────────────────────────────────
@@ -484,7 +484,7 @@ def run_eval(
     errors = sum(1 for s in tc_summaries if s["status"] == "ERROR")
     multi_tcs = sum(1 for s in tc_summaries if s["multi_source_retrieved"])
     print(f"\n  -> {run_id}")
-    print(f"  -> Score global: {global_avg}/3.0  |  D5 avg: {d5_avg}/3.0  |  Errores: {errors}/{len(TEST_CASES)}  |  TCs multi-fuente: {multi_tcs}/{len(TEST_CASES)}")
+    print(f"  -> Score global: {global_avg}/3.0  |  D5 avg: {d5_avg}/3.0  |  Errores: {errors}/{len(TEST_CASES)}  |  TCs multi-fuente: {multi_tcs}/{len(TEST_CASES)}")  # noqa: E501
     return run_dir
 
 

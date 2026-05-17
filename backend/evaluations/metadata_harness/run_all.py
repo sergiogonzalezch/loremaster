@@ -61,7 +61,7 @@ def main() -> None:
     if not args.report_only:
         total = len(models) * len(configs)
         print(f"\n{'='*65}")
-        print(f"  metadata_harness -- run_all")
+        print("  metadata_harness -- run_all")
         print(f"  Modelos : {models}")
         print(f"  Configs : {configs}")
         print(f"  Juez    : {args.judge}")

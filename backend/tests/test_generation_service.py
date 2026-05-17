@@ -45,7 +45,7 @@ def mock_pipeline(monkeypatch):
                 model=model,
             ),
         )
-        return "Contenido generado por el pipeline mock", 3
+        return "Contenido generado por el pipeline mock", 3, ["doc-id-mock-1"]
 
     monkeypatch.setattr(
         "app.services.entity.generation_service.invoke_generation_pipeline",

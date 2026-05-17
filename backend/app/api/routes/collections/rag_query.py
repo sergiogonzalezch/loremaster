@@ -46,7 +46,7 @@ def rag_query(
             collection_id,
             query,
         )
-        answer, sources_count = invoke_rag_pipeline(
+        answer, sources_count, source_doc_ids = invoke_rag_pipeline(
             collection_id=collection_id,
             query=query,
         )
@@ -56,6 +56,7 @@ def rag_query(
             query=query,
             answer=answer,
             sources_count=sources_count,
+            source_doc_ids=source_doc_ids,
         )
     except ContentNotAllowedError as e:
         log_moderation_event(session, "input", e.snippet)

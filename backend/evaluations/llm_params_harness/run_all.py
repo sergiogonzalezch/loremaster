@@ -106,7 +106,7 @@ Ejemplos:
     if not args.report_only:
         total = len(models) * len(configs)
         print(f"\n{'='*65}")
-        print(f"  llm_params_harness — run_all")
+        print("  llm_params_harness — run_all")
         print(f"  Modelos : {models}")
         print(f"  Configs : {configs}")
         print(f"  Juez    : {args.judge}")

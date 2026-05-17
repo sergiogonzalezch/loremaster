@@ -126,14 +126,14 @@ def search_context(
     query: str,
     top_k: int | None = None,
     score_threshold: float | None = None,
-) -> list[str]:
+) -> tuple[list[str], list[str]]:
     """Busca los chunks más relevantes en Qdrant para una consulta.
 
-    Retorna una lista de textos de los chunks encontrados.
+    Retorna (textos, doc_ids) paralelos — un doc_id por chunk recuperado.
     """
     name = f"lm_{collection_id}"
     if not _collection_exists(name):
-        return []
+        return [], []
     if top_k is None:
         top_k = settings.top_k
     query_vector = _embedding_model.encode([query])[0].tolist()
@@ -158,22 +158,26 @@ def search_context(
             point.payload.get("doc_id", "?"),
             point.payload.get("text", ""),
         )
-    return [point.payload["text"] for point in results.points]
+    texts = [point.payload["text"] for point in results.points]
+    doc_ids = [point.payload.get("doc_id", "") for point in results.points]
+    return texts, doc_ids
 
 
 def retrieve_context(
     collection_id: str,
     query: str,
     extra_context: str = "",
-) -> tuple[str, int]:
-    """Busca en Qdrant, combina extra_context y retorna (contexto, num_chunks).
+) -> tuple[str, int, list[str]]:
+    """Busca en Qdrant, combina extra_context y retorna (contexto, num_chunks, source_doc_ids).
+
+    source_doc_ids es la lista deduplicada de documentos que aportaron chunks.
 
     Raises:
         NoContextAvailableError: Si no hay contexto de ninguna fuente.
 
     """
     try:
-        context_chunks = search_context(
+        context_chunks, chunk_doc_ids = search_context(
             collection_id=collection_id,
             query=query,
             top_k=settings.top_k,
@@ -191,4 +195,5 @@ def retrieve_context(
     if not context.strip():
         raise NoContextAvailableError
 
-    return context, len(context_chunks)
+    source_doc_ids = list(dict.fromkeys(d for d in chunk_doc_ids if d))
+    return context, len(context_chunks), source_doc_ids
