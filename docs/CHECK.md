@@ -206,3 +206,19 @@ Evaluación de 3 configuraciones de formato de contexto × 2 modelos con gemma2:
 - Re-evaluar si el proyecto migra a un modelo con mayor ventana de contexto y capacidad de atribución (≥13B o API externa).
 
 **Decisión:** no implementar cabeceras de fuente en `search_context`. `retrieve_context` permanece sin cambios.
+
+---
+
+### Principios de evaluación — lecciones para futuros harness
+
+**1. Rendimiento en volumen pequeño no predice rendimiento asintótico.**
+Una optimización que gana en corpus pequeño puede perder a escala, y viceversa. El ejemplo canónico es insertion sort vs merge sort: insertion sort tiene mejor constante en arrays pequeños pero O(n²) lo hace inviable a escala frente a O(n log n). Antes de descartar o adoptar una feature basándose en un harness, verificar que el volumen de prueba sea representativo del escenario de producción real.
+
+**2. Identificar el cuello de botella antes de medir.**
+El metadata_harness midió con corpus de 2 documentos asumiendo que el volumen era la variable limitante. El limitante real era la capacidad del modelo. Con 8/10 TCs recuperando de múltiples fuentes, el corpus ya era suficiente para activar el escenario — la señal plana indicó que el problema estaba en el modelo, no en los datos. Pregunta siempre: ¿qué variable está realmente siendo ejercida por este harness?
+
+**3. Una mejora data-dependiente es más frágil que una mejora estructural.**
+Si el beneficio de una feature solo aparece bajo condiciones externas que no controlas (corpus grande, modelo más capaz, queries de cierto tipo), el riesgo de regresión en condiciones distintas es alto. Preferir optimizaciones cuya mejora sea robusta al volumen y al modelo.
+
+**4. El rendimiento marginal tiene que compararse contra el costo de implementación, no contra cero.**
+Un Δ +0.07 con complejidad de implementación media (modificar ingest + pipeline de retrieval) es un trade-off negativo aunque el delta sea positivo. El umbral de adopción debe definirse antes de ejecutar el harness para evitar sesgo de confirmación post-hoc.
