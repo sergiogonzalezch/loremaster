@@ -15,8 +15,8 @@ import type {
 import type { PaginatedResponse } from "../types";
 
 /** Obtiene el perfil del usuario autenticado. */
-export function getMyProfile(): Promise<UserProfile> {
-  return apiGet<UserProfile>("/users/me");
+export function getMyProfile(options?: RequestInit): Promise<UserProfile> {
+  return apiGet<UserProfile>("/users/me", undefined, options);
 }
 
 /** Actualiza el perfil del usuario autenticado. */
@@ -58,8 +58,8 @@ export function getPublicImages(
 }
 
 /** Obtiene la información del avatar del usuario autenticado. */
-export function getMyAvatar(): Promise<AvatarResponse> {
-  return apiGet<AvatarResponse>("/users/me/avatar");
+export function getMyAvatar(options?: RequestInit): Promise<AvatarResponse> {
+  return apiGet<AvatarResponse>("/users/me/avatar", undefined, options);
 }
 
 /** Sube una nueva imagen de avatar para el usuario autenticado. */

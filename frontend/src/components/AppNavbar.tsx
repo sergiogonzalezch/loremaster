@@ -5,8 +5,9 @@
  * colecciones, perfil público, admin (si aplica) y logout.
  */
 
+import { useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Container, Dropdown } from "react-bootstrap";
+import { Alert, Container, Dropdown } from "react-bootstrap";
 import { useClerk } from "@clerk/clerk-react";
 import { useAuth } from "../hooks/useAuth";
 import SafeImage from "./SafeImage";
@@ -31,11 +32,11 @@ function InitialsCircle({ username }: { username: string }) {
  * Componente separado para que useClerk() solo se llame dentro de
  * ClerkProvider — evita errores en el modo local (sin Clerk).
  */
-function ClerkLogoutItem({ onLocalLogout }: { onLocalLogout: () => void }) {
+function ClerkLogoutItem({ onLocalLogout }: { onLocalLogout: () => Promise<void> }) {
   const { signOut } = useClerk();
 
   async function handleLogout() {
-    onLocalLogout();
+    await onLocalLogout();
     await signOut();
   }
 
@@ -51,10 +52,16 @@ export default function AppNavbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const from = (location.state as { from?: string })?.from ?? location.pathname;
+  const [logoutError, setLogoutError] = useState<string | null>(null);
 
-  function handleLocalLogout() {
-    logout();
-    navigate("/feed", { replace: true });
+  async function handleLocalLogout() {
+    setLogoutError(null);
+    try {
+      await logout();
+      navigate("/feed", { replace: true });
+    } catch {
+      setLogoutError("No se pudo cerrar sesión. Inténtalo de nuevo.");
+    }
   }
 
   const navLinkStyle = ({ isActive }: { isActive: boolean }) => ({
@@ -67,6 +74,18 @@ export default function AppNavbar() {
   });
 
   return (
+    <>
+    {logoutError && (
+      <Alert
+        variant="danger"
+        dismissible
+        onClose={() => setLogoutError(null)}
+        className="mb-0 rounded-0 text-center py-2"
+        style={{ fontSize: "0.85rem" }}
+      >
+        {logoutError}
+      </Alert>
+    )}
     <nav
       style={{
         borderBottom: "1px solid rgba(255,255,255,0.08)",
@@ -154,7 +173,7 @@ export default function AppNavbar() {
                 {clerkKey ? (
                   <ClerkLogoutItem onLocalLogout={handleLocalLogout} />
                 ) : (
-                  <Dropdown.Item onClick={handleLocalLogout}>
+                  <Dropdown.Item onClick={() => void handleLocalLogout()}>
                     Cerrar sesión
                   </Dropdown.Item>
                 )}
@@ -173,5 +192,6 @@ export default function AppNavbar() {
         )}
       </Container>
     </nav>
+    </>
   );
 }

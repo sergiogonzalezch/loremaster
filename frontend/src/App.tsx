@@ -72,7 +72,8 @@ function UnauthorizedHandler() {
 
   useEffect(() => {
     function handleUnauthorized() {
-      logout();
+      // Sesión ya inválida en el backend — limpiar estado sin esperar confirmación API.
+      void logout({ force: true });
       navigate("/login", { replace: true });
     }
     window.addEventListener("auth:unauthorized", handleUnauthorized);

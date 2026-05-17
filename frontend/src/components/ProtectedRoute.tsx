@@ -17,10 +17,13 @@ import { clerkKey } from "../utils/clerkConfig";
 /** Gate para el modo Clerk. Solo se renderiza dentro de ClerkProvider. */
 function ProtectedRouteClerk() {
   const { isSignedIn, isLoaded } = useUser();
+  const { user, loading } = useAuth();
   const location = useLocation();
 
-  if (!isLoaded) return <LoadingSpinner />;
-  if (!isSignedIn) {
+  // Espera tanto a Clerk como al sync de cookie con el backend antes de decidir.
+  if (!isLoaded || loading) return <LoadingSpinner />;
+  // isSignedIn cubre sesión Clerk expirada; !user cubre sesión backend revocada post-sync.
+  if (!isSignedIn || !user) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
   return <Outlet />;
