@@ -1,39 +1,22 @@
-# Docker Compose para desarrollo local.
-# Para producción usar: docker-compose -f docker-compose.prod.yml up -d
-# (requiere variables POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB definidas)
+# Infraestructura base — desarrollo local (SQLite mode).
+# Incluye solo Qdrant y Redis. Para añadir Postgres usar docker-compose.postgres.yml.
+#
+# Uso desde la raíz del proyecto (ver Makefile raíz):
+#   make infra       → solo este archivo (SQLite)
+#   make infra-pg    → este + docker-compose.postgres.yml (PostgreSQL)
+#   make dev         → infra + backend + frontend (SQLite)
+#   make dev-pg      → infra + backend + frontend (PostgreSQL)
 
 services:
   qdrant:
     image: qdrant/qdrant:latest
     container_name: qdrant
-    # Solo expuerto para desarrollo local. Producción: eliminar ports y usar red interna.
     ports:
       - "127.0.0.1:6333:6333"
     volumes:
       - qdrant_data:/qdrant/storage
     networks:
       - loremaster
-
-  postgres:
-    image: postgres:15-alpine
-    container_name: postgres
-    profiles:
-      - postgres
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER requerida en .env}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD requerida en .env}
-      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB requerida en .env}
-    ports:
-      - "127.0.0.1:5433:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - loremaster
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:?POSTGRES_USER requerida en .env}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -50,7 +33,6 @@ services:
 
 volumes:
   qdrant_data:
-  postgres_data:
 
 networks:
   loremaster:

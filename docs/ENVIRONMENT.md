@@ -74,7 +74,6 @@ de seguridad del entorno seleccionado.
 
 | Variable | Local | Demo | Producción | Notas |
 |---|---|---|---|---|
-| `COMPOSE_PROFILES` | vacío | `postgres` | `postgres` | Vacío → solo Qdrant + Redis arrancan en docker-compose |
 | `DATABASE_URL` | `sqlite:///./loremaster.db` | `postgresql://...` | `postgresql://...` | SQLite solo para local |
 | `POSTGRES_USER` | — | `loremaster` | `loremaster` | Solo si `COMPOSE_PROFILES=postgres` |
 | `POSTGRES_PASSWORD` | — | generada | generada | `openssl rand -hex 16` |
@@ -130,7 +129,7 @@ de seguridad del entorno seleccionado.
 
 | Variable | Local | Demo | Producción | Notas |
 |---|---|---|---|---|
-| `IMAGE_BACKEND` | `mock` o `comfyui` | `comfyui` | `comfyui` | `mock` devuelve una URL placeholder sin llamar a ComfyUI |
+| `IMAGE_BACKEND` | `comfyui` (o `mock` sin servidor) | `comfyui` | `comfyui` | `mock` devuelve URL placeholder; independiente del entorno — usar `comfyui` en local si el servidor está disponible |
 | `IMAGE_PROMPT_MODEL` | `mistral:latest` | igual | igual | Modelo Ollama para construir el prompt visual |
 | `IMAGE_PROMPT_TOKENS` | `512` | `512` | `512` | Límite tokens del text encoder (SD/Flux) |
 | `IMAGE_BATCH_SIZE_DEFAULT` | `4` | `4` | `4` | Imágenes por generación |
@@ -162,30 +161,35 @@ de seguridad del entorno seleccionado.
 ## Flujo por entorno
 
 ```
-local
+local/SQLite  →  make dev
 ├── ENVIRONMENT=local
 ├── DATABASE_URL=sqlite:///./loremaster.db
 ├── COOKIE_SECURE=false
-├── RATE_LIMIT_ENABLED=false          ← para eval/desarrollo
-├── IMAGE_BACKEND=mock                ← sin ComfyUI
+├── RATE_LIMIT_ENABLED=false
+├── IMAGE_BACKEND=comfyui  (o "mock" sin servidor ComfyUI)
 ├── STORAGE_BACKEND=local
-└── docker-compose up -d              ← solo Qdrant + Redis (COMPOSE_PROFILES vacío)
+└── Docker: Qdrant + Redis
 
-demo / staging
+local/PostgreSQL  →  make dev-pg
+├── igual que local/SQLite
+├── DATABASE_URL=postgresql://...
+└── Docker: Qdrant + Redis + Postgres
+
+demo / staging  →  make prod-up  (con docker-compose.prod.yml)
 ├── ENVIRONMENT=demo
 ├── DATABASE_URL=postgresql://...
-├── COOKIE_SECURE=true                ← HTTPS obligatorio (arranque falla si false)
-├── ALLOWED_ORIGINS=["https://..."]   ← HTTPS obligatorio (arranque falla si http)
+├── COOKIE_SECURE=true                ← arranque falla si false
+├── ALLOWED_ORIGINS=["https://..."]   ← arranque falla si http://
 ├── RATE_LIMIT_ENABLED=true
 ├── IMAGE_BACKEND=comfyui
 ├── STORAGE_BACKEND=s3 o r2
-└── docker-compose -f docker-compose.prod.yml up -d
+└── Docker: Qdrant + Redis + Postgres (sin puertos expuestos)
 
-production
+production  →  make prod-up
 ├── igual que demo
 ├── SECRET_KEY ≥ 32 chars             ← arranque falla si no se cumple
 ├── LOG_LEVEL=WARNING o ERROR
-└── variables inyectadas por el servidor (no .env en disco)
+└── variables inyectadas por CI/CD o secrets manager (no .env en disco)
 ```
 
 ---

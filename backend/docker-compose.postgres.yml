@@ -1,0 +1,33 @@
+# Override: añade PostgreSQL a la infraestructura base.
+# Usar junto con docker-compose.yml:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.postgres.yml up -d
+#
+# O desde la raíz del proyecto: make infra-pg
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER requerida}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD requerida}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB requerida}
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - loremaster
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+
+networks:
+  loremaster:
+    driver: bridge

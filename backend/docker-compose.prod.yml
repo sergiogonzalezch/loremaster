@@ -1,43 +1,46 @@
+# Infraestructura de producción/demo.
+# Incluye Qdrant + Redis + Postgres (siempre activos en prod).
+# Ningún servicio expone puertos al host; solo accesibles dentro de la red interna.
+#
+# Uso:
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Variables requeridas (inyectar via secrets manager o CI/CD, no .env en disco):
+#   POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
+
 services:
   qdrant:
     image: qdrant/qdrant:latest
     container_name: qdrant
-    # Qdrant no se expone al host; solo accesible dentro de la red interna
     volumes:
       - qdrant_data:/qdrant/storage
     networks:
       - loremaster
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    networks:
+      - loremaster
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   postgres:
     image: postgres:15-alpine
     container_name: postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
-      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
-    # Bind solo a loopback para evitar exposición pública
-    ports:
-      - "127.0.0.1:5433:5432"
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER requerida}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD requerida}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB requerida}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - loremaster
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    image: redis:7-alpine
-    container_name: redis
-    # Bind solo a loopback para evitar exposición pública
-    ports:
-      - "127.0.0.1:6379:6379"
-    networks:
-      - loremaster
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
