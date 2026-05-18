@@ -350,30 +350,39 @@ def test_ig_13_generate_batch_comfyui(
     mock_client.download_image.return_value = fake_image_bytes
 
     with (
-        patch("app.services.image.image_generation_service.settings") as mock_settings,
+        patch("app.services.image.image_generation_service.settings") as mock_svc_settings,
+        patch("app.services.image._backends.settings") as mock_be_settings,
         patch(
-            "app.services.image.image_generation_service.ComfyUIClient",
+            "app.services.image._backends.ComfyUIClient",
             return_value=mock_client,
         ),
         patch(
-            "app.services.image.image_generation_service.load_template",
+            "app.services.image._backends.load_template",
             return_value={"12": {"inputs": {"value": ""}}},
         ),
         patch(
-            "app.services.image.image_generation_service.inject_prompt",
+            "app.services.image._backends.inject_prompt",
             side_effect=lambda w, p: w,
         ),
         patch(
-            "app.services.image.image_generation_service._save_comfyui_image",
+            "app.services.image._backends.inject_seed",
+            side_effect=lambda w, s: w,
+        ),
+        patch(
+            "app.services.image._backends._save_comfyui_image",
             return_value="col/ent/gen/img.png",
         ),
     ):
-        mock_settings.image_backend = "comfyui"
-        mock_settings.comfyui_url = "http://localhost:8188"
-        mock_settings.image_width = 1024
-        mock_settings.image_height = 1024
-        mock_settings.image_seed_base = 42
-        mock_settings.storage_base_url = "http://localhost:8000/media"
+        mock_svc_settings.image_backend = "comfyui"
+        mock_svc_settings.image_width = 1024
+        mock_svc_settings.image_height = 1024
+        mock_svc_settings.image_seed_base = 42
+        mock_svc_settings.storage_base_url = "http://localhost:8000/media"
+        mock_be_settings.comfyui_url = "http://localhost:8188"
+        mock_be_settings.comfyui_request_timeout = 30
+        mock_be_settings.comfyui_timeout = 300
+        mock_be_settings.image_width = 1024
+        mock_be_settings.image_height = 1024
 
         result = generate_images_service(
             db_session,
