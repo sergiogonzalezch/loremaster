@@ -17,7 +17,9 @@ loremaster/
 ├── frontend/         → SPA React
 ├── docs/             → Documentación extendida
 ├── Makefile          → Targets de infra y arranque
-└── dev.ps1           → Arranque completo del entorno local (Windows)
+├── dev.ps1           → Arranque completo del entorno local (Windows)
+├── loremaster.bat    → Launcher con menu interactivo (Windows)
+└── loremaster.sh     → Launcher con menu interactivo (Linux / macOS)
 ```
 
 ## Quick start
@@ -32,8 +34,9 @@ cd loremaster
 cd backend
 python -m venv venv
 .\venv\Scripts\Activate.ps1   # Windows
+source venv/bin/activate       # Linux / macOS
 make install-dev
-cp .env.example .env          # editar SECRET_KEY y las variables que correspondan
+cp .env.example .env           # editar SECRET_KEY y las variables que correspondan
 alembic upgrade head
 
 # Frontend — dependencias
@@ -41,25 +44,33 @@ cd ../frontend
 npm install
 ```
 
-### Arrancar el entorno
+### Launcher interactivo (recomendado)
 
 ```powershell
-# Desde la raíz del proyecto (Windows)
-.\dev.ps1            # SQLite + Qdrant + Redis + backend + frontend
-.\dev.ps1 -Postgres  # PostgreSQL + Qdrant + Redis + backend + frontend
+# Windows
+loremaster.bat
 ```
 
-Se abre una ventana por proceso. Para bajar la infraestructura Docker:
-
 ```bash
-make down
+# Linux / macOS
+chmod +x loremaster.sh
+./loremaster.sh
 ```
 
-### Solo infraestructura (sin abrir backend/frontend)
+Menu con una tecla: Dev SQLite/Postgres, solo infra, tests, prod up/down. La opcion 9 cierra backend, frontend e infra Docker.
+
+### Arranque manual
+
+```powershell
+# Windows — abre backend y frontend en ventanas separadas
+.\dev.ps1            # SQLite
+.\dev.ps1 -Postgres  # PostgreSQL
+```
 
 ```bash
-make infra      # Qdrant + Redis
-make infra-pg   # Qdrant + Redis + PostgreSQL
+make infra      # solo Qdrant + Redis
+make infra-pg   # solo Qdrant + Redis + PostgreSQL
+make down       # bajar infraestructura
 ```
 
 Ver [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md) para la referencia completa de variables de entorno, modos (local/demo/producción) y checklist de despliegue.
