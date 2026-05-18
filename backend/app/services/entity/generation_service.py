@@ -18,6 +18,7 @@ from app.engine.rag_pipeline import EntityContext, invoke_generation_pipeline
 from app.models.db.entity import Entity
 from app.models.db.entity_content import EntityContent
 from app.models.db.generated_text import GeneratedText
+from app.models.db.generated_text_chunk import GeneratedTextChunk
 from app.models.enums import ContentCategory, ContentStatus
 from app.models.schemas.entity_content import EntityContentResponse
 
@@ -86,7 +87,7 @@ async def generate(
     if entity.description:
         extra_context = f"Información actual de '{entity.name}' ({entity.type}):\n{entity.description}\n\n"
 
-    answer, sources_count, source_doc_ids = await invoke_generation_pipeline(
+    answer, chunks = await invoke_generation_pipeline(
         collection_id=entity.collection_id,
         entity_ctx=EntityContext(
             name=entity.name,
@@ -105,13 +106,21 @@ async def generate(
         category=category.value,
         query=query,
         raw_content=answer,
-        sources_count=sources_count,
-        source_doc_ids=source_doc_ids,
+        sources_count=len(chunks),
         token_count=max(1, len(answer) // 4),
         model_used=model or settings.ollama_model,
     )
     session.add(generated_text)
     session.flush()
+
+    for chunk in chunks:
+        session.add(GeneratedTextChunk(
+            generated_text_id=generated_text.id,
+            document_id=chunk.doc_id or None,
+            chunk_text=chunk.text,
+            position=chunk.position,
+            score=chunk.score,
+        ))
 
     content = EntityContent(
         entity_id=entity.id,
@@ -169,7 +178,6 @@ async def generate(
         raw_content=generated_text.raw_content,
         query=generated_text.query,
         sources_count=generated_text.sources_count,
-        source_doc_ids=generated_text.source_doc_ids or [],
         token_count=generated_text.token_count,
         model_used=generated_text.model_used,
         status=content.status,

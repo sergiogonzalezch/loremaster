@@ -45,7 +45,7 @@ def mock_pipeline(monkeypatch):
                 model=model,
             ),
         )
-        return "Contenido generado por el pipeline mock", 3, ["doc-id-mock-1"]
+        return "Contenido generado por el pipeline mock", []
 
     monkeypatch.setattr(
         "app.services.entity.generation_service.invoke_generation_pipeline",
@@ -75,7 +75,7 @@ async def test_gen_svc_01_persists_entity_content_with_correct_fields(
 
     assert result.status == ContentStatus.pending
     assert result.query == "Historia detallada del personaje"
-    assert result.sources_count == 3
+    assert result.sources_count == 0
     assert result.content == "Contenido generado por el pipeline mock"
     assert result.entity_id == entity.id
     assert result.collection_id == sample_collection.id

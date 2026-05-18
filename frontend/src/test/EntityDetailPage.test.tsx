@@ -146,7 +146,6 @@ describe("EntityDetailPage", () => {
         generated_text_id: `gt-${i}`,
         query: "query de prueba",
         sources_count: 1,
-        source_doc_ids: [],
         token_count: 0,
         model_used: null,
         category: "backstory" as const,

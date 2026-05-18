@@ -16,7 +16,6 @@ export interface EntityContent {
   was_edited: boolean;
   query: string;
   sources_count: number;
-  source_doc_ids: string[];
   token_count: number;
   model_used: string | null;
   status: ContentStatus;
@@ -24,6 +23,23 @@ export interface EntityContent {
   created_at: string;
   confirmed_at: string | null;
   updated_at: string | null;
+}
+
+/** Fragmento RAG individual con metadatos de origen. */
+export interface ContentChunkItem {
+  id: string;
+  document_id: string | null;
+  filename: string | null;
+  chunk_text: string;
+  position: number;
+  score: number | null;
+}
+
+/** Respuesta del endpoint especializado de fuentes RAG. */
+export interface ContentChunksResponse {
+  content_id: string;
+  generated_text_id: string;
+  chunks: ContentChunkItem[];
 }
 
 /** Payload para generar contenido. */

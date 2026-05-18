@@ -12,10 +12,7 @@ vi.mock("../api/contents", () => ({
   deleteContent: vi.fn(),
   updateContent: vi.fn(),
   shareContent: vi.fn(),
-}));
-
-vi.mock("../api/documents", () => ({
-  getDocument: vi.fn(),
+  getContentChunks: vi.fn().mockResolvedValue({ content_id: "cnt-1", generated_text_id: "gt-1", chunks: [] }),
 }));
 
 import * as contentsApi from "../api/contents";
@@ -33,7 +30,6 @@ function makeContent(overrides: Partial<EntityContent> = {}): EntityContent {
     generated_text_id: "gt-1",
     query: "Historia del personaje",
     sources_count: 3,
-    source_doc_ids: [],
     token_count: 42,
     model_used: null,
     category: "backstory",
