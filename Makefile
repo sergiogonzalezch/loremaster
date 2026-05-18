@@ -24,7 +24,9 @@ infra-pg:
 
 # ── Bajar infraestructura local ───────────────────────────────────────────────
 down:
-	$(DC_PG) down
+	$(DC_BASE) down
+	-docker stop postgres
+	-docker rm   postgres
 
 # ── Producción / Demo ─────────────────────────────────────────────────────────
 prod-up:

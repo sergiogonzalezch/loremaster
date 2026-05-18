@@ -34,7 +34,7 @@ echo  %Y%  PRODUCCION / DEMO%Z%
 echo   %G%  7%Z%  Prod UP           make prod-up
 echo   %G%  8%Z%  Prod DOWN         make prod-down
 echo.
-echo   %R%  9%Z%  Salir
+echo   %R%  9%Z%  Salir y cerrar servicios
 echo.
 choice /c 123456789 /n /m "  > "
 set OPT=%errorlevel%
@@ -148,7 +148,9 @@ if exist ".loremaster_frontend_pid" (
 )
 
 echo  %D%  Bajando infraestructura Docker...%Z%
-docker compose -f backend\docker-compose.yml -f backend\docker-compose.postgres.yml down
+docker compose -f backend\docker-compose.yml down
+docker stop postgres >nul 2>&1
+docker rm   postgres >nul 2>&1
 
 echo.
 echo  %G%  Todo cerrado.%Z%

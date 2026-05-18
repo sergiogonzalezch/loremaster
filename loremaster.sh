@@ -76,7 +76,9 @@ stop_services() {
     if [ -n "$f_pid" ]; then
         kill "$f_pid" 2>/dev/null && echo -e "${D}  Frontend (5173) cerrado.${Z}" || true
     fi
-    make down 2>/dev/null && echo -e "${D}  Infra Docker bajada.${Z}" || true
+    docker compose -f backend/docker-compose.yml down 2>/dev/null \
+        && echo -e "${D}  Infra Docker bajada.${Z}" || true
+    docker stop postgres 2>/dev/null; docker rm postgres 2>/dev/null; true
     echo -e "${G}  Todo cerrado.${Z}"
     echo
 }
