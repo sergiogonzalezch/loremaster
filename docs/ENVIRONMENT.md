@@ -1,7 +1,75 @@
 # ENVIRONMENT.md — Guía de Variables de Entorno
 
-Mapa completo de todas las variables de entorno del backend, con los valores
-recomendados por entorno y las reglas de validación que aplica `Settings`.
+Mapa completo de variables de entorno del backend, comandos de arranque por
+modo y reglas de validación que aplica `Settings`.
+
+---
+
+## Arranque rápido
+
+### Local — SQLite (más ligero)
+```powershell
+# Desde la raíz del proyecto
+.\dev.ps1
+```
+Abre automáticamente: infra Docker (Qdrant + Redis) + backend + frontend en ventanas separadas.
+
+### Local — PostgreSQL
+```powershell
+.\dev.ps1 -Postgres
+```
+Abre: Qdrant + Redis + Postgres + backend + frontend.
+
+### Solo infraestructura (sin abrir backend/frontend)
+```bash
+make infra      # Qdrant + Redis  (SQLite mode)
+make infra-pg   # Qdrant + Redis + Postgres
+make down       # baja todo
+```
+
+### Producción / Demo
+```bash
+make prod-up    # docker-compose.prod.yml — todos los servicios, sin puertos al host
+make prod-down
+```
+
+---
+
+## Prerequisitos de primera vez
+
+```bash
+# 1. Infraestructura
+#    Docker Desktop corriendo
+
+# 2. Backend — crear y activar venv
+cd backend
+python -m venv venv
+.\venv\Scripts\Activate.ps1      # Windows
+make install-dev
+
+# Copiar y editar .env
+cp .env.example .env
+# — Editar SECRET_KEY y las variables que correspondan al modo elegido
+
+# Aplicar migraciones
+alembic upgrade head
+
+# 3. Frontend
+cd ../frontend
+npm install
+```
+
+Después de la primera vez basta con `.\dev.ps1`.
+
+---
+
+## Archivos Docker Compose
+
+| Archivo | Uso | Servicios |
+|---|---|---|
+| `backend/docker-compose.yml` | Base local | Qdrant + Redis |
+| `backend/docker-compose.postgres.yml` | Override local con PG | + Postgres |
+| `backend/docker-compose.prod.yml` | Producción / Demo | Qdrant + Redis + Postgres (sin puertos expuestos) |
 
 ---
 
@@ -72,12 +140,15 @@ de seguridad del entorno seleccionado.
 
 ### Base de datos
 
-| Variable | Local | Demo | Producción | Notas |
-|---|---|---|---|---|
-| `DATABASE_URL` | `sqlite:///./loremaster.db` | `postgresql://...` | `postgresql://...` | SQLite solo para local |
-| `POSTGRES_USER` | — | `loremaster` | `loremaster` | Solo si `COMPOSE_PROFILES=postgres` |
-| `POSTGRES_PASSWORD` | — | generada | generada | `openssl rand -hex 16` |
-| `POSTGRES_DB` | — | `loremaster` | `loremaster` | — |
+| Variable | Local/SQLite | Local/PG | Demo | Producción | Notas |
+|---|---|---|---|---|---|
+| `DATABASE_URL` | `sqlite:///./loremaster.db` | `postgresql://user:pass@localhost:5433/db` | `postgresql://...` | `postgresql://...` | SQLite solo para local |
+| `POSTGRES_USER` | — | `loremaster` | `loremaster` | `loremaster` | Requerida si usas Postgres |
+| `POSTGRES_PASSWORD` | — | generada | generada | generada | `openssl rand -hex 16` |
+| `POSTGRES_DB` | — | `loremaster` | `loremaster` | `loremaster` | — |
+
+> En local la diferencia entre SQLite y Postgres se elige con `.\dev.ps1` vs `.\dev.ps1 -Postgres`.
+> No hay que cambiar `COMPOSE_PROFILES` manualmente; los targets del Makefile lo gestionan.
 
 ---
 
@@ -98,15 +169,13 @@ de seguridad del entorno seleccionado.
 
 | Variable | Local / Eval | Demo | Producción | Notas |
 |---|---|---|---|---|
-| `RATE_LIMIT_ENABLED` | `false` | `true` | `true` | `false` para eval y desarrollo; el middleware se salta completamente |
+| `RATE_LIMIT_ENABLED` | `false` | `true` | `true` | `false` para desarrollo/eval; el middleware se salta completamente |
 | `RATE_LIMIT_PER_MINUTE` | 30 | 30 | 30 | Límite base (POST/PATCH/DELETE) por usuario/IP en 60s |
 | `RATE_LIMIT_LLM_PER_MINUTE` | 5 | 5 | 5 | Endpoints `/query` y `/build-prompt` |
 | `RATE_LIMIT_IMAGE_PER_MINUTE` | 3 | 3 | 3 | Endpoint `/image-generation/generate` |
-| `REDIS_URL` | `redis://localhost:6379` | `redis://redis:6379` | `redis://redis:6379` | El docker-compose lo levanta en el puerto por defecto |
+| `REDIS_URL` | `redis://localhost:6379` | `redis://redis:6379` | `redis://redis:6379` | Nombre de servicio Docker en prod |
 
-> **Nota:** el entorno `test` (`pytest`) siempre omite el rate limiting
-> independientemente de `RATE_LIMIT_ENABLED`, mediante el bypass
-> `if settings.environment == "test"` en el middleware.
+> El entorno `test` (`pytest`) omite rate limiting independientemente de `RATE_LIMIT_ENABLED`.
 
 ---
 
@@ -114,7 +183,7 @@ de seguridad del entorno seleccionado.
 
 | Variable | Local | Demo | Producción | Notas |
 |---|---|---|---|---|
-| `QDRANT_URL` | `http://localhost:6333` | `http://qdrant:6333` | `http://qdrant:6333` | En docker-compose usar el nombre del servicio |
+| `QDRANT_URL` | `http://localhost:6333` | `http://qdrant:6333` | `http://qdrant:6333` | Nombre de servicio Docker en prod |
 | `EMBEDDING_MODEL` | `paraphrase-multilingual-MiniLM-L12-v2` | igual | igual | — |
 | `EMBEDDING_DIMS` | `384` | `384` | `384` | Debe coincidir con el modelo |
 | `CHUNK_SIZE` | `400` | `400` | `400` | Caracteres por chunk |
@@ -129,7 +198,7 @@ de seguridad del entorno seleccionado.
 
 | Variable | Local | Demo | Producción | Notas |
 |---|---|---|---|---|
-| `IMAGE_BACKEND` | `comfyui` (o `mock` sin servidor) | `comfyui` | `comfyui` | `mock` devuelve URL placeholder; independiente del entorno — usar `comfyui` en local si el servidor está disponible |
+| `IMAGE_BACKEND` | `comfyui` (o `mock` sin servidor) | `comfyui` | `comfyui` | Variable independiente del entorno; `mock` devuelve URL placeholder |
 | `IMAGE_PROMPT_MODEL` | `mistral:latest` | igual | igual | Modelo Ollama para construir el prompt visual |
 | `IMAGE_PROMPT_TOKENS` | `512` | `512` | `512` | Límite tokens del text encoder (SD/Flux) |
 | `IMAGE_BATCH_SIZE_DEFAULT` | `4` | `4` | `4` | Imágenes por generación |
@@ -145,7 +214,7 @@ de seguridad del entorno seleccionado.
 
 | Variable | Local | Demo | Producción | Notas |
 |---|---|---|---|---|
-| `STORAGE_BACKEND` | `local` | `s3` o `r2` | `s3` o `r2` | `local` guarda en `./media/`; s3/r2 usa bucket externo |
+| `STORAGE_BACKEND` | `local` | `s3` o `r2` | `s3` o `r2` | `local` guarda en `./media/` |
 | `MEDIA_ROOT` | `./media` | — | — | Solo relevante si `STORAGE_BACKEND=local` |
 | `STORAGE_BASE_URL` | `http://localhost:8000/media` | URL CDN/bucket | URL CDN/bucket | URL pública para servir archivos |
 | `PROFILE_IMAGE_MAX_SIZE_MB` | `5` | `5` | `5` | — |
@@ -158,10 +227,10 @@ de seguridad del entorno seleccionado.
 
 ---
 
-## Flujo por entorno
+## Flujo por modo
 
 ```
-local/SQLite  →  make dev
+local/SQLite  →  .\dev.ps1
 ├── ENVIRONMENT=local
 ├── DATABASE_URL=sqlite:///./loremaster.db
 ├── COOKIE_SECURE=false
@@ -170,12 +239,12 @@ local/SQLite  →  make dev
 ├── STORAGE_BACKEND=local
 └── Docker: Qdrant + Redis
 
-local/PostgreSQL  →  make dev-pg
+local/PostgreSQL  →  .\dev.ps1 -Postgres
 ├── igual que local/SQLite
-├── DATABASE_URL=postgresql://...
+├── DATABASE_URL=postgresql://loremaster:pass@localhost:5433/loremaster
 └── Docker: Qdrant + Redis + Postgres
 
-demo / staging  →  make prod-up  (con docker-compose.prod.yml)
+demo / staging  →  make prod-up
 ├── ENVIRONMENT=demo
 ├── DATABASE_URL=postgresql://...
 ├── COOKIE_SECURE=true                ← arranque falla si false
@@ -183,7 +252,7 @@ demo / staging  →  make prod-up  (con docker-compose.prod.yml)
 ├── RATE_LIMIT_ENABLED=true
 ├── IMAGE_BACKEND=comfyui
 ├── STORAGE_BACKEND=s3 o r2
-└── Docker: Qdrant + Redis + Postgres (sin puertos expuestos)
+└── Docker: Qdrant + Redis + Postgres (sin puertos expuestos al host)
 
 production  →  make prod-up
 ├── igual que demo
@@ -194,10 +263,9 @@ production  →  make prod-up
 
 ---
 
-## Validaciones que corta el arranque
+## Validaciones que cortan el arranque
 
-Estas comprobaciones están en `Settings._validate_cors()` y **lanzan `ValueError`**
-si se violan, impidiendo que el servidor arranque:
+Comprobaciones en `Settings._validate_cors()` que lanzan `ValueError` e impiden que el servidor arranque:
 
 | Condición | Entorno | Error |
 |---|---|---|
@@ -219,9 +287,10 @@ Antes de subir a demo o producción verificar:
 - [ ] `ALLOWED_ORIGINS` solo con `https://`
 - [ ] `RATE_LIMIT_ENABLED=true`
 - [ ] `DATABASE_URL` apuntando a PostgreSQL
-- [ ] `COMPOSE_PROFILES=postgres`
+- [ ] `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` definidas
 - [ ] `STORAGE_BACKEND=s3` o `r2` (no `local`)
 - [ ] `IMAGE_BACKEND=comfyui`
 - [ ] `LOG_LEVEL=WARNING`
 - [ ] Clerk configurado (`CLERK_JWKS_URL`, `CLERK_AUDIENCE`)
 - [ ] Credenciales AWS/R2 gestionadas con secrets manager, no en `.env` en disco
+- [ ] `QDRANT_URL` y `REDIS_URL` apuntando a nombres de servicio Docker (`qdrant`, `redis`)
