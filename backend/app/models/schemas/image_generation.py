@@ -31,7 +31,7 @@ class GenerateImagesRequest(BaseModel):
     """
 
     content_id: str
-    auto_prompt: str
+    auto_prompt: str = Field(..., min_length=1, max_length=2000)
     final_prompt: str = Field(..., min_length=10, max_length=2000)
     batch_size: int = Field(default=4, ge=1, le=4)
     seed_base: int | None = None

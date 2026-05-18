@@ -1,6 +1,6 @@
 # LIMITERS.md — Mapa completo de límites, validaciones y constantes
 
-> Última actualización: 2026-05-18
+> Última actualización: 2026-05-18 (2.ª revisión)
 > Rama: `main`
 > Regla de conversión usada en todo el documento: **1 token ≈ 4 caracteres** (estimación del engine en `image_prompt_builder._estimate_tokens`).
 
@@ -16,7 +16,7 @@
                     │
           [1] Pydantic Schema — fast-fail HTTP 422
               min_length / max_length / ge / le
-              (máx API input: 2 000 chars — nunca llega a _MAX_TEXT_LENGTH)
+              (máx queries/prompts: 2 000 chars | máx edición contenido: 10 000 chars)
                     │
           [2] content_guard.check_prompt_length()  ← solo prompts LLM
               _MIN_PROMPT_LENGTH = 10 chars
@@ -46,10 +46,14 @@
 
 FLUJO IMAGEN (paralelo al flujo principal):
   build-prompt  → LLM genera auto_prompt
-                → _truncate_to_tokens(512 tok ≈ 2 048 chars)   engine
+                → _truncate_to_tokens(attrs ≤ 482 tok ≈ 1 928 chars)  engine
+                → auto_prompt = attrs + ", " + QUALITY_SUFFIX ≤ 1 997 chars
                 → frontend muestra al usuario
-  generate      → usuario edita → final_prompt (schema max 2 000 chars)
-                → inject_prompt() → ComfyUI (sin truncate adicional)
+  generate      → usuario edita → auto_prompt (schema min=1, max=2 000 chars ✅)
+                               → final_prompt (schema min=10, max=2 000 chars)
+                → check_user_input(auto_prompt) ← guardrails contenido
+                → check_prompt_length + check_user_input(final_prompt)
+                → inject_prompt(final_prompt) → ComfyUI (sin truncate adicional)
                 → auto_prompt + final_prompt se persisten (DB max 2 000 chars ✅)
 ```
 
@@ -64,6 +68,8 @@ FLUJO IMAGEN (paralelo al flujo principal):
 | `RagQueryRequest.query` max | 2 000 chars | 2 000 | ~500 | Schema Pydantic | Query RAG | Solo Schema |
 | `GenerateContentRequest.query` min | 10 chars | 10 | ~2 | Schema Pydantic | Generación de contenido | Schema (duplica domain) |
 | `GenerateContentRequest.query` max | 2 000 chars | 2 000 | ~500 | Schema Pydantic | Generación de contenido | Solo Schema |
+| `GenerateImagesRequest.auto_prompt` min | 1 char | 1 | — | Schema Pydantic | Prompt automático LLM (reenviado por frontend) | Solo Schema |
+| `GenerateImagesRequest.auto_prompt` max | 2 000 chars | 2 000 | ~500 | Schema Pydantic | Prompt automático LLM — alineado con engine (≤ 1 997 chars) y DB | Solo Schema |
 | `GenerateImagesRequest.final_prompt` min | 10 chars | 10 | ~2 | Schema Pydantic | Prompt final imagen | Schema (duplica domain) |
 | `GenerateImagesRequest.final_prompt` max | 2 000 chars | 2 000 | ~500 | Schema Pydantic | Prompt final imagen | Solo Schema |
 | `GenerateImagesRequest.batch_size` | ge=1, le=4 | — | — | Schema Pydantic | Cantidad de imágenes | Solo Schema |
@@ -108,7 +114,7 @@ FLUJO IMAGEN (paralelo al flujo principal):
 | `rag_score_threshold` | 0.3 | — | — | Score mínimo de similitud para incluir chunk como contexto | RAG |
 | `document_extraction_timeout_seconds` | 30 s | — | — | Settings → `document_service.py` | Timeout de extracción de texto (PDF/TXT); configurable vía `DOCUMENT_EXTRACTION_TIMEOUT_SECONDS` | Service |
 | `rate_limit_per_minute` | 30 req/min | — | — | Requests por IP/usuario por minuto (middleware global) | Middleware |
-| `rate_limit_llm_per_minute` | 5 req/min | — | — | Endpoints `/query` y `/build-prompt` — llamadas LLM-intensivas | Middleware |
+| `rate_limit_llm_per_minute` | 5 req/min | — | — | Endpoints que terminan en `/query` o `/image-generation/build-prompt` — llamadas LLM-intensivas | Middleware |
 | `rate_limit_image_per_minute` | 3 req/min | — | — | Endpoint `/image-generation/generate` — llamadas ComfyUI-intensivas | Middleware |
 | `max_pending_contents` | 5 | — | — | Máximo de contenidos en estado `pending` por entidad/categoría | Domain |
 | `max_concurrent_llm_calls` | 1 | — | — | Semáforo de llamadas simultáneas a Ollama | Engine |
@@ -166,6 +172,15 @@ El límite de 100 000 chars nunca es alcanzable a través de la API normal porqu
 ---
 
 ## 5. Conflictos — historial
+
+### ✅ RESUELTO — `GenerateImagesRequest.auto_prompt` sin validación + engine vs DB
+| Capa | Antes | Después |
+|---|---|---|
+| Schema Pydantic `auto_prompt` | `auto_prompt: str` (sin `Field()`) — sin min ni max | `Field(..., min_length=1, max_length=2000)` ✅ |
+| Engine buffer (`build_visual_prompt`) | `available = max_tokens - suffix_tokens - 5` → attrs ≤ 1 964 chars, total ≤ **2 033 chars** ⚠ | `available = max_tokens - suffix_tokens - 14` → attrs ≤ 1 931 chars, total ≤ **1 997 chars** ✅ |
+| DB model `auto_prompt` | `max_length=2000` — en conflicto con engine | `max_length=2000` — alineado con engine (sin cambio) ✅ |
+
+
 
 ### ✅ RESUELTO — `ImageGeneration.auto_prompt` DB vs engine
 | Capa | Antes | Después |

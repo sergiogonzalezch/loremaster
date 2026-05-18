@@ -126,7 +126,7 @@ def build_visual_prompt(
 
     """
     suffix_tokens = _estimate_tokens(QUALITY_SUFFIX)
-    available = max(10, max_tokens - suffix_tokens - 5)
+    available = max(10, max_tokens - suffix_tokens - 14)
 
     attributes = _extract_with_llm(
         content_text=confirmed_content,
