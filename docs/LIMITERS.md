@@ -1,6 +1,6 @@
 # LIMITERS.md — Mapa completo de límites, validaciones y constantes
 
-> Última actualización: 2026-05-15
+> Última actualización: 2026-05-18
 > Rama: `main`
 > Regla de conversión usada en todo el documento: **1 token ≈ 4 caracteres** (estimación del engine en `image_prompt_builder._estimate_tokens`).
 
@@ -108,6 +108,8 @@ FLUJO IMAGEN (paralelo al flujo principal):
 | `rag_score_threshold` | 0.3 | — | — | Score mínimo de similitud para incluir chunk como contexto | RAG |
 | `document_extraction_timeout_seconds` | 30 s | — | — | Settings → `document_service.py` | Timeout de extracción de texto (PDF/TXT); configurable vía `DOCUMENT_EXTRACTION_TIMEOUT_SECONDS` | Service |
 | `rate_limit_per_minute` | 30 req/min | — | — | Requests por IP/usuario por minuto (middleware global) | Middleware |
+| `rate_limit_llm_per_minute` | 5 req/min | — | — | Endpoints `/query` y `/build-prompt` — llamadas LLM-intensivas | Middleware |
+| `rate_limit_image_per_minute` | 3 req/min | — | — | Endpoint `/image-generation/generate` — llamadas ComfyUI-intensivas | Middleware |
 | `max_pending_contents` | 5 | — | — | Máximo de contenidos en estado `pending` por entidad/categoría | Domain |
 | `max_concurrent_llm_calls` | 1 | — | — | Semáforo de llamadas simultáneas a Ollama | Engine |
 | `access_token_expire_minutes` | 60 min | — | — | TTL del JWT de sesión | Auth |

@@ -160,6 +160,7 @@ de seguridad del entorno seleccionado.
 |---|---|---|---|---|
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | URL del servidor Ollama | URL del servidor Ollama | — |
 | `OLLAMA_MODEL` | `llama3.2:latest` | igual | igual | Cambiar según el modelo disponible |
+| `OLLAMA_EXCLUDED_MODELS` | `[]` | `[]` | `[]` | Array JSON de prefijos de modelos excluidos de `GET /models`. Útil para ocultar modelos con thinking mode (ej. `["qwen3","deepseek-r1"]`) que rompen el parser RAG con `<think>` tags |
 | `TEMPERATURE` | `0.7` | `0.7` | `0.7` | — |
 | `MAX_TOKENS` | `2000` | `2000` | `2000` | `num_predict` de Ollama |
 | `MAX_CONCURRENT_LLM_CALLS` | `1` | `1`–`2` | ajustar por RAM/GPU | Semáforo de concurrencia |
