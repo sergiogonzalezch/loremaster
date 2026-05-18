@@ -52,4 +52,12 @@ async def lifespan(_: FastAPI):
     except httpx.TransportError as e:
         logger.warning("Ollama not reachable at startup: %s", e)
 
+    # Redirigir uvicorn.access hacia nuestro root handler para que los logs de
+    # cada request (GET /api/v1/... 200) sean visibles con el mismo formato.
+    # Esto debe hacerse aquí, después de que uvicorn aplica su propia dictConfig,
+    # de lo contrario uvicorn la sobreescribiría al arrancar.
+    _access_logger = logging.getLogger("uvicorn.access")
+    _access_logger.handlers.clear()
+    _access_logger.propagate = True
+
     yield

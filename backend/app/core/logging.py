@@ -61,4 +61,8 @@ def configure_logging(level: str = "INFO") -> None:
 
     root_logger = logging.getLogger()
     root_logger.setLevel(level.upper())
+    # Limpiar handlers previos para evitar duplicados en cada --reload de uvicorn.
+    # main.py se re-importa en cada reload, por lo que sin este clear se acumulan
+    # N handlers tras N reloads, generando N copias de cada mensaje.
+    root_logger.handlers.clear()
     root_logger.addHandler(handler)
