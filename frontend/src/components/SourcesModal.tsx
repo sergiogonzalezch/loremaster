@@ -72,11 +72,22 @@ export default function SourcesModal({
                   {items.map((chunk) => (
                     <div
                       key={chunk.id}
-                      className="px-3 py-2 border-bottom small"
-                      style={{ color: "var(--lm-text-muted)" }}
+                      className="px-3 py-2 small"
+                      style={{
+                        color: "var(--lm-text-muted)",
+                        borderBottom: "1px solid var(--lm-border)",
+                      }}
                     >
                       {chunk.score !== null && (
-                        <span className="badge bg-light text-secondary me-2" style={{ fontSize: "0.7rem" }}>
+                        <span
+                          className="badge me-2"
+                          style={{
+                            fontSize: "0.7rem",
+                            background: "var(--lm-accent-glow)",
+                            color: "var(--lm-accent)",
+                            border: "1px solid var(--lm-border-accent)",
+                          }}
+                        >
                           {(chunk.score * 100).toFixed(0)}%
                         </span>
                       )}

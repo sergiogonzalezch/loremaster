@@ -27,6 +27,12 @@ _PERMISSIONS_POLICY = (
     "payment=(), usb=(), display-capture=()"
 )
 
+# Rutas de documentación de desarrollo — Swagger/ReDoc cargan recursos externos
+# (CDN de jsdelivr, favicon de fastapi.tiangolo.com, scripts inline) que violan
+# una CSP estricta. Estas rutas solo están activas en entornos no-productivos,
+# así que se omite el header CSP para ellas.
+_DOCS_PATHS = ("/docs", "/redoc", "/openapi.json")
+
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Añade headers de seguridad a todas las respuestas HTTP.
@@ -51,6 +57,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
         else:
             response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
+
+        # Las rutas de docs no reciben CSP — Swagger/ReDoc requieren CDN externo
+        # y estas rutas están desactivadas en producción (docs_url=None).
+        if request.url.path.startswith(_DOCS_PATHS):
+            return response
 
         # Detectar HTTPS tanto en conexión directa como detrás de proxy TLS
         forwarded_proto = request.headers.get("x-forwarded-proto", "")
