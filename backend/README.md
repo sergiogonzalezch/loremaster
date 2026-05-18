@@ -53,6 +53,7 @@ cp .env.example .env
 |---|---|---|
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Endpoint de Ollama |
 | `OLLAMA_MODEL` | `llama3.2:latest` | Modelo LLM para generación de contenido |
+| `OLLAMA_EXCLUDED_MODELS` | `[]` | Array JSON de prefijos excluidos de `GET /models` (ej. `["qwen3","deepseek-r1"]`). Útil para ocultar modelos con thinking mode que rompen el parser RAG |
 | `MAX_TOKENS` | `2000` | Máximo de tokens en la respuesta del LLM (`num_predict`) |
 | `TEMPERATURE` | `0.7` | Temperatura del LLM (creatividad) |
 | `MAX_CONCURRENT_LLM_CALLS` | `1` | Peticiones simultáneas máximas al LLM (semáforo) |
@@ -129,7 +130,7 @@ cp .env.example .env
 |---|---|---|
 | `RATE_LIMIT_ENABLED` | `true` | Activa el middleware. Poner `false` en desarrollo/eval local |
 | `RATE_LIMIT_PER_MINUTE` | `30` | Límite base (POST/PATCH/DELETE) por usuario/IP en ventana de 60 s |
-| `RATE_LIMIT_LLM_PER_MINUTE` | `5` | Límite para endpoints `/query` y `/build-prompt` |
+| `RATE_LIMIT_LLM_PER_MINUTE` | `5` | Límite para endpoints terminados en `/query` o `/image-generation/build-prompt` |
 | `RATE_LIMIT_IMAGE_PER_MINUTE` | `3` | Límite para `/image-generation/generate` |
 | `REDIS_URL` | `redis://localhost:6379` | URL de Redis para el sliding window |
 
@@ -348,7 +349,7 @@ Ambos endpoints soportan `?page=` y `?page_size=`. Respuesta: `PaginatedResponse
 |---|---|---|---|
 | `POST` | `/collections/{id}/query` | Consulta RAG libre contra el lore cargado (requiere ser owner) | 200 |
 
-Respuesta: `{ answer, query, sources_count }`.
+Respuesta: `{ answer, query, sources_count, source_doc_ids[] }`.
 
 - Requiere autenticación y que el usuario sea owner de la colección (no se puede consultar el lore de otro usuario).
 - Si Qdrant no está disponible durante la consulta, devuelve **503 Service Unavailable**.

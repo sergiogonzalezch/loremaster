@@ -247,3 +247,12 @@ Cada tipo de entidad tiene un conjunto de categorías válidas (espejo de `backe
 | Objeto (item)         | Trasfondo · Descripción extendida                     |
 
 Límite: máximo **5 contenidos pendientes por entidad por categoría**.
+
+## Documentación relacionada
+
+| Documento | Contenido |
+|---|---|
+| [`../docs/ENVIRONMENT.md`](../docs/ENVIRONMENT.md) | Variables de entorno del backend y modos de arranque |
+| [`../docs/AUTH-CONTEXT.md`](../docs/AUTH-CONTEXT.md) | Flujo JWT/CSRF, race conditions y patrones de autenticación |
+| [`../docs/LIMITERS.md`](../docs/LIMITERS.md) | Límites de validación input/output relevantes para el frontend |
+| [`../backend/README.md`](../backend/README.md) | Referencia completa de la API REST |

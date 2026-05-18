@@ -101,6 +101,10 @@ El contenido compartido se expone en dos superficies sin autenticación:
 | Documento | Contenido |
 |---|---|
 | [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md) | Variables de entorno, modos, arranque, checklist de despliegue |
+| [`docs/LIMITERS.md`](docs/LIMITERS.md) | Flujo de validación, límites input/output/DB y constantes del sistema |
 | [`docs/DOCUMENTATION.md`](docs/DOCUMENTATION.md) | Arquitectura, decisiones técnicas y roadmap |
+| [`docs/MOD.md`](docs/MOD.md) | Arquitectura del sistema de moderación y guardrails |
+| [`docs/AUTH-CONTEXT.md`](docs/AUTH-CONTEXT.md) | Flujo de autenticación JWT/CSRF, race conditions y patrones aplicados |
+| [`docs/FIX.md`](docs/FIX.md) | Tracker de deuda técnica |
 | [`backend/README.md`](backend/README.md) | API, endpoints, tests, estructura del backend |
 | [`frontend/README.md`](frontend/README.md) | Componentes, pantallas, autenticación, tests |
