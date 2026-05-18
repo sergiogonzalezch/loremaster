@@ -39,7 +39,7 @@ from app.database import get_session
 from app.models.db.collection import Collection
 from app.models.db.document import Document, DocumentStatus
 from app.models.schemas.collection import BulkDeleteRequest
-from app.models.schemas.document import DocumentResponse
+from app.models.schemas.document import DocumentContentResponse, DocumentResponse
 from app.models.shared import PaginatedResponse
 from app.services.document.document_service import (
     DocumentFilters,
@@ -146,6 +146,23 @@ def get_document(
 ):
     """Obtiene los datos de un documento específico."""
     return doc
+
+
+@router.get(
+    "/{collection_id}/documents/{doc_id}/content",
+    response_model=DocumentContentResponse,
+)
+def get_document_content(
+    doc: Annotated[Document, Depends(get_document_or_404_owned)],
+    _: Annotated[dict, Depends(get_current_user)],
+):
+    """Retorna el texto extraído de un documento completado.
+
+    El campo raw_text solo se incluye cuando status == 'completed'.
+    Para documentos en procesamiento o fallidos devuelve raw_text=null.
+    """
+    raw_text = doc.raw_text if doc.status == DocumentStatus.completed else None
+    return DocumentContentResponse(id=doc.id, filename=doc.filename, raw_text=raw_text)
 
 
 @router.post(

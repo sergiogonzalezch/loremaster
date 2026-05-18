@@ -13,6 +13,7 @@ import {
 import {
   getDocuments,
   getDocument,
+  getDocumentContent,
   uploadDocument,
   retryDocument,
   deleteDocument,
@@ -78,6 +79,8 @@ export default function DocumentsTab({
     null,
   );
   const [loadingDocumentDetail, setLoadingDocumentDetail] = useState(false);
+  const [documentContent, setDocumentContent] = useState<string | null>(null);
+  const [loadingContent, setLoadingContent] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState("");
   const [processingDocs, setProcessingDocs] = useState<Document[]>([]);
   const [retrying, setRetrying] = useState<Set<string>>(new Set());
@@ -296,9 +299,21 @@ export default function DocumentsTab({
    */
   async function handleOpenDocumentDetail(docId: string) {
     setLoadingDocumentDetail(true);
+    setDocumentContent(null);
     try {
       const doc = await getDocument(collectionId, docId);
       setSelectedDocument(doc);
+      if (doc.status === "completed") {
+        setLoadingContent(true);
+        try {
+          const { raw_text } = await getDocumentContent(collectionId, docId);
+          setDocumentContent(raw_text);
+        } catch {
+          setDocumentContent(null);
+        } finally {
+          setLoadingContent(false);
+        }
+      }
     } catch (e) {
       setError(parseApiError(e, "Error al cargar el detalle del documento"));
     } finally {
@@ -554,8 +569,9 @@ export default function DocumentsTab({
       />
       <Modal
         show={selectedDocument !== null}
-        onHide={() => setSelectedDocument(null)}
+        onHide={() => { setSelectedDocument(null); setDocumentContent(null); }}
         centered
+        size="lg"
       >
         <Modal.Header closeButton>
           <Modal.Title>Detalle del documento</Modal.Title>
@@ -594,6 +610,38 @@ export default function DocumentsTab({
                 <small className="text-muted">Creado</small>
                 <div>{formatDate(selectedDocument.created_at, true)}</div>
               </div>
+              {selectedDocument.status === "completed" && (
+                <div>
+                  <small className="text-muted">Contenido extraído</small>
+                  {loadingContent ? (
+                    <div className="mt-2 d-flex align-items-center gap-2 text-muted">
+                      <Spinner animation="border" size="sm" />
+                      <span>Cargando contenido...</span>
+                    </div>
+                  ) : documentContent ? (
+                    <pre
+                      style={{
+                        maxHeight: 320,
+                        overflow: "auto",
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
+                        fontSize: "0.78rem",
+                        background: "var(--bs-secondary-bg)",
+                        padding: "0.75rem",
+                        borderRadius: 4,
+                        marginTop: "0.5rem",
+                        marginBottom: 0,
+                      }}
+                    >
+                      {documentContent}
+                    </pre>
+                  ) : (
+                    <div className="text-muted mt-1" style={{ fontSize: "0.875rem" }}>
+                      Contenido no disponible.
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </Modal.Body>

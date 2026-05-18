@@ -4,7 +4,7 @@
 
 import { apiFetch } from "./apiClient";
 import { apiGet, apiPost, apiDelete, buildQuery } from "./factory";
-import type { Document, DocumentListResponse } from "../types";
+import type { Document, DocumentContent, DocumentListResponse } from "../types";
 import type { DocumentStatus } from "../utils/enums";
 
 /** Parámetros de query para listar documentos. */
@@ -53,6 +53,19 @@ export function getDocument(
 ): Promise<Document> {
   return apiGet<Document>(
     `/collections/${collectionId}/documents/${docId}`,
+    undefined,
+    { signal },
+  );
+}
+
+/** Obtiene el texto extraído de un documento completado. */
+export function getDocumentContent(
+  collectionId: string,
+  docId: string,
+  signal?: AbortSignal,
+): Promise<DocumentContent> {
+  return apiGet<DocumentContent>(
+    `/collections/${collectionId}/documents/${docId}/content`,
     undefined,
     { signal },
   );

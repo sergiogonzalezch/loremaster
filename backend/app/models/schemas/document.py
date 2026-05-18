@@ -30,3 +30,18 @@ class DocumentResponse(BaseModel):
     status: DocumentStatus
     processing_error: str | None = None
     created_at: datetime
+
+
+class DocumentContentResponse(BaseModel):
+    """Contenido extraído de un documento completado.
+
+    Attributes:
+        id: Identificador del documento.
+        filename: Nombre original del archivo.
+        raw_text: Texto extraído. None si el documento no está completado.
+
+    """
+
+    id: str
+    filename: str
+    raw_text: str | None = None
