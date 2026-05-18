@@ -130,6 +130,30 @@ pause
 goto MENU
 
 :HANDLE_9
+cls
+echo.
+echo  %C%  Cerrando backend, frontend e infraestructura...%Z%
+echo.
+
+echo  %D%  Cerrando ventana Backend...%Z%
+if exist ".loremaster_backend_pid" (
+    for /f %%a in (.loremaster_backend_pid) do taskkill /PID %%a /F /T >nul 2>&1
+    del ".loremaster_backend_pid" >nul 2>&1
+)
+
+echo  %D%  Cerrando ventana Frontend...%Z%
+if exist ".loremaster_frontend_pid" (
+    for /f %%a in (.loremaster_frontend_pid) do taskkill /PID %%a /F /T >nul 2>&1
+    del ".loremaster_frontend_pid" >nul 2>&1
+)
+
+echo  %D%  Bajando infraestructura Docker...%Z%
+docker compose -f backend\docker-compose.yml -f backend\docker-compose.postgres.yml down
+
+echo.
+echo  %G%  Todo cerrado.%Z%
+echo.
+timeout /t 2 /nobreak >nul
 popd
 endlocal
 exit /b 0

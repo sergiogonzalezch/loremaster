@@ -1,4 +1,10 @@
 # ========================
+# Launcher runtime files
+# ========================
+.loremaster_backend_pid
+.loremaster_frontend_pid
+
+# ========================
 # Claude Code
 # ========================
 .agents

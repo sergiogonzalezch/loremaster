@@ -78,19 +78,21 @@ if ($LASTEXITCODE -ne 0) {
 
 # ── 2. Backend ───────────────────────────────────────────────────────────────
 Write-Host "==> Abriendo backend (http://localhost:8000)..." -ForegroundColor Cyan
-Start-Process powershell -ArgumentList @(
+$backendProc = Start-Process powershell -ArgumentList @(
     "-NoExit",
     "-Command",
     "Set-Location '$Root\backend'; .\venv\Scripts\Activate.ps1; make run"
-)
+) -PassThru
+$backendProc.Id | Out-File "$Root\.loremaster_backend_pid" -Encoding ascii
 
 # ── 3. Frontend ──────────────────────────────────────────────────────────────
 Write-Host "==> Abriendo frontend (http://localhost:5173)..." -ForegroundColor Cyan
-Start-Process powershell -ArgumentList @(
+$frontendProc = Start-Process powershell -ArgumentList @(
     "-NoExit",
     "-Command",
     "Set-Location '$Root\frontend'; npm run dev"
-)
+) -PassThru
+$frontendProc.Id | Out-File "$Root\.loremaster_frontend_pid" -Encoding ascii
 
 # ── Resumen ──────────────────────────────────────────────────────────────────
 Write-Host ""
