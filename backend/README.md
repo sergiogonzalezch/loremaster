@@ -10,10 +10,14 @@ API REST con pipeline RAG. FastAPI + SQLModel + LangChain + Qdrant + Ollama.
 
 ## Instalación
 
+El venv se crea y sincroniza automáticamente al usar los launchers (`loremaster.bat`, `loremaster.sh`, `dev.ps1`).
+
+Para trabajar directamente con el backend sin el launcher:
+
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+source venv/bin/activate        # Windows: .\venv\Scripts\Activate.ps1
 make install-dev                # instala requirements.txt + requirements-dev.txt
 ```
 

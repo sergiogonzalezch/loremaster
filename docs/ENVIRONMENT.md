@@ -37,29 +37,31 @@ make prod-down
 
 ## Prerequisitos de primera vez
 
+Prerequisitos del sistema (instalación única):
+
+| Prerequisito | Validado por el launcher |
+|---|---|
+| Python 3.9+ en PATH | ✅ Error si no está |
+| Node/npm en PATH | ✅ Error si no está |
+| Docker Desktop | ✅ Error si no está corriendo |
+| Ollama en localhost:11434 | ⚠️ Aviso (la app arranca, LLM falla en runtime) |
+
 ```bash
-# 1. Infraestructura
-#    Docker Desktop corriendo
-
-# 2. Backend — crear y activar venv
+# 1. Copiar y editar .env (obligatorio — SECRET_KEY no tiene valor por defecto)
 cd backend
-python -m venv venv
-.\venv\Scripts\Activate.ps1      # Windows
-make install-dev
-
-# Copiar y editar .env
 cp .env.example .env
-# — Editar SECRET_KEY y las variables que correspondan al modo elegido
+# Editar SECRET_KEY y las variables que correspondan al modo elegido
 
-# Aplicar migraciones
+# 2. Aplicar migraciones
 alembic upgrade head
 
-# 3. Frontend
+# 3. Frontend — dependencias (primera vez)
 cd ../frontend
 npm install
 ```
 
-Después de la primera vez basta con `.\dev.ps1`.
+El venv del backend **se crea y sincroniza automáticamente** al usar cualquier launcher.
+Después de estos pasos basta con `.\dev.ps1` / `loremaster.bat` / `./loremaster.sh`.
 
 ---
 

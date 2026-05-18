@@ -30,12 +30,8 @@ loremaster/
 git clone https://github.com/sergiogonzalezch/loremaster.git
 cd loremaster
 
-# Backend — venv y dependencias
+# Backend — configuración (el venv se crea automáticamente al arrancar)
 cd backend
-python -m venv venv
-.\venv\Scripts\Activate.ps1   # Windows
-source venv/bin/activate       # Linux / macOS
-make install-dev
 cp .env.example .env           # editar SECRET_KEY y las variables que correspondan
 alembic upgrade head
 
@@ -58,6 +54,8 @@ chmod +x loremaster.sh
 ```
 
 Menu con una tecla: Dev SQLite/Postgres, solo infra, tests, prod up/down. La opcion 9 cierra backend, frontend e infra Docker.
+
+El launcher valida antes de arrancar: Python, npm, Docker corriendo y Ollama (aviso si no responde). El venv del backend se crea y sincroniza automáticamente en cada arranque.
 
 ### Arranque manual
 
