@@ -578,69 +578,77 @@ export default function DocumentsTab({
         </Modal.Header>
         <Modal.Body>
           {selectedDocument && (
-            <div className="d-grid gap-2">
+            <div className="d-flex flex-column gap-3">
               <div>
                 <small className="text-muted">Nombre</small>
-                <div>{selectedDocument.filename}</div>
+                <div style={{ wordBreak: "break-word" }}>{selectedDocument.filename}</div>
               </div>
-              <div>
-                <small className="text-muted">Tipo</small>
-                <div>{selectedDocument.file_type.toUpperCase()}</div>
-              </div>
-              <div>
-                <small className="text-muted">Chunks</small>
-                <div>{selectedDocument.chunk_count}</div>
-              </div>
-              <div>
-                <small className="text-muted">Estado</small>
-                <div>{selectedDocument.status}</div>
+              <div className="row g-3">
+                <div className="col-auto">
+                  <small className="text-muted d-block">Tipo</small>
+                  <div>{selectedDocument.file_type.toUpperCase()}</div>
+                </div>
+                <div className="col-auto">
+                  <small className="text-muted d-block">Chunks</small>
+                  <div>{selectedDocument.chunk_count}</div>
+                </div>
+                <div className="col-auto">
+                  <small className="text-muted d-block">Estado</small>
+                  <div>{selectedDocument.status}</div>
+                </div>
+                <div className="col-auto">
+                  <small className="text-muted d-block">Creado</small>
+                  <div>{formatDate(selectedDocument.created_at, true)}</div>
+                </div>
               </div>
               {selectedDocument.processing_error && (
                 <div>
                   <small className="text-muted">Error de procesamiento</small>
                   <div
-                    className="text-danger"
+                    className="text-danger mt-1"
                     style={{ fontSize: "0.875rem", wordBreak: "break-word" }}
                   >
                     {selectedDocument.processing_error}
                   </div>
                 </div>
               )}
-              <div>
-                <small className="text-muted">Creado</small>
-                <div>{formatDate(selectedDocument.created_at, true)}</div>
-              </div>
               {selectedDocument.status === "completed" && (
-                <div>
-                  <small className="text-muted">Contenido extraído</small>
-                  {loadingContent ? (
-                    <div className="mt-2 d-flex align-items-center gap-2 text-muted">
-                      <Spinner animation="border" size="sm" />
-                      <span>Cargando contenido...</span>
-                    </div>
-                  ) : documentContent ? (
-                    <pre
-                      style={{
-                        maxHeight: 320,
-                        overflow: "auto",
-                        whiteSpace: "pre-wrap",
-                        wordBreak: "break-word",
-                        fontSize: "0.78rem",
-                        background: "var(--bs-secondary-bg)",
-                        padding: "0.75rem",
-                        borderRadius: 4,
-                        marginTop: "0.5rem",
-                        marginBottom: 0,
-                      }}
-                    >
-                      {documentContent}
-                    </pre>
-                  ) : (
-                    <div className="text-muted mt-1" style={{ fontSize: "0.875rem" }}>
-                      Contenido no disponible.
-                    </div>
-                  )}
-                </div>
+                <>
+                  <hr style={{ borderColor: "var(--lm-border)", margin: 0 }} />
+                  <div>
+                    <small className="text-muted">Contenido extraído</small>
+                    {loadingContent ? (
+                      <div className="mt-2 d-flex align-items-center gap-2 text-muted">
+                        <Spinner animation="border" size="sm" />
+                        <span>Cargando contenido...</span>
+                      </div>
+                    ) : documentContent ? (
+                      <pre
+                        style={{
+                          maxHeight: 320,
+                          overflow: "auto",
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-word",
+                          fontSize: "0.78rem",
+                          fontFamily: "var(--lm-font-body)",
+                          background: "var(--lm-raised)",
+                          border: "1px solid var(--lm-border)",
+                          color: "var(--lm-text)",
+                          padding: "0.75rem",
+                          borderRadius: "var(--lm-radius)",
+                          marginTop: "0.5rem",
+                          marginBottom: 0,
+                        }}
+                      >
+                        {documentContent}
+                      </pre>
+                    ) : (
+                      <div className="text-muted mt-1" style={{ fontSize: "0.875rem" }}>
+                        Contenido no disponible.
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
             </div>
           )}
