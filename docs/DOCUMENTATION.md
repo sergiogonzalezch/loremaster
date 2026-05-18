@@ -221,18 +221,19 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 ### Criterios de aceptación (actualizados)
 
 - `auto_prompt` viene del frontend (previamente generado en `build-prompt`)
-- `final_prompt` es editable por el usuario
+- `auto_prompt` validado en schema: `min_length=1`, `max_length=2000`
+- `final_prompt` es editable por el usuario (`min_length=10`, `max_length=2000`)
 - `batch_size` entre 1 y 4
 - Validación de contenido con `check_user_input()` antes de generar
-- Límite de 512 tokens para el prompt visual
+- Límite de 512 tokens (`IMAGE_PROMPT_TOKENS`) para el prompt visual; buffer interno garantiza que el resultado ≤ 2 000 chars (límite DB)
 
 ### Secuencia (actualizada)
 
 | **Paso** | **Actor → Actor**    | **Mensaje / Operación**                                              |
 | -------- | --------------------- | ------------------------------------------------------------------- |
 | 1        | Cliente → FastAPI    | POST /image-generation/build-prompt con content_id                  |
-| 2        | FastAPI → Qdrant     | search_context para obtener contexto del contenido                  |
-| 3        | FastAPI → LLM        | Genera auto_prompt                                                  |
+| 2        | FastAPI → DB         | Carga EntityContent confirmado (texto del contenido)                |
+| 3        | FastAPI → LLM        | build_combined_prompt() → extrae tipo y atributos visuales          |
 | 4        | FastAPI → Cliente    | HTTP 200 { auto_prompt }                                            |
 | 5        | Cliente → FastAPI    | POST /image-generation/generate (auto_prompt + final_prompt)        |
 | 6        | FastAPI              | Valida input con check_user_input()                                 |
@@ -545,7 +546,7 @@ loremaster/
 > - `COMFY_URL` → `COMFYUI_URL`
 > - `CACHE_THRESHOLD` / `CACHE_TTL` — Redis se usa para rate limiting (sliding window), no caché semántico
 > - `STORAGE_BACKEND=localstack` → `local` (dev) / `s3` / `r2` (prod)
-> - Variables añadidas: `RATE_LIMIT_ENABLED`, `RATE_LIMIT_PER_MINUTE`, `RATE_LIMIT_LLM_PER_MINUTE`, `RATE_LIMIT_IMAGE_PER_MINUTE`
+> - Variables añadidas: `RATE_LIMIT_ENABLED`, `RATE_LIMIT_PER_MINUTE`, `RATE_LIMIT_LLM_PER_MINUTE`, `RATE_LIMIT_IMAGE_PER_MINUTE`, `OLLAMA_EXCLUDED_MODELS`
 
 ```
 PROJECT_NAME="Lore Master API"
@@ -554,6 +555,7 @@ ENVIRONMENT="local"
 # LLM
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=llama3.2:latest
+OLLAMA_EXCLUDED_MODELS=          # prefijos a ocultar en GET /models (modelos con thinking mode)
 
 # ComfyUI local
 IMAGE_BACKEND=comfyui
@@ -666,7 +668,7 @@ DATABASE_URL=postgresql://user:pass@postgres:5432/loremaster
 | **collections** | id (UUID PK), name, description, owner_id (FK → users), is_public, created_at, updated_at, is_deleted, deleted_at | `UNIQUE(name, owner_id)`. `owner_id` nullable para datos migrados. `is_public=False` por defecto; el contenido se comparte de forma selectiva a nivel de ítem. |
 | **documents** | id (UUID PK), collection_id (FK), filename (VARCHAR 255), file_type, chunk_count, status, created_at, is_deleted, deleted_at | El texto vive en Qdrant, no en esta tabla. `status`: processing \| completed \| failed. `filename` validado en servicio: vacío o > 255 chars → HTTP 422. |
 | **entities** | id (UUID PK), collection_id (FK), type (ENUM), name, description, created_at, updated_at, is_deleted, deleted_at | `type`: character \| creature \| location \| faction \| item. Nombre único por colección: `uq_entity_collection_name`. Los nombres de entidades eliminadas quedan reservados. |
-| **generated_texts** | id (UUID PK), entity_id (FK), collection_id (FK), category, query, raw_content, sources_count, token_count, created_at | Salida bruta del LLM antes de cualquier edición del usuario. Vinculada 1:1 con `entity_contents`. |
+| **generated_texts** | id (UUID PK), entity_id (FK), collection_id (FK), category, query, raw_content, sources_count, source_doc_ids (JSON, nullable), token_count, model_used (VARCHAR 100, nullable), created_at | Salida bruta del LLM antes de cualquier edición del usuario. `source_doc_ids`: IDs de documentos que aportaron contexto (auditoría RAG). `model_used`: nombre del modelo Ollama usado. Vinculada 1:1 con `entity_contents`. |
 | **entity_contents** | id (UUID PK), entity_id (FK), collection_id (FK), generated_text_id (FK), category, content, status, is_shared, confirmed_at, created_at, updated_at, is_deleted, deleted_at | `status`: pending \| confirmed \| discarded. Máx. 5 `pending` por entidad y por categoría. Confirmar descarta los demás `pending` de esa categoría. `is_shared`: solo `confirmed` puede compartirse. |
 | **image_generations** | id (UUID PK), entity_id (FK), collection_id (FK), content_id (FK), category, auto_prompt, final_prompt, prompt_token_count, batch_size, backend, width, height, created_at, is_deleted, deleted_at | Una generación produce N imágenes (batch_size 1-4). `backend`: comfyui \| mock. `category` vincula el contenido base usado para el prompt. |
 | **image_records** | id (UUID PK), generation_id (FK), entity_id (FK), collection_id (FK), seed, storage_path, image_url, filename, extension, width, height, generation_ms, is_shared, is_deleted, deleted_at, created_at | Una fila por imagen del batch. `is_shared` controla visibilidad en feed público. `filename` y `extension` identifican el archivo generado. `generation_ms` mide el tiempo de generación. |
@@ -787,25 +789,20 @@ Patrones bloqueados: contenido sexual explícito, discurso de odio / supremacism
 
 ## Capa 2 — Construcción estructurada del prompt visual (IMPLEMENTADO)
 
-El módulo `backend/app/engine/image_prompt_builder.py` construye el prompt visual automáticamente usando:
-- Prefijos por tipo de entidad (`STYLE_PREFIX` por EntityType)
-- Contexto RAG recuperado del contenido confirmado de la entidad
-- Sufijo de calidad fijo (`QUALITY_SUFFIX`)
-- Límite de 512 tokens (text encoder limit)
+Los módulos `backend/app/domain/image_prompt_rules.py` y `backend/app/engine/image_prompt_builder.py` construyen el prompt visual en una sola llamada LLM que extrae el tipo específico y los atributos visuales directamente del texto del contenido confirmado:
+
+- **`image_prompt_rules.py`** — tablas de reglas de extracción:
+  - `_COMBINED_TYPE_OPTIONS`: opciones de tipo específico por `EntityType` (p.ej. `"human, alien, robot, android, cyborg…"` para `character`)
+  - `_ATTRIBUTOS_BY_ENTITY_CATEGORY`: atributos a extraer según `(EntityType, ContentCategory)` — colores, materiales, texturas, emblemas, postura, etc.
+  - `build_combined_prompt()`: construye el prompt de extracción LLM que pide "extract specific type and ALL visual attributes, output as comma-separated list"
+- **`image_prompt_builder.py`** — orquesta el flujo:
+  1. `build_combined_prompt(entity_type, category, content_text)` → prompt de extracción
+  2. LLM devuelve comma-separated: `<tipo>, <atributo1>, <atributo2>, …`
+  3. `_truncate_to_tokens(attrs, available_tokens)` acota la lista (disponible: `IMAGE_PROMPT_TOKENS − suffix_tokens − 14` tokens)
+  4. `auto_prompt = f"{attributes}, {QUALITY_SUFFIX}"` → prompt final ≤ 1 997 chars
 
 ```python
-STYLE_PREFIX = {
-    "character": "fantasy character portrait, detailed face, cinematic lighting, epic atmosphere,",
-    "creature": "fantasy creature, detailed, monstrous, epic atmosphere,",
-    "location": "fantasy landscape, wide establishing shot, atmospheric, detailed environment,",
-    "faction": "faction emblem, heraldic design, fantasy art, symbolic imagery,",
-    "item": "fantasy item showcase, clean background, detailed textures, magical aura,"
-}
-
-QUALITY_SUFFIX = (
-    "high quality, masterpiece, 8k resolution, sharp focus, "
-    "professional digital art, trending on artstation"
-)
+QUALITY_SUFFIX = "high quality, masterpiece, sharp focus, professional digital art"
 ```
 
 La validación de prompts se realiza con `check_user_input()` antes de cualquier generación.
