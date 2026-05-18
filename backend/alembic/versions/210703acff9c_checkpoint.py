@@ -1,22 +1,22 @@
 """Checkpoint
 
-Revision ID: 0e0f6177d0d5
-Revises:
-Create Date: 2026-05-15 09:20:02.688266
+Revision ID: 210703acff9c
+Revises: 
+Create Date: 2026-05-17 22:42:29.656062
 
 """
-from collections.abc import Sequence
-
-import sqlalchemy as sa
-import sqlmodel
+from typing import Sequence, Union
 
 from alembic import op
+import sqlalchemy as sa
+import sqlmodel 
+
 
 # revision identifiers, used by Alembic.
-revision: str = '0e0f6177d0d5'
-down_revision: str | Sequence[str] | None = None
-branch_labels: str | Sequence[str] | None = None
-depends_on: str | Sequence[str] | None = None
+revision: str = '210703acff9c'
+down_revision: Union[str, Sequence[str], None] = None
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
@@ -26,6 +26,11 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('layer', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('snippet', sqlmodel.sql.sqltypes.AutoString(length=200), nullable=False),
+    sa.Column('user_id', sqlmodel.sql.sqltypes.AutoString(length=128), nullable=True),
+    sa.Column('collection_id', sqlmodel.sql.sqltypes.AutoString(length=36), nullable=True),
+    sa.Column('entity_id', sqlmodel.sql.sqltypes.AutoString(length=36), nullable=True),
+    sa.Column('operation', sqlmodel.sql.sqltypes.AutoString(length=32), nullable=True),
+    sa.Column('pattern_matched', sqlmodel.sql.sqltypes.AutoString(length=200), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
@@ -108,10 +113,11 @@ def upgrade() -> None:
     sa.Column('id', sqlmodel.sql.sqltypes.AutoString(length=36), nullable=False),
     sa.Column('entity_id', sa.String(length=36), nullable=False),
     sa.Column('collection_id', sa.String(length=36), nullable=False),
-    sa.Column('category', sqlmodel.sql.sqltypes.AutoString(length=50), nullable=False),
+    sa.Column('category', sa.String(length=50), nullable=False),
     sa.Column('query', sqlmodel.sql.sqltypes.AutoString(length=2000), nullable=False),
     sa.Column('raw_content', sqlmodel.sql.sqltypes.AutoString(length=10000), nullable=False),
     sa.Column('sources_count', sa.Integer(), nullable=False),
+    sa.Column('source_doc_ids', sa.JSON(), nullable=True),
     sa.Column('token_count', sa.Integer(), nullable=False),
     sa.Column('model_used', sqlmodel.sql.sqltypes.AutoString(length=100), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=False),
@@ -130,7 +136,7 @@ def upgrade() -> None:
     sa.Column('entity_id', sa.String(length=36), nullable=False),
     sa.Column('collection_id', sa.String(length=36), nullable=False),
     sa.Column('generated_text_id', sa.String(length=36), nullable=False),
-    sa.Column('category', sa.Enum('backstory', 'extended_description', 'scene', 'chapter', name='contentcategory'), nullable=False),
+    sa.Column('category', sa.Enum('backstory', 'extended_description', 'scene', name='contentcategory'), nullable=False),
     sa.Column('content', sqlmodel.sql.sqltypes.AutoString(length=10000), nullable=False),
     sa.Column('status', sa.Enum('pending', 'confirmed', 'discarded', name='contentstatus'), nullable=False),
     sa.Column('is_shared', sa.Boolean(), nullable=False),
