@@ -11,6 +11,32 @@ D='\033[0;90m'
 W='\033[0;97m'
 Z='\033[0m'
 
+check_prereqs() {
+    local ok=true
+
+    if ! command -v python3 &>/dev/null; then
+        echo -e "${R}  [ERROR] python3 no encontrado en PATH. Instala Python 3.9+.${Z}"
+        ok=false
+    fi
+    if ! command -v npm &>/dev/null; then
+        echo -e "${R}  [ERROR] npm no encontrado en PATH. Instala Node.js.${Z}"
+        ok=false
+    fi
+    if ! docker info > /dev/null 2>&1; then
+        echo -e "${R}  [ERROR] Docker no está corriendo. Inicia Docker Desktop / dockerd.${Z}"
+        ok=false
+    fi
+
+    if [ "$ok" = "false" ]; then
+        echo -e "${R}  Corrige los errores anteriores antes de continuar.${Z}"
+        return 1
+    fi
+
+    if ! curl -sf --max-time 2 http://localhost:11434 > /dev/null 2>&1; then
+        echo -e "${Y}  [AVISO] Ollama no responde en localhost:11434 — inícialo antes de usar funciones LLM.${Z}"
+    fi
+}
+
 ensure_venv() {
     local backend_dir="$(pwd)/backend"
     if [ ! -d "$backend_dir/venv" ]; then
@@ -58,6 +84,7 @@ stop_services() {
 dev_up() {
     local postgres="$1"
     echo
+    check_prereqs || { read -r -p "  Pulsa Enter para volver al menú..."; return 1; }
     ensure_venv
     echo
     if [ "$postgres" = "true" ]; then

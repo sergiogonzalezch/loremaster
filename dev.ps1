@@ -7,7 +7,8 @@
 # Prerequisitos:
 #   - Docker Desktop corriendo
 #   - Python en PATH
-#   - Node instalado (npm)
+#   - Node/npm en PATH
+#   - Ollama corriendo (para funciones LLM)
 
 param(
     [switch]$Postgres
@@ -15,7 +16,33 @@ param(
 
 $Root = $PSScriptRoot
 
-# ── 0. Venv del backend ──────────────────────────────────────────────────────
+# ── 0. Prerequisitos ─────────────────────────────────────────────────────────
+$prereqOk = $true
+
+if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
+    Write-Host "[ERROR] Python no encontrado en PATH. Instala Python 3.9+." -ForegroundColor Red
+    $prereqOk = $false
+}
+if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
+    Write-Host "[ERROR] npm no encontrado en PATH. Instala Node.js." -ForegroundColor Red
+    $prereqOk = $false
+}
+
+& docker info *> $null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "[ERROR] Docker no está corriendo. Inicia Docker Desktop." -ForegroundColor Red
+    $prereqOk = $false
+}
+
+if (-not $prereqOk) { exit 1 }
+
+try {
+    Invoke-WebRequest -Uri "http://localhost:11434" -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop | Out-Null
+} catch {
+    Write-Host "[AVISO] Ollama no responde en localhost:11434 — inícialo antes de usar funciones LLM." -ForegroundColor Yellow
+}
+
+# ── 1. Venv del backend ──────────────────────────────────────────────────────
 $VenvDir = "$Root\backend\venv"
 $Pip     = "$VenvDir\Scripts\pip"
 
