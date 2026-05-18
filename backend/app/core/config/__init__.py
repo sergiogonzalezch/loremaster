@@ -26,6 +26,9 @@ class Settings(BaseSettings):
 
         ollama_model: Modelo de Ollama para LLM (generación de contenido).
         ollama_base_url: URL base del servidor Ollama.
+        ollama_excluded_models: Prefijos de modelos excluidos del endpoint GET /models.
+            Útil para ocultar modelos incompatibles con el pipeline RAG (ej. modelos
+            con thinking mode que emiten <think> tags y rompen el parser de respuestas).
         image_prompt_model: Modelo de Ollama para extracción de atributos visuales.
 
         temperature: Temperatura del LLM (creatividad).
@@ -89,6 +92,7 @@ class Settings(BaseSettings):
     # LLM - Ollama
     ollama_model: str = "llama3.2:latest"
     ollama_base_url: str = "http://localhost:11434"
+    ollama_excluded_models: list[str] = []
 
     # LLM parameters
     temperature: float = 0.7

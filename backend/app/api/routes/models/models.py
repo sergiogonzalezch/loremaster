@@ -36,6 +36,7 @@ def list_models(_: Annotated[dict, Depends(get_current_user)]) -> list[ModelInfo
         ) from exc
 
     models = response.json().get("models", [])
+    excluded = settings.ollama_excluded_models
     return [
         ModelInfo(
             name=m["name"],
@@ -43,4 +44,5 @@ def list_models(_: Annotated[dict, Depends(get_current_user)]) -> list[ModelInfo
             is_default=m["name"] == settings.ollama_model,
         )
         for m in models
+        if not any(m["name"].startswith(prefix) for prefix in excluded)
     ]
