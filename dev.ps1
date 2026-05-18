@@ -36,10 +36,9 @@ if ($LASTEXITCODE -ne 0) {
 
 if (-not $prereqOk) { exit 1 }
 
-try {
-    Invoke-WebRequest -Uri "http://localhost:11434" -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop | Out-Null
-} catch {
-    Write-Host "[AVISO] Ollama no responde en localhost:11434 — inícialo antes de usar funciones LLM." -ForegroundColor Yellow
+$ollamaUp = (Test-NetConnection -ComputerName localhost -Port 11434 -WarningAction SilentlyContinue).TcpTestSucceeded
+if (-not $ollamaUp) {
+    Write-Host "[AVISO] Ollama no responde en localhost:11434. Inicialo antes de usar funciones LLM." -ForegroundColor Yellow
 }
 
 # ── 1. Venv del backend ──────────────────────────────────────────────────────
