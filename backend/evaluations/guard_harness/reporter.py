@@ -256,7 +256,7 @@ def generate_report(pre: dict, post: dict | None, title: str) -> str:
 
     if post:
         lines += [
-            f"| Caso | Dataset | Fix | Input bloq (pre) | Input bloq (post) | Output bloq (pre) | Output bloq (post) |",
+            "| Caso | Dataset | Fix | Input bloq (pre) | Input bloq (post) | Output bloq (pre) | Output bloq (post) |",
             "|---|---|---|:---:|:---:|:---:|:---:|",
         ]
         all_ids = sorted(set(list(pre["results"].keys()) + list(post["results"].keys())))

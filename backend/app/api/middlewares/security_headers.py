@@ -36,7 +36,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         - Mozilla Web Security Guidelines
     """
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:  # noqa: D102
         response = await call_next(request)
 
         response.headers["X-Content-Type-Options"] = "nosniff"

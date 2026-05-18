@@ -39,14 +39,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     """
 
-    def __init__(self, app: ASGIApp, requests_per_minute: int = 30) -> None:
+    def __init__(self, app: ASGIApp, requests_per_minute: int = 30) -> None:  # noqa: D107
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
         self.redis: aioredis.Redis = aioredis.from_url(
             settings.redis_url, decode_responses=True
         )
 
-    async def dispatch(self, request: Request, call_next: Callable) -> JSONResponse:
+    async def dispatch(self, request: Request, call_next: Callable) -> JSONResponse:  # noqa: D102
         if request.url.path in _EXEMPT_PATHS:
             return await call_next(request)
 
@@ -84,7 +84,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 token, settings.secret_key, algorithms=[settings.algorithm]
             )
             return payload.get("sub")
-        except (JWTError, Exception):
+        except (JWTError, Exception):  # noqa: BLE001
             return None
 
     def _get_limit_for_path(self, path: str) -> int:
@@ -107,5 +107,5 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 results = await pipe.execute()
             count: int = results[2]
             return count <= limit
-        except Exception:
+        except Exception:  # noqa: BLE001
             return True  # Redis unavailable — fail-open to avoid blocking the app
