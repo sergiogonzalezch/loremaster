@@ -6,7 +6,7 @@
 #
 # Prerequisitos:
 #   - Docker Desktop corriendo
-#   - venv del backend ya instalado (make install-dev desde backend/)
+#   - Python en PATH
 #   - Node instalado (npm)
 
 param(
@@ -14,6 +14,26 @@ param(
 )
 
 $Root = $PSScriptRoot
+
+# ── 0. Venv del backend ──────────────────────────────────────────────────────
+$VenvDir = "$Root\backend\venv"
+$Pip     = "$VenvDir\Scripts\pip"
+
+if (-not (Test-Path $VenvDir)) {
+    Write-Host "==> Creando entorno virtual..." -ForegroundColor Yellow
+    python -m venv $VenvDir
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "[ERROR] No se pudo crear el venv. Verifica que Python esté en PATH." -ForegroundColor Red
+        exit 1
+    }
+}
+
+Write-Host "==> Verificando dependencias del backend..." -ForegroundColor Cyan
+& $Pip install -q -r "$Root\backend\requirements.txt" -r "$Root\backend\requirements-dev.txt"
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "[ERROR] pip install falló. Revisa requirements.txt / requirements-dev.txt." -ForegroundColor Red
+    exit 1
+}
 
 # ── 1. Infraestructura Docker ────────────────────────────────────────────────
 Write-Host ""

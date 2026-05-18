@@ -11,6 +11,18 @@ D='\033[0;90m'
 W='\033[0;97m'
 Z='\033[0m'
 
+ensure_venv() {
+    local backend_dir="$(pwd)/backend"
+    if [ ! -d "$backend_dir/venv" ]; then
+        echo -e "${Y}  Creando entorno virtual...${Z}"
+        python3 -m venv "$backend_dir/venv"
+    fi
+    echo -e "${C}  Verificando dependencias del backend...${Z}"
+    "$backend_dir/venv/bin/pip" install -q \
+        -r "$backend_dir/requirements.txt" \
+        -r "$backend_dir/requirements-dev.txt"
+}
+
 open_terminal() {
     local title="$1"
     local cmd="$2"
@@ -45,6 +57,8 @@ stop_services() {
 
 dev_up() {
     local postgres="$1"
+    echo
+    ensure_venv
     echo
     if [ "$postgres" = "true" ]; then
         echo -e "${C}  Levantando infra PostgreSQL...${Z}"
