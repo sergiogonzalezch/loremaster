@@ -1,6 +1,5 @@
 """Rutas de colecciones para CRUD y listado."""
 
-import contextlib
 import logging
 from typing import Annotated
 
@@ -12,7 +11,8 @@ from app.core.auth.dependencies import get_current_user
 from app.core.database.dependencies import (
     get_collection_or_404_owned,
 )
-from app.core.exceptions import DatabaseError, DuplicateCollectionNameError
+from app.core.database.utils import bulk_delete_items
+from app.core.exceptions import DatabaseError, DuplicateNameError
 from app.database import get_session
 from app.models.db.collection import Collection
 from app.models.schemas.collection import (
@@ -54,7 +54,7 @@ def create_collection(
             request.name,
             request.description,
         )
-    except DuplicateCollectionNameError as exc:
+    except DuplicateNameError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
@@ -101,7 +101,7 @@ def update_collection(
             request,
             current_user["sub"],
         )
-    except DuplicateCollectionNameError as exc:
+    except DuplicateNameError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
@@ -140,9 +140,5 @@ def bulk_delete_collections(
             Collection.is_deleted.is_(False),
         ),
     ).all()
-
-    for collection in collections:
-        with contextlib.suppress(Exception):
-            delete_collection_service(session, collection)
-
+    bulk_delete_items(session, collections, delete_collection_service)
     return Response(status_code=204)

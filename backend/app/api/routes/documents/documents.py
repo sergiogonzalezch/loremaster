@@ -1,6 +1,5 @@
 """Rutas de documentos para ingestión, listado y eliminación."""
 
-import contextlib
 import logging
 import time
 from typing import Annotated
@@ -24,6 +23,7 @@ from app.core.database.dependencies import (
     get_collection_or_404_owned,
     get_document_or_404_owned,
 )
+from app.core.database.utils import bulk_delete_items
 from app.core.exceptions import (
     ContentNotAllowedError,
     DatabaseError,
@@ -207,10 +207,7 @@ def bulk_delete_documents(
         ),
     ).all()
 
-    for doc in docs:
-        with contextlib.suppress(Exception):
-            delete_document_service(session, doc)
-
+    bulk_delete_items(session, docs, delete_document_service)
     return Response(status_code=204)
 
 

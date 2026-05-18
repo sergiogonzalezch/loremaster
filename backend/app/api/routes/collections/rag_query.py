@@ -13,10 +13,9 @@ from app.core.exceptions import (
     NoContextAvailableError,
 )
 from app.database import get_session
-from app.domain.content_guard import check_generated_output, check_prompt_length, check_user_input
-from app.engine.rag_pipeline import invoke_rag_pipeline
 from app.models.db.collection import Collection
 from app.models.schemas.rag_query import RagQueryRequest, RagQueryResponse
+from app.services.collection.rag_query_service import execute_rag_query
 from app.services.moderation.moderation_service import log_moderation_event
 
 logger = logging.getLogger(__name__)
@@ -31,47 +30,26 @@ async def rag_query(
     _: Annotated[Collection, Depends(get_collection_or_404_owned)],
     session: Annotated[Session, Depends(get_session)],
 ):
-    """Ejecuta una consulta RAG sobre los documentos de la colección.
-
-    Busca fragmentos similares, construye un prompt con contexto y devuelve
-    la respuesta generada por el LLM.
-    """
+    """Ejecuta una consulta RAG sobre los documentos de la colección."""
+    query = request.query.strip()
     try:
-        query = request.query.strip()
-        check_prompt_length(query)
-        check_user_input(query)
-
-        logger.info(
-            "Executing RAG query for collection %s, query: '%.50s'",
-            collection_id,
-            query,
-        )
-        answer, sources_count, source_doc_ids = await invoke_rag_pipeline(
-            collection_id=collection_id,
-            query=query,
-        )
-        check_generated_output(answer)
-        logger.info("RAG query returned %d context chunks", sources_count)
-        return RagQueryResponse(
-            query=query,
-            answer=answer,
-            sources_count=sources_count,
-            source_doc_ids=source_doc_ids,
-        )
+        answer, sources_count, source_doc_ids = await execute_rag_query(collection_id, query)
     except ContentNotAllowedError as e:
-        log_moderation_event(session, "input", e.snippet, collection_id=collection_id, operation="query", pattern_matched=getattr(e, "pattern", None))
+        log_moderation_event(
+            session, "input", e.snippet,
+            collection_id=collection_id, operation="query",
+            pattern_matched=getattr(e, "pattern", None),
+        )
         raise HTTPException(status_code=422, detail=str(e)) from e
     except NoContextAvailableError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
     except GeneratedContentBlockedError as e:
         log_moderation_event(
             session, "output", e.snippet,
-            collection_id=collection_id,
-            operation="query", pattern_matched=getattr(e, "pattern", None),
+            collection_id=collection_id, operation="query",
+            pattern_matched=getattr(e, "pattern", None),
         )
         raise HTTPException(status_code=422, detail=str(e)) from e
     except RuntimeError as e:
-        raise HTTPException(
-            status_code=503,
-            detail="No fue posible generar el contenido solicitado.",
-        ) from e
+        raise HTTPException(status_code=503, detail="No fue posible generar el contenido solicitado.") from e
+    return RagQueryResponse(query=query, answer=answer, sources_count=sources_count, source_doc_ids=source_doc_ids)

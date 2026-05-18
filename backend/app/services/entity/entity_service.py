@@ -9,7 +9,7 @@ from sqlmodel import Session, select
 
 from app.core.api.params import DateRangeParams, PaginationParams
 from app.core.database.utils import db_commit, paginate_with_sort
-from app.core.exceptions import DuplicateEntityNameError
+from app.core.exceptions import DuplicateNameError
 from app.models.db.entity import Entity, EntityType
 from app.models.schemas.entity import CreateEntityRequest, UpdateEntityRequest
 from app.services.deletion_service import cascade_delete_entity
@@ -51,13 +51,13 @@ def create_entity_service(
         Instancia de la entidad creada.
 
     Raises:
-        DuplicateEntityNameError: Si ya existe una entidad con ese nombre.
+        DuplicateNameError: Si ya existe una entidad con ese nombre.
 
     """
     name = request.name.strip()
     description = request.description.strip()
     if _find_by_name(session, collection_id, name):
-        raise DuplicateEntityNameError(name)
+        raise DuplicateNameError(name, f"Ya existe una entidad llamada '{name}' en esta colección.")
     entity = Entity(
         collection_id=collection_id,
         type=request.type,
@@ -69,7 +69,7 @@ def create_entity_service(
         session.commit()
     except IntegrityError as e:
         session.rollback()
-        raise DuplicateEntityNameError(name) from e
+        raise DuplicateNameError(name, f"Ya existe una entidad llamada '{name}' en esta colección.") from e
     session.refresh(entity)
     logger.info("Entity '%s' created in collection %s", name, collection_id)
     return entity
@@ -138,7 +138,7 @@ def update_entity_service(
         Instancia de la entidad actualizada.
 
     Raises:
-        DuplicateEntityNameError: Si el nuevo nombre ya está en uso.
+        DuplicateNameError: Si el nuevo nombre ya está en uso.
 
     """
     new_name = request.name.strip() if request.name is not None else entity.name
@@ -147,7 +147,7 @@ def update_entity_service(
         entity.collection_id,
         new_name,
     ):
-        raise DuplicateEntityNameError(new_name)
+        raise DuplicateNameError(new_name, f"Ya existe una entidad llamada '{new_name}' en esta colección.")
     if request.type is not None:
         entity.type = request.type
     if request.name is not None:
@@ -162,7 +162,7 @@ def update_entity_service(
         session.commit()
     except IntegrityError as e:
         session.rollback()
-        raise DuplicateEntityNameError(new_name) from e
+        raise DuplicateNameError(new_name, f"Ya existe una entidad llamada '{new_name}' en esta colección.") from e
     session.refresh(entity)
     logger.info(
         "Entity '%s' updated in collection %s",

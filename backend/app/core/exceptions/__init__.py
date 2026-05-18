@@ -1,22 +1,13 @@
 """Excepciones personalizadas del dominio de la aplicación."""
 
 
-class DuplicateEntityNameError(Exception):
-    """Lanzada cuando ya existe una entidad con el mismo nombre en la colección."""
+class DuplicateNameError(Exception):
+    """Lanzada cuando ya existe un recurso con el mismo nombre."""
 
-    def __init__(self, name: str) -> None:
-        """Inicializa la excepción con el nombre duplicado."""
+    def __init__(self, name: str, message: str) -> None:
+        """Inicializa la excepción con el nombre duplicado y el mensaje de contexto."""
         self.name = name
-        super().__init__(f"Ya existe una entidad llamada '{name}' en esta colección.")
-
-
-class DuplicateCollectionNameError(Exception):
-    """Lanzada cuando ya existe una colección con el mismo nombre para el usuario."""
-
-    def __init__(self, name: str) -> None:
-        """Inicializa la excepción con el nombre duplicado."""
-        self.name = name
-        super().__init__(f"Ya existe una colección llamada '{name}'.")
+        super().__init__(message)
 
 
 class ContentNotAllowedError(Exception):
