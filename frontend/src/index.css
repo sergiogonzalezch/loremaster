@@ -548,7 +548,7 @@ a:hover {
 
 .table thead th {
   font-family: var(--lm-font-head);
-  font-size: 0.62rem;
+  font-size: 0.76rem;
   letter-spacing: 0.03em;
   color: var(--lm-text-muted) !important;
   border-color: var(--lm-border) !important;
