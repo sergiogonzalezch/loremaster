@@ -6,7 +6,7 @@ Plataforma RAG para escritores y narradores de rol. Carga documentos de lore, ge
 
 | Capa | Tecnología |
 |---|---|
-| Backend | FastAPI, SQLModel, LangChain, Qdrant, Ollama |
+| Backend | FastAPI, SQLModel, Qdrant, Ollama |
 | Frontend | React 19, TypeScript, Vite, Bootstrap 5 |
 
 ## Estructura del repo
@@ -14,26 +14,55 @@ Plataforma RAG para escritores y narradores de rol. Carga documentos de lore, ge
 ```
 loremaster/
 ├── backend/          → API REST + pipeline RAG
-├── frontend/         → SPA React para interactuar con la API
-└── docs/             → Documentación extendida
+├── frontend/         → SPA React
+├── docs/             → Documentación extendida
+├── Makefile          → Targets de infra y arranque
+└── dev.ps1           → Arranque completo del entorno local (Windows)
 ```
 
 ## Quick start
 
-1. Clonar el repo:
-   ```bash
-   git clone https://github.com/sergiogonzalezch/loremaster.git
-   cd loremaster
-   ```
+### Primera vez
 
-2. Levantar servicios de soporte (Qdrant, PostgreSQL, Redis, LocalStack):
-   ```bash
-   cd backend && docker-compose up -d
-   ```
+```bash
+git clone https://github.com/sergiogonzalezch/loremaster.git
+cd loremaster
 
-3. Levantar el backend: ver [`backend/README.md`](backend/README.md)
+# Backend — venv y dependencias
+cd backend
+python -m venv venv
+.\venv\Scripts\Activate.ps1   # Windows
+make install-dev
+cp .env.example .env          # editar SECRET_KEY y las variables que correspondan
+alembic upgrade head
 
-4. Levantar el frontend: ver [`frontend/README.md`](frontend/README.md)
+# Frontend — dependencias
+cd ../frontend
+npm install
+```
+
+### Arrancar el entorno
+
+```powershell
+# Desde la raíz del proyecto (Windows)
+.\dev.ps1            # SQLite + Qdrant + Redis + backend + frontend
+.\dev.ps1 -Postgres  # PostgreSQL + Qdrant + Redis + backend + frontend
+```
+
+Se abre una ventana por proceso. Para bajar la infraestructura Docker:
+
+```bash
+make down
+```
+
+### Solo infraestructura (sin abrir backend/frontend)
+
+```bash
+make infra      # Qdrant + Redis
+make infra-pg   # Qdrant + Redis + PostgreSQL
+```
+
+Ver [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md) para la referencia completa de variables de entorno, modos (local/demo/producción) y checklist de despliegue.
 
 ## Usuarios y acceso
 
@@ -44,8 +73,7 @@ El registro está abierto. Cualquier usuario puede crear una cuenta via `POST /a
 Los administradores se designan desde el servidor con el script `make_admin.py`. No existe endpoint público para ello.
 
 ```bash
-# 1. Registrar la cuenta (API o frontend)
-# 2. Desde backend/ con el virtualenv activo:
+# Desde backend/ con el virtualenv activo:
 python scripts/make_admin.py <username>
 # → User '<username>' is now an admin.
 ```
@@ -59,8 +87,11 @@ El contenido compartido se expone en dos superficies sin autenticación:
 - **`/feed`** — Feed global paginado: galería de imágenes + cards de textos compartidos.
 - **`/users/:username`** — Perfil público de cualquier usuario: imágenes y textos compartidos, botón de compartir URL.
 
-Los propietarios del perfil ven además un acceso directo a su configuración.
-
 ## Documentación
 
-Arquitectura, decisiones técnicas y roadmap en [`docs/DOCUMENTATION.md`](docs/DOCUMENTATION.md).
+| Documento | Contenido |
+|---|---|
+| [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md) | Variables de entorno, modos, arranque, checklist de despliegue |
+| [`docs/DOCUMENTATION.md`](docs/DOCUMENTATION.md) | Arquitectura, decisiones técnicas y roadmap |
+| [`backend/README.md`](backend/README.md) | API, endpoints, tests, estructura del backend |
+| [`frontend/README.md`](frontend/README.md) | Componentes, pantallas, autenticación, tests |

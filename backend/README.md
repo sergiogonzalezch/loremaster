@@ -38,8 +38,10 @@ cp .env.example .env
 
 | Variable | Por defecto | Propósito |
 |---|---|---|
-| `COMPOSE_PROFILES` | *(vacío)* | Perfiles Docker activos. Vacío = solo qdrant. `postgres` = también levanta PostgreSQL |
 | `DATABASE_URL` | `sqlite:///./loremaster.db` | SQLite en dev; `postgresql://user:pass@host:5433/db` en prod |
+| `POSTGRES_USER` | — | Usuario PostgreSQL (requerido si `DATABASE_URL` es postgres) |
+| `POSTGRES_PASSWORD` | — | Contraseña PostgreSQL |
+| `POSTGRES_DB` | — | Nombre de la base de datos PostgreSQL |
 
 **LLM (Ollama)**
 
@@ -51,7 +53,6 @@ cp .env.example .env
 | `TEMPERATURE` | `0.7` | Temperatura del LLM (creatividad) |
 | `MAX_CONCURRENT_LLM_CALLS` | `1` | Peticiones simultáneas máximas al LLM (semáforo) |
 | `MAX_PENDING_CONTENTS` | `5` | Máximo de contenidos en estado `pending` por entidad/categoría |
-| `RATE_LIMIT_PER_MINUTE` | `30` | Máximo de requests por minuto por IP |
 
 **Embeddings y RAG**
 
@@ -60,8 +61,8 @@ cp .env.example .env
 | `QDRANT_URL` | `http://localhost:6333` | Base de datos vectorial |
 | `EMBEDDING_MODEL` | `paraphrase-multilingual-MiniLM-L12-v2` | Modelo de embeddings |
 | `EMBEDDING_DIMS` | `384` | Dimensiones del vector de embedding |
-| `CHUNK_SIZE` | `512` | Tamaño de chunk en caracteres |
-| `CHUNK_OVERLAP` | `50` | Solapamiento entre chunks |
+| `CHUNK_SIZE` | `400` | Tamaño de chunk en caracteres |
+| `CHUNK_OVERLAP` | `150` | Solapamiento entre chunks |
 | `TOP_K` | `4` | Chunks de contexto recuperados por RAG |
 | `RAG_SCORE_THRESHOLD` | `0.3` | Score mínimo de similitud coseno para incluir un chunk |
 | `MAX_PDF_PAGES` | `100` | Límite de páginas para PDFs (prevención de PDF bombs) |
@@ -118,60 +119,71 @@ cp .env.example .env
 | `CLERK_JWKS_URL` | *(ver `.env.example`)* | URL JWKS de Clerk (entornos `demo` y `production` con Clerk activo) |
 | `CLERK_AUDIENCE` | *(ver `.env.example`)* | Audience de Clerk (entornos `demo` y `production` con Clerk activo) |
 
+**Rate Limiting**
+
+| Variable | Por defecto | Propósito |
+|---|---|---|
+| `RATE_LIMIT_ENABLED` | `true` | Activa el middleware. Poner `false` en desarrollo/eval local |
+| `RATE_LIMIT_PER_MINUTE` | `30` | Límite base (POST/PATCH/DELETE) por usuario/IP en ventana de 60 s |
+| `RATE_LIMIT_LLM_PER_MINUTE` | `5` | Límite para endpoints `/query` y `/build-prompt` |
+| `RATE_LIMIT_IMAGE_PER_MINUTE` | `3` | Límite para `/image-generation/generate` |
+| `REDIS_URL` | `redis://localhost:6379` | URL de Redis para el sliding window |
+
+> El entorno `test` (`pytest`) omite rate limiting independientemente de `RATE_LIMIT_ENABLED`.
+
 ## Base de datos: dev vs producción
 
-La app soporta **SQLite** (dev local, sin servidor) y **PostgreSQL** (producción). El driver se detecta automáticamente a partir del prefijo de `DATABASE_URL`; no hay cambio de código.
-
-El perfil Docker `postgres` controla si el contenedor de PostgreSQL arranca o no. Ambos valores van en el mismo `.env`:
+La app soporta **SQLite** (dev local, sin servidor) y **PostgreSQL** (producción/staging). El driver se detecta automáticamente a partir del prefijo de `DATABASE_URL`; no hay cambio de código.
 
 ### Dev / local (SQLite)
 
 ```dotenv
-COMPOSE_PROFILES=
 DATABASE_URL=sqlite:///./loremaster.db
 ```
 
 ```bash
-docker-compose up -d    # levanta qdrant + redis (postgres no arranca)
-make run                # la app crea loremaster.db automáticamente
+make infra      # levanta qdrant + redis
+make run        # la app crea loremaster.db automáticamente
 ```
 
-### Producción (PostgreSQL)
+### Dev / local (PostgreSQL)
 
 ```dotenv
-COMPOSE_PROFILES=postgres
 DATABASE_URL=postgresql://loremaster:loremaster@localhost:5433/loremaster
+POSTGRES_USER=loremaster
+POSTGRES_PASSWORD=loremaster
+POSTGRES_DB=loremaster
 ```
 
 ```bash
-docker-compose up -d    # levanta qdrant + redis + postgres
+make infra-pg   # levanta qdrant + redis + postgres
 make run
 ```
 
 > El puerto expuesto de PostgreSQL es **5433** (no 5432) para evitar colisión con instalaciones locales.
 
+El modo completo (infra + backend + frontend en ventanas separadas) se lanza desde la raíz del repo:
+
+```powershell
+.\dev.ps1            # SQLite
+.\dev.ps1 -Postgres  # PostgreSQL
+```
+
 ---
 
 ## Servicios de soporte
 
-| Servicio | Puerto (host) | Propósito | Profile |
+| Servicio | Puerto (host) | Propósito | Cuándo arranca |
 |---|---|---|---|
-| Qdrant | 6333 | Base de datos vectorial | *(siempre)* |
-| PostgreSQL | 5433 | Metadatos relacionales (prod) | `postgres` |
-| sqlite-web | 8080 | Visor web SQLite (`loremaster.db`) | `tools` |
+| Qdrant | 6333 | Base de datos vectorial | siempre |
+| Redis | 6379 | Rate limiting (sliding window) | siempre |
+| PostgreSQL | 5433 | Metadatos relacionales | solo con `-Postgres` / `make infra-pg` |
 
 ```bash
-# Solo infra base (dev — qdrant)
-docker-compose up -d
-
-# Infra base + postgres (prod-local)
-docker-compose --profile postgres up -d
-
-# Infra base + visor SQLite (dev con UI)
-docker-compose --profile tools up -d
+make infra      # qdrant + redis (SQLite mode)
+make infra-pg   # qdrant + redis + postgres
+make down       # baja todo
 ```
-
-`sqlite-web` abre `http://localhost:8080` directamente sobre `loremaster.db`. No requiere credenciales.
 
 ## Ejecutar
 
@@ -195,7 +207,7 @@ pytest -k "test_create"             # por nombre
 
 | Archivo | Tests | Cobertura |
 |---|---|---|
-| `test_content_guard.py` | 38 | Patrones regex, Unicode, leet-speak, `check_prompt_length` (min 10 chars), routing de excepciones |
+| `test_content_guard.py` | 54 | Patrones regex, Unicode, leet-speak, `check_prompt_length` (min 10 chars), routing de excepciones |
 | `test_entity_content.py` | 25 | Ciclo de vida EntityContent: pending → confirmed/discarded, límite de borradores |
 | `test_collections.py` | 18 | CRUD de colecciones, ownership, unique constraint por usuario |
 | `test_documents.py` | 17 | Upload PDF/TXT, filename > 255 chars → 422, background ingest, Qdrant failure, malformed PDF |
@@ -214,7 +226,7 @@ pytest -k "test_create"             # por nombre
 | `test_deletion_service.py` | 2 | Cascade soft-delete: documentos, entidades, contenidos, vectores Qdrant |
 | `test_content_management_service.py` | 1 | `_discard_sibling_contents` no afecta otras categorías |
 
-**Total: 201 tests.**
+**Total: 264 tests.**
 
 ## Endpoints
 

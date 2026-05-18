@@ -45,7 +45,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Permissions-Policy"] = _PERMISSIONS_POLICY
         response.headers["Cache-Control"] = "no-store"
         response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
-        response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
+        # Media files must be embeddable cross-origin (images loaded by the frontend
+        # on a different port). All other routes remain same-origin.
+        if request.url.path.startswith("/media/"):
+            response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
+        else:
+            response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
 
         # Detectar HTTPS tanto en conexión directa como detrás de proxy TLS
         forwarded_proto = request.headers.get("x-forwarded-proto", "")

@@ -95,14 +95,16 @@ Módulo: `engine/image_prompt_builder.py` (consolidado).
 ## Servicios Docker
 
 ```bash
-docker-compose up -d           # qdrant + redis
-docker-compose --profile postgres up -d   # + postgres
+make infra      # qdrant + redis  (desde raíz del repo)
+make infra-pg   # qdrant + redis + postgres
+make down       # baja todo
 ```
 
-| Service | Port |
-|---------|------|
-| Qdrant  | 6333 |
-| Postgres| 5433 |
+| Service  | Port |
+|----------|------|
+| Qdrant   | 6333 |
+| Redis    | 6379 |
+| Postgres | 5433 |
 
 ---
 

@@ -337,7 +337,7 @@ La arquitectura se divide en dos configuraciones que comparten el mismo codebase
 | **Ollama**                    | LLM local (dev/proto)      | Sirve Llama 3.2, Mistral, Qwen2 localmente. Acceso directo a GPU del host.                |
 | **ComfyUI**                   | Motor de difusión          | API HTTP/WebSocket para generación de imágenes. Acepta workflows JSON.                    |
 | **Flux.2 Klein 4B Distilled** | Modelo de imagen           | FP8, 4 pasos, cfg=1.0. ~8.4 GB VRAM. Apache 2.0. Texto+edición unificados.                |
-| **Redis**                     | Caché semántico            | Cachea respuestas del LLM por similitud coseno ≥ 0.95. TTL configurable.                  |
+| **Redis**                     | Rate limiting              | Sliding window para `RateLimitMiddleware`. La caché semántica planificada no está implementada. |
 | **S3 / Cloudflare R2**        | Almacenamiento de imágenes | LocalStack en dev. S3 real o R2 (más barato) en producción.                               |
 | **PostgreSQL**                | Base de datos relacional   | Metadatos de documentos, entidades e imágenes. SQLite en prototipo.                       |
 | **Prometheus + Grafana**      | Observabilidad             | Métricas de latencia p95, tasa de error, cola de imágenes, uso VRAM.                      |
@@ -446,7 +446,7 @@ loremaster/
 │   │   └── dataset/
 │   │       ├── golden_dataset.json        # Casos: RAG, CRUD, entity_content, guardrail, imagen, feed
 │   │       └── golden_seed.txt            # Documento semilla (Mundo de Valdorath)
-│   ├── tests/                             # pytest con SQLite in-memory; stubs de engine.rag y LLM (201 tests)
+│   ├── tests/                             # pytest con SQLite in-memory; stubs de engine.rag y LLM (264 tests)
 │   ├── Makefile                           # Comandos: run, test, format, lint, install, clean, clean-all. Centraliza pycache en `.pycache/` (PYTHONPYCACHEPREFIX)
 │   ├── requirements.txt
 │   ├── requirements-dev.txt
@@ -522,52 +522,53 @@ loremaster/
 │   │                                      # formatters.ts, strings.ts, tokens.ts
 │   └── package.json
 │
-├── docker-compose.yml
-│   # Servicios: Qdrant · PostgreSQL · Redis · LocalStack · Prometheus · Grafana
+├── Makefile                 # Targets: dev, dev-pg, infra, infra-pg, down, prod-up, prod-down
+├── dev.ps1                  # Arranque completo local (Windows): Docker infra + backend + frontend
 │
-├── monitoring/
-│   ├── prometheus.yml
-│   └── grafana/
-│       └── dashboards/loremaster.json
+│   # ⚠️ DESACTUALIZADO (2026-05-17): La estructura de docker-compose ha cambiado.
+│   # Ahora son tres archivos bajo backend/:
+│   #   backend/docker-compose.yml            → Qdrant + Redis (base)
+│   #   backend/docker-compose.postgres.yml   → overlay PostgreSQL
+│   #   backend/docker-compose.prod.yml       → producción (sin puertos expuestos)
+│   # LocalStack, Prometheus y Grafana son planificados pero no están en los compose actuales.
+│   # start_local.sh eliminado; reemplazado por dev.ps1 (Windows).
 │
-├── .env.example
-├── start_local.sh           # Levanta Ollama + ComfyUI --lowvram en el host
 └── README.md
 
 ```
 
 ### Variables de entorno
 
+> ⚠️ **Desactualizado (2026-05-17):** Los nombres de variables han cambiado. Ver [`docs/ENVIRONMENT.md`](./ENVIRONMENT.md) para la referencia completa y actualizada. Diferencias clave:
+> - `OLLAMA_URL` → `OLLAMA_BASE_URL`
+> - `COMFY_BACKEND` → `IMAGE_BACKEND` (`comfyui` | `mock`)
+> - `COMFY_URL` → `COMFYUI_URL`
+> - `CACHE_THRESHOLD` / `CACHE_TTL` — Redis se usa para rate limiting (sliding window), no caché semántico
+> - `STORAGE_BACKEND=localstack` → `local` (dev) / `s3` / `r2` (prod)
+> - Variables añadidas: `RATE_LIMIT_ENABLED`, `RATE_LIMIT_PER_MINUTE`, `RATE_LIMIT_LLM_PER_MINUTE`, `RATE_LIMIT_IMAGE_PER_MINUTE`
+
 ```
 PROJECT_NAME="Lore Master API"
 ENVIRONMENT="local"
 
 # LLM
-OLLAMA_URL=http://host.docker.internal:11434
+OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=llama3.2:latest
 
 # ComfyUI local
-COMFY_BACKEND=local
-COMFY_URL=http://host.docker.internal:8188
-COMFY_WORKFLOW=workflows/flux2_klein_t2i.json
-COMFY_TIMEOUT=60
+IMAGE_BACKEND=comfyui
+COMFYUI_URL=http://localhost:8188
+COMFYUI_TIMEOUT=300
 
 # Qdrant
-QDRANT_URL=http://qdrant:6333
-QDRANT_COLLECTION=loremaster
+QDRANT_URL=http://localhost:6333
 
-# Redis
-REDIS_URL=redis://redis:6379/0
-CACHE_THRESHOLD=0.95
-CACHE_TTL=3600
+# Redis (rate limiting)
+REDIS_URL=redis://localhost:6379
+RATE_LIMIT_ENABLED=false
 
-# Storage (LocalStack S3)
-STORAGE_BACKEND=localstack
-S3_ENDPOINT_URL=http://localstack:4566
-S3_BUCKET=loremaster-images
-AWS_ACCESS_KEY_ID=test
-AWS_SECRET_ACCESS_KEY=test
-AWS_REGION=us-east-1
+# Storage
+STORAGE_BACKEND=local
 
 # Base de datos
 DATABASE_URL=sqlite:///./loremaster.db
@@ -728,7 +729,7 @@ Tres fases de 4 semanas. Cada semana cierra con un entregable concreto, verifica
 | **VRAM insuficiente en local**       | Media     | Alto        | Flux.2 Klein 4B Distilled (FP8) necesita ~8.4 GB VRAM. Con 6 GB: usar variante GGUF Q4 (unsloth/FLUX.2-klein-4B-GGUF). Con < 6 GB: usar RunPod directamente desde la fase 1.                                  |
 | **cfg ≠ 1.0 en modelo Distilled**    | Baja      | Crítico     | cfg > 1.0 con el modelo Distilled produce imágenes negras o completamente degradadas. Solución: hardcodear cfg=1.0 en el workflow JSON y añadir assert en comfy_client.py.                                    |
 | **Cold start RunPod (20-60 s)**      | Alta      | Medio       | Workers GPU tardan al arrancar tras un período idle. Implementar cola con BackgroundTasks, mostrar progreso al usuario. Mantener 1 worker ‘caliente’ en horas pico (~$0.74/hr extra).                         |
-| **Calidad RAG baja**                 | Media     | Alto        | Chunks mal dimensionados recuperan contexto irrelevante. Inicio con chunk_size=512, overlap=50. Evaluar con RAGAS tras sem. 2. Ajustar score_threshold e implementar filtros por tipo de entidad.             |
+| **Calidad RAG baja**                 | Media     | Alto        | Chunks mal dimensionados recuperan contexto irrelevante. Configuración actual: `chunk_size=400`, `overlap=150` (ajustado desde los valores originales de planificación 512/50). Evaluar con RAGAS. Ajustar `score_threshold` e implementar filtros por tipo de entidad. |
 | **Coherencia visual entre sesiones** | Alta      | Medio       | Sin seed fijo, el mismo personaje puede variar radicalmente. Guardar seed + visual_prompt exacto por imagen. Reutilizar seed al regenerar. Futuro: LoRA de personaje.                                         |
 | **Costos RunPod desbocados**         | Media     | Medio       | Sin control, múltiples workers activos pueden acumular costos altos. Configurar límite de presupuesto en RunPod. Usar runsync (síncrono) solo durante el prototipo; implementar cola asíncrona en producción. |
 
@@ -759,9 +760,11 @@ Tres fases de 4 semanas. Cada semana cierra con un entregable concreto, verifica
 
 ## 9.3 Estrategia de caché para reducir costos de LLM
 
-- Redis semántico con umbral coseno ≥ 0.95: consultas similares reutilizan la misma respuesta sin llamar al LLM.
-- TTL de caché ajustable: 3600 s por defecto. Reducir para documentos que cambien frecuentemente.
-- Las imágenes generadas se guardan en S3: el usuario puede reutilizar una imagen sin regenerarla.
+> ⚠️ **Desactualizado (2026-05-17):** La caché semántica de Redis descrita aquí **no está implementada**. Redis se usa actualmente exclusivamente para rate limiting (`RateLimitMiddleware` con sliding window). El resto del contenido de esta sección es planificación futura.
+
+- *(Planificado)* Redis semántico con umbral coseno ≥ 0.95: consultas similares reutilizan la misma respuesta sin llamar al LLM.
+- *(Planificado)* TTL de caché ajustable: 3600 s por defecto.
+- Las imágenes generadas se guardan en storage (local / S3 / R2): el usuario puede reutilizar una imagen sin regenerarla.
 - El seed fijo permite reproducir la misma imagen sin consumir GPU adicional.
 
 # 10. Guardrails de Contenido
