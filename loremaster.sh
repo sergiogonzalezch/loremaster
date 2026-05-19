@@ -11,6 +11,9 @@ D='\033[0;90m'
 W='\033[0;97m'
 Z='\033[0m'
 
+# true cuando se ejecuta desde Git Bash o Cygwin en Windows
+_is_win() { [[ "$OSTYPE" == "msys"* ]] || [[ "$OSTYPE" == "cygwin"* ]]; }
+
 check_prereqs() {
     local ok=true
 
@@ -44,7 +47,11 @@ ensure_venv() {
         python3 -m venv "$backend_dir/venv"
     fi
     echo -e "${C}  Verificando dependencias del backend...${Z}"
-    "$backend_dir/venv/bin/pip" install -q \
+    # Windows (msys/cygwin): venv usa Scripts/ en vez de bin/
+    local pip_bin
+    _is_win && pip_bin="$backend_dir/venv/Scripts/pip" \
+            || pip_bin="$backend_dir/venv/bin/pip"
+    "$pip_bin" install -q \
         -r "$backend_dir/requirements.txt" \
         -r "$backend_dir/requirements-dev.txt"
 }
@@ -55,6 +62,8 @@ open_terminal() {
     local dir="$3"
     if [[ "$OSTYPE" == "darwin"* ]]; then
         osascript -e "tell application \"Terminal\" to do script \"cd '$dir' && $cmd\""
+    elif _is_win; then
+        mintty -t "$title" bash -c "cd '$dir' && $cmd; exec bash" &
     elif command -v gnome-terminal &>/dev/null; then
         gnome-terminal --title="$title" -- bash -c "cd '$dir'; $cmd; exec bash"
     elif command -v xterm &>/dev/null; then
@@ -109,15 +118,17 @@ dev_up() {
         echo -e "${C}  Levantando infra SQLite (Qdrant + Redis)...${Z}"
         docker compose -f backend/docker-compose.yml up -d
     fi
-    echo -e "${C}  Abriendo backend...${Z}"
-    open_terminal "loremaster-backend" "source venv/bin/activate && make run" "$(pwd)/backend"
+    local activate_cmd
+    _is_win && activate_cmd="source venv/Scripts/activate" \
+            || activate_cmd="source venv/bin/activate"
+    echo -e "${C}  Abriendo backend y frontend...${Z}"
+    open_terminal "loremaster-backend" "$activate_cmd && make run" "$(pwd)/backend"
+    open_terminal "loremaster-frontend" "npm run dev" "$(pwd)/frontend"
     printf "  Esperando backend en :8000 "
     until curl -sf --max-time 2 http://localhost:8000/health > /dev/null 2>&1; do
         sleep 2; printf "."
     done
     echo -e " ${G}Listo!${Z}"
-    echo -e "${C}  Abriendo frontend...${Z}"
-    open_terminal "loremaster-frontend" "npm run dev" "$(pwd)/frontend"
     echo
     echo -e "${G}  Entorno listo:${Z}"
     echo -e "    Backend  -> http://localhost:8000"
