@@ -67,14 +67,16 @@ open_terminal() {
 stop_services() {
     echo
     echo -e "${C}  Cerrando servicios...${Z}"
-    local b_pid f_pid
-    b_pid=$(lsof -ti:8000 2>/dev/null || true)
-    f_pid=$(lsof -ti:5173 2>/dev/null || true)
-    if [ -n "$b_pid" ]; then
-        kill "$b_pid" 2>/dev/null && echo -e "${D}  Backend  (8000) cerrado.${Z}" || true
+    local b_pids f_pids
+    b_pids=$(lsof -ti:8000 2>/dev/null || true)
+    f_pids=$(lsof -ti:5173 2>/dev/null || true)
+    if [ -n "$b_pids" ]; then
+        # shellcheck disable=SC2086 — word-split intencional: lsof devuelve reloader+worker en líneas separadas
+        kill $b_pids 2>/dev/null && echo -e "${D}  Backend  (8000) cerrado.${Z}" || true
     fi
-    if [ -n "$f_pid" ]; then
-        kill "$f_pid" 2>/dev/null && echo -e "${D}  Frontend (5173) cerrado.${Z}" || true
+    if [ -n "$f_pids" ]; then
+        # shellcheck disable=SC2086
+        kill $f_pids 2>/dev/null && echo -e "${D}  Frontend (5173) cerrado.${Z}" || true
     fi
     docker compose -f backend/docker-compose.yml down 2>/dev/null \
         && echo -e "${D}  Infra Docker bajada.${Z}" || true
