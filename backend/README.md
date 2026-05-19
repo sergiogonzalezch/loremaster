@@ -251,7 +251,9 @@ make infra          # Qdrant + Redis
 ### Modo standalone (recomendado)
 
 El script arranca automáticamente un segundo servidor en `:8001` apuntando a `evals.db`,
-corre los tests y lo detiene al finalizar.
+corre los tests y lo detiene al finalizar. El servidor se inicializa con `SKIP_MIGRATIONS=true`
+(las migraciones se aplican desde el proceso padre antes de arrancar uvicorn, evitando
+el deadlock SQLite + asyncio en Windows).
 
 ```bash
 # Desde backend/ con el venv activo:
@@ -265,11 +267,8 @@ python evaluations/baseline_evals.py --no-seed          # omitir ingesta del doc
 python evaluations/baseline_evals.py --keep-collection  # conservar colección al terminar
 ```
 
-Si el script no consigue arrancar el servidor interno, verifica el arranque manual:
-
-```bash
-python -m uvicorn app.main:app --port 8001
-```
+Si el script falla al arrancar el servidor interno, el log de arranque se guarda en
+`evaluations/eval_backend.log` y se imprime automáticamente en el resumen de error.
 
 ### Modo conectado (backend externo)
 
@@ -283,10 +282,10 @@ python evaluations/baseline_evals.py --no-standalone --base-url http://localhost
 
 | Archivo | Descripción |
 |---|---|
-| `evaluations/dataset/golden_dataset.json` | Casos de prueba (categorías: `rag_query`, `entity_crud`, `entity_content`, `guardrail`, `image_generation`, `full_flow`, …) |
+| `evaluations/dataset/golden_dataset.json` | 83 casos de prueba (categorías: `rag_query`, `entity_crud`, `entity_content`, `guardrail`, `image_generation`, `full_flow`, …) |
 | `evaluations/dataset/golden_seed.txt` | Documento de lore ingestado antes de los casos RAG |
 
-> `evaluations/evals.db` está en `.gitignore` y se recrea en cada ejecución standalone.
+> `evaluations/evals.db` y `evaluations/eval_backend.log` están en `.gitignore` y se recrean en cada ejecución standalone.
 
 ## Endpoints
 

@@ -397,7 +397,7 @@ loremaster/
 │   │   │       └── user_schemas.py        # UserProfileResponse, UpdateProfileRequest
 │   │   ├── core/                          # Infraestructura y dependencias transversales
 │   │   │   ├── __init__.py                # Minimal; evita imports circulares
-│   │   │   ├── lifespan.py                # Startup: migraciones Alembic + health checks
+│   │   │   ├── lifespan.py                # Startup: migraciones Alembic en asyncio.to_thread (evita deadlock SQLite/Windows) + health checks Qdrant/Ollama; SKIP_MIGRATIONS=true omite Alembic (usado por el script de eval)
 │   │   │   ├── auth/                      # JWT, password hashing, CSRF, Clerk
 │   │   │   │   ├── dependencies.py        # get_current_user (cookie HttpOnly ó Bearer header), get_admin_user
 │   │   │   │   └── clerk.py               # JWKSManager (caché TTL 1h), decode_clerk_token() — solo para /sync
@@ -446,7 +446,7 @@ loremaster/
 │   │       └── deletion_service.py        # cascade_delete_entity / cascade_delete_collection
 │   ├── alembic/                           # Migraciones (render_as_batch=True para SQLite)
 │   ├── evaluations/                       # Evaluación end-to-end contra API en ejecución
-│   │   ├── baseline_evals.py              # Runner: 81 casos del golden dataset
+│   │   ├── baseline_evals.py              # Runner: 83 casos del golden dataset; modo standalone arranca backend aislado en :8001 con evals.db
 │   │   └── dataset/
 │   │       ├── golden_dataset.json        # Casos: RAG, CRUD, entity_content, guardrail, imagen, feed
 │   │       └── golden_seed.txt            # Documento semilla (Mundo de Valdorath)

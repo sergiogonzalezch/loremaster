@@ -816,7 +816,8 @@ Actualizado el 2026-05-08 (cobertura de tests revisada: useGenerate cancelación
 Actualizado el 2026-05-08 (ítems 43-47 resueltos — ownership check, race condition, updated_at, tie-breaker, admin atomicity).
 Actualizado el 2026-05-08 (bug-search completo: verificados todos los ítems existentes ✅; añadidos ítems 48-49 — missing auth en GET documents, missing ownership en GET entity).
 Actualizado el 2026-05-08 (ítems 48-49 resueltos — auth en GET documents, ownership en GET entity; test_entity_wrong_collection_404 actualizado a 403).
-Actualizado el 2026-05-18 (ítem 13 — jerarquía consolidada: DuplicateEntityNameError + DuplicateCollectionNameError → DuplicateNameError; ítem 26 — solución actualizada a eliminación completa de catch-all; ítem 50 añadido — deletion_service responsabilidades mixtas).*
+Actualizado el 2026-05-18 (ítem 13 — jerarquía consolidada: DuplicateEntityNameError + DuplicateCollectionNameError → DuplicateNameError; ítem 26 — solución actualizada a eliminación completa de catch-all; ítem 50 añadido — deletion_service responsabilidades mixtas).
+Actualizado el 2026-05-19 (infraestructura de eval: lifespan.py — migraciones en asyncio.to_thread + guard SKIP_MIGRATIONS; baseline_evals.py — backend aislado en :8001, log a eval_backend.log, 83 casos dorados).*
 
 ---
 

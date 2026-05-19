@@ -148,6 +148,7 @@ de seguridad del entorno seleccionado.
 | `POSTGRES_USER` | — | `loremaster` | `loremaster` | `loremaster` | Requerida si usas Postgres |
 | `POSTGRES_PASSWORD` | — | generada | generada | generada | `openssl rand -hex 16` |
 | `POSTGRES_DB` | — | `loremaster` | `loremaster` | `loremaster` | — |
+| `SKIP_MIGRATIONS` | — | — | — | — | Si `1`/`true`/`yes`, el lifespan no ejecuta Alembic. **Solo para herramientas internas** (el script de evaluación la inyecta cuando migra la DB en un subproceso separado antes de arrancar uvicorn). No usar en producción. |
 
 > En local la diferencia entre SQLite y Postgres se elige con `.\dev.ps1` vs `.\dev.ps1 -Postgres`.
 > No hay que cambiar `COMPOSE_PROFILES` manualmente; los targets del Makefile lo gestionan.
