@@ -127,6 +127,9 @@ def _start_eval_backend(eval_db: Path, port: int) -> str:
     env = {**dotenv, **os.environ}
     env["DATABASE_URL"] = f"sqlite:///{eval_db}"
 
+    # Desactivar rate limiting para que los casos LLM no agoten el bucket
+    env["RATE_LIMIT_ENABLED"] = "false"
+
     _eval_proc = subprocess.Popen(
         [
             sys.executable, "-m", "uvicorn", "app.main:app",
