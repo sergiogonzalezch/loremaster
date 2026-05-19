@@ -241,7 +241,7 @@ Ejecuta el golden dataset contra la API real (Qdrant + Ollama) y reporta PASS/FA
 ### Prerequisitos
 
 ```bash
-# 1. Infraestructura levantada
+# 1. Infraestructura levantada (desde la RAÍZ del repo, no desde backend/)
 make infra          # Qdrant + Redis
 
 # 2. Ollama corriendo con el modelo configurado
@@ -263,6 +263,12 @@ python evaluations/baseline_evals.py --ids RAG-001 CHAR-005
 python evaluations/baseline_evals.py --eval-port 8002   # si 8001 está ocupado
 python evaluations/baseline_evals.py --no-seed          # omitir ingesta del doc semilla
 python evaluations/baseline_evals.py --keep-collection  # conservar colección al terminar
+```
+
+Si el script no consigue arrancar el servidor interno, verifica el arranque manual:
+
+```bash
+python -m uvicorn app.main:app --port 8001
 ```
 
 ### Modo conectado (backend externo)

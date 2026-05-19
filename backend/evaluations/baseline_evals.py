@@ -133,7 +133,7 @@ def _start_eval_backend(eval_db: Path, port: int) -> str:
     _eval_proc = subprocess.Popen(
         [
             sys.executable, "-m", "uvicorn", "app.main:app",
-            "--port", str(port), "--no-reload",
+            "--port", str(port),
         ],
         cwd=str(backend_dir),
         env=env,
