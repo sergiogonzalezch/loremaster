@@ -1,6 +1,6 @@
 # LIMITERS.md — Mapa completo de límites, validaciones y constantes
 
-> Última actualización: 2026-05-18 (2.ª revisión)
+> Última actualización: 2026-05-19 (3.ª revisión)
 > Rama: `main`
 > Regla de conversión usada en todo el documento: **1 token ≈ 4 caracteres** (estimación del engine en `image_prompt_builder._estimate_tokens`).
 
@@ -121,6 +121,7 @@ FLUJO IMAGEN (paralelo al flujo principal):
 | `access_token_expire_minutes` | 60 min | — | — | TTL del JWT de sesión | Auth |
 | `embedding_dims` | 384 | — | — | Dimensiones del vector de embedding (`paraphrase-multilingual-MiniLM-L12-v2`) | RAG / Qdrant |
 | `ModerationLog.snippet` DB | max=200 chars | 200 | ~50 | Fragmento guardado al detectar contenido bloqueado | BD |
+| `SKIP_MIGRATIONS` | ausente / `true` | — | — | Si `1`/`true`/`yes`, el lifespan omite Alembic al arrancar. Inyectado por `baseline_evals.py` cuando las migraciones ya se aplicaron en el proceso padre (evita deadlock SQLite + asyncio/greenlet en Windows). No definir en producción. | Startup |
 
 ---
 
