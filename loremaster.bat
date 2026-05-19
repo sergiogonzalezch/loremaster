@@ -135,19 +135,21 @@ echo.
 echo  %C%  Cerrando backend, frontend e infraestructura...%Z%
 echo.
 
-echo  %D%  Cerrando backend (worker + reloader en :8000)...%Z%
-powershell -NoProfile -Command "$w=(Get-NetTCPConnection -LocalPort 8000 -State Listen -EA SilentlyContinue|Select-Object -First 1).OwningProcess; if($w){$r=(Get-CimInstance Win32_Process -Filter('ProcessId='+$w) -Property ParentProcessId -EA SilentlyContinue).ParentProcessId; Stop-Process -Id $w -Force -EA SilentlyContinue; if($r -and $r -gt 4){Stop-Process -Id $r -Force -EA SilentlyContinue}}"
+echo  %D%  Cerrando backend...%Z%
 if exist ".loremaster_backend_pid" (
     for /f %%a in (.loremaster_backend_pid) do taskkill /PID %%a /F /T >nul 2>&1
     del ".loremaster_backend_pid" >nul 2>&1
 )
+taskkill /F /FI "WINDOWTITLE eq loremaster-backend" >nul 2>&1
+powershell -NoProfile -Command "for($i=0;$i -lt 5;$i++){$p=(netstat -ano|Select-String ':8000\s+\S+\s+LISTENING')|ForEach-Object{($_ -split '\s+')[-1]}|Select-Object -First 1; if(-not $p){break}; $pp=[int]$p; if($pp -le 4){break}; $r=(Get-CimInstance Win32_Process -Filter('ProcessId='+$pp) -Property ParentProcessId -EA SilentlyContinue).ParentProcessId; if($r -and $r -gt 4){Stop-Process -Id $r -Force -EA SilentlyContinue}; Stop-Process -Id $pp -Force -EA SilentlyContinue; Start-Sleep -Milliseconds 500}"
 
 echo  %D%  Cerrando frontend (Vite en :5173)...%Z%
-powershell -NoProfile -Command "$w=(Get-NetTCPConnection -LocalPort 5173 -State Listen -EA SilentlyContinue|Select-Object -First 1).OwningProcess; if($w){$r=(Get-CimInstance Win32_Process -Filter('ProcessId='+$w) -Property ParentProcessId -EA SilentlyContinue).ParentProcessId; Stop-Process -Id $w -Force -EA SilentlyContinue; if($r -and $r -gt 4){Stop-Process -Id $r -Force -EA SilentlyContinue}}"
 if exist ".loremaster_frontend_pid" (
     for /f %%a in (.loremaster_frontend_pid) do taskkill /PID %%a /F /T >nul 2>&1
     del ".loremaster_frontend_pid" >nul 2>&1
 )
+taskkill /F /FI "WINDOWTITLE eq loremaster-frontend" >nul 2>&1
+powershell -NoProfile -Command "for($i=0;$i -lt 5;$i++){$p=(netstat -ano|Select-String ':5173\s+\S+\s+LISTENING')|ForEach-Object{($_ -split '\s+')[-1]}|Select-Object -First 1; if(-not $p){break}; $pp=[int]$p; if($pp -le 4){break}; $r=(Get-CimInstance Win32_Process -Filter('ProcessId='+$pp) -Property ParentProcessId -EA SilentlyContinue).ParentProcessId; if($r -and $r -gt 4){Stop-Process -Id $r -Force -EA SilentlyContinue}; Stop-Process -Id $pp -Force -EA SilentlyContinue; Start-Sleep -Milliseconds 500}"
 
 echo  %D%  Bajando infraestructura Docker...%Z%
 docker compose -f backend\docker-compose.yml down

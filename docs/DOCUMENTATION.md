@@ -531,8 +531,9 @@ loremaster/
 │   ├── docker-compose.postgres.yml  # Overlay: PostgreSQL
 │   └── docker-compose.prod.yml      # Producción: sin puertos expuestos
 ├── Makefile                 # Targets: dev, dev-pg, infra, infra-pg, down, prod-up, prod-down
-├── dev.ps1                  # Arranque completo local (Windows): Docker infra + espera /health + backend + frontend
-├── loremaster.sh            # Arranque completo local (Linux/Mac): Docker infra + espera /health + backend + frontend
+├── dev.ps1                  # Arranque completo local (Windows/PowerShell): Docker infra + espera /health + backend + frontend
+├── loremaster.bat           # Menú interactivo Windows (cmd): llama a dev.ps1; opción 9 para todo
+├── loremaster.sh            # Menú interactivo Linux/Mac/Git Bash: Docker infra + backend + frontend; opción 9 para todo
 └── README.md
 
 ```

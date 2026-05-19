@@ -66,7 +66,12 @@ open_terminal() {
         osascript -e "tell application \"Terminal\" to do script \"cd '$dir' && $cmd\""
     elif _is_win; then
         mintty -t "$title" bash -c "cd '$dir' && $cmd; exec bash" &
-        [ -n "$pid_file" ] && echo $! > "$pid_file"
+        if [ -n "$pid_file" ]; then
+            sleep 0.5
+            powershell.exe -NoProfile -Command \
+                "(Get-Process mintty -EA SilentlyContinue | Sort-Object StartTime -Descending | Select-Object -First 1).Id" \
+                2>/dev/null | tr -d '\r\n' > "$pid_file"
+        fi
     elif command -v gnome-terminal &>/dev/null; then
         gnome-terminal --title="$title" -- bash -c "cd '$dir'; $cmd; exec bash" &
         [ -n "$pid_file" ] && echo $! > "$pid_file"
@@ -78,40 +83,77 @@ open_terminal() {
     fi
 }
 
+# ── PID del proceso escuchando en un puerto ───────────────────────────────────
+# En Windows (Git Bash) usa netstat; en Linux/Mac usa lsof (no tiene el bug de caché).
+_get_pid_on_port() {
+    if _is_win; then
+        netstat -ano 2>/dev/null | grep ":${1}.*LISTENING" | awk '{print $NF}' | head -1 || true
+    else
+        lsof -ti:"$1" -sTCP:LISTEN 2>/dev/null | head -1 || true
+    fi
+}
+
+# ── Cerrar ventana mintty por título (Windows/Git Bash) ───────────────────────
+# taskkill /FI "WINDOWTITLE eq ..." requiere coincidencia exacta y falla si el título
+# cambió. PowerShell usa -like con wildcard y trabaja con PIDs reales de Windows.
+_close_win_terminal() {
+    powershell.exe -NoProfile -Command \
+        "Get-Process mintty -EA SilentlyContinue | Where-Object { \$_.MainWindowTitle -like '*${1}*' } | Stop-Process -Force -EA SilentlyContinue" \
+        >/dev/null 2>&1 || true
+}
+
 # ── Parar servicios ───────────────────────────────────────────────────────────
 stop_services() {
     echo
     echo -e "${C}  Cerrando servicios...${Z}"
     local w_pid r_pid
 
-    # lsof -sTCP:LISTEN devuelve el worker (el que tiene el socket).
-    # ps -o ppid= sube al reloader (padre), que no tiene socket y sobreviviría.
-    w_pid=$(lsof -ti:8000 -sTCP:LISTEN 2>/dev/null | head -1 || true)
-    if [ -n "$w_pid" ]; then
-        r_pid=$(ps -o ppid= -p "$w_pid" 2>/dev/null | tr -d ' ' || true)
-        kill "$w_pid" 2>/dev/null || true
-        if [ -n "$r_pid" ] && [ "$r_pid" -gt 1 ] 2>/dev/null; then
-            kill "$r_pid" 2>/dev/null || true
+    if _is_win; then
+        if [ -f ".loremaster_backend_pid" ]; then
+            _win_pid=$(tr -d '[:space:]' < .loremaster_backend_pid)
+            MSYS_NO_PATHCONV=1 taskkill /F /T /PID "$_win_pid" >/dev/null 2>&1 || _close_win_terminal "loremaster-backend"
+            rm -f .loremaster_backend_pid
+        else
+            _close_win_terminal "loremaster-backend"
         fi
-        echo -e "${D}  Backend  (8000) cerrado.${Z}"
-    fi
-    if [ -f ".loremaster_backend_pid" ]; then
+    elif [ -f ".loremaster_backend_pid" ]; then
         kill "$(cat .loremaster_backend_pid)" 2>/dev/null || true
         rm -f .loremaster_backend_pid
     fi
-
-    w_pid=$(lsof -ti:5173 -sTCP:LISTEN 2>/dev/null | head -1 || true)
-    if [ -n "$w_pid" ]; then
+    # Retry hasta que el puerto quede libre (el worker puede sobrevivir como huérfano)
+    for _i in 1 2 3 4 5; do
+        w_pid=$(_get_pid_on_port 8000)
+        [ -z "$w_pid" ] && break
         r_pid=$(ps -o ppid= -p "$w_pid" 2>/dev/null | tr -d ' ' || true)
-        kill "$w_pid" 2>/dev/null || true
         if [ -n "$r_pid" ] && [ "$r_pid" -gt 1 ] 2>/dev/null; then
             kill "$r_pid" 2>/dev/null || true
         fi
-        echo -e "${D}  Frontend (5173) cerrado.${Z}"
-    fi
-    if [ -f ".loremaster_frontend_pid" ]; then
+        kill "$w_pid" 2>/dev/null || true
+        sleep 0.3
+    done
+    echo -e "${D}  Backend  (8000) cerrado.${Z}"
+
+    if _is_win; then
+        if [ -f ".loremaster_frontend_pid" ]; then
+            _win_pid=$(tr -d '[:space:]' < .loremaster_frontend_pid)
+            echo -e "${D}  [DEBUG] Frontend PID='${_win_pid}'${Z}"
+            MSYS_NO_PATHCONV=1 taskkill /F /T /PID "$_win_pid" 2>&1 || _close_win_terminal "loremaster-frontend"
+            rm -f .loremaster_frontend_pid
+        else
+            _close_win_terminal "loremaster-frontend"
+        fi
+    elif [ -f ".loremaster_frontend_pid" ]; then
         kill "$(cat .loremaster_frontend_pid)" 2>/dev/null || true
         rm -f .loremaster_frontend_pid
+    fi
+    w_pid=$(_get_pid_on_port 5173)
+    if [ -n "$w_pid" ]; then
+        r_pid=$(ps -o ppid= -p "$w_pid" 2>/dev/null | tr -d ' ' || true)
+        if [ -n "$r_pid" ] && [ "$r_pid" -gt 1 ] 2>/dev/null; then
+            kill "$r_pid" 2>/dev/null || true
+        fi
+        kill "$w_pid" 2>/dev/null || true
+        echo -e "${D}  Frontend (5173) cerrado.${Z}"
     fi
 
     docker compose -f backend/docker-compose.yml down 2>/dev/null \
