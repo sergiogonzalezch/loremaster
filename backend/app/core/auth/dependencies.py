@@ -1,13 +1,14 @@
 """Dependencias de autenticación para FastAPI.
 
 Provee funciones de dependencia para proteger endpoints:
-- get_current_user: Autenticación JWT local (cookie HttpOnly)
+- get_current_user: Autenticación JWT local (cookie HttpOnly o Bearer token)
 - get_admin_user: Autorización de administrador
 """
 
 import hmac
 
 from fastapi import Depends, HTTPException, Request
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlmodel import Session
 
 from app.core.auth import verify_token
@@ -15,31 +16,44 @@ from app.core.config import settings
 from app.database import get_session
 from app.models.db.user import User
 
+_bearer = HTTPBearer(auto_error=False)
+
+
+def _extract_token(
+    request: Request,
+    bearer: HTTPAuthorizationCredentials | None,
+) -> str | None:
+    """Extrae JWT desde header Authorization Bearer o cookie HttpOnly."""
+    if bearer and bearer.scheme.lower() == "bearer":
+        return bearer.credentials
+    return request.cookies.get(settings.cookie_access_name)
+
 
 def get_current_user(
     request: Request,
     session: Session = Depends(get_session),
+    bearer: HTTPAuthorizationCredentials | None = Depends(_bearer),
 ) -> dict:
-    """Obtiene el usuario autenticado desde la cookie HttpOnly.
+    """Obtiene el usuario autenticado desde cookie HttpOnly o Bearer token.
 
-    Lee el JWT local de la cookie 'access_token'. En todos los entornos
-    (local, demo, production) la cookie contiene un JWT propio firmado con
-    SECRET_KEY — el Clerk JWT nunca se almacena en cookie; solo llega por
-    header Authorization en POST /auth/clerk/sync y se descarta tras el sync.
+    Prioriza el header Authorization Bearer (para Swagger/herramientas), con
+    fallback a la cookie HttpOnly. En todos los entornos el JWT es propio,
+    firmado con SECRET_KEY.
 
     Args:
-        request: Objeto Request para acceder a cookies.
+        request: Objeto Request para acceder a cookies y headers.
         session: Sesión de base de datos.
+        bearer: Credenciales Bearer opcionales extraídas por FastAPI.
 
     Returns:
         Payload del JWT con sub (user_id), username, version, etc.
 
     Raises:
-        HTTPException 401: Si no hay cookie, es inválido, el usuario fue eliminado
+        HTTPException 401: Si no hay token, es inválido, el usuario fue eliminado
             o la versión del token no coincide (token revocado).
 
     """
-    token = request.cookies.get(settings.cookie_access_name)
+    token = _extract_token(request, bearer)
     if not token:
         raise HTTPException(status_code=401, detail="No autorizado")
 
@@ -58,6 +72,7 @@ def get_current_user(
 def get_current_user_optional(
     request: Request,
     session: Session = Depends(get_session),
+    bearer: HTTPAuthorizationCredentials | None = Depends(_bearer),
 ) -> dict | None:
     """Variante permisiva de get_current_user: retorna None si no hay sesión.
 
@@ -66,7 +81,7 @@ def get_current_user_optional(
     no compartidas).
     """
     try:
-        return get_current_user(request, session)
+        return get_current_user(request, session, bearer)
     except HTTPException:
         return None
 

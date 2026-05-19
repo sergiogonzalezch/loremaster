@@ -362,7 +362,7 @@ En modo local, ComfyUI y Ollama corren en el host para acceder directamente a la
 loremaster/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py                        # FastAPI app, CORS, lifespan, registro de routers
+│   │   ├── main.py                        # FastAPI app, CORS, lifespan, routers; _csrf_for_unsafe exime Bearer; custom OpenAPI con BearerAuth SecurityScheme
 │   │   ├── database.py                    # SQLModel engine + dependencia get_session
 │   │   ├── api/routes/
 │   │   │   ├── auth/                      # auth.py: registro/login/logout JWT local; auth_clerk.py: POST /sync (Clerk JWT → cookie local), GET /verify
@@ -399,7 +399,7 @@ loremaster/
 │   │   │   ├── __init__.py                # Minimal; evita imports circulares
 │   │   │   ├── lifespan.py                # Startup: migraciones Alembic + health checks
 │   │   │   ├── auth/                      # JWT, password hashing, CSRF, Clerk
-│   │   │   │   ├── dependencies.py        # get_current_user (siempre verify_token → JWT local), get_admin_user
+│   │   │   │   ├── dependencies.py        # get_current_user (cookie HttpOnly ó Bearer header), get_admin_user
 │   │   │   │   └── clerk.py               # JWKSManager (caché TTL 1h), decode_clerk_token() — solo para /sync
 │   │   │   ├── config/                    # Pydantic Settings (lee .env)
 │   │   │   ├── database/                  # Mixins, utils, soft_delete, dependencies

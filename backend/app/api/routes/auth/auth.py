@@ -53,6 +53,7 @@ class AuthSuccessResponse(BaseModel):
 
     message: str = "Autenticación exitosa"
     username: str
+    access_token: str | None = None
 
 
 def _set_auth_cookies(response: Response, token: str) -> None:
@@ -104,7 +105,10 @@ def login(
         data={"sub": user.id, "username": user.username, "version": user.token_version},
     )
     _set_auth_cookies(response, token)
-    return {"username": user.username}
+    result: dict = {"username": user.username}
+    if settings.environment == "local":
+        result["access_token"] = token
+    return result
 
 
 @router.post("/register", response_model=AuthSuccessResponse)
@@ -119,7 +123,10 @@ def register(
         data={"sub": user.id, "username": user.username, "version": user.token_version},
     )
     _set_auth_cookies(response, token)
-    return {"username": user.username}
+    result: dict = {"username": user.username}
+    if settings.environment == "local":
+        result["access_token"] = token
+    return result
 
 
 @router.post("/logout", status_code=204)

@@ -288,12 +288,16 @@ Todos bajo `/api/v1/`.
 
 ### Autenticación
 
-JWT local (HS256) transportado via cookie HttpOnly. Hay dos modos de entrada:
+JWT local (HS256). Hay dos modos de entrada:
 
 - **Modo local** (`ENVIRONMENT=local`): formulario propio (`/auth/login`, `/auth/register`).
 - **Modo Clerk** (`ENVIRONMENT=demo` o `production` con `VITE_CLERK_PUBLISHABLE_KEY`): el frontend obtiene un JWT de Clerk y lo intercambia en `/auth/clerk/sync`. El backend valida el JWT de Clerk, crea o recupera el usuario local y emite una cookie de sesión local. A partir de ese punto **todas las requests usan el JWT local**, nunca el JWT de Clerk directamente.
 
-`get_current_user` usa siempre `verify_token()` (JWT local firmado con `SECRET_KEY`) independientemente del entorno. El JWT de Clerk solo llega al backend por el header `Authorization: Bearer <token>` en `/auth/clerk/sync`, nunca en cookie.
+`get_current_user` usa siempre `verify_token()` (JWT local firmado con `SECRET_KEY`) independientemente del entorno.
+
+**Transporte del token:** `get_current_user` acepta el JWT por dos vías:
+1. **Cookie HttpOnly** `access_token` (modo normal del frontend — protegido con CSRF double-submit).
+2. **Header `Authorization: Bearer <token>`** (herramientas externas, Swagger UI, evals) — exento de CSRF porque no usa cookies.
 
 | Método | Ruta | Auth | Descripción | Status |
 |---|---|---|---|---|
@@ -303,7 +307,16 @@ JWT local (HS256) transportado via cookie HttpOnly. Hay dos modos de entrada:
 | `POST` | `/auth/clerk/sync` | No (Clerk JWT en header) | Intercambia un JWT de Clerk por una cookie de sesión local | 200 |
 | `GET` | `/auth/clerk/verify` | No (Clerk JWT en header) | Verifica un JWT de Clerk y confirma que el usuario existe en BD | 200 |
 
-**Login/Register request:** `{ username_or_email, password }` / `{ username, email, password }` — **Response:** `{ username }`. La sesión se establece via cookie HttpOnly `access_token` + cookie `csrf_token`.
+**Login/Register response (modo local):** `{ username, access_token }` — el campo `access_token` solo se incluye cuando `ENVIRONMENT=local` (para facilitar el uso de Swagger). La sesión del frontend se establece via cookie HttpOnly `access_token` + cookie `csrf_token`.
+
+**Usar Swagger con Bearer token:**
+
+```
+1. POST /auth/login  →  copia el campo access_token de la respuesta
+2. Clic en "Authorize" (candado) en la esquina de Swagger
+3. Pega el token en el campo BearerAuth → Authorize
+4. Todos los endpoints protegidos funcionarán sin CSRF
+```
 
 Todos los endpoints de la API requieren autenticación salvo `/health`, `/` y los endpoints públicos (`/public/*`, `/users/{username}/profile`).
 

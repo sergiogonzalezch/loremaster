@@ -6,10 +6,12 @@ servicio de archivos estáticos e incluye todos los routers de la API.
 
 import logging
 from pathlib import Path
+from typing import Any
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 
 from app.api.middlewares import RateLimitMiddleware, SecurityHeadersMiddleware
@@ -49,11 +51,14 @@ if settings.environment == "local":
 def _csrf_for_unsafe(request: Request) -> None:
     """Valida CSRF solo para métodos mutantes (POST, PUT, PATCH, DELETE).
 
-    Exime los endpoints de autenticación (/api/v1/auth/*) porque
-    el usuario aún no tiene sesión activa al hacer login/register.
+    Exime:
+    - /api/v1/auth/*: el usuario aún no tiene sesión activa al hacer login/register.
+    - Requests con Authorization Bearer: no usan cookies → CSRF no aplica.
     """
     if request.method in ("POST", "PUT", "PATCH", "DELETE"):
         if request.url.path.startswith("/api/v1/auth/"):
+            return
+        if request.headers.get("authorization", "").lower().startswith("bearer "):
             return
         validate_csrf(request)
 
@@ -137,3 +142,33 @@ app.include_router(public_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
 app.include_router(media_router, tags=["media"])
 app.include_router(health_router)
+
+
+def _custom_openapi() -> dict[str, Any]:
+    if app.openapi_schema:
+        return app.openapi_schema
+    schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+    schema.setdefault("components", {}).setdefault("securitySchemes", {})["BearerAuth"] = {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT obtenido del campo `access_token` en la respuesta de POST /auth/login (solo entorno local).",
+    }
+    # Apply BearerAuth to all operations except auth and health endpoints
+    for path, path_item in schema.get("paths", {}).items():
+        if path.startswith("/api/v1/auth/") or path in ("/health", "/"):
+            continue
+        for method, operation in path_item.items():
+            if isinstance(operation, dict) and method != "parameters":
+                operation.setdefault("security", [{"BearerAuth": []}])
+    app.openapi_schema = schema
+    return schema
+
+
+if settings.environment != "production":
+    app.openapi = _custom_openapi
