@@ -127,6 +127,7 @@ temp_uploads/
 # Evaluations — resultados generados (artefactos, no versionados)
 # ========================
 evaluations/guard_harness/results/
+evaluations/evals.db
 
 # ========================
 # Mensajería / colas

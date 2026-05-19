@@ -2,31 +2,36 @@
 """Baseline Evaluation -- Loremaster
 Ejecuta el golden dataset contra la API en ejecucion y reporta PASS/FAIL por caso.
 
+Modos de ejecucion:
+  - Standalone (default): arranca un backend aislado en :8001 con evaluations/evals.db.
+    La base de datos principal (loremaster.db) no se modifica.
+  - Conectado: usa un backend ya corriendo con --no-standalone --base-url <url>.
+
 Prerequisitos:
-  - Backend corriendo : make run  (http://localhost:8000)
   - Qdrant disponible : docker-compose up -d qdrant
-  - Ollama disponible : docker-compose up -d  (o proceso local)
+  - Ollama disponible (para casos LLM)
+  - venv activo con dependencias instaladas
 
 Uso (desde backend/ con el venv activo):
-    python evaluations/baseline_eval.py
-    python evaluations/baseline_eval.py --base-url http://localhost:8000
-    python evaluations/baseline_eval.py --username eval --password eval123
-    python evaluations/baseline_eval.py --categories rag_query guardrail image_generation
-    python evaluations/baseline_eval.py --ids RAG-001 CHAR-005 FLOW-001
-    python evaluations/baseline_eval.py --keep-collection
-    python evaluations/baseline_eval.py --no-seed
+    python evaluations/baseline_evals.py
+    python evaluations/baseline_evals.py --eval-port 8002
+    python evaluations/baseline_evals.py --categories rag_query guardrail
+    python evaluations/baseline_evals.py --ids RAG-001 CHAR-005 FLOW-001
+    python evaluations/baseline_evals.py --keep-collection
+    python evaluations/baseline_evals.py --no-seed
+    python evaluations/baseline_evals.py --no-standalone --base-url http://localhost:8000
 
 Notas de seguridad:
   - Este script es para desarrollo/testing local. No ejecutar en produccion.
-  - Por defecto apunta a http://localhost:8000. Para evaluar un environment
-    remoto, usar --base-url <url> (requiere token o credenciales validas).
-  - El token JWT se pasa via --token o se obtiene via --username/--password.
   - No commitear tokens ni credenciales en el golden dataset.
 """
 
 import argparse
+import atexit
 import io
 import json
+import os
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -41,6 +46,8 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="repla
 
 DATASET_PATH = Path(__file__).parent / "dataset" / "golden_dataset.json"
 SEED_DOC_PATH = Path(__file__).parent / "dataset" / "golden_seed.txt"
+EVAL_DB_FILENAME = "evals.db"
+EVAL_BACKEND_PORT = 8001
 API_PREFIX = "/api/v1"
 LLM_TIMEOUT = 180.0  # Ollama puede ser lento
 CRUD_TIMEOUT = 30.0
@@ -76,6 +83,76 @@ def _result_line(case_id: str, status: str, duration_ms: int, desc: str) -> None
         "?? ",
     )
     print(f"  [{icon}] {case_id:<12} {status:<5}  {duration_ms:>6}ms  {desc[:52]}")
+
+
+# --------------------------------------------------------------------------- #
+# Backend aislado (standalone mode)
+# --------------------------------------------------------------------------- #
+
+_eval_proc: "subprocess.Popen[bytes] | None" = None
+
+
+def _load_dotenv(env_file: Path) -> dict[str, str]:
+    """Lee pares KEY=VALUE de un archivo .env; ignora comentarios y líneas vacías."""
+    result: dict[str, str] = {}
+    if not env_file.exists():
+        return result
+    with open(env_file, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            result[key.strip()] = value.strip().strip('"').strip("'")
+    return result
+
+
+def _stop_eval_backend() -> None:
+    global _eval_proc
+    if _eval_proc and _eval_proc.poll() is None:
+        _eval_proc.terminate()
+        try:
+            _eval_proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            _eval_proc.kill()
+    _eval_proc = None
+
+
+def _start_eval_backend(eval_db: Path, port: int) -> str:
+    """Arranca un uvicorn aislado apuntando a eval_db. Retorna la base_url."""
+    global _eval_proc
+
+    backend_dir = Path(__file__).parent.parent  # backend/
+    dotenv = _load_dotenv(backend_dir / ".env")
+    env = {**dotenv, **os.environ}
+    env["DATABASE_URL"] = f"sqlite:///{eval_db}"
+
+    _eval_proc = subprocess.Popen(
+        [
+            sys.executable, "-m", "uvicorn", "app.main:app",
+            "--port", str(port), "--no-reload",
+        ],
+        cwd=str(backend_dir),
+        env=env,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    atexit.register(_stop_eval_backend)
+    return f"http://localhost:{port}"
+
+
+def _wait_for_backend(base_url: str, timeout: int = 60) -> bool:
+    """Espera hasta que /health devuelva 200 o se agote el timeout."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            r = httpx.get(f"{base_url}/health", timeout=2)
+            if r.status_code == 200:
+                return True
+        except Exception:
+            pass
+        time.sleep(1)
+    return False
 
 
 # --------------------------------------------------------------------------- #
@@ -1366,9 +1443,26 @@ def main() -> None:
         description="Loremaster Baseline Evaluation — ejecuta el golden dataset contra la API",
     )
     parser.add_argument(
+        "--standalone",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Arrancar backend aislado con evals.db (default: True); --no-standalone para usar --base-url",
+    )
+    parser.add_argument(
+        "--eval-port",
+        type=int,
+        default=EVAL_BACKEND_PORT,
+        help=f"Puerto del backend eval aislado (default: {EVAL_BACKEND_PORT})",
+    )
+    parser.add_argument(
+        "--eval-db",
+        default=EVAL_DB_FILENAME,
+        help=f"Nombre del archivo SQLite de evaluaciones en evaluations/ (default: {EVAL_DB_FILENAME})",
+    )
+    parser.add_argument(
         "--base-url",
-        default="http://localhost:8000",
-        help="URL base del backend (default: http://localhost:8000)",
+        default=None,
+        help="URL base del backend; solo relevante con --no-standalone (default: http://localhost:8000)",
     )
     parser.add_argument(
         "--username",
@@ -1407,6 +1501,12 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    # Resolver base_url según el modo
+    if args.standalone:
+        args.base_url = f"http://localhost:{args.eval_port}"
+    elif args.base_url is None:
+        args.base_url = "http://localhost:8000"
+
     # ── Cargar dataset ──────────────────────────────────────────────────────
     if not DATASET_PATH.exists():
         _err(f"Dataset no encontrado: {DATASET_PATH}")
@@ -1427,7 +1527,19 @@ def main() -> None:
     )
     print(f"  Ejecutar : {len(all_cases)} casos")
     print(f"  Base URL : {args.base_url}")
+    if args.standalone:
+        eval_db = (Path(__file__).parent / args.eval_db).resolve()
+        print(f"  DB eval  : {eval_db}")
     _sep()
+
+    # ── Arrancar backend aislado si corresponde ─────────────────────────────
+    if args.standalone:
+        _ok(f"Arrancando backend eval en :{args.eval_port} con {eval_db.name}...")
+        _start_eval_backend(eval_db, args.eval_port)
+        if not _wait_for_backend(args.base_url, timeout=60):
+            _err("El backend eval no respondio en 60s. Revisa logs o el SECRET_KEY en .env.")
+            sys.exit(1)
+        _ok("Backend eval listo.")
 
     # ── Verificar backend (sin auth) ────────────────────────────────────────
     probe = httpx.Client(base_url=args.base_url, timeout=5)
@@ -1540,6 +1652,10 @@ def main() -> None:
         _ok("Coleccion de evaluacion eliminada")
 
     api.close()
+
+    if args.standalone:
+        _stop_eval_backend()
+        _ok("Backend eval detenido.")
 
     # ── Resumen ─────────────────────────────────────────────────────────────
     print()
