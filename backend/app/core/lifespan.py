@@ -32,24 +32,30 @@ async def lifespan(_: FastAPI):
     Al iniciar: aplica migraciones, verifica conexión a Qdrant y Ollama.
     Al cerrar: yield (sin limpieza especial).
     """
-    try:
-        _run_migrations()
-        logger.info("Database migrations applied")
-    except Exception as e:
-        logger.critical("Database migration failed, aborting startup: %s", e)
-        raise
+    import os as _os
+    if _os.getenv("SKIP_MIGRATIONS", "").lower() in ("1", "true", "yes"):
+        logger.info("Database migrations skipped (SKIP_MIGRATIONS)")
+    else:
+        try:
+            # Correr migraciones en thread separado para no bloquear el event loop de asyncio.
+            # SQLite + asyncio/greenlet en el mismo thread puede provocar un deadlock silencioso.
+            await asyncio.wait_for(asyncio.to_thread(_run_migrations), timeout=30.0)
+            logger.info("Database migrations applied")
+        except Exception as e:
+            logger.critical("Database migration failed, aborting startup: %s", e)
+            raise
 
     try:
-        await asyncio.to_thread(ping_qdrant)
+        await asyncio.wait_for(asyncio.to_thread(ping_qdrant), timeout=10.0)
         logger.info("Qdrant connection OK (%s)", settings.qdrant_url)
-    except (httpx.TransportError, OSError) as e:
+    except Exception as e:  # noqa: BLE001
         logger.warning("Qdrant not reachable at startup: %s", e)
 
     try:
         async with httpx.AsyncClient() as client:
             await client.get(f"{settings.ollama_base_url}/api/tags", timeout=5)
         logger.info("Ollama connection OK (%s)", settings.ollama_base_url)
-    except httpx.TransportError as e:
+    except Exception as e:  # noqa: BLE001
         logger.warning("Ollama not reachable at startup: %s", e)
 
     # Redirigir uvicorn.access hacia nuestro root handler para que los logs de

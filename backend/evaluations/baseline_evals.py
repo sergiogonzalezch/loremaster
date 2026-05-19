@@ -90,21 +90,7 @@ def _result_line(case_id: str, status: str, duration_ms: int, desc: str) -> None
 # --------------------------------------------------------------------------- #
 
 _eval_proc: "subprocess.Popen[bytes] | None" = None
-
-
-def _load_dotenv(env_file: Path) -> dict[str, str]:
-    """Lee pares KEY=VALUE de un archivo .env; ignora comentarios y líneas vacías."""
-    result: dict[str, str] = {}
-    if not env_file.exists():
-        return result
-    with open(env_file, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, _, value = line.partition("=")
-            result[key.strip()] = value.strip().strip('"').strip("'")
-    return result
+_eval_log_path: "Path | None" = None
 
 
 def _stop_eval_backend() -> None:
@@ -118,17 +104,79 @@ def _stop_eval_backend() -> None:
     _eval_proc = None
 
 
+def _kill_port(port: int) -> None:
+    """Mata cualquier proceso escuchando en el puerto dado."""
+    try:
+        if sys.platform == "win32":
+            out = subprocess.check_output(
+                ["netstat", "-ano"], text=True, errors="replace",
+            )
+            for line in out.splitlines():
+                if f":{port}" in line and "LISTENING" in line:
+                    pid = line.strip().split()[-1]
+                    subprocess.run(
+                        ["taskkill", "/F", "/T", "/PID", pid], capture_output=True,
+                    )
+        else:
+            out = subprocess.check_output(
+                ["lsof", f"-ti:{port}"], text=True, errors="replace",
+            )
+            for pid in out.split():
+                subprocess.run(["kill", "-9", pid], capture_output=True)
+    except Exception:
+        pass
+
+
+def _init_eval_db(eval_db: Path, backend_dir: Path) -> None:
+    """Aplica migraciones Alembic a la DB de evaluación via subproceso.
+
+    Se usa un proceso separado (no el padre) para que DATABASE_URL se resuelva
+    correctamente. Si se llamara a alembic.command directamente, env.py leería
+    settings.database_url del padre (loremaster.db) e ignoraría la URL de eval.
+    Con un subproceso el entorno es limpio y apunta a evals.db.
+
+    Al terminar, la DB está en 'head'; cuando el servidor arranca, la migración
+    en lifespan es un no-op instantáneo.
+    """
+    rel_db = eval_db.relative_to(backend_dir)
+    db_url = f"sqlite:///{rel_db.as_posix()}"
+    subprocess.run(
+        [sys.executable, "-m", "alembic", "upgrade", "head"],
+        cwd=str(backend_dir),
+        env={**os.environ, "DATABASE_URL": db_url},
+        check=True,
+    )
+
+
 def _start_eval_backend(eval_db: Path, port: int) -> str:
     """Arranca un uvicorn aislado apuntando a eval_db. Retorna la base_url."""
-    global _eval_proc
+    global _eval_proc, _eval_log_path
+
+    # Limpiar estado de ejecuciones anteriores
+    _kill_port(port)
+    for suffix in ("", "-shm", "-wal"):
+        Path(str(eval_db) + suffix).unlink(missing_ok=True)
+    time.sleep(0.5)
 
     backend_dir = Path(__file__).parent.parent  # backend/
-    dotenv = _load_dotenv(backend_dir / ".env")
-    env = {**dotenv, **os.environ}
-    env["DATABASE_URL"] = f"sqlite:///{eval_db}"
 
-    # Desactivar rate limiting para que los casos LLM no agoten el bucket
-    env["RATE_LIMIT_ENABLED"] = "false"
+    # Pre-inicializar la DB desde el proceso padre (sin asyncio) para que el subprocess
+    # encuentre el esquema listo y la migración en lifespan sea un no-op instantáneo.
+    _init_eval_db(eval_db, backend_dir)
+
+    # Ruta relativa al cwd (backend/) para que SQLAlchemy la parsee correctamente en Windows
+    rel_db = eval_db.relative_to(backend_dir)
+    env = {
+        **os.environ,
+        "DATABASE_URL": f"sqlite:///{rel_db.as_posix()}",
+        "RATE_LIMIT_ENABLED": "false",
+        "PYTHONUNBUFFERED": "1",
+        "SKIP_MIGRATIONS": "true",  # migración ya aplicada por _init_eval_db
+    }
+
+    # Log a archivo para evitar que el buffer del pipe oculte errores de startup
+    _eval_log_path = eval_db.parent / "eval_backend.log"
+    log_file = open(_eval_log_path, "wb")  # noqa: SIM115
 
     _eval_proc = subprocess.Popen(
         [
@@ -137,24 +185,45 @@ def _start_eval_backend(eval_db: Path, port: int) -> str:
         ],
         cwd=str(backend_dir),
         env=env,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stdout=log_file,
+        stderr=log_file,
     )
     atexit.register(_stop_eval_backend)
-    return f"http://localhost:{port}"
+    return f"http://127.0.0.1:{port}"
+
+
+def _show_eval_log(tail: int = 40) -> None:
+    """Imprime las últimas líneas relevantes del log del backend eval."""
+    if not _eval_log_path or not _eval_log_path.exists():
+        return
+    try:
+        lines = _eval_log_path.read_text(encoding="utf-8", errors="replace").splitlines()
+        relevant = [l for l in lines if l.strip() and "Loading weights" not in l]
+        snippet = relevant[-tail:] if len(relevant) > tail else relevant
+        if snippet:
+            print(f"\n  --- {_eval_log_path.name} (últimas líneas) ---")
+            for line in snippet:
+                print(f"  {line}")
+            print("  ---\n")
+    except OSError:
+        pass
 
 
 def _wait_for_backend(base_url: str, timeout: int = 60) -> bool:
-    """Espera hasta que /health devuelva 200 o se agote el timeout."""
+    """Espera hasta que /health devuelva 200, el proceso muera, o se agote el timeout."""
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
+        if _eval_proc and _eval_proc.poll() is not None:
+            _show_eval_log()
+            return False
         try:
-            r = httpx.get(f"{base_url}/health", timeout=2)
+            r = httpx.get(f"{base_url}/health", timeout=10)
             if r.status_code == 200:
                 return True
         except Exception:
             pass
         time.sleep(1)
+    _show_eval_log()
     return False
 
 
@@ -1506,7 +1575,7 @@ def main() -> None:
 
     # Resolver base_url según el modo
     if args.standalone:
-        args.base_url = f"http://localhost:{args.eval_port}"
+        args.base_url = f"http://127.0.0.1:{args.eval_port}"
     elif args.base_url is None:
         args.base_url = "http://localhost:8000"
 
