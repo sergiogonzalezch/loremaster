@@ -67,16 +67,27 @@ open_terminal() {
 stop_services() {
     echo
     echo -e "${C}  Cerrando servicios...${Z}"
-    # pkill -f mata reloader + worker (lsof solo ve el worker; el reloader lo reinicia)
-    if pkill -f "uvicorn" 2>/dev/null; then
+    local w_pid r_pid
+    # lsof -sTCP:LISTEN devuelve solo el worker (el que tiene el socket)
+    # ps -o ppid= sube al padre (reloader) que no tiene socket y sobreviviría
+    w_pid=$(lsof -ti:8000 -sTCP:LISTEN 2>/dev/null | head -1 || true)
+    if [ -n "$w_pid" ]; then
+        r_pid=$(ps -o ppid= -p "$w_pid" 2>/dev/null | tr -d ' ' || true)
+        kill "$w_pid" 2>/dev/null || true
+        if [ -n "$r_pid" ] && [ "$r_pid" -gt 1 ] 2>/dev/null; then
+            kill "$r_pid" 2>/dev/null || true
+        fi
         echo -e "${D}  Backend  (8000) cerrado.${Z}"
-    else
-        kill $(lsof -ti:8000 2>/dev/null) 2>/dev/null || true
     fi
-    if pkill -f "vite" 2>/dev/null; then
+
+    w_pid=$(lsof -ti:5173 -sTCP:LISTEN 2>/dev/null | head -1 || true)
+    if [ -n "$w_pid" ]; then
+        r_pid=$(ps -o ppid= -p "$w_pid" 2>/dev/null | tr -d ' ' || true)
+        kill "$w_pid" 2>/dev/null || true
+        if [ -n "$r_pid" ] && [ "$r_pid" -gt 1 ] 2>/dev/null; then
+            kill "$r_pid" 2>/dev/null || true
+        fi
         echo -e "${D}  Frontend (5173) cerrado.${Z}"
-    else
-        kill $(lsof -ti:5173 2>/dev/null) 2>/dev/null || true
     fi
     docker compose -f backend/docker-compose.yml down 2>/dev/null \
         && echo -e "${D}  Infra Docker bajada.${Z}" || true
