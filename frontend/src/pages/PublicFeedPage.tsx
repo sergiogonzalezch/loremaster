@@ -142,9 +142,9 @@ export default function PublicFeedPage() {
                           setSelectedImage(img);
                       }}
                     >
-                      {img.image_url ? (
+                      {(img.storage_path || img.image_url) ? (
                         <SafeImage
-                          src={img.image_url}
+                          src={img.storage_path ? `/media/${img.storage_path}` : img.image_url}
                           alt={img.entity_name}
                           style={{
                             width: "100%",

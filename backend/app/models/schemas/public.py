@@ -47,6 +47,7 @@ class SharedImageSummary(BaseModel):
     id: str
     generation_id: str
     image_url: str | None = None
+    storage_path: str | None = None
     seed: int
     auto_prompt: str
     final_prompt: str
@@ -126,6 +127,7 @@ class PublicImageItem(BaseModel):
     image_id: str
     generation_id: str
     image_url: str | None = None
+    storage_path: str | None = None
     seed: int
     auto_prompt: str
     final_prompt: str

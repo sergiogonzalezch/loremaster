@@ -5,10 +5,6 @@ import { formatDate } from "../utils/formatters";
 import { ENTITY_TYPE_LABELS } from "../utils/constants";
 import SafeImage from "./SafeImage";
 
-const MEDIA_BASE = (
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1"
-).replace("/api/v1", "");
-
 interface Props {
   show: boolean;
   onHide: () => void;
@@ -38,12 +34,12 @@ export default function PublicImageModal({
   createdAt,
 }: Props) {
   const resolvedUrl = storagePath
-    ? `${MEDIA_BASE}/media/${storagePath}`
+    ? `/media/${storagePath}`
     : (imageUrl ?? "");
 
   const handleDownload = useCallback(async () => {
     if (!resolvedUrl) return;
-    const fetchUrl = storagePath ? `/media/${storagePath}` : (imageUrl ?? "");
+    const fetchUrl = resolvedUrl;
     if (!fetchUrl) return;
     const response = await fetch(fetchUrl);
     const blob = await response.blob();
