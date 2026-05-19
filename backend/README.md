@@ -233,6 +233,55 @@ pytest -k "test_create"             # por nombre
 
 **Total: 262 tests.**
 
+## Evaluaciones de integración (baseline)
+
+Ejecuta el golden dataset contra la API real (Qdrant + Ollama) y reporta PASS/FAIL por caso.
+**Por defecto usa su propia base de datos `evaluations/evals.db`** — `loremaster.db` no se modifica.
+
+### Prerequisitos
+
+```bash
+# 1. Infraestructura levantada
+make infra          # Qdrant + Redis
+
+# 2. Ollama corriendo con el modelo configurado
+#    (necesario para casos rag_query, entity_content, image_generation)
+```
+
+### Modo standalone (recomendado)
+
+El script arranca automáticamente un segundo servidor en `:8001` apuntando a `evals.db`,
+corre los tests y lo detiene al finalizar.
+
+```bash
+# Desde backend/ con el venv activo:
+python evaluations/baseline_evals.py
+
+# Opciones comunes:
+python evaluations/baseline_evals.py --categories rag_query guardrail
+python evaluations/baseline_evals.py --ids RAG-001 CHAR-005
+python evaluations/baseline_evals.py --eval-port 8002   # si 8001 está ocupado
+python evaluations/baseline_evals.py --no-seed          # omitir ingesta del doc semilla
+python evaluations/baseline_evals.py --keep-collection  # conservar colección al terminar
+```
+
+### Modo conectado (backend externo)
+
+Usa un backend ya corriendo. En este modo los datos van a la DB que tenga configurada ese backend.
+
+```bash
+python evaluations/baseline_evals.py --no-standalone --base-url http://localhost:8000
+```
+
+### Dataset y semilla
+
+| Archivo | Descripción |
+|---|---|
+| `evaluations/dataset/golden_dataset.json` | Casos de prueba (categorías: `rag_query`, `entity_crud`, `entity_content`, `guardrail`, `image_generation`, `full_flow`, …) |
+| `evaluations/dataset/golden_seed.txt` | Documento de lore ingestado antes de los casos RAG |
+
+> `evaluations/evals.db` está en `.gitignore` y se recrea en cada ejecución standalone.
+
 ## Endpoints
 
 Todos bajo `/api/v1/`.
