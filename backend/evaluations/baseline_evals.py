@@ -198,7 +198,7 @@ def _show_eval_log(tail: int = 40) -> None:
         return
     try:
         lines = _eval_log_path.read_text(encoding="utf-8", errors="replace").splitlines()
-        relevant = [l for l in lines if l.strip() and "Loading weights" not in l]
+        relevant = [ln for ln in lines if ln.strip() and "Loading weights" not in ln]
         snippet = relevant[-tail:] if len(relevant) > tail else relevant
         if snippet:
             print(f"\n  --- {_eval_log_path.name} (últimas líneas) ---")

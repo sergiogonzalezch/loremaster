@@ -27,8 +27,8 @@ _HARNESS_DIR = Path(__file__).parent
 _BACKEND_DIR = _HARNESS_DIR.parent.parent
 sys.path.insert(0, str(_BACKEND_DIR))
 
-from app.domain.prompt_templates import render_prompt  # noqa: E402
-from app.models.enums import ContentCategory  # noqa: E402
+from app.domain.prompt_templates import render_prompt
+from app.models.enums import ContentCategory
 
 _TEST_CASES_DIR = _HARNESS_DIR / "test_cases"
 _RESULTS_DIR = _HARNESS_DIR / "results"

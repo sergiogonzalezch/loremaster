@@ -39,14 +39,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     """
 
-    def __init__(self, app: ASGIApp, requests_per_minute: int = 30) -> None:  # noqa: D107
+    def __init__(self, app: ASGIApp, requests_per_minute: int = 30) -> None:
+        """Initialize rate limiter with a Redis-backed sliding window."""
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
         self.redis: aioredis.Redis = aioredis.from_url(
             settings.redis_url, decode_responses=True
         )
 
-    async def dispatch(self, request: Request, call_next: Callable) -> JSONResponse:  # noqa: D102
+    async def dispatch(self, request: Request, call_next: Callable) -> JSONResponse:
+        """Enforce rate limit; pass through exempt paths and GET requests."""
         if request.url.path in _EXEMPT_PATHS:
             return await call_next(request)
 
@@ -84,7 +86,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 token, settings.secret_key, algorithms=[settings.algorithm]
             )
             return payload.get("sub")
-        except (JWTError, Exception):  # noqa: BLE001
+        except JWTError:
             return None
 
     def _get_limit_for_path(self, path: str) -> int:

@@ -27,12 +27,12 @@ if hasattr(sys.stdout, "reconfigure"):
 _BACKEND_DIR = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_BACKEND_DIR))
 
-from langchain_core.output_parsers import StrOutputParser  # noqa: E402
-from langchain_ollama import OllamaLLM  # noqa: E402
+from langchain_core.output_parsers import StrOutputParser
+from langchain_ollama import OllamaLLM
 
-from app.domain.prompt_templates import render_prompt  # noqa: E402
-from app.models.db.entity import EntityType  # noqa: E402
-from app.models.enums import ContentCategory  # noqa: E402
+from app.domain.prompt_templates import render_prompt
+from app.models.db.entity import EntityType
+from app.models.enums import ContentCategory
 
 OLLAMA_BASE_URL = "http://localhost:11434"
 

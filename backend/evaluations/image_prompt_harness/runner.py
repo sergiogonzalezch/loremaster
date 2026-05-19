@@ -23,10 +23,10 @@ _HARNESS_DIR = Path(__file__).parent
 _BACKEND_DIR = _HARNESS_DIR.parent.parent
 sys.path.insert(0, str(_BACKEND_DIR))
 
-from app.domain.image_prompt_rules import build_combined_prompt  # noqa: E402
-from app.models.db.entity import EntityType  # noqa: E402
-from app.models.enums import ContentCategory  # noqa: E402
-from evaluations.image_prompt_harness.judge import check_english, check_tipo  # noqa: E402
+from app.domain.image_prompt_rules import build_combined_prompt
+from app.models.db.entity import EntityType
+from app.models.enums import ContentCategory
+from evaluations.image_prompt_harness.judge import check_english, check_tipo
 
 _TEST_CASES_DIR = _HARNESS_DIR / "test_cases"
 _RESULTS_DIR = _HARNESS_DIR / "results"
