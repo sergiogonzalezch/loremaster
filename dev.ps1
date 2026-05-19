@@ -1,8 +1,8 @@
 # dev.ps1 — Levanta el entorno de desarrollo completo de LoreMaster.
 #
 # Uso:
-#   .\dev.ps1            → infraestructura SQLite + backend + frontend
-#   .\dev.ps1 -Postgres  → infraestructura PostgreSQL + backend + frontend
+#   .\dev.ps1            -> infraestructura SQLite + backend + frontend
+#   .\dev.ps1 -Postgres  -> infraestructura PostgreSQL + backend + frontend
 #
 # Prerequisitos:
 #   - Docker Desktop corriendo
@@ -97,7 +97,7 @@ while ($elapsed -lt $maxWait -and -not $ready) {
     if (-not $ready) { Write-Host -NoNewline "." }
 }
 if ($ready) { Write-Host " Listo!" -ForegroundColor Green }
-else { Write-Host " Timeout — arrancando frontend de todas formas." -ForegroundColor Yellow }
+else { Write-Host " Timeout - arrancando frontend de todas formas." -ForegroundColor Yellow }
 
 # ── 3. Frontend ──────────────────────────────────────────────────────────────
 Write-Host "==> Abriendo frontend (http://localhost:5173)..." -ForegroundColor Cyan
@@ -111,13 +111,13 @@ $frontendProc.Id | Out-File "$Root\.loremaster_frontend_pid" -Encoding ascii
 # ── Resumen ──────────────────────────────────────────────────────────────────
 Write-Host ""
 Write-Host "Entorno listo:" -ForegroundColor Green
-Write-Host "  Backend  → http://localhost:8000       (docs: /docs)" -ForegroundColor Green
-Write-Host "  Frontend → http://localhost:5173" -ForegroundColor Green
-Write-Host "  Qdrant   → http://localhost:6333" -ForegroundColor Green
+Write-Host "  Backend  -> http://localhost:8000       (docs: /docs)" -ForegroundColor Green
+Write-Host "  Frontend -> http://localhost:5173" -ForegroundColor Green
+Write-Host "  Qdrant   -> http://localhost:6333" -ForegroundColor Green
 if ($Postgres) {
-    Write-Host "  Postgres → localhost:5433" -ForegroundColor Green
+    Write-Host "  Postgres -> localhost:5433" -ForegroundColor Green
 } else {
-    Write-Host "  DB       → SQLite (backend/loremaster.db)" -ForegroundColor Green
+    Write-Host "  DB       -> SQLite (backend/loremaster.db)" -ForegroundColor Green
 }
 Write-Host ""
 Write-Host "Para bajar: make down" -ForegroundColor DarkGray
