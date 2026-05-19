@@ -153,19 +153,30 @@ def _custom_openapi() -> dict[str, Any]:
         description=app.description,
         routes=app.routes,
     )
-    schema.setdefault("components", {}).setdefault("securitySchemes", {})["BearerAuth"] = {
+    # FastAPI auto-genera "HTTPBearer" desde Depends(_bearer). Lo eliminamos y
+    # lo reemplazamos con "BearerAuth" con descripción útil para el desarrollador.
+    security_schemes = schema.setdefault("components", {}).setdefault("securitySchemes", {})
+    security_schemes.pop("HTTPBearer", None)
+    security_schemes["BearerAuth"] = {
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "JWT",
         "description": "JWT obtenido del campo `access_token` en la respuesta de POST /auth/login (solo entorno local).",
     }
-    # Apply BearerAuth to all operations except auth and health endpoints
     for path, path_item in schema.get("paths", {}).items():
         if path.startswith("/api/v1/auth/") or path in ("/health", "/"):
             continue
         for method, operation in path_item.items():
-            if isinstance(operation, dict) and method != "parameters":
-                operation.setdefault("security", [{"BearerAuth": []}])
+            if not isinstance(operation, dict) or method == "parameters":
+                continue
+            if "security" in operation:
+                # Reemplazar referencias auto-generadas a HTTPBearer
+                operation["security"] = [
+                    {"BearerAuth": []} if "HTTPBearer" in s else s
+                    for s in operation["security"]
+                ]
+            else:
+                operation["security"] = [{"BearerAuth": []}]
     app.openapi_schema = schema
     return schema
 
