@@ -20,7 +20,7 @@ Lista de tech debt identificado y aún no corregido. Ordenado por impacto estima
 | 10 | Paginación duplicada en frontend | Frontend | ✅ Resuelto | — |
 | 11 | `MAX_PENDING_CONTENTS` hardcodeado | Backend + Frontend | ✅ Resuelto | — |
 | 12 | Validación de categoría duplicada | Backend | ✅ Incorrecto | — (no había duplicación real) |
-| 13 | Jerarquía de excepciones plana | Backend | 🟢 Cubierto | Observación — todos los primitivos eliminados; bases `DomainError`/`InfrastructureError` solo si se necesita middleware global |
+| 13 | Jerarquía de excepciones plana | Backend | 🟢 Cubierto | `DuplicateNameError` unificado (2026-05-18); bases `DomainError`/`InfrastructureError` solo si se necesita middleware global |
 | 14 | `ValueError("discarded")` como señal de dominio | Backend | ✅ Resuelto | — |
 | 15 | `RuntimeError` en `check_generated_output` conflado con infra | Backend | ✅ Resuelto | — |
 | 16 | Función privada `_fetch_counts` importada en route | Backend | ✅ Resuelto | — |
@@ -33,7 +33,7 @@ Lista de tech debt identificado y aún no corregido. Ordenado por impacto estima
 | 23 | `NoContextAvailableError` reutilizada para regla de negocio | Backend | ✅ Resuelto | — |
 | 24 | Flag `truncated` incorrecto en estrategia `entity_only` | Backend | ✅ Resuelto | — |
 | 25 | `image_url` `str` en response schema pero `Optional` en modelo | Backend | ✅ Resuelto | — |
-| 26 | Info leak en handlers catch-all de `image_generation.py` | Backend | ✅ Resuelto | — |
+| 26 | Info leak en handlers catch-all de `image_generation.py` | Backend | ✅ Resuelto | Catch-all eliminados completamente (2026-05-18); FastAPI nativo maneja 500 |
 | 27 | `UpdateContentRequest` sin `max_length` | Backend | ✅ Resuelto | — |
 | 28 | Cache JWKS sin lock en `auth_clerk.py` | Backend | ✅ Resuelto | — |
 | 29 | Log "Auto-discarded" emitido antes de commit | Backend | 🟢 Cubierto | Impacto muy bajo; confunde en caso de rollback |
@@ -57,6 +57,7 @@ Lista de tech debt identificado y aún no corregido. Ordenado por impacto estima
 | 47 | Admin delete de usuario no es transaccional | Backend | ✅ Resuelto | `cascade_delete_collection` (sin commit) + `session.commit()` único al final |
 | 48 | `GET /documents/{doc_id}` sin autenticación ni ownership | Backend | ✅ Resuelto | Añadido `Depends(get_current_user)` en `documents.py:111` |
 | 49 | `GET /entities/{entity_id}` sin ownership check | Backend | ✅ Resuelto | `get_entity_or_404_owned` en `entities.py:78`; test actualizado |
+| 50 | `deletion_service.py` mezcla soft-delete DB + borrado ficheros + cleanup Qdrant | Backend | 🟢 Cubierto | Aceptado — tres fases atómicas por diseño; revisar al integrar S3/R2 |
 
 **Leyenda:** 🔴 Pendiente urgente · 🟠 Alto · 🟡 Pendiente no urgente · 🟢 Cubierto (mitigado, sin acción inmediata) · ✅ Cerrado
 
@@ -173,23 +174,16 @@ Lista de tech debt identificado y aún no corregido. Ordenado por impacto estima
 **Archivo:** `backend/app/core/exceptions.py`  
 **Impacto:** Muy bajo — el problema práctico original ya está resuelto; lo pendiente es arquitectura de conveniencia.
 
-**Estado tras refactor de try-catch (2026-04-26):** Se eliminaron la mayoría de primitivos. Ahora cada categoría tiene su tipo explícito:
+**Estado tras refactor de try-catch (2026-04-26):** Se eliminaron la mayoría de primitivos. Ahora cada categoría tiene su tipo explícito.
+
+**Estado tras consolidación DuplicateNameError (2026-05-18):** `DuplicateEntityNameError` y `DuplicateCollectionNameError` colapsados en `DuplicateNameError(name, message)`. El mensaje de contexto se pasa en el punto de `raise` (donde está la información de dominio); los routes capturan un único tipo → 409.
+
+El mapa de excepciones actualizado:
 
 | Categoría | Excepciones |
 |-----------|-------------|
 | Infraestructura | `DatabaseError`, `VectorStoreError` |
-| Regla de negocio | `DuplicateEntityNameError`, `DuplicateCollectionNameError`, `PendingLimitExceededError`, `InvalidCategoryError` |
-| Validación de entrada | `UnsupportedFileTypeError`, `FileTooLargeError`, `MissingFilenameError`, `ContentNotAllowedError` |
-| Estado RAG | `NoContextAvailableError`, `DocumentExtractionError` |
-
-La jerarquía sigue siendo plana (todas heredan de `Exception`), pero los routes ya capturan cada tipo explícitamente y mapean al HTTP code correcto.
-
-**Estado tras refactor completo (2026-04-26):** Todos los primitivos (`ValueError`, `RuntimeError`) eliminados como señales de dominio. Los dos remanentes identificados en la revisión posterior fueron resueltos en los ítems 14 y 15. El mapa de excepciones queda:
-
-| Categoría | Excepciones |
-|-----------|-------------|
-| Infraestructura | `DatabaseError`, `VectorStoreError` |
-| Regla de negocio | `DuplicateEntityNameError`, `DuplicateCollectionNameError`, `PendingLimitExceededError`, `InvalidCategoryError`, `ContentDiscardedError` |
+| Regla de negocio | `DuplicateNameError`, `PendingLimitExceededError`, `InvalidCategoryError`, `ContentDiscardedError` |
 | Validación de entrada | `UnsupportedFileTypeError`, `FileTooLargeError`, `MissingFilenameError`, `ContentNotAllowedError` |
 | Estado RAG | `NoContextAvailableError`, `DocumentExtractionError`, `GeneratedContentBlockedError` |
 
@@ -488,7 +482,7 @@ Ver solución aplicada en **ítem 6**.
 ## ~~26. Info leak en handlers catch-all de `image_generation.py`~~ ✅ Resuelto
 
 **Capa:** Backend  
-**Solución aplicada:** Añadido `logger = logging.getLogger(__name__)` en `app/api/routes/image_generation.py`. Los cinco bloques `except Exception as e: raise HTTPException(status_code=500, detail=str(e))` reemplazados por `except Exception: logger.exception("<nombre_handler>"); raise HTTPException(status_code=500, detail="Error interno del servidor.")`. El error completo (con traza) queda en los logs del servidor; el cliente solo recibe el mensaje genérico.
+**Solución aplicada (2026-05-18):** Los cinco bloques `except Exception as e: raise HTTPException(status_code=500, detail=str(e))` fueron **eliminados completamente** de `app/api/routes/images/image_generation.py`. FastAPI/Starlette captura las excepciones no tratadas via `ServerErrorMiddleware`, las registra (con traza) y devuelve 500 con cuerpo genérico — exactamente el comportamiento deseado sin código redundante. Se eliminaron también `import logging` y `logger = logging.getLogger(__name__)` que quedaron huérfanos al quitar los catches.
 
 ---
 
@@ -821,7 +815,8 @@ Actualizado el 2026-05-08 (ítems 37, 38, 40, 41 resueltos — admin cascade del
 Actualizado el 2026-05-08 (cobertura de tests revisada: useGenerate cancelación marcada cubierta; rag_pipeline Qdrant test identificado como débil; resto de tests frontend pendientes confirmados).
 Actualizado el 2026-05-08 (ítems 43-47 resueltos — ownership check, race condition, updated_at, tie-breaker, admin atomicity).
 Actualizado el 2026-05-08 (bug-search completo: verificados todos los ítems existentes ✅; añadidos ítems 48-49 — missing auth en GET documents, missing ownership en GET entity).
-Actualizado el 2026-05-08 (ítems 48-49 resueltos — auth en GET documents, ownership en GET entity; test_entity_wrong_collection_404 actualizado a 403).*
+Actualizado el 2026-05-08 (ítems 48-49 resueltos — auth en GET documents, ownership en GET entity; test_entity_wrong_collection_404 actualizado a 403).
+Actualizado el 2026-05-18 (ítem 13 — jerarquía consolidada: DuplicateEntityNameError + DuplicateCollectionNameError → DuplicateNameError; ítem 26 — solución actualizada a eliminación completa de catch-all; ítem 50 añadido — deletion_service responsabilidades mixtas).*
 
 ---
 
@@ -1056,3 +1051,17 @@ Nota: requiere que `cascade_delete_collection` use `session.flush()` en lugar de
 
 ---
 
+## 50. `deletion_service.py` mezcla soft-delete DB, borrado de ficheros y cleanup Qdrant
+
+**Capa:** Backend  
+**Archivo:** `backend/app/services/deletion_service.py`  
+**Impacto:** Muy bajo — funcionalmente correcto; relevante si storage o vector store se vuelven configurables o intercambiables.  
+**Clasificación:** Aceptado — las tres fases son intencionalmente atómicas por diseño.
+
+`cascade_delete_entity` y `cascade_delete_collection` coordinan tres capas de persistencia en una sola función: (1) soft-delete de registros DB + `session.flush()`, (2) borrado de archivos físicos desde `MEDIA_ROOT`, (3) eliminación de vectores en Qdrant con retry. Estas tres capas tienen garantías de consistencia distintas (DB transaccional, filesystem best-effort, Qdrant best-effort) y en la práctica no forman una transacción distribuida real.
+
+**Mitigación actual:** El diseño actual es correcto para un stack con un único storage backend (`local`) y un único vector store. El fallo de Qdrant se logea como orphan y no revierte el soft-delete (aceptable para un sistema no crítico en este estado).
+
+**Acción futura:** Revisar si se extrae una capa de abstracción `StorageBackend` cuando se integre S3/R2. En ese punto, separar la responsabilidad de borrado de ficheros en un servicio independiente haría sentido.
+
+---

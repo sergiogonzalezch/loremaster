@@ -2,6 +2,7 @@
 
 import logging
 import uuid
+from dataclasses import dataclass
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from qdrant_client import QdrantClient
@@ -17,6 +18,16 @@ from sentence_transformers import SentenceTransformer
 
 from app.core.config import settings
 from app.core.exceptions import NoContextAvailableError
+
+
+@dataclass
+class ChunkInfo:
+    """Fragmento RAG recuperado de Qdrant con su metadato de origen."""
+
+    doc_id: str
+    text: str
+    position: int
+    score: float | None
 
 logger = logging.getLogger(__name__)
 
@@ -126,14 +137,14 @@ def search_context(
     query: str,
     top_k: int | None = None,
     score_threshold: float | None = None,
-) -> tuple[list[str], list[str]]:
+) -> tuple[list[str], list[str], list[float]]:
     """Busca los chunks más relevantes en Qdrant para una consulta.
 
-    Retorna (textos, doc_ids) paralelos — un doc_id por chunk recuperado.
+    Retorna (textos, doc_ids, scores) — listas paralelas por chunk recuperado.
     """
     name = f"lm_{collection_id}"
     if not _collection_exists(name):
-        return [], []
+        return [], [], []
     if top_k is None:
         top_k = settings.top_k
     query_vector = _embedding_model.encode([query])[0].tolist()
@@ -160,24 +171,26 @@ def search_context(
         )
     texts = [point.payload["text"] for point in results.points]
     doc_ids = [point.payload.get("doc_id", "") for point in results.points]
-    return texts, doc_ids
+    scores = [point.score for point in results.points]
+    return texts, doc_ids, scores
 
 
 def retrieve_context(
     collection_id: str,
     query: str,
     extra_context: str = "",
-) -> tuple[str, int, list[str]]:
-    """Busca en Qdrant, combina extra_context y retorna (contexto, num_chunks, source_doc_ids).
+) -> tuple[str, int, list[str], list[ChunkInfo]]:
+    """Busca en Qdrant, combina extra_context y retorna (contexto, num_chunks, source_doc_ids, chunks).
 
-    source_doc_ids es la lista deduplicada de documentos que aportaron chunks.
+    source_doc_ids: lista deduplicada de docs que aportaron chunks (para rag_query).
+    chunks: lista de ChunkInfo ordenada por relevancia (para persistencia normalizada).
 
     Raises:
         NoContextAvailableError: Si no hay contexto de ninguna fuente.
 
     """
     try:
-        context_chunks, chunk_doc_ids = search_context(
+        context_chunks, chunk_doc_ids, chunk_scores = search_context(
             collection_id=collection_id,
             query=query,
             top_k=settings.top_k,
@@ -196,4 +209,9 @@ def retrieve_context(
         raise NoContextAvailableError
 
     source_doc_ids = list(dict.fromkeys(d for d in chunk_doc_ids if d))
-    return context, len(context_chunks), source_doc_ids
+    chunks = [
+        ChunkInfo(doc_id=chunk_doc_ids[i], text=context_chunks[i], position=i, score=chunk_scores[i])
+        for i in range(len(context_chunks))
+        if chunk_doc_ids[i]
+    ]
+    return context, len(context_chunks), source_doc_ids, chunks

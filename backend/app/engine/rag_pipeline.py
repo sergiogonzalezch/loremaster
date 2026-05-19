@@ -10,7 +10,7 @@ from langchain_core.output_parsers import StrOutputParser
 from app.core.config import settings
 from app.domain.prompt_templates import render_prompt
 from app.engine.llm import chain, get_llm
-from app.engine.rag import retrieve_context
+from app.engine.rag import ChunkInfo, retrieve_context
 from app.models.enums import ContentCategory
 
 logger = logging.getLogger(__name__)
@@ -58,7 +58,7 @@ async def invoke_rag_pipeline(
     )
 
     try:
-        context, num_chunks, source_doc_ids = retrieve_context(collection_id, query, extra_context)
+        context, num_chunks, source_doc_ids, _ = retrieve_context(collection_id, query, extra_context)
     except _TRANSPORT_ERRORS as e:
         logger.exception("Vector store unavailable for collection %s", collection_id)
         msg = "Vector store unavailable"
@@ -89,10 +89,10 @@ async def invoke_generation_pipeline(
     query: str,
     extra_context: str = "",
     model: str | None = None,
-) -> tuple[str, int, list[str]]:
+) -> tuple[str, list[ChunkInfo]]:
     """Pipeline RAG consciente de entidades usando plantillas de prompt específicas por categoría.
 
-    Retorna (respuesta, num_chunks, source_doc_ids).
+    Retorna (respuesta, chunks) donde chunks son los fragmentos RAG usados como contexto.
 
     Raises:
         RuntimeError: Si Qdrant o el LLM no están disponibles.
@@ -112,7 +112,7 @@ async def invoke_generation_pipeline(
     )
 
     try:
-        context, num_chunks, source_doc_ids = retrieve_context(collection_id, query, extra_context)
+        context, num_chunks, _, chunks = retrieve_context(collection_id, query, extra_context)
     except _TRANSPORT_ERRORS as e:
         logger.exception("Vector store unavailable for collection %s", collection_id)
         msg = "Vector store unavailable"
@@ -148,4 +148,4 @@ async def invoke_generation_pipeline(
         effective_model,
         num_chunks,
     )
-    return answer, num_chunks, source_doc_ids
+    return answer, chunks

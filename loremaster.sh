@@ -98,6 +98,11 @@ dev_up() {
     fi
     echo -e "${C}  Abriendo backend...${Z}"
     open_terminal "loremaster-backend" "source venv/bin/activate && make run" "$(pwd)/backend"
+    printf "  Esperando backend en :8000 "
+    until curl -sf --max-time 2 http://localhost:8000/health > /dev/null 2>&1; do
+        sleep 2; printf "."
+    done
+    echo -e " ${G}Listo!${Z}"
     echo -e "${C}  Abriendo frontend...${Z}"
     open_terminal "loremaster-frontend" "npm run dev" "$(pwd)/frontend"
     echo

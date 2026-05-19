@@ -9,7 +9,7 @@ from sqlmodel import Session, select
 
 from app.core.api.params import DateRangeParams, PaginationParams
 from app.core.database.utils import db_commit, paginate_with_sort
-from app.core.exceptions import DuplicateCollectionNameError
+from app.core.exceptions import DuplicateNameError
 from app.models.db.collection import Collection
 from app.models.db.document import Document
 from app.models.db.entity import Entity
@@ -89,7 +89,7 @@ def create_collection_service(
         Instancia de la colección creada.
 
     Raises:
-        DuplicateCollectionNameError: Si ya existe una colección con ese nombre.
+        DuplicateNameError: Si ya existe una colección con ese nombre.
 
     """
     name = name.strip()
@@ -102,7 +102,7 @@ def create_collection_service(
         ),
     ).first()
     if existing:
-        raise DuplicateCollectionNameError(name)
+        raise DuplicateNameError(name, f"Ya existe una colección llamada '{name}'.")
 
     collection = Collection(name=name, description=description, owner_id=owner_id)
     session.add(collection)
@@ -110,7 +110,7 @@ def create_collection_service(
         session.commit()
     except IntegrityError as e:
         session.rollback()
-        raise DuplicateCollectionNameError(name) from e
+        raise DuplicateNameError(name, f"Ya existe una colección llamada '{name}'.") from e
     session.refresh(collection)
     logger.info(
         "Collection '%s' created with id %s (owner: %s)",
@@ -189,7 +189,7 @@ def update_collection_service(
         Instancia de la colección actualizada.
 
     Raises:
-        DuplicateCollectionNameError: Si el nuevo nombre ya está en uso.
+        DuplicateNameError: Si el nuevo nombre ya está en uso.
 
     """
     new_name = request.name.strip() if request.name is not None else collection.name
@@ -203,7 +203,7 @@ def update_collection_service(
             ),
         ).first()
         if existing:
-            raise DuplicateCollectionNameError(new_name)
+            raise DuplicateNameError(new_name, f"Ya existe una colección llamada '{new_name}'.")
 
     if request.name is not None:
         collection.name = request.name.strip()
@@ -218,7 +218,7 @@ def update_collection_service(
         session.commit()
     except IntegrityError as e:
         session.rollback()
-        raise DuplicateCollectionNameError(new_name) from e
+        raise DuplicateNameError(new_name, f"Ya existe una colección llamada '{new_name}'.") from e
     session.refresh(collection)
     logger.info("Collection '%s' updated (id %s)", collection.name, collection.id)
     return collection

@@ -20,8 +20,7 @@ class EntityContentResponse(BaseModel):
         raw_content: Texto original del LLM (None si fue editado).
         was_edited: Indica si el contenido fue editado tras la generación.
         query: Consulta original del usuario.
-        sources_count: Fragmentos de contexto utilizados.
-        source_doc_ids: IDs de los documentos fuente usados en la generación.
+        sources_count: Número de fragmentos RAG utilizados (caché rápido).
         token_count: Tokens estimados de la respuesta.
         status: Estado del ciclo de vida.
         is_shared: Si está compartido en el feed público.
@@ -41,7 +40,6 @@ class EntityContentResponse(BaseModel):
     was_edited: bool = False
     query: str | None = None
     sources_count: int = 0
-    source_doc_ids: list[str] = Field(default_factory=list)
     token_count: int = 0
     model_used: str | None = None
     status: ContentStatus
@@ -56,6 +54,25 @@ class EntityContentResponse(BaseModel):
         if self.raw_content is not None:
             object.__setattr__(self, "was_edited", self.content != self.raw_content)
         return self
+
+
+class ContentChunkItem(BaseModel):
+    """Fragmento RAG individual con metadatos de origen."""
+
+    id: str
+    document_id: str | None
+    filename: str | None
+    chunk_text: str
+    position: int
+    score: float | None
+
+
+class ContentChunksResponse(BaseModel):
+    """Respuesta del endpoint especializado de fuentes RAG."""
+
+    content_id: str
+    generated_text_id: str
+    chunks: list[ContentChunkItem]
 
 
 class GenerateContentRequest(BaseModel):

@@ -320,7 +320,7 @@ export default function ContentCard({
               >
                 Descartar
               </Button>
-              {content.source_doc_ids.length > 0 && (
+              {content.sources_count > 0 && (
                 <Button
                   variant="outline-secondary"
                   size="sm"
@@ -341,7 +341,7 @@ export default function ContentCard({
             </div>
           ) : content.status === "discarded" ? (
             <div className="d-flex justify-content-end gap-2">
-              {content.source_doc_ids.length > 0 && (
+              {content.sources_count > 0 && (
                 <Button
                   variant="outline-secondary"
                   size="sm"
@@ -402,7 +402,7 @@ export default function ContentCard({
                     Imagen
                   </Button>
                 )}
-                {content.source_doc_ids.length > 0 && (
+                {content.sources_count > 0 && (
                   <Button
                     variant="outline-secondary"
                     size="sm"
@@ -487,7 +487,8 @@ export default function ContentCard({
         show={showSources}
         onHide={() => setShowSources(false)}
         collectionId={collectionId}
-        sourceDocIds={content.source_doc_ids}
+        entityId={content.entity_id}
+        contentId={content.id}
       />
     </>
   );

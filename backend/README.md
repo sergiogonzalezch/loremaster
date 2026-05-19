@@ -231,7 +231,7 @@ pytest -k "test_create"             # por nombre
 | `test_deletion_service.py` | 2 | Cascade soft-delete: documentos, entidades, contenidos, vectores Qdrant |
 | `test_content_management_service.py` | 1 | `_discard_sibling_contents` no afecta otras categorías |
 
-**Total: 264 tests.**
+**Total: 262 tests.**
 
 ## Endpoints
 
@@ -430,7 +430,7 @@ app/
 │   ├── auth/            # JWT (create/verify), CSRF, Clerk (JWKS), get_current_user
 │   ├── config/          # Settings (Pydantic) — todas las variables de entorno
 │   ├── database/        # SoftDeleteMixin, soft_delete(), db_commit(), paginate_with_sort()
-│   ├── exceptions/      # Excepciones de dominio tipadas (20 clases)
+│   ├── exceptions/      # Excepciones de dominio tipadas (19 clases)
 │   ├── storage/         # FileValidator (magic bytes, EXIF strip, límites de tamaño)
 │   ├── api/             # PaginationParams, DateRangeParams, filtros compartidos
 │   └── lifespan.py      # Startup/shutdown de Qdrant y colecciones por defecto
@@ -456,10 +456,10 @@ app/
 │                         #   image_generation, rag_query, user, public
 └── services/
     ├── auth/             # authenticate_user, create_user, get_or_create_clerk_user
-    ├── collection/       # CRUD de colecciones
+    ├── collection/       # collection_service (CRUD) + rag_query_service (execute_rag_query)
     ├── document/         # ingest_document_service, process_ingest_background
     ├── entity/           # CRUD entidades, generación y ciclo de vida de contenidos
-    ├── image/            # build_prompt_service, generate_images_service
+    ├── image/            # image_generation_service (orquesta DB) + _backends.py (mock / comfyui puros)
     ├── moderation/       # log_moderation_event()
     ├── profile/          # get/update perfil, avatar upload/delete
     ├── public/           # feed público, perfiles públicos

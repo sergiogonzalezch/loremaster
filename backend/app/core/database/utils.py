@@ -1,7 +1,8 @@
 """Utilidades de base de datos para paginación, commit y consultas."""
 
+import contextlib
 import logging
-from collections.abc import Sequence
+from collections.abc import Callable, Iterable, Sequence
 from typing import Literal, TypeVar
 
 from sqlalchemy import func
@@ -14,6 +15,7 @@ from app.core.exceptions import DatabaseError
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=SQLModel)
+_I = TypeVar("_I")
 
 
 def paginate(
@@ -68,6 +70,17 @@ def db_commit(session: Session, operation: str) -> None:
         session.rollback()
         logger.exception("DB commit failed during %s", operation)
         raise DatabaseError from e
+
+
+def bulk_delete_items(
+    session: Session,
+    items: Iterable[_I],
+    delete_fn: Callable[[Session, _I], object],
+) -> None:
+    """Itera sobre items ejecutando delete_fn, suprimiendo errores individuales."""
+    for item in items:
+        with contextlib.suppress(Exception):
+            delete_fn(session, item)
 
 
 def get_active_by_id(

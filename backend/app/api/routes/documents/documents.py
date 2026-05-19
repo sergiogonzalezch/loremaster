@@ -1,6 +1,5 @@
 """Rutas de documentos para ingestión, listado y eliminación."""
 
-import contextlib
 import logging
 import time
 from typing import Annotated
@@ -24,6 +23,7 @@ from app.core.database.dependencies import (
     get_collection_or_404_owned,
     get_document_or_404_owned,
 )
+from app.core.database.utils import bulk_delete_items
 from app.core.exceptions import (
     ContentNotAllowedError,
     DatabaseError,
@@ -39,7 +39,7 @@ from app.database import get_session
 from app.models.db.collection import Collection
 from app.models.db.document import Document, DocumentStatus
 from app.models.schemas.collection import BulkDeleteRequest
-from app.models.schemas.document import DocumentResponse
+from app.models.schemas.document import DocumentContentResponse, DocumentResponse
 from app.models.shared import PaginatedResponse
 from app.services.document.document_service import (
     DocumentFilters,
@@ -148,6 +148,23 @@ def get_document(
     return doc
 
 
+@router.get(
+    "/{collection_id}/documents/{doc_id}/content",
+    response_model=DocumentContentResponse,
+)
+def get_document_content(
+    doc: Annotated[Document, Depends(get_document_or_404_owned)],
+    _: Annotated[dict, Depends(get_current_user)],
+):
+    """Retorna el texto extraído de un documento completado.
+
+    El campo raw_text solo se incluye cuando status == 'completed'.
+    Para documentos en procesamiento o fallidos devuelve raw_text=null.
+    """
+    raw_text = doc.raw_text if doc.status == DocumentStatus.completed else None
+    return DocumentContentResponse(id=doc.id, filename=doc.filename, raw_text=raw_text)
+
+
 @router.post(
     "/{collection_id}/documents/{doc_id}/retry",
     response_model=DocumentResponse,
@@ -190,10 +207,7 @@ def bulk_delete_documents(
         ),
     ).all()
 
-    for doc in docs:
-        with contextlib.suppress(Exception):
-            delete_document_service(session, doc)
-
+    bulk_delete_items(session, docs, delete_document_service)
     return Response(status_code=204)
 
 

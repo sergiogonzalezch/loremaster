@@ -22,3 +22,10 @@ export interface DocumentListResponse {
   data: Document[];
   meta: PaginatedMeta;
 }
+
+/** Contenido extraído de un documento completado. */
+export interface DocumentContent {
+  id: string;
+  filename: string;
+  raw_text: string | null;
+}

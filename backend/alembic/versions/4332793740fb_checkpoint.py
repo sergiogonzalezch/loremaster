@@ -1,8 +1,8 @@
 """Checkpoint
 
-Revision ID: 210703acff9c
+Revision ID: 4332793740fb
 Revises: 
-Create Date: 2026-05-17 22:42:29.656062
+Create Date: 2026-05-18 15:56:53.541664
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = '210703acff9c'
+revision: str = '4332793740fb'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -117,7 +117,6 @@ def upgrade() -> None:
     sa.Column('query', sqlmodel.sql.sqltypes.AutoString(length=2000), nullable=False),
     sa.Column('raw_content', sqlmodel.sql.sqltypes.AutoString(length=10000), nullable=False),
     sa.Column('sources_count', sa.Integer(), nullable=False),
-    sa.Column('source_doc_ids', sa.JSON(), nullable=True),
     sa.Column('token_count', sa.Integer(), nullable=False),
     sa.Column('model_used', sqlmodel.sql.sqltypes.AutoString(length=100), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=False),
@@ -153,6 +152,19 @@ def upgrade() -> None:
         batch_op.create_index(batch_op.f('ix_entity_contents_collection_id'), ['collection_id'], unique=False)
         batch_op.create_index(batch_op.f('ix_entity_contents_entity_id'), ['entity_id'], unique=False)
         batch_op.create_index(batch_op.f('ix_entity_contents_generated_text_id'), ['generated_text_id'], unique=False)
+
+    op.create_table('generated_text_chunks',
+    sa.Column('id', sqlmodel.sql.sqltypes.AutoString(length=36), nullable=False),
+    sa.Column('generated_text_id', sa.String(length=36), nullable=False),
+    sa.Column('document_id', sa.String(length=36), nullable=True),
+    sa.Column('chunk_text', sa.Text(), nullable=False),
+    sa.Column('position', sa.Integer(), nullable=False),
+    sa.Column('score', sa.Float(), nullable=True),
+    sa.ForeignKeyConstraint(['generated_text_id'], ['generated_texts.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('generated_text_chunks', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_generated_text_chunks_generated_text_id'), ['generated_text_id'], unique=False)
 
     op.create_table('image_generations',
     sa.Column('is_deleted', sa.Boolean(), nullable=False),
@@ -225,6 +237,10 @@ def downgrade() -> None:
         batch_op.drop_index(batch_op.f('ix_image_generations_collection_id'))
 
     op.drop_table('image_generations')
+    with op.batch_alter_table('generated_text_chunks', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_generated_text_chunks_generated_text_id'))
+
+    op.drop_table('generated_text_chunks')
     with op.batch_alter_table('entity_contents', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_entity_contents_generated_text_id'))
         batch_op.drop_index(batch_op.f('ix_entity_contents_entity_id'))

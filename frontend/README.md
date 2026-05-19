@@ -99,7 +99,7 @@ src/
 ├── hooks/
 │   ├── useApiError.ts                      → Manejo centralizado de errores de API (estado + setter)
 │   ├── useAuth.ts                          → Acceso al contexto de autenticación
-│   ├── useCollectionDocumentsStatus.ts     → Monitoriza estado de documentos; polling cada 3s si hay procesando
+│   ├── useCollectionDocumentsStatus.ts     → Monitoriza estado de documentos via SSE (EventSource); se conecta mientras hay docs processing, cierra al completar
 │   ├── useDebouncedValue.ts                → Debounce de un valor con delay configurable (default 300 ms)
 │   ├── useDeleteConfirm.ts                 → Lógica de confirmación de eliminación (estado modal + callback)
 │   ├── useEntityContents.ts                → Fetching/refresco de contenidos de una entidad

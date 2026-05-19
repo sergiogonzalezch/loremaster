@@ -3,7 +3,7 @@
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.core.api.params import PaginationParams
 from app.core.auth.dependencies import get_current_user
@@ -19,9 +19,14 @@ from app.core.exceptions import (
     PendingLimitExceededError,
 )
 from app.database import get_session
+from app.models.db.document import Document
 from app.models.db.entity import Entity
+from app.models.db.entity_content import EntityContent
+from app.models.db.generated_text_chunk import GeneratedTextChunk
 from app.models.enums import ContentCategory
 from app.models.schemas.entity_content import (
+    ContentChunkItem,
+    ContentChunksResponse,
     EntityContentResponse,
     GenerateContentRequest,
     ShareContentRequest,
@@ -274,3 +279,55 @@ def delete_content(
     if not deleted:
         raise HTTPException(status_code=404, detail="Contenido no encontrado.")
     return Response(status_code=204)
+
+
+@router.get(
+    "/{collection_id}/entities/{entity_id}/contents/{content_id}/chunks",
+    response_model=ContentChunksResponse,
+)
+def get_content_chunks(
+    entity_id: str,
+    collection_id: str,
+    content_id: str,
+    _: Annotated[Entity, Depends(get_entity_or_404_owned)],
+    session: Annotated[Session, Depends(get_session)],
+):
+    """Devuelve los fragmentos RAG usados al generar un contenido, con nombre de documento resuelto."""
+    content = session.exec(
+        select(EntityContent).where(
+            EntityContent.id == content_id,
+            EntityContent.entity_id == entity_id,
+            EntityContent.collection_id == collection_id,
+            EntityContent.is_deleted.is_(False),
+        ),
+    ).first()
+    if not content:
+        raise HTTPException(status_code=404, detail="Contenido no encontrado.")
+
+    chunks = session.exec(
+        select(GeneratedTextChunk)
+        .where(GeneratedTextChunk.generated_text_id == content.generated_text_id)
+        .order_by(GeneratedTextChunk.position),
+    ).all()
+
+    doc_ids = {c.document_id for c in chunks if c.document_id}
+    filename_map: dict[str, str] = {}
+    if doc_ids:
+        docs = session.exec(select(Document).where(Document.id.in_(doc_ids))).all()
+        filename_map = {d.id: d.filename for d in docs}
+
+    return ContentChunksResponse(
+        content_id=content_id,
+        generated_text_id=content.generated_text_id,
+        chunks=[
+            ContentChunkItem(
+                id=c.id,
+                document_id=c.document_id,
+                filename=filename_map.get(c.document_id) if c.document_id else None,
+                chunk_text=c.chunk_text,
+                position=c.position,
+                score=c.score,
+            )
+            for c in chunks
+        ],
+    )

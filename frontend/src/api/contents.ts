@@ -4,6 +4,7 @@
 
 import { apiGet, apiPost, apiPatch, apiDelete, buildQuery } from "./factory";
 import type {
+  ContentChunksResponse,
   EntityContent,
   GenerateContentRequest,
   PaginatedResponse,
@@ -99,6 +100,20 @@ export function deleteContent(
 ): Promise<void> {
   return apiDelete<void>(
     `${base(collectionId, entityId)}/contents/${contentId}`,
+  );
+}
+
+/** Devuelve los fragmentos RAG usados al generar un contenido. */
+export function getContentChunks(
+  collectionId: string,
+  entityId: string,
+  contentId: string,
+  signal?: AbortSignal,
+): Promise<ContentChunksResponse> {
+  return apiGet<ContentChunksResponse>(
+    `${base(collectionId, entityId)}/contents/${contentId}/chunks`,
+    undefined,
+    { signal },
   );
 }
 

@@ -1,6 +1,5 @@
 """Rutas de generación de imágenes para entidades."""
 
-import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -34,8 +33,6 @@ from app.services.image.image_generation_service import (
     share_image_service,
 )
 
-logger = logging.getLogger(__name__)
-
 router = APIRouter(prefix="/collections", tags=["image-generation"])
 
 
@@ -58,13 +55,7 @@ def build_prompt(
     except NoContextAvailableError as e:
         raise HTTPException(
             status_code=422,
-            detail=("El contenido indicado no existe, no está confirmado o no pertenece a esta entidad."),
-        ) from e
-    except Exception as e:
-        logger.exception("Error inesperado en build_prompt")
-        raise HTTPException(
-            status_code=500,
-            detail="Error interno del servidor.",
+            detail="El contenido indicado no existe, no está confirmado o no pertenece a esta entidad.",
         ) from e
 
 
@@ -110,12 +101,6 @@ def generate_images(
             detail=str(e),
         ) from e
     except DatabaseError as e:
-        raise HTTPException(
-            status_code=500,
-            detail="Error interno del servidor.",
-        ) from e
-    except Exception as e:
-        logger.exception("Error inesperado en generate_images")
         raise HTTPException(
             status_code=500,
             detail="Error interno del servidor.",
@@ -174,12 +159,6 @@ def delete_image(
             status_code=500,
             detail="Error interno del servidor.",
         ) from e
-    except Exception as e:
-        logger.exception("Error inesperado en delete_image")
-        raise HTTPException(
-            status_code=500,
-            detail="Error interno del servidor.",
-        ) from e
 
 
 @router.get(
@@ -199,12 +178,6 @@ def get_generation(
             status_code=404,
             detail="Generación no encontrada.",
         ) from e
-    except Exception as e:
-        logger.exception("Error inesperado en get_generation")
-        raise HTTPException(
-            status_code=500,
-            detail="Error interno del servidor.",
-        ) from e
 
 
 @router.get(
@@ -216,12 +189,5 @@ def list_generations(
     session: Annotated[Session, Depends(get_session)],
 ):
     """Lista todas las solicitudes de generación de imágenes de una entidad."""
-    try:
-        generations, total = list_generations_service(session, entity)
-        return ImageGenerationListResponse(generations=generations, total=total)
-    except Exception as e:
-        logger.exception("Error inesperado en list_generations")
-        raise HTTPException(
-            status_code=500,
-            detail="Error interno del servidor.",
-        ) from e
+    generations, total = list_generations_service(session, entity)
+    return ImageGenerationListResponse(generations=generations, total=total)

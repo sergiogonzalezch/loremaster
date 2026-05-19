@@ -85,6 +85,20 @@ $backendProc = Start-Process powershell -ArgumentList @(
 ) -PassThru
 $backendProc.Id | Out-File "$Root\.loremaster_backend_pid" -Encoding ascii
 
+# ── 2.5. Esperar a que el backend esté listo ─────────────────────────────────
+Write-Host "==> Esperando backend en :8000 " -ForegroundColor Yellow -NoNewline
+$maxWait = 120; $elapsed = 0; $ready = $false
+while ($elapsed -lt $maxWait -and -not $ready) {
+    Start-Sleep -Seconds 2; $elapsed += 2
+    try {
+        $r = Invoke-WebRequest -Uri "http://localhost:8000/health" -TimeoutSec 2 -UseBasicParsing -ErrorAction Stop
+        if ($r.StatusCode -eq 200) { $ready = $true }
+    } catch {}
+    if (-not $ready) { Write-Host -NoNewline "." }
+}
+if ($ready) { Write-Host " Listo!" -ForegroundColor Green }
+else { Write-Host " Timeout — arrancando frontend de todas formas." -ForegroundColor Yellow }
+
 # ── 3. Frontend ──────────────────────────────────────────────────────────────
 Write-Host "==> Abriendo frontend (http://localhost:5173)..." -ForegroundColor Cyan
 $frontendProc = Start-Process powershell -ArgumentList @(

@@ -1,78 +1,103 @@
 import { useEffect, useState } from "react";
-import { ListGroup, Modal, Spinner } from "react-bootstrap";
-import { getDocument } from "../api/documents";
-import type { Document } from "../types";
+import { Accordion, Badge, Modal, Spinner } from "react-bootstrap";
+import { getContentChunks } from "../api/contents";
+import type { ContentChunkItem } from "../types";
 
 interface SourcesModalProps {
   show: boolean;
   onHide: () => void;
   collectionId: string;
-  sourceDocIds: string[];
+  entityId: string;
+  contentId: string;
 }
-
-type DocEntry = { id: string; doc: Document | null; missing: boolean };
 
 export default function SourcesModal({
   show,
   onHide,
   collectionId,
-  sourceDocIds,
+  entityId,
+  contentId,
 }: SourcesModalProps) {
-  const [entries, setEntries] = useState<DocEntry[]>([]);
+  const [chunks, setChunks] = useState<ContentChunkItem[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!show || sourceDocIds.length === 0) return;
-
+    if (!show) return;
+    const controller = new AbortController();
     setLoading(true);
-    Promise.allSettled(sourceDocIds.map((id) => getDocument(collectionId, id))).then(
-      (results) => {
-        setEntries(
-          sourceDocIds.map((id, i) => {
-            const result = results[i];
-            if (result.status === "fulfilled") return { id, doc: result.value, missing: false };
-            return { id, doc: null, missing: true };
-          }),
-        );
+    getContentChunks(collectionId, entityId, contentId, controller.signal)
+      .then((res) => {
+        setChunks(res.chunks);
+      })
+      .catch(() => {
+        setChunks([]);
+      })
+      .finally(() => {
         setLoading(false);
-      },
-    );
-  }, [show, collectionId, sourceDocIds]);
+      });
+    return () => controller.abort();
+  }, [show, collectionId, entityId, contentId]);
+
+  const grouped = chunks.reduce<Record<string, ContentChunkItem[]>>((acc, chunk) => {
+    const key = chunk.filename ?? "Documento eliminado";
+    (acc[key] ??= []).push(chunk);
+    return acc;
+  }, {});
 
   return (
-    <Modal show={show} onHide={onHide} centered size="sm">
+    <Modal show={show} onHide={onHide} centered size="lg">
       <Modal.Header closeButton>
-        <Modal.Title className="fs-6">Documentos fuente</Modal.Title>
+        <Modal.Title className="fs-6">Fuentes RAG</Modal.Title>
       </Modal.Header>
       <Modal.Body className="py-2">
         {loading ? (
           <div className="text-center py-3">
             <Spinner animation="border" size="sm" />
           </div>
-        ) : entries.length === 0 ? (
+        ) : chunks.length === 0 ? (
           <p className="text-muted small mb-0 py-1">Sin información de fuentes.</p>
         ) : (
-          <ListGroup variant="flush">
-            {entries.map(({ id, doc, missing }) => (
-              <ListGroup.Item
-                key={id}
-                className="px-0 py-2 d-flex align-items-center gap-2"
-              >
-                <span
-                  style={{ fontSize: "0.75rem", color: "var(--lm-text-muted)" }}
-                >
-                  📄
-                </span>
-                {missing ? (
-                  <span className="text-muted small fst-italic">
-                    Documento eliminado
+          <Accordion flush>
+            {Object.entries(grouped).map(([filename, items]) => (
+              <Accordion.Item key={filename} eventKey={filename}>
+                <Accordion.Header>
+                  <span className="small">
+                    📄 {filename}
+                    <Badge bg="secondary" className="ms-2">
+                      {items.length}
+                    </Badge>
                   </span>
-                ) : (
-                  <span className="small">{doc!.filename}</span>
-                )}
-              </ListGroup.Item>
+                </Accordion.Header>
+                <Accordion.Body className="p-0">
+                  {items.map((chunk) => (
+                    <div
+                      key={chunk.id}
+                      className="px-3 py-2 small"
+                      style={{
+                        color: "var(--lm-text-muted)",
+                        borderBottom: "1px solid var(--lm-border)",
+                      }}
+                    >
+                      {chunk.score !== null && (
+                        <span
+                          className="badge me-2"
+                          style={{
+                            fontSize: "0.7rem",
+                            background: "var(--lm-accent-glow)",
+                            color: "var(--lm-accent)",
+                            border: "1px solid var(--lm-border-accent)",
+                          }}
+                        >
+                          {(chunk.score * 100).toFixed(0)}%
+                        </span>
+                      )}
+                      {chunk.chunk_text}
+                    </div>
+                  ))}
+                </Accordion.Body>
+              </Accordion.Item>
             ))}
-          </ListGroup>
+          </Accordion>
         )}
       </Modal.Body>
     </Modal>

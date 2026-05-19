@@ -3,28 +3,16 @@
 import logging
 import uuid as _uuid
 from contextlib import suppress
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-import httpx
 from sqlmodel import Session, select
 
 from app.core.config import settings
 from app.core.database.utils import db_commit
-from app.core.exceptions import (
-    ComfyUITimeoutError,
-    ComfyUIUnavailableError,
-    NoContextAvailableError,
-)
-from app.core.storage import build_generation_path, build_storage_url, save_file
+from app.core.exceptions import NoContextAvailableError
+from app.core.storage import build_storage_url
 from app.domain.content_guard import check_prompt_length, check_user_input
-from app.engine.comfyui_client import (
-    ComfyUIClient,
-    inject_prompt,
-    inject_seed,
-    load_template,
-)
 from app.engine.image_prompt_builder import build_visual_prompt
 from app.models.db.entity import Entity
 from app.models.db.entity_content import EntityContent
@@ -37,6 +25,12 @@ from app.models.schemas.image_generation import (
     ImageRecordResponse,
     ImageResult,
 )
+from app.services.image._backends import (
+    _generate_comfyui_images,
+    _generate_mock_images,
+    _GenerationParams,
+    _ImageData,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -47,25 +41,7 @@ ALLOWED_IMAGE_CATEGORIES = {
 }
 
 
-@dataclass
-class _ImageData:
-    image_id: str
-    filename: str
-    seed: int
-    storage_path: str | None = None
-    image_url: str | None = None
-
-
-@dataclass
-class _GenerationParams:
-    content_id: str
-    category: str
-    auto_prompt: str
-    final_prompt: str
-    batch_size: int
-    seed_base: int
-    backend: str
-
+# ── Helpers de consulta / persistencia ───────────────────────────────────────
 
 def _get_confirmed_content(
     session: Session,
@@ -85,45 +61,6 @@ def _get_confirmed_content(
 
 def _build_url(storage_path: str | None) -> str | None:
     return build_storage_url(storage_path)
-
-
-def _create_image_record(
-    session: Session,
-    entity: Entity,
-    generation_id: str,
-    data: _ImageData,
-) -> ImageRecord:
-    record = ImageRecord(
-        id=data.image_id,
-        generation_id=generation_id,
-        entity_id=entity.id,
-        collection_id=entity.collection_id,
-        seed=data.seed,
-        storage_path=data.storage_path,
-        image_url=data.image_url,
-        filename=data.filename,
-        extension="png",
-        width=settings.image_width,
-        height=settings.image_height,
-        generation_ms=0,
-    )
-    session.add(record)
-    return record
-
-
-def _create_image_result(
-    image_id: str,
-    storage_path: str | None,
-    seed: int,
-) -> ImageResult:
-    return ImageResult(
-        id=image_id,
-        image_url=_build_url(storage_path),
-        seed=seed,
-        width=settings.image_width,
-        height=settings.image_height,
-        generation_ms=0,
-    )
 
 
 def _create_image_generation(
@@ -150,137 +87,31 @@ def _create_image_generation(
     return generation
 
 
-def _generate_mock_images(
-    entity: Entity,
-    batch_size: int,
-    seed_base: int,
-) -> list[tuple[str, str, int]]:
-    images = []
-    for i in range(batch_size):
-        image_id = str(_uuid.uuid4())
-        seed = seed_base + i
-        placeholder_url = (
-            f"https://placehold.co/{settings.image_width}x{settings.image_height}/1a1a2e/9d6fe8?text={entity.name.replace(' ', '+')}+{i+1}"
-        )
-        images.append((image_id, placeholder_url, seed))
-    return images
-
-
-def _save_comfyui_image(
-    image_data: bytes,
-    username: str,
+def _create_image_record(
+    session: Session,
     entity: Entity,
     generation_id: str,
-    filename: str,
-) -> str:
-    relative_path = build_generation_path(
-        username,
-        entity.collection_id,
-        entity.id,
-        generation_id,
-        filename,
-    )
-    save_file(image_data, relative_path)
-    return relative_path
-
-
-def _generate_comfyui_images(
-    session: Session,
-    username: str,
-    entity: Entity,
-    params: _GenerationParams,
-) -> tuple[str, list[ImageResult]]:
-    generation_id = str(_uuid.uuid4())
-
-    _create_image_generation(
-        session=session,
-        entity=entity,
+    data: _ImageData,
+) -> ImageRecord:
+    record = ImageRecord(
+        id=data.image_id,
         generation_id=generation_id,
-        params=params,
+        entity_id=entity.id,
+        collection_id=entity.collection_id,
+        seed=data.seed,
+        storage_path=data.storage_path,
+        image_url=data.image_url,
+        filename=data.filename,
+        extension="png",
+        width=settings.image_width,
+        height=settings.image_height,
+        generation_ms=0,
     )
+    session.add(record)
+    return record
 
-    client = ComfyUIClient(
-        base_url=settings.comfyui_url,
-        request_timeout=settings.comfyui_request_timeout,
-    )
-    workflow_base = load_template("flux2-klein-4b-api.json")
-    workflow_base = inject_prompt(workflow_base, params.final_prompt)
 
-    images_result: list[ImageResult] = []
-
-    for i in range(params.batch_size):
-        seed = params.seed_base + i
-        workflow = inject_seed(workflow_base, seed)
-
-        try:
-            prompt_id = client.queue_prompt(workflow)
-            result = client.get_history_until_complete(
-                prompt_id,
-                timeout=settings.comfyui_timeout,
-            )
-            output_images = client.get_output_images(result)
-        except httpx.ConnectError as exc:
-            raise ComfyUIUnavailableError() from exc
-        except TimeoutError as exc:
-            raise ComfyUITimeoutError(settings.comfyui_timeout) from exc
-        except (httpx.HTTPError, ValueError) as exc:
-            logger.warning(
-                "ComfyUI falló en iteración %d/%d: %s",
-                i + 1,
-                params.batch_size,
-                exc,
-            )
-            continue
-
-        for img_info in output_images[:1]:
-            try:
-                image_data = client.download_image(
-                    filename=img_info["filename"],
-                    subfolder=img_info["subfolder"],
-                    folder_type=img_info["type"],
-                )
-            except (httpx.HTTPError, OSError) as exc:
-                logger.warning("Descarga falló en iteración %d: %s", i + 1, exc)
-                continue
-
-            image_id = str(_uuid.uuid4())
-            filename = f"{image_id}.png"
-
-            storage_path = _save_comfyui_image(
-                image_data=image_data,
-                username=username,
-                entity=entity,
-                generation_id=generation_id,
-                filename=filename,
-            )
-
-            _create_image_record(
-                session=session,
-                entity=entity,
-                generation_id=generation_id,
-                data=_ImageData(
-                    image_id=image_id,
-                    filename=filename,
-                    seed=seed,
-                    storage_path=storage_path,
-                    image_url=_build_url(storage_path),
-                ),
-            )
-
-            images_result.append(
-                _create_image_result(
-                    image_id=image_id,
-                    storage_path=storage_path,
-                    seed=seed,
-                ),
-            )
-
-    if not images_result:
-        msg = "No se generaron imágenes desde ComfyUI"
-        raise RuntimeError(msg)
-
-    return generation_id, images_result
-
+# ── API pública ───────────────────────────────────────────────────────────────
 
 def build_prompt_service(
     session: Session,
@@ -289,15 +120,8 @@ def build_prompt_service(
 ) -> BuildPromptResponse:
     """Construye el prompt automático sin guardar nada (efímero).
 
-    Flujo:
-    1. Validar que content_id pertenece al entity y está confirmado
-    2. Validar que la categoría es soportada para imágenes
-    3. build_visual_prompt() con estrategia según settings.prompt_strategy
-    4. Retornar respuesta efímera
-
     Raises:
-        NoContextAvailableError: Si el contenido no existe o no está confirmado
-        ValueError: Si la categoría no es soportada para generación de imágenes
+        NoContextAvailableError: Si el contenido no existe o no está confirmado.
 
     """
     content = _get_confirmed_content(session, entity, content_id)
@@ -306,9 +130,7 @@ def build_prompt_service(
 
     if content.category not in ALLOWED_IMAGE_CATEGORIES:
         msg = f"Categoría '{content.category.value}' no soportada para generación de imágenes"
-        raise ValueError(
-            msg,
-        )
+        raise ValueError(msg)
 
     build_result = build_visual_prompt(
         entity_type=entity.type,
@@ -316,7 +138,6 @@ def build_prompt_service(
         category=content.category,
         max_tokens=settings.image_prompt_tokens,
     )
-
     return BuildPromptResponse(
         auto_prompt=build_result["prompt"],
         token_count=build_result["token_count"],
@@ -333,11 +154,12 @@ def generate_images_service(
     batch_size: int,
     seed_base: int | None = None,
 ) -> GenerateImagesResponse:
-    """Genera un batch de imágenes.
+    """Genera un batch de imágenes usando el backend configurado.
 
     Raises:
-        NoContextAvailableError: Si el contenido no existe o no está confirmado
-        ValueError: Si image_backend no es "mock" ni "comfyui"
+        NoContextAvailableError: Si el contenido no existe o no está confirmado.
+        ValueError: Si image_backend no es "mock" ni "comfyui".
+        ComfyUIUnavailableError / ComfyUITimeoutError: Errores del backend ComfyUI.
 
     """
     content = _get_confirmed_content(session, entity, content_id)
@@ -357,59 +179,33 @@ def generate_images_service(
         seed_base=seed_base if seed_base is not None else settings.image_seed_base,
         backend=settings.image_backend,
     )
-    images_result: list[ImageResult] = []
+
+    generation_id = str(_uuid.uuid4())
+    _create_image_generation(session, entity, generation_id, params)
 
     if params.backend == "mock":
-        mock_images = _generate_mock_images(entity, params.batch_size, params.seed_base)
-        generation_id = str(_uuid.uuid4())
-
-        _create_image_generation(
-            session=session,
-            entity=entity,
-            generation_id=generation_id,
-            params=params,
-        )
-
-        for image_id, image_url, seed in mock_images:
-            _create_image_record(
-                session=session,
-                entity=entity,
-                generation_id=generation_id,
-                data=_ImageData(
-                    image_id=image_id,
-                    filename=f"{image_id}.png",
-                    seed=seed,
-                    image_url=image_url,
-                ),
-            )
-
-            images_result.append(
-                ImageResult(
-                    id=image_id,
-                    image_url=image_url,
-                    seed=seed,
-                    width=settings.image_width,
-                    height=settings.image_height,
-                    generation_ms=0,
-                ),
-            )
-
+        images_data = _generate_mock_images(entity, params.batch_size, params.seed_base)
     elif params.backend == "comfyui":
-        generation_id, images_result = _generate_comfyui_images(
-            session=session,
-            username=username,
-            entity=entity,
-            params=params,
-        )
-
+        images_data = _generate_comfyui_images(username, entity, params, generation_id)
     else:
-        msg = f"Backend '{params.backend}' no soportado.  Usar: 'mock' o 'comfyui'"
-        raise ValueError(
-            msg,
+        msg = f"Backend '{params.backend}' no soportado. Usar: 'mock' o 'comfyui'"
+        raise ValueError(msg)
+
+    images_result: list[ImageResult] = []
+    for data in images_data:
+        _create_image_record(session, entity, generation_id, data)
+        images_result.append(
+            ImageResult(
+                id=data.image_id,
+                image_url=_build_url(data.storage_path) or data.image_url,
+                seed=data.seed,
+                width=settings.image_width,
+                height=settings.image_height,
+                generation_ms=0,
+            )
         )
 
     db_commit(session, f"generate_images({entity.id})")
-
     return GenerateImagesResponse(
         generation_id=generation_id,
         auto_prompt=auto_prompt,
@@ -431,7 +227,7 @@ def share_image_service(
     """Marca o desmarca una imagen como compartida públicamente.
 
     Raises:
-        NoContextAvailableError: Si la imagen no existe o no pertenece a la entidad
+        NoContextAvailableError: Si la imagen no existe o no pertenece a la entidad.
 
     """
     record = session.exec(
@@ -442,7 +238,6 @@ def share_image_service(
             ImageRecord.is_deleted.is_(False),
         ),
     ).first()
-
     if not record:
         raise NoContextAvailableError
 
@@ -476,10 +271,10 @@ def delete_image_service(
     generation_id: str,
     image_id: str,
 ) -> None:
-    """Elimina una imagen individual del batch (soft delete).
+    """Elimina una imagen individual del batch (soft delete + borrado de fichero).
 
     Raises:
-        NoContextAvailableError: Si la imagen no existe o no pertenece a la entidad
+        NoContextAvailableError: Si la imagen no existe o no pertenece a la entidad.
 
     """
     record = session.exec(
@@ -490,7 +285,6 @@ def delete_image_service(
             ImageRecord.is_deleted.is_(False),
         ),
     ).first()
-
     if not record:
         raise NoContextAvailableError
 
@@ -498,7 +292,7 @@ def delete_image_service(
     record.is_deleted = True
     record.deleted_at = datetime.now(UTC)
 
-    # Bugfix: storage_path puede ser None en imágenes mock aunque el backend cambie
+    # storage_path puede ser None en imágenes mock aunque el backend cambie
     if settings.image_backend != "mock" and record.storage_path:
         full_path = Path(settings.media_root) / record.storage_path
         with suppress(FileNotFoundError, OSError):
@@ -515,7 +309,7 @@ def get_generation_service(
     """Obtiene una generación existente con sus imágenes.
 
     Raises:
-        NoContextAvailableError: Si la generación no existe o no pertenece a la entidad
+        NoContextAvailableError: Si la generación no existe o no pertenece a la entidad.
 
     """
     generation = session.exec(
@@ -525,7 +319,6 @@ def get_generation_service(
             ImageGeneration.is_deleted.is_(False),
         ),
     ).first()
-
     if not generation:
         raise NoContextAvailableError
 
@@ -562,12 +355,7 @@ def list_generations_service(
     session: Session,
     entity: Entity,
 ) -> tuple[list, int]:
-    """Lista todas las generaciones de imágenes de una entidad.
-
-    Returns:
-        (generations_list, total_count)
-
-    """
+    """Lista todas las generaciones de imágenes de una entidad."""
     generations = session.exec(
         select(ImageGeneration)
         .where(
@@ -627,7 +415,7 @@ def list_generations_service(
                 created_at=gen.created_at,
                 is_deleted=gen.is_deleted,
                 images=images,
-            ),
+            )
         )
 
     return result, len(result)

@@ -465,6 +465,7 @@ a:hover {
 .form-control,
 .form-select {
   background: var(--lm-raised) !important;
+  background-color: var(--lm-raised) !important;
   border: 1px solid var(--lm-border) !important;
   color: var(--lm-text) !important;
   border-radius: var(--lm-radius) !important;
@@ -480,7 +481,15 @@ a:hover {
   border-color: var(--lm-border-accent) !important;
   box-shadow: 0 0 0 3px var(--lm-accent-glow) !important;
   background: var(--lm-raised) !important;
+  background-color: var(--lm-raised) !important;
   color: var(--lm-text) !important;
+}
+
+textarea.form-control {
+  background: var(--lm-raised) !important;
+  background-color: var(--lm-raised) !important;
+  color: var(--lm-text) !important;
+  resize: vertical;
 }
 
 .form-control::placeholder {
@@ -548,7 +557,7 @@ a:hover {
 
 .table thead th {
   font-family: var(--lm-font-head);
-  font-size: 0.62rem;
+  font-size: 0.9rem;
   letter-spacing: 0.03em;
   color: var(--lm-text-muted) !important;
   border-color: var(--lm-border) !important;
@@ -869,6 +878,33 @@ a:hover {
 
 .lm-content-accordion-item .accordion-body {
   background: transparent !important;
+  color: var(--lm-text) !important;
+}
+
+/* Accordion dentro de modales (ej. SourcesModal) */
+.modal .accordion-item {
+  background: var(--lm-raised) !important;
+  border-color: var(--lm-border) !important;
+}
+
+.modal .accordion-button {
+  background: var(--lm-raised) !important;
+  color: var(--lm-text) !important;
+  box-shadow: none !important;
+}
+
+.modal .accordion-button:not(.collapsed) {
+  background: var(--lm-surface) !important;
+  color: var(--lm-text) !important;
+  border-bottom: 1px solid var(--lm-border);
+}
+
+.modal .accordion-button::after {
+  filter: invert(0.6);
+}
+
+.modal .accordion-body {
+  background: var(--lm-surface) !important;
   color: var(--lm-text) !important;
 }
 

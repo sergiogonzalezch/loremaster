@@ -36,8 +36,8 @@ A diferencia de los asistentes de IA genéricos basados en chat, Lore Master ofr
 
 **Parcialmente implementado:**
 
-- Integración con ComfyUI/RunPod para generación de imágenes — en desarrollo.
 - Almacenamiento S3 — staging (docker-compose incluye LocalStack).
+- Integración con RunPod Serverless para generación de imágenes en la nube — pendiente. Backend local ComfyUI implementado y funcional.
 
 ## ¿Qué problema resuelve?
 
@@ -241,13 +241,14 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 | 8        | FastAPI → ComfyUI    | Genera imágenes via ComfyUI local o RunPod Serverless              |
 | 9        | FastAPI → Cliente    | HTTP 201 { generation_id, images }                                  |
 
-### Objetivo: Integración con ComfyUI + Flux.2 Klein 4B
+### Integración con ComfyUI + Flux.2 Klein 4B
 
-El objetivo final de la generación de imágenes es la integración con:
-- **ComfyUI** (local) o **RunPod Serverless** (cloud)
-- Modelo **Flux.2 Klein 4B Distilled** (FP8, ~8.4 GB VRAM)
+La generación de imágenes usa:
+- **ComfyUI local** (implementado) — cliente en `engine/comfyui_client.py`, backend puro en `services/image/_backends.py`
+- **Modelo Flux.2 Klein 4B Distilled** (FP8, ~8.4 GB VRAM) via workflow JSON `flux2-klein-4b-api.json`
+- **RunPod Serverless** — pendiente; requiere `runpod_client.py` y cambio de `IMAGE_BACKEND=runpod`
 
-Esta integración está planificada. La lógica actual de construcción de prompts (`image_prompt_builder.py`) y el flujo de dos pasos prepare el terreno para la conexión con ComfyUI/RunPod.
+El flujo de dos pasos (`build-prompt → generate`) y el módulo de prompts visuales (`image_prompt_builder.py`) están implementados. El switch `IMAGE_BACKEND=mock|comfyui` permite desarrollo sin GPU.
 
 # HU-05 — Gestión de entidades
 
@@ -425,16 +426,18 @@ loremaster/
 │   │   │   ├── image_prompt_rules.py      # Reglas de construcción de prompts visuales
 │   │   │   └── prompt_templates.py        # _TEMPLATES, get_template(), render_prompt()
 │   │   └── services/                      # Lógica de negocio por dominio (reciben objetos ORM, no IDs)
-│   │       ├── collection/                # collection_service
-│   │       │   └── collection_service.py  # delete_collection_service (wraps cascade + commit)
+│   │       ├── collection/                # collection_service + rag_query_service
+│   │       │   ├── collection_service.py  # delete_collection_service (wraps cascade + commit)
+│   │       │   └── rag_query_service.py   # execute_rag_query(): guard input → pipeline → guard output
 │   │       ├── document/                  # documents_service
 │   │       │   └── documents_service.py   # ingest, list, get, delete
 │   │       ├── entity/                    # entities, content, generation
 │   │       │   ├── entities_service.py    # CRUD + nombre único por colección
 │   │       │   ├── content_service.py     # list, edit, confirm, discard, share, soft_delete
 │   │       │   └── generation_service.py  # generate(): RAG → EntityContent
-│   │       ├── image/                     # image_generation_service
-│   │       │   └── image_generation_service.py  # build_prompt, generate_images, share, delete
+│   │       ├── image/                     # image_generation_service + backends
+│   │       │   ├── image_generation_service.py  # build_prompt, generate_images, share, delete (orquesta DB)
+│   │       │   └── _backends.py           # funciones puras: _generate_mock_images, _generate_comfyui_images
 │   │       ├── moderation/                # moderation_service
 │   │       │   └── moderation_service.py
 │   │       ├── profile/                   # profile_service
@@ -447,7 +450,7 @@ loremaster/
 │   │   └── dataset/
 │   │       ├── golden_dataset.json        # Casos: RAG, CRUD, entity_content, guardrail, imagen, feed
 │   │       └── golden_seed.txt            # Documento semilla (Mundo de Valdorath)
-│   ├── tests/                             # pytest con SQLite in-memory; stubs de engine.rag y LLM (264 tests)
+│   ├── tests/                             # pytest con SQLite in-memory; stubs de engine.rag y LLM (262 tests)
 │   ├── Makefile                           # Comandos: run, test, format, lint, install, clean, clean-all. Centraliza pycache en `.pycache/` (PYTHONPYCACHEPREFIX)
 │   ├── requirements.txt
 │   ├── requirements-dev.txt
@@ -523,17 +526,13 @@ loremaster/
 │   │                                      # formatters.ts, strings.ts, tokens.ts
 │   └── package.json
 │
+├── backend/
+│   ├── docker-compose.yml           # Base: Qdrant + Redis
+│   ├── docker-compose.postgres.yml  # Overlay: PostgreSQL
+│   └── docker-compose.prod.yml      # Producción: sin puertos expuestos
 ├── Makefile                 # Targets: dev, dev-pg, infra, infra-pg, down, prod-up, prod-down
-├── dev.ps1                  # Arranque completo local (Windows): Docker infra + backend + frontend
-│
-│   # ⚠️ DESACTUALIZADO (2026-05-17): La estructura de docker-compose ha cambiado.
-│   # Ahora son tres archivos bajo backend/:
-│   #   backend/docker-compose.yml            → Qdrant + Redis (base)
-│   #   backend/docker-compose.postgres.yml   → overlay PostgreSQL
-│   #   backend/docker-compose.prod.yml       → producción (sin puertos expuestos)
-│   # LocalStack, Prometheus y Grafana son planificados pero no están en los compose actuales.
-│   # start_local.sh eliminado; reemplazado por dev.ps1 (Windows).
-│
+├── dev.ps1                  # Arranque completo local (Windows): Docker infra + espera /health + backend + frontend
+├── loremaster.sh            # Arranque completo local (Linux/Mac): Docker infra + espera /health + backend + frontend
 └── README.md
 
 ```
@@ -668,7 +667,7 @@ DATABASE_URL=postgresql://user:pass@postgres:5432/loremaster
 | **collections** | id (UUID PK), name, description, owner_id (FK → users), is_public, created_at, updated_at, is_deleted, deleted_at | `UNIQUE(name, owner_id)`. `owner_id` nullable para datos migrados. `is_public=False` por defecto; el contenido se comparte de forma selectiva a nivel de ítem. |
 | **documents** | id (UUID PK), collection_id (FK), filename (VARCHAR 255), file_type, chunk_count, status, created_at, is_deleted, deleted_at | El texto vive en Qdrant, no en esta tabla. `status`: processing \| completed \| failed. `filename` validado en servicio: vacío o > 255 chars → HTTP 422. |
 | **entities** | id (UUID PK), collection_id (FK), type (ENUM), name, description, created_at, updated_at, is_deleted, deleted_at | `type`: character \| creature \| location \| faction \| item. Nombre único por colección: `uq_entity_collection_name`. Los nombres de entidades eliminadas quedan reservados. |
-| **generated_texts** | id (UUID PK), entity_id (FK), collection_id (FK), category, query, raw_content, sources_count, source_doc_ids (JSON, nullable), token_count, model_used (VARCHAR 100, nullable), created_at | Salida bruta del LLM antes de cualquier edición del usuario. `source_doc_ids`: IDs de documentos que aportaron contexto (auditoría RAG). `model_used`: nombre del modelo Ollama usado. Vinculada 1:1 con `entity_contents`. |
+| **generated_texts** | id (UUID PK), entity_id (FK), collection_id (FK), category, query, raw_content, sources_count, token_count, model_used (VARCHAR 100, nullable), created_at | Salida bruta del LLM antes de cualquier edición del usuario. `model_used`: nombre del modelo Ollama usado. Vinculada 1:1 con `entity_contents`. Los IDs de documentos fuente se devuelven en `RagQueryResponse.source_doc_ids` pero no se persisten en esta tabla. |
 | **entity_contents** | id (UUID PK), entity_id (FK), collection_id (FK), generated_text_id (FK), category, content, status, is_shared, confirmed_at, created_at, updated_at, is_deleted, deleted_at | `status`: pending \| confirmed \| discarded. Máx. 5 `pending` por entidad y por categoría. Confirmar descarta los demás `pending` de esa categoría. `is_shared`: solo `confirmed` puede compartirse. |
 | **image_generations** | id (UUID PK), entity_id (FK), collection_id (FK), content_id (FK), category, auto_prompt, final_prompt, prompt_token_count, batch_size, backend, width, height, created_at, is_deleted, deleted_at | Una generación produce N imágenes (batch_size 1-4). `backend`: comfyui \| mock. `category` vincula el contenido base usado para el prompt. |
 | **image_records** | id (UUID PK), generation_id (FK), entity_id (FK), collection_id (FK), seed, storage_path, image_url, filename, extension, width, height, generation_ms, is_shared, is_deleted, deleted_at, created_at | Una fila por imagen del batch. `is_shared` controla visibilidad en feed público. `filename` y `extension` identifican el archivo generado. `generation_ms` mide el tiempo de generación. |
@@ -807,7 +806,9 @@ QUALITY_SUFFIX = "high quality, masterpiece, sharp focus, professional digital a
 
 La validación de prompts se realiza con `check_user_input()` antes de cualquier generación.
 
-## Capa 3 — Parámetros fijos del workflow de imágenes (PLANIFICADO — Fase 2)
+## Capa 3 — Parámetros fijos del workflow de imágenes (IMPLEMENTADO)
+
+Los parámetros se definen en el workflow JSON `flux2-klein-4b-api.json` cargado por `engine/comfyui_client.py`. `inject_seed` y `inject_prompt` son los únicos puntos de variación por generación.
 
 | **Parámetro**       | **Valor fijo**                                                      | **Motivo**                                                                            |
 | ------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
@@ -815,15 +816,15 @@ La validación de prompts se realiza con `check_user_input()` antes de cualquier
 | **cfg**             | 1.0                                                                 | CRÍTICO: cfg > 1.0 produce imágenes completamente degradadas con el modelo Distilled. |
 | **sampler**         | euler                                                               | Sampler compatible con el scheduler del modelo Distilled.                             |
 | **scheduler**       | simple                                                              | Requerido por el modelo Flux.2 Klein Distilled.                                       |
-| **width × height**  | 1024 × 1024 px                                                      | Resolución óptima para el modelo; otras resoluciones pueden producir artefactos.      |
+| **width × height**  | 1024 × 1024 px (configurable vía `IMAGE_WIDTH` / `IMAGE_HEIGHT`)   | Resolución óptima para el modelo; otras resoluciones pueden producir artefactos.      |
 | **negative_prompt** | blurry, ugly, deformed, watermark, text, extra limbs, worst quality | Filtro base para mejorar consistencia y evitar artefactos comunes.                    |
 
-## Registro y trazabilidad de imágenes (PLANIFICADO — Fase 2)
+## Registro y trazabilidad de imágenes (IMPLEMENTADO)
 
-Cada imagen generada se registrará en la tabla `generated_images` con:
+Cada imagen generada queda registrada en las tablas `image_generations` + `image_records`:
 
-- `visual_prompt` exacto usado (para auditoría y reproducibilidad).
-- `seed` utilizado (para regenerar la misma imagen si el usuario lo solicita).
-- `model_version` (para detectar regresiones al actualizar el modelo).
-- `generation_ms` (para monitorear rendimiento en el tiempo).
-- `backend`: `’local’` o `’runpod’` (para comparar tiempos entre configuraciones).
+- `final_prompt` exacto usado en `image_generations` (para auditoría y reproducibilidad).
+- `seed` en `image_records` (permite reproducir la misma imagen exacta si se usa ComfyUI).
+- `generation_ms` en `image_records` (actualmente 0; se puede rellenar con el tiempo real de ComfyUI).
+- `backend` en `image_generations`: `’mock’` o `’comfyui’`.
+- `storage_path` en `image_records`: ruta relativa dentro de `MEDIA_ROOT`; `image_url` como fallback para el backend mock (URL de placehold.co).

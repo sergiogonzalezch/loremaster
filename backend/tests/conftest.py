@@ -3,6 +3,7 @@ import os
 import sys
 import types
 from collections.abc import AsyncGenerator, Generator
+from dataclasses import dataclass
 
 # 1. Variables de entorno ANTES de cualquier import de app (Settings se instancia al importar)
 os.environ.setdefault("ENVIRONMENT", "test")
@@ -12,14 +13,23 @@ os.environ.setdefault("SECRET_KEY", "test-secret-key-for-testing-only-not-for-pr
 if "app.engine.rag" not in sys.modules:
     rag_stub = types.ModuleType("app.engine.rag")
 
+    @dataclass
+    class _StubChunkInfo:
+        doc_id: str
+        text: str
+        position: int
+        score: float | None
+
+    rag_stub.ChunkInfo = _StubChunkInfo  # type: ignore[attr-defined]
+
     def _stub_ingest_chunks(*args, **kwargs):
         return 1
 
     def _stub_search_context(*args, **kwargs):
-        return (["stub context"], [""])
+        return (["stub context"], [""], [0.9])
 
     def _stub_retrieve_context(*args, **kwargs):
-        return ("stub context", 1, [])
+        return ("stub context", 1, [], [])
 
     def _stub_delete_document_chunks(*args, **kwargs):
         return 0
@@ -131,7 +141,7 @@ def mock_rag_engine(monkeypatch: pytest.MonkeyPatch) -> dict:
         query: str,
         top_k: int | None = None,
         score_threshold: float | None = None,
-    ) -> tuple[list[str], list[str]]:
+    ) -> tuple[list[str], list[str], list[float]]:
         calls["search_context"].append(
             {
                 "collection_id": collection_id,
@@ -140,13 +150,13 @@ def mock_rag_engine(monkeypatch: pytest.MonkeyPatch) -> dict:
                 "score_threshold": score_threshold,
             },
         )
-        return (["contexto 1", "contexto 2"], ["doc-id-mock-1", "doc-id-mock-2"])
+        return (["contexto 1", "contexto 2"], ["doc-id-mock-1", "doc-id-mock-2"], [0.9, 0.8])
 
     def _retrieve_context(
         collection_id: str,
         query: str,
         extra_context: str = "",
-    ) -> tuple[str, int, list[str]]:
+    ) -> tuple[str, int, list[str], list]:
         calls["retrieve_context"].append(
             {
                 "collection_id": collection_id,
@@ -154,7 +164,7 @@ def mock_rag_engine(monkeypatch: pytest.MonkeyPatch) -> dict:
                 "extra_context": extra_context,
             },
         )
-        return ("contexto 1\n\n---\n\ncontexto 2", 2, ["doc-id-mock-1", "doc-id-mock-2"])
+        return ("contexto 1\n\n---\n\ncontexto 2", 2, ["doc-id-mock-1", "doc-id-mock-2"], [])
 
     def _delete_document_chunks(collection_id: str, doc_id: str) -> int:
         calls["delete_document_chunks"].append(
