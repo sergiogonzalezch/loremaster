@@ -77,6 +77,8 @@ Ver [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md) para la referencia completa de 
 
 El registro está abierto. Cualquier usuario puede crear una cuenta via `POST /api/v1/auth/register`. Las colecciones pertenecen al usuario que las crea; otros usuarios no pueden editarlas ni eliminarlas.
 
+La sesión se establece via **cookie HttpOnly** (frontend) o **Bearer token** (`Authorization: Bearer <token>`, para Swagger UI y herramientas externas). Ambos transportes usan el mismo JWT local. `POST /auth/logout` invalida los dos a la vez incrementando `token_version` en la base de datos.
+
 ### Crear el primer usuario admin
 
 Los administradores se designan desde el servidor con el script `make_admin.py`. No existe endpoint público para ello.

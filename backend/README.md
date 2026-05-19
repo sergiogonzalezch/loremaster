@@ -324,9 +324,11 @@ JWT local (HS256). Hay dos modos de entrada:
 4. Todos los endpoints protegidos funcionarán sin CSRF
 ```
 
+> **Cookie y Bearer son transportes independientes.** Si el navegador tiene una cookie de sesión activa, los endpoints siguen funcionando aunque se revoque el Bearer en Swagger. El botón "Revoke" del diálogo Authorize solo borra el header de la UI — no llama a ningún endpoint. Para invalidar la sesión en el servidor (ambos transportes a la vez), usa `POST /auth/logout`.
+
 Todos los endpoints de la API requieren autenticación salvo `/health`, `/` y los endpoints públicos (`/public/*`, `/users/{username}/profile`).
 
-**Gestión de sesiones:** cada token incluye un claim `version` que se compara contra `token_version` del usuario en DB en cada request autenticado. El logout incrementa `token_version`, invalidando todos los tokens previos del usuario. Los tokens tienen una vida útil de **60 minutos**.
+**Gestión de sesiones:** cada token incluye un claim `version` que se compara contra `token_version` del usuario en DB en cada request autenticado. El logout incrementa `token_version`, invalidando todos los tokens previos del usuario sin importar el transporte (cookie o Bearer). Los tokens tienen una vida útil de **60 minutos**.
 
 > **Dependencias:** el hashing de contraseñas usa `bcrypt` directamente (sin `passlib`), compatible con `bcrypt >= 4.x`.
 

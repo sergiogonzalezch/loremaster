@@ -362,7 +362,7 @@ En modo local, ComfyUI y Ollama corren en el host para acceder directamente a la
 loremaster/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py                        # FastAPI app, CORS, lifespan, routers; _csrf_for_unsafe exime Bearer; custom OpenAPI con BearerAuth SecurityScheme
+│   │   ├── main.py                        # FastAPI app, CORS, lifespan, routers; _csrf_for_unsafe exime Bearer; custom OpenAPI elimina HTTPBearer auto-generado y lo consolida en un único scheme BearerAuth
 │   │   ├── database.py                    # SQLModel engine + dependencia get_session
 │   │   ├── api/routes/
 │   │   │   ├── auth/                      # auth.py: registro/login/logout JWT local; auth_clerk.py: POST /sync (Clerk JWT → cookie local), GET /verify
