@@ -124,15 +124,10 @@ dev_up() {
     echo -e "${C}  Abriendo backend y frontend...${Z}"
     open_terminal "loremaster-backend" "$activate_cmd && make run" "$(pwd)/backend"
     open_terminal "loremaster-frontend" "npm run dev" "$(pwd)/frontend"
-    printf "  Esperando backend en :8000 "
-    until curl -sf --max-time 2 http://localhost:8000/health > /dev/null 2>&1; do
-        sleep 2; printf "."
-    done
-    echo -e " ${G}Listo!${Z}"
     echo
-    echo -e "${G}  Entorno listo:${Z}"
-    echo -e "    Backend  -> http://localhost:8000"
-    echo -e "    Frontend -> http://localhost:5173"
+    echo -e "${G}  Ventanas abiertas:${Z}"
+    echo -e "    Backend  -> http://localhost:8000  (arrancando...)"
+    echo -e "    Frontend -> http://localhost:5173  (arrancando...)"
     echo -e "    Qdrant   -> http://localhost:6333"
 }
 
