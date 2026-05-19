@@ -135,13 +135,15 @@ echo.
 echo  %C%  Cerrando backend, frontend e infraestructura...%Z%
 echo.
 
-echo  %D%  Cerrando ventana Backend...%Z%
+echo  %D%  Cerrando procesos uvicorn (reloader + worker)...%Z%
+powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*uvicorn*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
 if exist ".loremaster_backend_pid" (
     for /f %%a in (.loremaster_backend_pid) do taskkill /PID %%a /F /T >nul 2>&1
     del ".loremaster_backend_pid" >nul 2>&1
 )
 
-echo  %D%  Cerrando ventana Frontend...%Z%
+echo  %D%  Cerrando procesos Vite (frontend)...%Z%
+powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*vite*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
 if exist ".loremaster_frontend_pid" (
     for /f %%a in (.loremaster_frontend_pid) do taskkill /PID %%a /F /T >nul 2>&1
     del ".loremaster_frontend_pid" >nul 2>&1
