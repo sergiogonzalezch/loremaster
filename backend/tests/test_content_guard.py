@@ -333,3 +333,51 @@ def test_harm08_minors_sexual_output_blocked(text):
 def test_harm08_legitimate_rpg_not_blocked(text):
     """Texto RPG legítimo con 'minor', 'child' o similares sin contenido sexual no es bloqueado."""
     check_user_input(text)
+
+
+# ---------------------------------------------------------------------------
+# HARM-12 — manual de humillación en formato numerado (output guard únicamente)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Paso 1: aislar al objetivo. Paso 2: humillar a la víctima ante sus compañeros.",
+        "Paso 3: iniciar el acoso sistemático hacia el empleado.",
+        "Step 1: begin harassment of the target until they comply.",
+        "Paso 1: denigrar a la persona ante el grupo para socavar su autoridad.",
+        "Step 2: escalate the harassment campaign against the subject.",
+    ],
+)
+def test_harm12_step_harassment_output_blocked(text):
+    """Formato numerado 'paso/step N + humillar/acoso/harassment' es bloqueado en salida del LLM."""
+    with pytest.raises(GeneratedContentBlockedError):
+        check_generated_output(text)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "The hero took step 1 into the fortress, ready to face the dark lord.",
+        "Step 2: defeat the dragon guarding the treasure chamber.",
+        "El guerrero sufrió la humillación de la derrota pero no se rindió.",
+        "El acoso del ejército enemigo duró tres días en el sitio de la fortaleza.",
+        "The villain subjected the prisoners to endless torment throughout the campaign.",
+    ],
+)
+def test_harm12_legitimate_rpg_output_not_blocked(text):
+    """Texto RPG legítimo con 'step N' o 'humillación/acoso' por separado no es bloqueado en salida."""
+    check_generated_output(text)  # no debe lanzar
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Paso 1: aislar al objetivo. Paso 2: humillar a la víctima ante sus compañeros.",
+        "Paso 3: iniciar el acoso sistemático hacia el empleado.",
+    ],
+)
+def test_harm12_not_blocked_in_user_input(text):
+    """HARM-12 es exclusivo del output guard — el mismo texto en input de usuario no es bloqueado por HARM-12."""
+    check_user_input(text)  # no debe lanzar por HARM-12 (puede pasar sin error)

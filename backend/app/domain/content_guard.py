@@ -133,6 +133,14 @@ _OUTPUT_BLOCKED_PATTERNS: tuple[re.Pattern[str], ...] = (
         r"\b(sexual|sex|erotic[ao]?|intim\w+)\b.{0,60}\b(minors?|menores?|underage|child\w*)\b",
         re.IGNORECASE,
     ),
+    # HARM-12 — manual de humillación/acoso en formato numerado (paso N / step N)
+    # El LLM puede generar "Paso 1: humillar..." sin usar verbos directivos que cubran los patrones existentes.
+    # \w+ en lugar de \d+ porque _normalize aplica leet-table antes de la búsqueda: 1→i, 3→e, etc.
+    # Solo en output: el input de usuario con "paso N + acoso" tiene menor señal de intención que el output del LLM.
+    re.compile(
+        r"\b(paso|step)\s+\w+\b.{0,80}\b(humill(?:ar|acion|amiento)?|denigra(?:r|cion)?|acoso|harass(?:ment)?)\b",
+        re.IGNORECASE,
+    ),
 )
 """Patrones para bloquear contenido en salida generada por el LLM."""
 
