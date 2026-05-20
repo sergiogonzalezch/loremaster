@@ -63,10 +63,22 @@ Cada una de estas capas es correcta en sí misma, pero juntas crean una superfic
 
 | Feature | Estado real | Riesgo |
 |---|---|---|
-| Storage S3/R2 | LocalStack en dev, sin producción | Las imágenes generadas no sobreviven un restart del servidor |
-| RunPod Serverless | Pendiente — `runpod_client.py` no existe | Sin GPU cloud, no hay generación de imágenes en producción |
-| Redis caché semántica | Planificado, no implementado | Solo rate limiting activo; el plan de reducción de costos LLM no aplica aún |
+| Storage S3/R2 | Filesystem local funcional; S3 sin implementar | Las imágenes generadas no sobreviven un restart del servidor |
+| RunPod Serverless | Pendiente — `runpod_client.py` no existe | Sin GPU cloud, no hay generación de imágenes fuera del host del desarrollador |
+| Redis caché semántica | Planificado, abandonado | Solo rate limiting activo; el plan de reducción de costos LLM no aplica |
 | `entity_relations` | Tabla planeada, sin implementar | Característica prometida en HU-05 que no existe |
+| Clerk en producción | `CLERK_JWKS_URL`/`CLERK_AUDIENCE` no probados con tenant real | Auth Clerk no funciona en ningún entorno cloud; solo modo local validado |
+| Sesiones deslizantes | Diferido — Issue #6 AUTH-CONTEXT | `scheduleLogout` estabilizado pero sin awareness de tokens renovados por Clerk |
+
+### 2.5 Clerk sin validación en producción (riesgo: Medio)
+
+El flujo Clerk → `POST /auth/clerk/sync` → cookie HttpOnly funciona en local, pero nunca se ha probado con un tenant real de Clerk. Las variables `CLERK_JWKS_URL` y `CLERK_AUDIENCE` están documentadas en `DEPLOY.md` y en `.env.production.example` pero sin valores reales validados.
+
+**Síntoma concreto:** si en producción se activa Clerk y las variables están mal configuradas, todos los usuarios Clerk quedan sin poder autenticarse. El modo local (`VITE_CLERK_PUBLISHABLE_KEY` vacío) sigue funcionando independientemente.
+
+**Estrategia recomendada:**
+- Corto plazo: probar el flujo completo con un tenant Clerk real en staging antes de cualquier deploy público.
+- Largo plazo: el Issue #6 de AUTH-CONTEXT (sesiones deslizantes) requiere que el backend implemente refresh de expiración de Clerk — diferir hasta que el volumen de usuarios lo justifique.
 
 ---
 
@@ -85,22 +97,29 @@ Estas decisiones bloquean o condicionan trabajo técnico — no tienen respuesta
 
 ## 4. Hoja de ruta hacia producción — ordenada por impacto
 
-### Fase A — Bloqueantes reales (antes de cualquier usuario real)
+> **Distinción importante (de DEPLOY.md):** hay ítems que bloquean solo _producción real_ (usuarios reales, dominio público) pero NO una _demo privada_. La demo privada con auth local, filesystem y ComfyUI local es viable hoy con solo el Dockerfile.
 
-1. **Resolver concurrencia LLM** — Al menos HTTP 429 + Retry-After. Sin esto, un segundo usuario rompe la experiencia del primero.
-2. **Completar storage S3** — Las imágenes generadas deben persistir. LocalStack es solo para tests.
-3. **Decidir sobre GPU cloud** — Sin RunPod (o alternativa), el flujo de imágenes no existe fuera del host del desarrollador.
+### Fase A — Demo privada funcional
 
-### Fase B — Solidez de producción
+1. **`backend/Dockerfile`** — Sin esto no hay forma de desplegar el backend fuera del host del desarrollador. Multi-stage build recomendado. Es el único bloqueante real para una demo.
+2. **Resolver concurrencia LLM** — Al menos HTTP 429 + Retry-After. Sin esto, un segundo usuario rompe la experiencia del primero.
 
-4. **Añadir Llama Guard 3 (opcional, fail-open)** — Capa semántica en output para modelos menos alineados.
-5. **Documentar modelos soportados en DEPLOY.md** — Qué modelos están validados, qué configuraciones son seguras.
-6. **Resolver `entity_relations`** — Completar o eliminar de los criterios de aceptación de HU-05.
+### Fase B — Producción real (usuarios externos)
 
-### Fase C — Calidad de experiencia
+3. **Clerk end-to-end en staging** — Probar `CLERK_JWKS_URL` + `CLERK_AUDIENCE` con un tenant real antes de cualquier deploy público. Sin esto, auth Clerk no funciona en cloud.
+4. **Completar storage S3/R2** — Las imágenes generadas deben persistir entre reinicios. El filesystem local solo sirve para demo.
+5. **Decidir sobre GPU cloud** — Sin RunPod (o alternativa), el flujo de imágenes no existe fuera del host del desarrollador. Opciones: RunPod Serverless, Replicate, o eliminar imágenes del MVP.
 
-7. **WebSocket o polling para generación LLM** — La generación de contenido RAG es síncrona. Si tarda 10s, el usuario no sabe si el sistema responde.
-8. **Llama Guard 3 con cola** — Si la latencia de la capa semántica es inaceptable en CPU, desacoplarla de la respuesta HTTP.
+### Fase C — Solidez de producción
+
+6. **Añadir Llama Guard 3 (opcional, fail-open)** — Capa semántica en output para modelos menos alineados.
+7. **Documentar modelos validados en DEPLOY.md** — Qué modelos están validados (llama3.2, mistral:instruct), qué configuraciones son seguras.
+8. **Resolver `entity_relations`** — Completar o eliminar de los criterios de aceptación de HU-05.
+
+### Fase D — Calidad de experiencia
+
+9. **WebSocket o polling para generación LLM** — La generación de contenido RAG es síncrona. Si tarda 10s, el usuario no sabe si el sistema responde.
+10. **Sesiones deslizantes Clerk** — Issue #6 AUTH-CONTEXT: `scheduleLogout` sin awareness de tokens renovados. Diferir hasta que el volumen lo justifique.
 
 ---
 
@@ -108,6 +127,8 @@ Estas decisiones bloquean o condicionan trabajo técnico — no tienen respuesta
 
 Para un prototipo de aprendizaje, el proyecto está en un estado excepcionalmente bueno. La disciplina de evaluación, testing y calidad de código es real y observable.
 
-Para un deploy con usuarios reales, los tres bloqueantes de la Fase A son no negociables. El resto es calidad de experiencia que puede crecer iterativamente.
+Para una **demo privada**, el único bloqueante real es el `Dockerfile` + concurrencia LLM. El resto (Clerk, S3, RunPod) no bloquea una demo con un usuario a la vez y auth local.
+
+Para **producción real con usuarios externos**, los bloqueantes de Fases A y B son no negociables. El resto es calidad de experiencia que puede crecer iterativamente.
 
 El mayor riesgo no es técnico — es definir claramente qué es este producto para evitar seguir añadiendo capas que lo hacen más complejo sin hacerlo más útil para el usuario que escribe mundos.
