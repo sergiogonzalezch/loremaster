@@ -7,7 +7,7 @@
 
 import {
   createContext,
-  useState,
+  useReducer,
   useEffect,
   useCallback,
   useRef,
@@ -40,6 +40,35 @@ interface AuthContextValue {
   setAvatarUrl: (url: string | null) => void;
 }
 
+// ---------------------------------------------------------------------------
+// Auth reducer — groups user, loading, avatarUrl; prevents cascading setState
+// ---------------------------------------------------------------------------
+
+type AuthState = {
+  user: AuthUser | null;
+  loading: boolean;
+  avatarUrl: string | null;
+};
+
+type AuthAction =
+  | { type: "INIT_SUCCESS"; user: AuthUser }
+  | { type: "INIT_FAIL" }
+  | { type: "SET_AVATAR"; url: string | null }
+  | { type: "LOGOUT" };
+
+function authReducer(state: AuthState, action: AuthAction): AuthState {
+  switch (action.type) {
+    case "INIT_SUCCESS":
+      return { ...state, user: action.user, loading: false };
+    case "INIT_FAIL":
+      return { ...state, user: null, loading: false };
+    case "SET_AVATAR":
+      return { ...state, avatarUrl: action.url };
+    case "LOGOUT":
+      return { user: null, loading: false, avatarUrl: null };
+  }
+}
+
 /* eslint-disable react-refresh/only-export-components */
 export const AuthContext = createContext<AuthContextValue | null>(null);
 /* eslint-enable react-refresh/only-export-components */
@@ -52,24 +81,28 @@ export const AuthContext = createContext<AuthContextValue | null>(null);
  * para verificar si hay sesión activa.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [state, dispatch] = useReducer(authReducer, {
+    user: null,
+    loading: true,
+    avatarUrl: null,
+  });
+  const { user, loading, avatarUrl } = state;
   const logoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Wrapper que mantiene la firma setAvatarUrl(url) para los consumidores del contexto.
+  const setAvatarUrl = useCallback((url: string | null) => {
+    dispatch({ type: "SET_AVATAR", url });
+  }, []);
 
   const logout = useCallback(async ({ force = false }: { force?: boolean } = {}) => {
     if (logoutTimerRef.current) {
       clearTimeout(logoutTimerRef.current);
       logoutTimerRef.current = null;
     }
-    if (force) {
-      setUser(null);
-      setAvatarUrl(null);
-      return;
+    if (!force) {
+      await logoutApi();   // lanza si falla; el llamador decide qué mostrar
     }
-    await logoutApi();   // lanza si falla; el llamador decide qué mostrar
-    setUser(null);
-    setAvatarUrl(null);
+    dispatch({ type: "LOGOUT" });
   }, []);
 
   const scheduleLogout = useCallback((expiresAt: string | null | undefined) => {
@@ -89,21 +122,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     getMyProfile({ signal: controller.signal })
       .then((profile) => {
-        setUser({
-          id: profile.id,
-          username: profile.username,
-          is_admin: profile.is_admin ?? false,
+        dispatch({
+          type: "INIT_SUCCESS",
+          user: { id: profile.id, username: profile.username, is_admin: profile.is_admin ?? false },
         });
         scheduleLogout(profile.expires_at);
-        setLoading(false);
         return getMyAvatar({ signal: controller.signal })
-          .then((r) => setAvatarUrl(r.avatar_url ?? null))
+          .then((r) => dispatch({ type: "SET_AVATAR", url: r.avatar_url ?? null }))
           .catch(() => {});
       })
       .catch((err) => {
         if (err instanceof ApiAbortError) return;
-        setUser(null);
-        setLoading(false);
+        dispatch({ type: "INIT_FAIL" });
       });
 
     return () => {
@@ -115,17 +145,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function login(): Promise<void> {
     return getMyProfile()
       .then((profile) => {
-        setUser({
-          id: profile.id,
-          username: profile.username,
-          is_admin: profile.is_admin ?? false,
+        dispatch({
+          type: "INIT_SUCCESS",
+          user: { id: profile.id, username: profile.username, is_admin: profile.is_admin ?? false },
         });
         scheduleLogout(profile.expires_at);
         return getMyAvatar()
-          .then((r) => setAvatarUrl(r.avatar_url ?? null))
+          .then((r) => dispatch({ type: "SET_AVATAR", url: r.avatar_url ?? null }))
           .catch(() => {});
       });
-    // Sin .catch(): los errores de red o credenciales propagation al llamador (LoginPage).
+    // Sin .catch(): los errores de red o credenciales se propagan al llamador (LoginPage).
     // No reseteamos user aquí para no desloguear a un usuario ya autenticado por error transitorio.
   }
 

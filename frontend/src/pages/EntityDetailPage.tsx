@@ -1,93 +1,151 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
-import type { FormEvent } from "react";
+import { useEffect, useCallback, useMemo, useReducer } from "react";
 import { Link, useParams } from "react-router-dom";
-import {
-  Alert,
-  Badge,
-  Breadcrumb,
-  Button,
-  Card,
-  Form,
-  Spinner,
-} from "react-bootstrap";
-import {
-  getEntity,
-  getCollection,
-  generateContent,
-  getEntityCategories,
-  getLimits,
-} from "../api";
+import { Alert, Breadcrumb } from "react-bootstrap";
+import { getEntity } from "../api/entities";
+import { getCollection } from "../api/collections";
+import { generateContent } from "../api/contents";
+import { getEntityCategories, getLimits } from "../api/metadata";
 import { ApiAbortError } from "../api/apiClient";
 import EntityContentsPanel from "../components/EntityContentsPanel";
-import ImagePanel from "../components/ImagePanel";
 import EntityEditForm from "../components/EntityEditForm";
+import EntityGenerateForm from "../components/EntityGenerateForm";
+import EntityHeaderCard from "../components/EntityHeaderCard";
+import ImagePanel from "../components/ImagePanel";
 import LoadingSpinner from "../components/LoadingSpinner";
-import MarkdownContent from "../components/MarkdownContent";
-import ModelSelector from "../components/ModelSelector";
-import TokenCounter from "../components/TokenCounter";
 import { useGenerate } from "../hooks/useGenerate";
 import type { Collection, Entity, EntityContent } from "../types";
 import type { ContentCategory } from "../utils/enums";
-import { formatDate } from "../utils/formatters";
-import { getErrorMessage, parseApiError } from "../utils/errors";
-import {
-  CATEGORY_LABELS,
-  ENTITY_CATEGORY_MAP,
-  ENTITY_TYPE_BADGE,
-  ENTITY_TYPE_LABELS,
-} from "../utils/constants";
+import { getErrorMessage } from "../utils/errors";
+import { ENTITY_CATEGORY_MAP } from "../utils/constants";
 
-/**
- * Página de detalle de una entidad.
- *
- * Muestra la información de la entidad, permite generar contenido
- * para diferentes categorías, gestionar borradores pendientes y
- * generar imágenes asociadas a los contenidos confirmados.
- */
+// ---------------------------------------------------------------------------
+// Entity loading reducer — groups the 4 tightly-coupled load states
+// ---------------------------------------------------------------------------
+
+type EntityLoadState = {
+  entity: Entity | null;
+  collection: Collection | null;
+  loading: boolean;
+  error: string | null;
+};
+
+type EntityLoadAction =
+  | { type: "FETCH_START" }
+  | { type: "FETCH_SUCCESS"; entity: Entity; collection: Collection }
+  | { type: "FETCH_ERROR"; error: string }
+  | { type: "UPDATE_ENTITY"; entity: Entity };
+
+function entityLoadReducer(
+  state: EntityLoadState,
+  action: EntityLoadAction,
+): EntityLoadState {
+  switch (action.type) {
+    case "FETCH_START":
+      return { ...state, loading: true, error: null };
+    case "FETCH_SUCCESS":
+      return { loading: false, error: null, entity: action.entity, collection: action.collection };
+    case "FETCH_ERROR":
+      return { ...state, loading: false, error: action.error };
+    case "UPDATE_ENTITY":
+      return { ...state, entity: action.entity };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Page UI reducer — groups the remaining coordinated UI state
+// ---------------------------------------------------------------------------
+
+type PageUIState = {
+  categoryMap: typeof ENTITY_CATEGORY_MAP;
+  maxPendingContents: number;
+  selectedCategory: ContentCategory | "";
+  pendingInCategoryCount: number;
+  showEdit: boolean;
+  imagePanel: { show: boolean; content: EntityContent | null };
+  contentsRefreshTrigger: number;
+};
+
+type PageUIAction =
+  | { type: "SET_CONFIG"; categoryMap: typeof ENTITY_CATEGORY_MAP; maxPendingContents: number }
+  | { type: "SET_CATEGORY"; category: ContentCategory | "" }
+  | { type: "SET_PENDING_COUNT"; count: number }
+  | { type: "SET_EDIT"; show: boolean }
+  | { type: "OPEN_IMAGE_PANEL"; content: EntityContent }
+  | { type: "CLOSE_IMAGE_PANEL" }
+  | { type: "BUMP_REFRESH" };
+
+function pageUIReducer(state: PageUIState, action: PageUIAction): PageUIState {
+  switch (action.type) {
+    case "SET_CONFIG":
+      return { ...state, categoryMap: action.categoryMap, maxPendingContents: action.maxPendingContents };
+    case "SET_CATEGORY":
+      return { ...state, selectedCategory: action.category };
+    case "SET_PENDING_COUNT":
+      return { ...state, pendingInCategoryCount: action.count };
+    case "SET_EDIT":
+      return { ...state, showEdit: action.show };
+    case "OPEN_IMAGE_PANEL":
+      return { ...state, imagePanel: { show: true, content: action.content } };
+    case "CLOSE_IMAGE_PANEL":
+      return { ...state, imagePanel: { show: false, content: null } };
+    case "BUMP_REFRESH":
+      return { ...state, contentsRefreshTrigger: state.contentsRefreshTrigger + 1 };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
 export default function EntityDetailPage() {
   const { collectionId, entityId } = useParams<{
     collectionId: string;
     entityId: string;
   }>();
 
-  const [categoryMap, setCategoryMap] = useState(ENTITY_CATEGORY_MAP);
-  const [maxPendingContents, setMaxPendingContents] = useState(5);
-  const [collection, setCollection] = useState<Collection | null>(null);
-  const [entity, setEntity] = useState<Entity | null>(null);
-  const [loadingEntity, setLoadingEntity] = useState(true);
-  const [entityError, setEntityError] = useState<string | null>(null);
+  const [entityLoad, dispatchEntity] = useReducer(entityLoadReducer, {
+    entity: null,
+    collection: null,
+    loading: true,
+    error: null,
+  });
+  const { entity, collection, loading: loadingEntity, error: entityError } = entityLoad;
+
+  const [ui, dispatchUI] = useReducer(pageUIReducer, {
+    categoryMap: ENTITY_CATEGORY_MAP,
+    maxPendingContents: 5,
+    selectedCategory: "",
+    pendingInCategoryCount: 0,
+    showEdit: false,
+    imagePanel: { show: false, content: null },
+    contentsRefreshTrigger: 0,
+  });
+  const {
+    categoryMap,
+    maxPendingContents,
+    selectedCategory,
+    pendingInCategoryCount,
+    showEdit,
+    imagePanel,
+    contentsRefreshTrigger,
+  } = ui;
 
   useEffect(() => {
     getEntityCategories()
-      .then(setCategoryMap)
+      .then((map) => {
+        getLimits()
+          .then((l) =>
+            dispatchUI({ type: "SET_CONFIG", categoryMap: map, maxPendingContents: l.max_pending_contents }),
+          )
+          .catch(() => dispatchUI({ type: "SET_CONFIG", categoryMap: map, maxPendingContents: 5 }));
+      })
       .catch(() => {}); // fallback: keep local constants if backend unreachable
-    getLimits()
-      .then((l) => setMaxPendingContents(l.max_pending_contents))
-      .catch(() => {}); // fallback: keep default 5 if backend unreachable
   }, []);
-
-  const [selectedCategory, setSelectedCategory] = useState<
-    ContentCategory | ""
-  >("");
-  const [pendingInCategoryCount, setPendingInCategoryCount] = useState(0);
-  const [query, setQuery] = useState("");
-  const [lastSubmittedQuery, setLastSubmittedQuery] = useState("");
-  const [showEdit, setShowEdit] = useState(false);
-  const [showImagePanel, setShowImagePanel] = useState(false);
-  const [selectedContentForImage, setSelectedContentForImage] =
-    useState<EntityContent | null>(null);
-  const [contentsRefreshTrigger, setContentsRefreshTrigger] = useState(0);
-  const [selectedModel, setSelectedModel] = useState<string | undefined>(
-    undefined,
-  );
 
   const availableCategories = useMemo<ContentCategory[]>(
     () => (entity ? (categoryMap[entity.type] ?? []) : []),
     [entity, categoryMap],
   );
-
-  const pendingLimitReached =
-    selectedCategory !== "" && pendingInCategoryCount >= maxPendingContents;
 
   const {
     error: generateError,
@@ -98,57 +156,35 @@ export default function EntityDetailPage() {
     reset: resetGenerate,
   } = useGenerate(generateContent);
 
-  /**
-   * Carga la colección y la entidad desde la API.
-   *
-   * @param signal - Señal de aborto para cancelar la petición.
-   */
   const fetchEntityData = useCallback(
     async (signal?: AbortSignal) => {
       if (!collectionId || !entityId) return;
-      setEntityError(null);
-      setLoadingEntity(true);
+      dispatchEntity({ type: "FETCH_START" });
       try {
         const [col, ent] = await Promise.all([
           getCollection(collectionId, signal),
           getEntity(collectionId, entityId, signal),
         ]);
-        setCollection(col);
-        setEntity(ent);
+        dispatchEntity({ type: "FETCH_SUCCESS", entity: ent, collection: col });
       } catch (e) {
         if (e instanceof ApiAbortError) return;
-        setEntityError(getErrorMessage(e, "Error al cargar"));
-      } finally {
-        setLoadingEntity(false);
+        dispatchEntity({ type: "FETCH_ERROR", error: getErrorMessage(e, "Error al cargar") });
       }
     },
     [collectionId, entityId],
   );
 
-  /**
-   * Refresca silenciosamente los datos de la entidad sin mostrar
-   * estados de carga ni sobrescribir errores existentes.
-   */
   const refreshEntityQuiet = useCallback(async () => {
     if (!collectionId || !entityId) return;
     try {
       const ent = await getEntity(collectionId, entityId);
-      setEntity(ent);
+      dispatchEntity({ type: "UPDATE_ENTITY", entity: ent });
     } catch (e) {
       if (!(e instanceof ApiAbortError)) {
         // silent: la acción principal ya reporta errores
       }
     }
   }, [collectionId, entityId]);
-
-  /**
-   * Actualiza el conteo de contenidos pendientes en la categoría seleccionada.
-   *
-   * @param count - Número de contenidos pendientes.
-   */
-  const handlePendingCountChange = useCallback((count: number) => {
-    setPendingInCategoryCount(count);
-  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -166,45 +202,27 @@ export default function EntityDetailPage() {
   const currentEntityType = entity?.type;
   useEffect(() => {
     const cats = currentEntityType ? (categoryMap[currentEntityType] ?? []) : [];
-    setSelectedCategory(cats[0] ?? "");
+    dispatchUI({ type: "SET_CATEGORY", category: cats[0] ?? "" });
   }, [currentEntityId, currentEntityType, categoryMap]);
 
-  async function submitGenerate(queryText: string) {
-    if (
-      !collectionId ||
-      !entityId ||
-      selectedCategory === "" ||
-      queryText.trim().length < 5
-    ) {
-      return;
-    }
+  const handlePendingCountChange = useCallback((count: number) => {
+    dispatchUI({ type: "SET_PENDING_COUNT", count });
+  }, []);
+
+  async function handleGenerateSubmit(queryText: string, model: string | undefined) {
+    if (!collectionId || !entityId || selectedCategory === "") return;
     const result = await runGenerateContent(
       collectionId,
       entityId,
       selectedCategory,
-      { query: queryText.trim(), model: selectedModel },
+      { query: queryText, model },
     );
-    if (result) {
-      setContentsRefreshTrigger((t) => t + 1);
-    }
+    if (result) dispatchUI({ type: "BUMP_REFRESH" });
   }
-
-  async function handleGenerate(e: FormEvent) {
-    e.preventDefault();
-    setLastSubmittedQuery(query.trim());
-    await submitGenerate(query);
-  }
-
-  const handleRegenerate = () => submitGenerate(lastSubmittedQuery);
 
   if (loadingEntity) return <LoadingSpinner />;
   if (entityError) return <Alert variant="danger">{entityError}</Alert>;
   if (!entity || !collectionId || !entityId) return null;
-
-  const generateAlertConfig =
-    generateError != null
-      ? parseApiError(generateError, "Error al generar contenido")
-      : null;
 
   return (
     <div className="lm-page">
@@ -221,178 +239,21 @@ export default function EntityDetailPage() {
         <Breadcrumb.Item active>{entity.name}</Breadcrumb.Item>
       </Breadcrumb>
 
-      <Card className="mb-4">
-        <Card.Body>
-          <div className="d-flex justify-content-between align-items-start">
-            <div>
-              <div className="mb-2">
-                <Badge bg={ENTITY_TYPE_BADGE[entity.type]} className="me-2">
-                  {ENTITY_TYPE_LABELS[entity.type]}
-                </Badge>
-              </div>
-              <h3 className="mb-1">{entity.name}</h3>
-              {entity.description ? (
-                <MarkdownContent>{entity.description}</MarkdownContent>
-              ) : (
-                <p className="text-muted mb-0">
-                  <em>Sin descripción</em>
-                </p>
-              )}
-              <div className="mt-2 d-flex gap-3">
-                <small className="text-muted">
-                  Creada: {formatDate(entity.created_at)}
-                </small>
-                {entity.updated_at && (
-                  <small className="text-muted">
-                    Editada: {formatDate(entity.updated_at, true)}
-                  </small>
-                )}
-              </div>
-            </div>
-            <Button
-              variant="outline-secondary"
-              size="sm"
-              onClick={() => setShowEdit(true)}
-            >
-              Editar
-            </Button>
-          </div>
-        </Card.Body>
-      </Card>
+      <EntityHeaderCard entity={entity} onEdit={() => dispatchUI({ type: "SET_EDIT", show: true })} />
 
-      <p className="lm-section-title">Generar contenido</p>
-      {generateAlertConfig != null && (
-        <Alert
-          variant={generateAlertConfig.variant}
-          onClose={resetGenerate}
-          dismissible
-        >
-          {generateAlertConfig.text}
-        </Alert>
-      )}
-      {generateCancelled && (
-        <Alert variant="secondary" dismissible>
-          Generación cancelada.
-        </Alert>
-      )}
-      {pendingLimitReached && (
-        <Alert variant="warning">
-          Ya tienes {pendingInCategoryCount} contenidos pendientes en esta
-          categoría (máximo {maxPendingContents}). Confirma o descarta alguno
-          antes de generar uno nuevo.
-        </Alert>
-      )}
-
-      <Form onSubmit={handleGenerate} className="mb-4">
-        <div className="d-flex gap-3 flex-wrap mb-2">
-          <Form.Group>
-            <Form.Label className="fw-semibold">Categoría</Form.Label>
-            <Form.Select
-              value={selectedCategory}
-              onChange={(e) =>
-                setSelectedCategory(e.target.value as ContentCategory)
-              }
-              disabled={generating}
-              style={{ maxWidth: 280 }}
-            >
-              {availableCategories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {CATEGORY_LABELS[cat]}
-                </option>
-              ))}
-            </Form.Select>
-          </Form.Group>
-          <ModelSelector disabled={generating} onChange={setSelectedModel} />
-        </div>
-        <div className="d-flex gap-2 align-items-start flex-wrap">
-          <Form.Control
-            as="textarea"
-            rows={2}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Describe qué quieres generar sobre esta entidad..."
-            minLength={5}
-            required
-            disabled={generating || pendingLimitReached}
-          />
-          <Button
-            variant="warning"
-            type="submit"
-            disabled={
-              generating ||
-              pendingLimitReached ||
-              query.trim().length < 5 ||
-              selectedCategory === ""
-            }
-            style={{ whiteSpace: "nowrap" }}
-            title={
-              pendingLimitReached
-                ? `Máximo ${maxPendingContents} contenidos pendientes por categoría`
-                : undefined
-            }
-          >
-            {generating ? (
-              <>
-                <Spinner
-                  animation="border"
-                  size="sm"
-                  className="me-1 lm-spinner-inline"
-                />
-                Generando…
-              </>
-            ) : (
-              "Generar"
-            )}
-          </Button>
-          <Button
-            variant="outline-secondary"
-            type="button"
-            onClick={handleRegenerate}
-            disabled={
-              generating ||
-              pendingLimitReached ||
-              lastSubmittedQuery.trim().length < 5 ||
-              selectedCategory === ""
-            }
-            title={
-              lastSubmittedQuery
-                ? `Reutilizar último prompt: "${lastSubmittedQuery}"`
-                : "Genera contenido una vez para habilitar regenerar"
-            }
-          >
-            ↻ Regenerar
-          </Button>
-          {generating && (
-            <Button
-              variant="outline-secondary"
-              type="button"
-              onClick={cancelGenerate}
-              style={{ whiteSpace: "nowrap" }}
-            >
-              Cancelar
-            </Button>
-          )}
-        </div>
-        <div className="d-flex justify-content-between mt-1">
-          <TokenCounter text={query} />
-          {selectedCategory !== "" &&
-            !pendingLimitReached &&
-            pendingInCategoryCount > 0 && (
-              <small className="text-muted">
-                {pendingInCategoryCount} / {maxPendingContents} borradores
-                pendientes en esta categoría.
-              </small>
-            )}
-        </div>
-      </Form>
-      {generating && (
-        <div className="lm-llm-loading mb-4">
-          <div className="lm-llm-loading-bar" />
-          <small className="text-muted">
-            Procesando prompt con el modelo y preparando un nuevo borrador…
-          </small>
-        </div>
-      )}
+      <EntityGenerateForm
+        availableCategories={availableCategories}
+        selectedCategory={selectedCategory}
+        onCategoryChange={(cat) => dispatchUI({ type: "SET_CATEGORY", category: cat })}
+        generating={generating}
+        generateError={generateError}
+        generateCancelled={generateCancelled}
+        pendingInCategoryCount={pendingInCategoryCount}
+        maxPendingContents={maxPendingContents}
+        onSubmit={handleGenerateSubmit}
+        onCancel={cancelGenerate}
+        onDismissError={resetGenerate}
+      />
 
       <EntityContentsPanel
         collectionId={collectionId}
@@ -402,22 +263,16 @@ export default function EntityDetailPage() {
         refreshTrigger={contentsRefreshTrigger}
         onRefreshEntity={refreshEntityQuiet}
         onPendingCountChange={handlePendingCountChange}
-        onOpenImagePanel={(content) => {
-          setSelectedContentForImage(content);
-          setShowImagePanel(true);
-        }}
+        onOpenImagePanel={(content) => dispatchUI({ type: "OPEN_IMAGE_PANEL", content })}
       />
 
       <ImagePanel
         collectionId={collectionId}
         entityId={entityId}
-        show={showImagePanel}
-        onHide={() => {
-          setShowImagePanel(false);
-          setSelectedContentForImage(null);
-        }}
+        show={imagePanel.show}
+        onHide={() => dispatchUI({ type: "CLOSE_IMAGE_PANEL" })}
         onGenerated={() => {}}
-        initialContent={selectedContentForImage}
+        initialContent={imagePanel.content}
       />
 
       <EntityEditForm
@@ -425,12 +280,12 @@ export default function EntityDetailPage() {
         entity={entity}
         collectionId={collectionId}
         entityId={entityId}
-        onClose={() => setShowEdit(false)}
+        onClose={() => dispatchUI({ type: "SET_EDIT", show: false })}
         onSaved={(updated) => {
-          setEntity(updated);
-          setShowEdit(false);
+          dispatchEntity({ type: "UPDATE_ENTITY", entity: updated });
+          dispatchUI({ type: "SET_EDIT", show: false });
         }}
-        onError={setEntityError}
+        onError={(msg) => dispatchEntity({ type: "FETCH_ERROR", error: msg })}
       />
     </div>
   );
