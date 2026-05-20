@@ -72,9 +72,9 @@ Los resultados J2=1 del harness muestran que `llama3.2` rechaza los prompts adve
 | Redis caché semántica | Abandonado | Solo rate limiting activo — sin impacto en deploy |
 | Sesiones deslizantes | Diferido — Issue #6 AUTH-CONTEXT | Diferir hasta que el volumen lo justifique |
 
-### 3.4 Deuda de documentación — `entity_relations`
+### 3.4 Deuda de documentación — `entity_relations` ✅ Resuelta
 
-`entity_relations` aparece en los criterios de aceptación de HU-05 como característica planificada, pero **nunca fue implementada ni estuvo en el backlog activo**. No es una feature pendiente — es una referencia obsoleta en los docs. Acción: eliminar de HU-05 en DOCUMENTATION.md y WEEKLY_CHECKLISTS.md.
+`entity_relations` aparecía en los criterios de HU-05 y en la tabla ERD de DOCUMENTATION.md como característica planificada, pero **nunca fue implementada ni estuvo en el backlog activo**. Eliminada de DOCUMENTATION.md (HU-05 y tabla ERD) el 2026-05-20.
 
 ---
 
@@ -114,7 +114,7 @@ Objetivo: flujo RAG imagen completo fuera del host del desarrollador.
 
 - [ ] `runpod_client.py` si se decidió RunPod (Semana 10) — sino esta semana se redirige a polish
 - [ ] Switch `IMAGE_BACKEND=runpod` transparente (mismo endpoint `/image-generation/generate`)
-- [ ] Limpiar deuda de documentación: eliminar `entity_relations` de HU-05
+- [x] ~~Limpiar deuda de documentación: eliminar `entity_relations` de HU-05~~ — resuelto 2026-05-20
 
 ### Semana 12 — Demo + Evaluación final
 

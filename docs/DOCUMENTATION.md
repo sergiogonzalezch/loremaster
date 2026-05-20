@@ -278,7 +278,6 @@ El flujo de dos pasos (`build-prompt → generate`) y el módulo de prompts visu
 - CRUD completo: character, creature, location, faction, item
 - Soft delete (`deleted_at`)
 - Nombre único por colección, validado en capa de servicio y reforzado por constraint DB (`uq_entity_collection_name`). Los nombres de entidades eliminadas quedan reservados en esa colección.
-- Relación entre entidades (`entity_relations`) — planificada
 - Cada entidad puede tener múltiples imágenes — planificado
 
 # HU-06 — Contenidos RAG por categoría para entidades
@@ -749,7 +748,6 @@ DATABASE_URL=postgresql://user:pass@postgres:5432/loremaster
 | **image_generations** | id (UUID PK), entity_id (FK), collection_id (FK), content_id (FK), category, auto_prompt, final_prompt, prompt_token_count, batch_size, backend, width, height, created_at, is_deleted, deleted_at | Una generación produce N imágenes (batch_size 1-4). `backend`: comfyui \| mock. `category` vincula el contenido base usado para el prompt. |
 | **image_records** | id (UUID PK), generation_id (FK), entity_id (FK), collection_id (FK), seed, storage_path, image_url, filename, extension, width, height, generation_ms, is_shared, is_deleted, deleted_at, created_at | Una fila por imagen del batch. `is_shared` controla visibilidad en feed público. `filename` y `extension` identifican el archivo generado. `generation_ms` mide el tiempo de generación. |
 | **moderation_log** | id (UUID PK), layer, snippet, created_at | `layer`: input \| document \| output. Registra cada rechazo del guardrail con los primeros 200 chars. |
-| **entity_relations** | id (UUID PK), source_id (FK entities), target_id (FK entities), relation_type, created_at | Planificado. ENUM: belongs_to, contains, allied_with, enemy_of. |
 
 ### Diagrama ERD
 
