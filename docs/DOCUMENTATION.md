@@ -1,9 +1,9 @@
 ﻿# 1. Resumen Ejecutivo
 
-> **NOTA SOBRE DIAGRAMAS** — Estado actual (2026-05-19):
+> **NOTA SOBRE DIAGRAMAS** — Estado actual (2026-05-20):
 > - **ERD**: ✅ Actualizado en §6.1 como diagrama Mermaid — incluye todas las tablas actuales.
-> - **HU-01** (flujo y secuencia): ⚠️ Imágenes PNG en `diagrams/` desactualizadas (auth + owner_id omitidos). Los PNG se conservan en `docs/old/` como referencia.
-> - **HU-04** (flujo y secuencia): ⚠️ No refleja flujo de dos pasos `build-prompt → generate`. La secuencia textual en §HU-04 es la fuente correcta.
+> - **HU-01** (flujo y secuencia): ✅ PNGs actualizados en `docs/diagrams/` — incluyen `get_current_user` y `owner_id`.
+> - **HU-04** (flujo y secuencia): ✅ PNGs actualizados en `docs/diagrams/` — reflejan flujo de dos pasos `build-prompt → generate`.
 > - **Arquitectura frontend**: ✅ Árbol de componentes actualizado en §5.1.
 > - **Flujo de autenticación**: ✅ Diagramas Mermaid en §4.1 — modo local (registro + login) y modo Clerk (sync).
 
@@ -116,7 +116,11 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 - Diagrama de flujo — Creación de colección
 
-> ⚠️ **PNG desactualizado (`diagrams/`):** no refleja `get_current_user` ni asignación de `owner_id`. Ver la secuencia textual abajo y los diagramas de autenticación en §4.1.
+![Diagrama de flujo HU-01](./diagrams/Diagrama-Flujo-HU-01.png)
+
+- Diagrama de secuencia — Creación de colección
+
+![Diagrama de secuencia HU-01](./diagrams/Diagrama-Secuencia-HU-01.png)
 
 ### Secuencia — Crear colección
 
@@ -198,7 +202,15 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 # HU-04 — Generación de imágenes
 
-> ⚠️ **NOTA**: Los diagramas de flujo y secuencia para esta historia necesitan actualización para reflejar el nuevo flujo de dos pasos (build-prompt → generate).
+### Diagramas
+
+- Diagrama de flujo — Generación de imágenes
+
+![Diagrama de flujo HU-04](./diagrams/Diagrama-Flujo-HU-04.png)
+
+- Diagrama de secuencia — Generación de imágenes
+
+![Diagrama de secuencia HU-04](./diagrams/Diagrama-Secuencia-HU-04.png)
 
 ### Nuevo flujo (implementado)
 

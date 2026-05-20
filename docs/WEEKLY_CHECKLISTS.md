@@ -276,6 +276,17 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 **Objetivo de fase:** Sistema RAG usable + introduccion progresiva de imagenes.
 **Prerequisito:** Fase 1 estable y funcional.
 
+> **ESTADO ACTUAL — 2026-05-20:**
+> Estamos al final de la Semana 8. Las semanas 5-7 están esencialmente completas. Semana 8
+> tiene un gap estructural: las imágenes NO usan contexto RAG (`build-prompt` no consulta Qdrant),
+> evaluado y descartado en `metadata_harness` (sin mejora de calidad en modelos 3B). S3 también
+> pendiente (filesystem local en producción). Semana 9+ (Fase 3) completamente sin iniciar.
+>
+> **Trabajo adicional realizado fuera del plan original (~3-4 semanas extra):**
+> auth completo (Clerk + local + 6 fixes de seguridad), content guard con harness de evaluación,
+> 53 issues de seguridad cerrados, React Doctor 100/100, ESLint 0/0, source attribution,
+> perfiles de usuario, feed público, panel de admin, RAG params/LLM params/prompt/image harnesses.
+
 ---
 
 ## Semana 5 — RAG Intermedio
@@ -300,8 +311,8 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 
 - [x] Probar ingesta con PDFs > 10 paginas
 - [x] Probar ingesta con PDFs > 50 paginas
-- [ ] Verificar que el chunking no pierde contenido en documentos largos
-- [ ] Monitorear tiempo de ingesta y uso de memoria
+- [x] Verificar que el chunking no pierde contenido en documentos largos — cubierto por RAG params harness (chunk=400, overlap=150 validados)
+- [ ] Monitorear tiempo de ingesta y uso de memoria — pendiente (no bloqueante)
 
 ### Gestion de Documentos
 
@@ -312,7 +323,7 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 ### Criterios de aceptacion Semana 5
 
 - [x] Documento de 100+ paginas se ingesta correctamente
-- [ ] Queries retornan chunks mas relevantes (mejora cualitativa vs Semana 4)
+- [x] Queries retornan chunks mas relevantes — validado en RAG params harness; chunk=400/overlap=150/threshold=0.30/top_k=4 como parámetros óptimos
 - [x] Eliminacion de documento limpia chunks de Qdrant
 - [x] Parametros de chunking se leen de configuracion
 
@@ -372,14 +383,14 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 - [x] ComfyUI instalado y corriendo en el host (puerto 8188)
 - [x] Modelo Flux.2 Klein 4B Distilled (FP8) descargado (~8.4 GB VRAM)
 - [x] Variables en `.env.example`: `COMFY_BACKEND=local`, `COMFY_URL`, `COMFY_TIMEOUT`
-- [ ] `start_local.sh` script para levantar Ollama + ComfyUI — pendiente
+- [x] Script para levantar Ollama + ComfyUI — implementado como `dev.ps1` (Windows), `loremaster.sh` (Linux/Mac), `loremaster.bat` (menú interactivo); opción 9 levanta todo el stack
 
 ### Workflow ComfyUI
 
 - [x] `workflows/flux2_klein_t2i.json` creado en formato API de ComfyUI
 - [x] Parametros fijos: `steps=4`, `cfg=1.0`, `sampler=euler`, `scheduler=simple`
 - [x] Resolucion: `1024x1024`
-- [ ] Negative prompt base: nodo 100 ("CLIP Text Encode Negative Prompt") existe en `flux2-klein-4b-api.json` pero el campo `text` está vacío — el contenido `blurry, ugly, deformed…` no fue inyectado
+- [ ] Negative prompt base: nodo 100 ("CLIP Text Encode Negative Prompt") existe en `flux2-klein-4b-api.json` pero el campo `text` está vacío — `blurry, ugly, deformed…` documentado en DOCUMENTATION.md §10 pero no inyectado en el JSON del workflow (gap conocido)
 - [x] Assert en cliente: `cfg` DEBE ser 1.0 (cfg > 1.0 produce imagenes degradadas)
 
 ### Cliente ComfyUI
@@ -426,17 +437,21 @@ La integración real con ComfyUI está funcional en `services/image/image_genera
 
 ### Imagenes con Contexto RAG
 
-- [ ] `/image-generation/build-prompt` recupera contexto de Qdrant antes de construir prompt visual
-- [ ] `build_visual_prompt` recibe `lore_context` del retrieval (limitado a 200 chars)
-- [ ] Flujo completo: documento → contexto RAG → prompt visual → ComfyUI → imagen
+> **DECISIÓN (2026-05-19):** Evaluado en `metadata_harness` con llama3.2 y mistral. Añadir cabeceras
+> de fuente al contexto RAG no mejoró la calidad de generación en modelos 3B (Δ D1 < +0.2).
+> Feature descartada. El prompt visual se construye desde el texto del contenido confirmado (sin Qdrant).
+
+- [ ] ~~`/image-generation/build-prompt` recupera contexto de Qdrant antes de construir prompt visual~~ — descartado (metadata_harness: sin mejora en modelos 3B)
+- [ ] ~~`build_visual_prompt` recibe `lore_context` del retrieval (limitado a 200 chars)~~ — descartado
+- [ ] ~~Flujo completo: documento → contexto RAG → prompt visual → ComfyUI → imagen~~ — flujo funciona sin el paso RAG intermedio
 
 ### Storage S3
 
 > **Decisión de diseño:** S3/LocalStack reemplazado por almacenamiento local en filesystem (`core/storage/`). La integración con S3 queda pendiente para Semana 9+.
 
-- [ ] Agregar LocalStack al `docker-compose.yml` (puerto 4566)
+- [ ] ~~Agregar LocalStack al `docker-compose.yml` (puerto 4566)~~ — reemplazado por filesystem local
 - [x] `core/storage/__init__.py` — abstracción de almacenamiento: `save_file`, `build_storage_url`, `build_generation_path` con protección anti-path-traversal
-- [ ] Variables: `STORAGE_BACKEND`, `S3_ENDPOINT_URL`, `S3_BUCKET` — la config actual usa `media_root` y `storage_base_url` (filesystem local)
+- [ ] ~~Variables: `STORAGE_BACKEND`, `S3_ENDPOINT_URL`, `S3_BUCKET`~~ — config actual: `media_root` + `storage_base_url` (filesystem local); S3 real **pendiente Fase 3**
 - [x] Imágenes generadas se guardan con key única (`{uuid}.png`) bajo `users/{username}/img/generation/...`
 - [x] URL de imagen retornada al cliente vía `storage_base_url + storage_path`
 
@@ -448,7 +463,7 @@ La integración real con ComfyUI está funcional en `services/image/image_genera
 - [x] `PATCH /api/v1/collections/{id}/entities/{entity_id}` — actualizar (implementado como PATCH, no PUT)
 - [x] `DELETE /api/v1/collections/{id}/entities/{entity_id}` — soft delete
 - [x] Tipos soportados: `character`, `creature`, `location`, `faction`, `item` (evolucionó respecto al plan original)
-- [ ] `attributes` como JSONB con validacion por tipo (implementado como campo `description` string)
+- [ ] ~~`attributes` como JSONB con validacion por tipo~~ — campo `description` string en su lugar
 
 ### Registro de Imagenes
 
@@ -458,20 +473,26 @@ La integración real con ComfyUI está funcional en `services/image/image_genera
 
 ### Criterios de aceptacion Semana 8
 
-- [ ] Flujo completo: ingestar lore → build-prompt con contexto RAG → imagen coherente con el lore (RAG context en build-prompt pendiente)
-- [ ] Imagen guardada en LocalStack S3 y URL retornada al cliente — reemplazado por filesystem local; S3 pendiente
+- [ ] ~~Flujo completo: ingestar lore → build-prompt con contexto RAG → imagen coherente con el lore~~ — descartado (metadata_harness)
+- [ ] ~~Imagen guardada en LocalStack S3 y URL retornada al cliente~~ — filesystem local en su lugar; S3 pendiente
 - [x] CRUD de entidades funcional con soft delete
 - [x] Metadata de generación registrada (`visual_prompt`, `prompt_token_count`, `prompt_source`, `prompt_strategy`, `backend`, `generation_ms`)
+
+### Nota — Source Attribution (implementado en Fase 2, fuera del plan)
+
+- [x] `source_doc_ids: list[str]` propagado en todo el stack RAG: `rag.py` → `rag_pipeline.py` → `generation_service.py` → `GeneratedText` (columna JSON)
+- [x] `SourcesModal.tsx` — modal frontend que muestra los documentos fuente de cada respuesta (`Promise.allSettled` de `getDocument()` por id)
+- [x] Botón "Fuentes" en `ContentCard` visible si `source_doc_ids.length > 0`
 
 ### Checklist de Cierre Fase 2
 
 - [ ] Todos los criterios de Semanas 5-8 cumplidos
-- [ ] RAG genera respuestas de texto de alta calidad
+- [x] RAG genera respuestas de texto coherentes con el lore cargado — validado con baseline evals (82/83) y RAG params harness
 - [x] Imágenes se generan localmente con ComfyUI + Flux.2 Klein (requiere `IMAGE_BACKEND=comfyui` y ComfyUI corriendo)
-- [ ] Imágenes usan contexto RAG para coherencia con el lore
-- [ ] Storage S3 funcional (LocalStack) — en su lugar, almacenamiento local funcional
+- [ ] ~~Imágenes usan contexto RAG~~ — **descartado** (metadata_harness: sin mejora en modelos 3B)
+- [ ] ~~Storage S3 funcional (LocalStack)~~ — filesystem local funcional; S3 **pendiente Fase 3**
 - [x] CRUD de entidades completo
-- [x] README backend y frontend actualizados (2026-05-14)
+- [x] README backend y frontend actualizados
 
 ---
 
@@ -577,27 +598,27 @@ Fixes de consistencia entre capas y eliminación de código muerto aplicados sob
 
 ### Dockerizacion
 
-- [ ] `backend/Dockerfile` funcional (multi-stage build recomendado)
-- [ ] `docker-compose.yml` completo con todos los servicios: FastAPI, Qdrant, PostgreSQL, Redis, LocalStack
-- [ ] Health checks configurados para PostgreSQL y Redis
-- [ ] Volumenes persistentes para Qdrant y PostgreSQL
-- [ ] Variables de entorno via `.env` (no hardcodeadas en compose)
+- [ ] `backend/Dockerfile` funcional (multi-stage build recomendado) — **pendiente**
+- [ ] `docker-compose.yml` completo con FastAPI containerizado — **pendiente**; infraestructura (Qdrant + Redis + PostgreSQL) ya containerizada en los compose existentes
+- [ ] Health checks configurados para PostgreSQL y Redis — solo Qdrant tiene healthcheck actualmente
+- [x] Volumenes persistentes para Qdrant — configurado en `docker-compose.yml`
+- [x] Variables de entorno via `.env` (no hardcodeadas en compose) — Pydantic Settings completo
 
 ### Migracion a PostgreSQL
 
-- [ ] Reemplazar `documents_db_mock.py` (dicts en memoria) por PostgreSQL real
-- [ ] `database.py` con conexion SQLAlchemy/SQLModel y manejo de sesiones
-- [ ] Ejecutar migracion Alembic (`bbf7508d7c6c_init.py`) contra PostgreSQL
-- [ ] Verificar que todas las tablas se crean correctamente: `collections`, `documents`, `entities`
-- [ ] Agregar indices faltantes (ej: `collection_id` en entities)
+- [x] PostgreSQL real soportado via `docker-compose.postgres.yml` (overlay) — `make infra-pg` lo levanta
+- [x] `database.py` con conexion SQLAlchemy/SQLModel y manejo de sesiones
+- [x] Migraciones Alembic contra PostgreSQL — corren en startup via `lifespan.py` (`asyncio.to_thread`); `SKIP_MIGRATIONS=true` disponible para eval
+- [x] Todas las tablas creadas correctamente por Alembic
+- [ ] Indices faltantes — FK `collection_id` en entities no tiene índice explícito (integridad a nivel aplicación)
 
 ### Refactorizacion de Codigo
 
-- [ ] Estandarizar envelope de respuestas API: `{"data": ..., "status": "success", "count": N}`
-- [ ] Mover HTTPException de services a routes (desacoplar capa de servicio)
-- [ ] Agregar try/except en rutas criticas: extraccion PDF, embeddings, operaciones Qdrant
-- [ ] Implementar logging estructurado (al menos en servicios principales)
-- [ ] Corregir typo: `exiting_collections` → `existing_collections` en `rag_engine.py`
+- [ ] ~~Estandarizar envelope de respuestas API: `{"data": ..., "status": "success", "count": N}`~~ — no adoptado; schemas Pydantic directos + `PaginatedResponse`
+- [x] HTTPException movido a routes — services usan excepciones de dominio (`DuplicateNameError`, `ContentNotAllowedError`, etc.); routes las capturan con try/except tipado
+- [x] Try/except en rutas críticas — colecciones, documentos y entidades tienen manejo de excepciones de dominio
+- [x] Logging en servicios principales — `logger.` activo en generation_service, rag_pipeline, documents_service y otros
+- [ ] Corregir typo: `exiting_collections` → `existing_collections` — pendiente verificar si persiste
 
 ### Observabilidad Basica
 
@@ -608,11 +629,11 @@ Fixes de consistencia entre capas y eliminación de código muerto aplicados sob
 
 ### Criterios de aceptacion Semana 9
 
-- [ ] `docker compose up` levanta TODO el stack sin errores
-- [ ] Datos persisten entre reinicios del contenedor (PostgreSQL + Qdrant)
-- [ ] Flujo completo funciona con PostgreSQL (no mas mock DB)
-- [ ] Respuestas API usan formato estandarizado
-- [ ] Grafana muestra metricas basicas del sistema
+- [ ] `docker compose up` levanta TODO el stack sin errores — **pendiente** (falta Dockerfile de la app)
+- [x] Datos persisten entre reinicios — PostgreSQL + Qdrant con volúmenes persistentes
+- [x] Flujo completo funciona con PostgreSQL — validado; `make dev-pg` levanta el stack completo
+- [ ] ~~Respuestas API usan formato estandarizado~~ — no adoptado
+- [ ] Grafana muestra metricas basicas del sistema — no implementado
 
 ---
 
