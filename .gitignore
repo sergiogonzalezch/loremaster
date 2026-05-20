@@ -13,3 +13,7 @@
 CLAUDE.local.md
 skills-lock.json
 SKILLS.md
+# ========================
+# Evaluation reports (generated locally by harness runners)
+# ========================
+docs/reportes/*.md
