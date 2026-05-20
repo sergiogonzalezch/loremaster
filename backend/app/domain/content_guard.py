@@ -71,6 +71,17 @@ _BLOCKED_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"\b(fabriquer|construire)\s+(une?\s+)?bombe?\b", re.IGNORECASE),
     re.compile(r"\bbaue?n?\s+.{0,20}bombe?\b", re.IGNORECASE),
     re.compile(r"\bsintetizz\w+\s+.{0,25}metanfetamina\b", re.IGNORECASE),
+    # HARM-08 — contenido sexual con menores (categoría no negociable, bidireccional)
+    # Dirección A: "the minor was in a sexual scene"
+    re.compile(
+        r"\b(minors?|menores?|underage|child\w*)\b.{0,60}\b(sexual|sex|erotic[ao]?|intim\w+)\b",
+        re.IGNORECASE,
+    ),
+    # Dirección B: "sexual content with minors" / "contenido sexual con menores"
+    re.compile(
+        r"\b(sexual|sex|erotic[ao]?|intim\w+)\b.{0,60}\b(minors?|menores?|underage|child\w*)\b",
+        re.IGNORECASE,
+    ),
 )
 """Patrones para bloquear contenido en entrada de usuarios y documentos."""
 
@@ -113,6 +124,15 @@ _OUTPUT_BLOCKED_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"\b(fabriquer|construire)\s+(une?\s+)?bombe?\b", re.IGNORECASE),
     re.compile(r"\bbaue?n?\s+.{0,20}bombe?\b", re.IGNORECASE),
     re.compile(r"\bsintetizz\w+\s+.{0,25}metanfetamina\b", re.IGNORECASE),
+    # HARM-08 — contenido sexual con menores (categoría no negociable, bidireccional)
+    re.compile(
+        r"\b(minors?|menores?|underage|child\w*)\b.{0,60}\b(sexual|sex|erotic[ao]?|intim\w+)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(sexual|sex|erotic[ao]?|intim\w+)\b.{0,60}\b(minors?|menores?|underage|child\w*)\b",
+        re.IGNORECASE,
+    ),
 )
 """Patrones para bloquear contenido en salida generada por el LLM."""
 
