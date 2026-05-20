@@ -5,7 +5,7 @@
 > - **HU-01** (flujo y secuencia): ⚠️ Imágenes PNG en `diagrams/` desactualizadas (auth + owner_id omitidos). Los PNG se conservan en `docs/old/` como referencia.
 > - **HU-04** (flujo y secuencia): ⚠️ No refleja flujo de dos pasos `build-prompt → generate`. La secuencia textual en §HU-04 es la fuente correcta.
 > - **Arquitectura frontend**: ✅ Árbol de componentes actualizado en §5.1.
-> - **Flujo de autenticación**: ⚠️ Diagrama pendiente (modo local vs. Clerk). Ver `docs/AUTH-CONTEXT.md` como referencia hasta que se añada el diagrama.
+> - **Flujo de autenticación**: ✅ Diagramas Mermaid en §4.1 — modo local (registro + login) y modo Clerk (sync).
 
 ## ¿Qué es Lore Master?
 
@@ -116,7 +116,7 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 - Diagrama de flujo — Creación de colección
 
-> ⚠️ **Desactualizado (PNG en `diagrams/`):** el flujo no refleja `get_current_user` ni asignación de `owner_id`. Ver la secuencia textual abajo como referencia hasta recrear el PNG.
+> ⚠️ **PNG desactualizado (`diagrams/`):** no refleja `get_current_user` ni asignación de `owner_id`. Ver la secuencia textual abajo y los diagramas de autenticación en §4.1.
 
 ### Secuencia — Crear colección
 
@@ -325,6 +325,69 @@ El flujo de dos pasos (`build-prompt → generate`) y el módulo de prompts visu
 # 4. Arquitectura Técnica
 
 La arquitectura se divide en dos configuraciones que comparten el mismo codebase: ejecución local para desarrollo y prototipado, y ejecución en nube usando RunPod como proveedor de GPU bajo demanda. La diferencia clave es únicamente la capa de inferencia de imágenes.
+
+## 4.1 Autenticación
+
+La plataforma soporta dos modos de autenticación, seleccionados en el frontend según `VITE_CLERK_PUBLISHABLE_KEY`:
+
+- **Modo local:** JWT propio vía `POST /auth/login`. Cookie HttpOnly, firmada con `SECRET_KEY`.
+- **Modo Clerk:** JWT de Clerk sincronizado con el backend vía `POST /auth/clerk/sync`. Desde ese punto, cookie HttpOnly local idéntica al modo local.
+
+Ambos modos convergen en la misma cookie HttpOnly tras la autenticación; el resto del stack (`get_current_user()`, rutas protegidas) es idéntico en ambos casos.
+
+### Flujo local — Registro y login
+
+```mermaid
+sequenceDiagram
+    actor Usuario
+    participant Frontend
+    participant FastAPI
+    participant DB
+
+    Note over Usuario,DB: Registro
+    Usuario->>Frontend: Rellena formulario
+    Frontend->>FastAPI: POST /auth/register {username, password}
+    FastAPI->>DB: INSERT user (hashed_password)
+    FastAPI-->>Frontend: 201 {user} + Set-Cookie: access_token (HttpOnly)
+
+    Note over Usuario,DB: Login
+    Usuario->>Frontend: Introduce credenciales
+    Frontend->>FastAPI: POST /auth/login {username, password}
+    FastAPI->>DB: SELECT user WHERE username=?
+    FastAPI->>FastAPI: verify_password(plain, hashed)
+    FastAPI-->>Frontend: 200 {user} + Set-Cookie: access_token (HttpOnly)
+
+    Note over Usuario,DB: Petición autenticada
+    Frontend->>FastAPI: GET /collections (Cookie: access_token)
+    FastAPI->>FastAPI: get_current_user() — valida JWT
+    FastAPI->>DB: SELECT collections WHERE owner_id=user.id
+    FastAPI-->>Frontend: 200 {collections}
+```
+
+### Flujo Clerk — Sincronización de sesión
+
+```mermaid
+sequenceDiagram
+    actor Usuario
+    participant Frontend
+    participant Clerk
+    participant FastAPI
+    participant DB
+
+    Usuario->>Clerk: SignIn (email / contraseña)
+    Clerk-->>Frontend: Clerk JWT
+    Frontend->>Frontend: ClerkBridge detecta sesión activa
+    Frontend->>FastAPI: POST /auth/clerk/sync {Authorization: Bearer clerk_jwt}
+    FastAPI->>Clerk: GET /.well-known/jwks.json (caché TTL 1h)
+    FastAPI->>FastAPI: decode_clerk_token(clerk_jwt, jwks)
+    FastAPI->>DB: UPSERT user (clerk_id, email, username)
+    FastAPI-->>Frontend: 200 {user} + Set-Cookie: access_token (HttpOnly)
+
+    Note over Frontend,FastAPI: A partir de aquí idéntico al modo local
+    Frontend->>FastAPI: GET /collections (Cookie: access_token)
+    FastAPI->>FastAPI: get_current_user() — valida JWT local
+    FastAPI-->>Frontend: 200 {collections}
+```
 
 ## Stack tecnológico completo
 
