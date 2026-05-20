@@ -1,13 +1,11 @@
 ﻿# 1. Resumen Ejecutivo
 
-> ⚠️ **NOTA SOBRE DIAGRAMAS** — Pendiente de recrear (2026-05-15):
-> - **ERD**: no incluye `users`, `image_generations`, `image_records`, `generated_texts`, `moderation_log`; faltan campos `is_shared`, `owner_id`, `token_version`, `avatar_path`, `display_name`, `bio`.
-> - **HU-01** (flujo y secuencia): omiten auth (`get_current_user`) y asignación de `owner_id`.
-> - **HU-04** (flujo y secuencia): no refleja flujo de dos pasos `build-prompt → generate`.
-> - **HU-06** (compartir contenido): no existe diagrama para el endpoint `PATCH .../share`.
-> - **Arquitectura general**: no refleja multi-tenancy, rutas públicas, ni integración Clerk (modo dual local / Clerk).
-> - **Flujo de autenticación (NUEVO)**: diagrama pendiente para los dos modos — modo local (formulario → JWT local → cookie) y modo Clerk (Clerk JWT → `/auth/clerk/sync` → JWT local → cookie).
-> **→ Los diagramas necesitan ser recreados para reflejar el estado actual.**
+> **NOTA SOBRE DIAGRAMAS** — Estado actual (2026-05-19):
+> - **ERD**: ✅ Actualizado en §6.1 como diagrama Mermaid — incluye todas las tablas actuales.
+> - **HU-01** (flujo y secuencia): ⚠️ Imágenes PNG en `diagrams/` desactualizadas (auth + owner_id omitidos). Los PNG se conservan en `docs/old/` como referencia.
+> - **HU-04** (flujo y secuencia): ⚠️ No refleja flujo de dos pasos `build-prompt → generate`. La secuencia textual en §HU-04 es la fuente correcta.
+> - **Arquitectura frontend**: ✅ Árbol de componentes actualizado en §5.1.
+> - **Flujo de autenticación**: ⚠️ Diagrama pendiente (modo local vs. Clerk). Ver `docs/AUTH-CONTEXT.md` como referencia hasta que se añada el diagrama.
 
 ## ¿Qué es Lore Master?
 
@@ -118,15 +116,16 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 - Diagrama de flujo — Creación de colección
 
-> ⚠️ **Desactualizado (2026-05-07):** el flujo no refleja la dependencia de autenticación (`get_current_user`) ni la asignación de `owner_id` al crear la colección. Necesita recrearse.
+> ⚠️ **Desactualizado (PNG en `diagrams/`):** el flujo no refleja `get_current_user` ni asignación de `owner_id`. Ver la secuencia textual abajo como referencia hasta recrear el PNG.
 
-![Diagrama de flujo HU-01](./diagrams/Diagrama-Flujo-HU-01.png)
+### Secuencia — Crear colección
 
-- Diagrama de secuencia — Cliente → FastAPI → DB
-
-> ⚠️ **Desactualizado (2026-05-07):** la secuencia omite el paso de validación JWT y la escritura de `owner_id` en la colección. Necesita recrearse.
-
-![Diagrama de secuencia HU-01](./diagrams/Diagrama-Secuencia-HU-01.png)
+| Paso | Actor → Actor | Mensaje / Operación |
+|---|---|---|
+| 1 | Cliente → FastAPI | POST /collections con nombre + descripción |
+| 2 | FastAPI | `get_current_user()` — valida JWT de cookie |
+| 3 | FastAPI → DB | INSERT collection con `owner_id = current_user.id` |
+| 4 | FastAPI → Cliente | HTTP 201 { collection_id } |
 
 ### Criterios de aceptación
 
@@ -480,7 +479,7 @@ loremaster/
 │   │   │   │   ├── DocumentsTab.tsx
 │   │   │   │   ├── EntitiesTab.tsx
 │   │   │   │   └── GenerateTab.tsx
-│   │   │   ├── EntityDetailPage.tsx       # Detalle de entidad + generación de contenido + imágenes
+│   │   │   ├── EntityDetailPage.tsx       # Detalle de entidad + generación de contenido + imágenes; 2 useReducer (entityLoad + pageUI); imports directos (no barrel)
 │   │   │   ├── GeneratePage.tsx           # Consulta RAG libre
 │   │   │   ├── ProfilePage.tsx            # Edición de perfil propio: display_name, bio, avatar, email
 │   │   │   ├── AdminPage.tsx              # Tabla de usuarios con avatar; eliminar usuario/colección
@@ -492,6 +491,8 @@ loremaster/
 │   │   │   ├── ConfirmModal.tsx           # Modal de confirmación reutilizable
 │   │   │   ├── EntityContentsPanel.tsx    # Panel de contenidos de entidad
 │   │   │   ├── EntityEditForm.tsx         # Formulario de edición de entidad
+│   │   │   ├── EntityGenerateForm.tsx     # Selector de categoría + textarea + botones + barra LLM (extraído de EntityDetailPage)
+│   │   │   ├── EntityHeaderCard.tsx       # Card de cabecera de entidad: badge + nombre + descripción + fechas + botón Editar
 │   │   │   ├── FilterBar.tsx              # Barra de filtros reutilizable
 │   │   │   ├── ImageGallery.tsx           # Galería de imágenes
 │   │   │   ├── ImageGenerator.tsx         # Componente de generación de imágenes
@@ -506,7 +507,7 @@ loremaster/
 │   │   │   ├── StarfieldCanvas.tsx        # Fondo canvas: estrellas + fugaces (evento lm:collections)
 │   │   │   └── TokenCounter.tsx           # Estimación de tokens (aviso a los 400)
 │   │   ├── contexts/
-│   │   │   └── AuthContext.tsx            # AuthProvider: verifica sesión via GET /users/me al montar (cookie HttpOnly), auto-logout timer, server logout al cerrar sesión
+│   │   │   └── AuthContext.tsx            # AuthProvider: useReducer (authReducer: INIT_SUCCESS/INIT_FAIL/SET_AVATAR/LOGOUT), verifica sesión via GET /users/me al montar (cookie HttpOnly), auto-logout timer, server logout al cerrar sesión
 │   │   ├── hooks/
 │   │   │   ├── useAuth.ts                       # Acceso al contexto de autenticación
 │   │   │   ├── useApiError.ts                   # Manejo centralizado de errores de API
@@ -677,9 +678,131 @@ DATABASE_URL=postgresql://user:pass@postgres:5432/loremaster
 
 ### Diagrama ERD
 
-> ⚠️ **Desactualizado:** el diagrama no refleja el estado actual del esquema. Necesita recrearse para incluir las tablas `users`, `generated_texts`, `image_generations`, `image_records`, `moderation_log` y los campos `is_shared`, `owner_id`, `avatar_url`, `is_admin`, `is_deleted`.
+```mermaid
+erDiagram
+    users {
+        UUID id PK
+        string username UK
+        string hashed_password
+        string email UK
+        string display_name
+        string bio
+        string avatar_path
+        bool is_admin
+        int token_version
+        datetime created_at
+        bool is_deleted
+        datetime deleted_at
+    }
+    collections {
+        UUID id PK
+        string name
+        UUID owner_id FK
+        bool is_public
+        datetime created_at
+        datetime updated_at
+        bool is_deleted
+        datetime deleted_at
+    }
+    documents {
+        UUID id PK
+        UUID collection_id FK
+        string filename
+        string file_type
+        int chunk_count
+        string status
+        datetime created_at
+        bool is_deleted
+        datetime deleted_at
+    }
+    entities {
+        UUID id PK
+        UUID collection_id FK
+        string type
+        string name
+        string description
+        datetime created_at
+        datetime updated_at
+        bool is_deleted
+        datetime deleted_at
+    }
+    generated_texts {
+        UUID id PK
+        UUID entity_id FK
+        UUID collection_id FK
+        string category
+        string query
+        string raw_content
+        int sources_count
+        int token_count
+        string model_used
+        datetime created_at
+    }
+    entity_contents {
+        UUID id PK
+        UUID entity_id FK
+        UUID collection_id FK
+        UUID generated_text_id FK
+        string category
+        string content
+        string status
+        bool is_shared
+        datetime confirmed_at
+        datetime created_at
+        datetime updated_at
+        bool is_deleted
+        datetime deleted_at
+    }
+    image_generations {
+        UUID id PK
+        UUID entity_id FK
+        UUID collection_id FK
+        UUID content_id FK
+        string category
+        string auto_prompt
+        string final_prompt
+        int prompt_token_count
+        int batch_size
+        string backend
+        int width
+        int height
+        datetime created_at
+        bool is_deleted
+        datetime deleted_at
+    }
+    image_records {
+        UUID id PK
+        UUID generation_id FK
+        UUID entity_id FK
+        UUID collection_id FK
+        int seed
+        string storage_path
+        string image_url
+        string filename
+        string extension
+        int generation_ms
+        bool is_shared
+        bool is_deleted
+        datetime deleted_at
+        datetime created_at
+    }
+    moderation_log {
+        UUID id PK
+        string layer
+        string snippet
+        datetime created_at
+    }
 
-![Diagrama ERD](./diagrams/Diagrama-ERD.png)
+    users ||--o{ collections : "owner_id"
+    collections ||--o{ documents : "collection_id"
+    collections ||--o{ entities : "collection_id"
+    entities ||--o{ generated_texts : "entity_id"
+    entities ||--o{ entity_contents : "entity_id"
+    generated_texts ||--o| entity_contents : "generated_text_id"
+    entities ||--o{ image_generations : "entity_id"
+    entity_contents ||--o{ image_generations : "content_id"
+    image_generations ||--o{ image_records : "generation_id"
+```
 
 # 7. Roadmap de Desarrollo — 12 Semanas (Final Ajustado)
 
