@@ -99,6 +99,7 @@ Objetivo: backend containerizado y concurrencia LLM resuelta.
 - [ ] `docker-compose` completo con app FastAPI containerizada
 - [ ] Health checks para PostgreSQL y Redis en compose
 - [ ] HTTP 429 + `Retry-After` en el semáforo LLM
+- [ ] Llama Guard 3 como capa semántica opcional en output (fail-open, timeout configurable)
 
 ### Semana 10 — Persistencia e integración
 
@@ -123,7 +124,7 @@ Objetivo: entorno de demo funcional y documentación de portafolio.
 - [ ] Entorno de demo configurado (Dockerfile + PostgreSQL + S3 o filesystem + ComfyUI/RunPod)
 - [ ] Evaluación final: baseline evals + guard harness contra el entorno de demo
 - [ ] Documentación de portafolio: README con setup completo, arquitectura, decisiones clave
-- [ ] Llama Guard 3 (opcional, fail-open) — si queda tiempo
+- [ ] Evaluación final: baseline evals + guard harness contra el entorno de demo
 
 ### Post-Fase 3 (después de Semana 12)
 
