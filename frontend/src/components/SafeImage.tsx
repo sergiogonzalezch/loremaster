@@ -50,7 +50,6 @@ export default function SafeImage({
   }
 
   return (
-    // eslint-disable-next-line jsx-a11y/alt-text
     <img
       src={src ?? undefined}
       alt={alt}

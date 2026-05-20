@@ -72,14 +72,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAvatarUrl(null);
   }, []);
 
-  function scheduleLogout(expiresAt: string | null | undefined) {
+  const scheduleLogout = useCallback((expiresAt: string | null | undefined) => {
     if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
     if (!expiresAt) return;
     const ms = new Date(expiresAt).getTime() - Date.now();
     if (ms <= 0) return;
     // force=true: la sesión ya expiró cuando dispara el timer, no necesita confirmación backend
     logoutTimerRef.current = setTimeout(() => { void logout({ force: true }); }, ms);
-  }
+  }, [logout]);
 
   // Verifica la sesión activa al montar (lee la cookie HttpOnly automáticamente).
   // AbortController cancela la petición si el componente desmonta (Strict Mode safe).
@@ -110,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       controller.abort();
       if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
     };
-  }, []);
+  }, [scheduleLogout]);
 
   function login(): Promise<void> {
     return getMyProfile()

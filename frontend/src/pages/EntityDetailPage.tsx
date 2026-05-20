@@ -160,12 +160,14 @@ export default function EntityDetailPage() {
     resetGenerate();
   }, [entityId, resetGenerate]);
 
-  // Un solo efecto anclado a entity?.id para evitar el doble render y para
-  // resetear correctamente al navegar entre entidades del mismo tipo.
+  // Primitivos estables: el efecto solo se re-ejecuta cuando cambian id/tipo o categoryMap.
+  // Evita re-renders por cambio de referencia del objeto entity al re-fetchear los mismos datos.
+  const currentEntityId = entity?.id;
+  const currentEntityType = entity?.type;
   useEffect(() => {
-    const cats = entity ? (categoryMap[entity.type] ?? []) : [];
+    const cats = currentEntityType ? (categoryMap[currentEntityType] ?? []) : [];
     setSelectedCategory(cats[0] ?? "");
-  }, [entity?.id, categoryMap]);
+  }, [currentEntityId, currentEntityType, categoryMap]);
 
   async function submitGenerate(queryText: string) {
     if (

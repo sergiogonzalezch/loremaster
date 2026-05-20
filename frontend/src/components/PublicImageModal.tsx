@@ -51,7 +51,7 @@ export default function PublicImageModal({
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(blobUrl);
-  }, [resolvedUrl, storagePath, imageUrl, entityName, seed]);
+  }, [resolvedUrl, entityName, seed]);
 
   return (
     <Modal show={show} onHide={onHide} size="xl" centered>
