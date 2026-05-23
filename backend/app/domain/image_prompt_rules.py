@@ -35,7 +35,7 @@ _COMBINED_TYPE_OPTIONS: dict[EntityType, str] = {
 
 _ATTRIBUTOS_BY_ENTITY_CATEGORY: dict[tuple[EntityType, ContentCategory], str] = {
     (EntityType.character, ContentCategory.extended_description): (
-        "colors, materials, body shapes, textures, sizes, clothing, accessories, equipment, "
+        "colors, gender, materials, body shapes, textures, sizes, clothing, accessories, equipment, "
         "marks, distinctive details, facial expressions, posture, physical conditions, items carried, "
         "surrounding environment mentioned"
     ),
