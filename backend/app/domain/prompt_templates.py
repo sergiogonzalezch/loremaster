@@ -31,7 +31,7 @@ _TEMPLATES: dict[ContentCategory, str] = {
         + "Genera una historia de fondo para la entidad indicada en <entity>. "
         + "Escribe en tiempo pasado. Enfócate en orígenes, motivaciones y eventos formativos. "
         + "No incluyas descripción física detallada ni estado actual; eso corresponde a otras categorías. "
-        + "Extensión: 2-3 párrafos. "
+        + "Extensión: 3-4 párrafos. "
         + _CONTEXT_INSTRUCTION
         + _ENTITY_SECTION
         + _SECTIONS
@@ -44,7 +44,7 @@ _TEMPLATES: dict[ContentCategory, str] = {
         + "Escribe en tiempo presente. Enfócate en atributos actuales: apariencia, rasgos físicos, "
         + "personalidad y comportamiento observable. No narres eventos pasados ni historia de fondo; "
         + "eso corresponde a otras categorías. "
-        + "Extensión: 2-3 párrafos. "
+        + "Extensión: 3-4 párrafos. "
         + _CONTEXT_INSTRUCTION
         + _ENTITY_SECTION
         + _SECTIONS
@@ -57,7 +57,7 @@ _TEMPLATES: dict[ContentCategory, str] = {
         + "La acción debe ser inmediata y situada en un momento específico: un instante, "
         + "un intercambio, una confrontación. Incluye ambientación, diálogo y acción visible. "
         + "No resumas historia ni añadas reflexiones extensas fuera del momento narrado. "
-        + "Extensión: 3-5 párrafos. "
+        + "Extensión: 5-7 párrafos. "
         + _CONTEXT_INSTRUCTION
         + _ENTITY_SECTION
         + _SECTIONS
