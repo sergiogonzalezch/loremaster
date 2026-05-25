@@ -8,6 +8,7 @@ import httpx
 from langchain_core.output_parsers import StrOutputParser
 
 from app.core.config import settings
+from app.core.exceptions import LLMBusyError
 from app.domain.prompt_templates import render_prompt
 from app.engine.llm import chain, get_llm
 from app.engine.rag import ChunkInfo, retrieve_context
@@ -63,6 +64,9 @@ async def invoke_rag_pipeline(
         logger.exception("Vector store unavailable for collection %s", collection_id)
         msg = "Vector store unavailable"
         raise RuntimeError(msg) from e
+
+    if _llm_semaphore.locked():
+        raise LLMBusyError()
 
     try:
         loop = asyncio.get_running_loop()
@@ -127,6 +131,9 @@ async def invoke_generation_pipeline(
     )
 
     active_chain = get_llm(effective_model) | StrOutputParser() if model else generation_chain
+
+    if _llm_semaphore.locked():
+        raise LLMBusyError()
 
     try:
         loop = asyncio.get_running_loop()

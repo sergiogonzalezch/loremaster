@@ -10,6 +10,7 @@ from app.core.database.dependencies import get_collection_or_404_owned
 from app.core.exceptions import (
     ContentNotAllowedError,
     GeneratedContentBlockedError,
+    LLMBusyError,
     NoContextAvailableError,
 )
 from app.database import get_session
@@ -50,6 +51,12 @@ async def rag_query(
             pattern_matched=getattr(e, "pattern", None),
         )
         raise HTTPException(status_code=422, detail=str(e)) from e
+    except LLMBusyError as e:
+        raise HTTPException(
+            status_code=429,
+            headers={"Retry-After": "30"},
+            detail=str(e),
+        ) from e
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail="No fue posible generar el contenido solicitado.") from e
     return RagQueryResponse(query=query, answer=answer, sources_count=sources_count, source_doc_ids=source_doc_ids)

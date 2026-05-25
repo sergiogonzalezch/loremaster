@@ -15,6 +15,7 @@ from app.core.exceptions import (
     DatabaseError,
     GeneratedContentBlockedError,
     InvalidCategoryError,
+    LLMBusyError,
     NoContextAvailableError,
     PendingLimitExceededError,
 )
@@ -77,6 +78,12 @@ async def generate_content(
             operation="generate", pattern_matched=getattr(e, "pattern", None),
         )
         raise HTTPException(status_code=422, detail=str(e)) from e
+    except LLMBusyError as e:
+        raise HTTPException(
+            status_code=429,
+            headers={"Retry-After": "30"},
+            detail=str(e),
+        ) from e
     except DatabaseError as e:
         raise HTTPException(
             status_code=500,

@@ -11,6 +11,7 @@ from app.core.exceptions import (
     ComfyUITimeoutError,
     ComfyUIUnavailableError,
     DatabaseError,
+    LLMBusyError,
     NoContextAvailableError,
 )
 from app.database import get_session
@@ -52,6 +53,12 @@ def build_prompt(
     """
     try:
         return build_prompt_service(session, entity, request.content_id)
+    except LLMBusyError as e:
+        raise HTTPException(
+            status_code=429,
+            headers={"Retry-After": "30"},
+            detail=str(e),
+        ) from e
     except NoContextAvailableError as e:
         raise HTTPException(
             status_code=422,
@@ -85,6 +92,12 @@ def generate_images(
             request.batch_size,
             request.seed_base,
         )
+    except LLMBusyError as e:
+        raise HTTPException(
+            status_code=429,
+            headers={"Retry-After": "30"},
+            detail=str(e),
+        ) from e
     except NoContextAvailableError as e:
         raise HTTPException(
             status_code=422,

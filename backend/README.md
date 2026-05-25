@@ -136,6 +136,41 @@ cp .env.example .env
 
 > El entorno `test` (`pytest`) omite rate limiting independientemente de `RATE_LIMIT_ENABLED`.
 
+## Docker (producción / demo)
+
+El backend está containerizado con un `Dockerfile` multi-stage. La imagen final incluye el embedding model pre-descargado para evitar cold-start en el primer deploy.
+
+### Build
+
+```bash
+# Desde backend/
+docker build -t loremaster-api .
+```
+
+### Stack completo (demo privada)
+
+```bash
+# Requiere un .env con SECRET_KEY, POSTGRES_*, STORAGE_BASE_URL, ALLOWED_ORIGINS
+docker compose -f docker-compose.prod.yml up -d
+```
+
+El compose arranca Qdrant + Redis + PostgreSQL + la API FastAPI. Ollama y ComfyUI se asume que corren en el host y son accesibles via `host.docker.internal`.
+
+**Variables requeridas para el compose prod** (inyectar via `.env` o secrets manager):
+
+| Variable | Propósito |
+|---|---|
+| `SECRET_KEY` | Clave de firma JWT (mín. 32 chars) |
+| `POSTGRES_USER` | Usuario PostgreSQL |
+| `POSTGRES_PASSWORD` | Contraseña PostgreSQL |
+| `POSTGRES_DB` | Nombre de la base de datos |
+| `STORAGE_BASE_URL` | URL pública base para servir imágenes (ej. `https://demo.example.com/media`) |
+| `ALLOWED_ORIGINS` | Array JSON de orígenes CORS (ej. `["https://demo.example.com"]`) |
+
+El servicio `app` expone el puerto `8000` solo en `127.0.0.1` (detrás de nginx/proxy).
+
+---
+
 ## Base de datos: dev vs producción
 
 La app soporta **SQLite** (dev local, sin servidor) y **PostgreSQL** (producción/staging). El driver se detecta automáticamente a partir del prefijo de `DATABASE_URL`; no hay cambio de código.
@@ -231,7 +266,7 @@ pytest -k "test_create"             # por nombre
 | `test_deletion_service.py` | 2 | Cascade soft-delete: documentos, entidades, contenidos, vectores Qdrant |
 | `test_content_management_service.py` | 1 | `_discard_sibling_contents` no afecta otras categorías |
 
-**Total: 262 tests.**
+**Total: 300 tests.**
 
 ## Evaluaciones de integración (baseline)
 

@@ -171,3 +171,13 @@ class ComfyUITimeoutError(Exception):
         super().__init__(
             f"La generación de imágenes excedió el tiempo límite de {timeout}s.",
         )
+
+
+class LLMBusyError(Exception):
+    """Lanzada cuando el semáforo LLM está ocupado y no se puede atender la solicitud."""
+
+    def __init__(self) -> None:
+        """Inicializa la excepción indicando que el LLM está ocupado."""
+        super().__init__(
+            "El servicio LLM está ocupado. Intenta de nuevo en 30 segundos.",
+        )

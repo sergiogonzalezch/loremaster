@@ -10,6 +10,7 @@ import threading
 from langchain_core.output_parsers import StrOutputParser
 
 from app.core.config import settings
+from app.core.exceptions import LLMBusyError
 from app.domain.image_prompt_rules import build_combined_prompt
 from app.engine.llm import get_llm
 from app.models.db.entity import EntityType
@@ -70,13 +71,16 @@ def _extract_with_llm(
         len(content_text),
     )
 
+    if not _llm_semaphore.acquire(blocking=False):
+        raise LLMBusyError()
     try:
-        with _llm_semaphore:
-            result = _generation_chain.invoke(prompt)
+        result = _generation_chain.invoke(prompt)
     except Exception as e:
         logger.exception("LLM extraction failed")
         msg = "LLM service unavailable"
         raise RuntimeError(msg) from e
+    finally:
+        _llm_semaphore.release()
 
     if not result or not result.strip():
         logger.warning(

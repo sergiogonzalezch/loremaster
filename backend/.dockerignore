@@ -1,0 +1,14 @@
+venv/
+.venv/
+__pycache__/
+.pycache/
+*.pyc
+*.pyo
+.env
+*.db
+media/
+tests/
+evaluations/
+*.egg-info/
+.ruff_cache/
+alembic/__pycache__/

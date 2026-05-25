@@ -590,17 +590,18 @@ Fixes de consistencia entre capas y eliminación de código muerto aplicados sob
 
 ---
 
-## Semana 9 — Docker + Arquitectura Limpia
+## Semana 9 — Docker + Arquitectura Limpia ✅ (completada 2026-05-25)
 
-**Hito:** Todo containerizado. Codigo refactorizado y estable.
+**Hito:** Backend containerizado. Concurrencia LLM resuelta.
 **Objetivos:** O-3, O-7
 **Historias:** Todas
 
 ### Dockerizacion
 
-- [ ] `backend/Dockerfile` funcional (multi-stage build recomendado) — **pendiente**
-- [ ] `docker-compose.yml` completo con FastAPI containerizado — **pendiente**; infraestructura (Qdrant + Redis + PostgreSQL) ya containerizada en los compose existentes
-- [ ] Health checks configurados para PostgreSQL y Redis — solo Qdrant tiene healthcheck actualmente
+- [x] `backend/Dockerfile` funcional (multi-stage) — builder instala deps y pre-descarga embedding model; runtime con usuario no-root `loremaster`
+- [x] `backend/.dockerignore` — excluye venv, DB, media, tests, evals, caches
+- [x] `docker-compose.prod.yml` con servicio `app` FastAPI containerizado — `depends_on` con condición `service_healthy` en PG, Redis y Qdrant
+- [x] Health checks para PostgreSQL y Redis en compose — ya presentes en prod; Qdrant añadido (`/healthz`)
 - [x] Volumenes persistentes para Qdrant — configurado en `docker-compose.yml`
 - [x] Variables de entorno via `.env` (no hardcodeadas en compose) — Pydantic Settings completo
 
@@ -610,30 +611,32 @@ Fixes de consistencia entre capas y eliminación de código muerto aplicados sob
 - [x] `database.py` con conexion SQLAlchemy/SQLModel y manejo de sesiones
 - [x] Migraciones Alembic contra PostgreSQL — corren en startup via `lifespan.py` (`asyncio.to_thread`); `SKIP_MIGRATIONS=true` disponible para eval
 - [x] Todas las tablas creadas correctamente por Alembic
-- [ ] Indices faltantes — FK `collection_id` en entities no tiene índice explícito (integridad a nivel aplicación)
+- [x] Índice FK `ix_entities_collection_id` — migración `a1b2c3d4e5f6`
+
+### Concurrencia LLM
+
+- [x] HTTP 429 + `Retry-After: 30` cuando el semáforo LLM está ocupado — `LLMBusyError` en `rag_pipeline.py` e `image_prompt_builder.py`; capturado en `rag_query.py`, `content.py` e `image_generation.py`
 
 ### Refactorizacion de Codigo
 
-- [ ] ~~Estandarizar envelope de respuestas API: `{"data": ..., "status": "success", "count": N}`~~ — no adoptado; schemas Pydantic directos + `PaginatedResponse`
-- [x] HTTPException movido a routes — services usan excepciones de dominio (`DuplicateNameError`, `ContentNotAllowedError`, etc.); routes las capturan con try/except tipado
+- [ ] ~~Estandarizar envelope de respuestas API~~ — no adoptado; schemas Pydantic directos + `PaginatedResponse`
+- [x] HTTPException movido a routes — services usan excepciones de dominio; routes las capturan con try/except tipado
 - [x] Try/except en rutas críticas — colecciones, documentos y entidades tienen manejo de excepciones de dominio
 - [x] Logging en servicios principales — `logger.` activo en generation_service, rag_pipeline, documents_service y otros
-- [ ] Corregir typo: `exiting_collections` → `existing_collections` — pendiente verificar si persiste
+- [x] Typo `exiting_collections` — verificado, no existe en el código actual
 
 ### Observabilidad Basica
 
-- [ ] Agregar Prometheus a `docker-compose.yml` (puerto 9090)
-- [ ] Agregar Grafana a `docker-compose.yml` (puerto 3000)
-- [ ] Exportar metricas basicas: `loremaster_requests_total`, `loremaster_request_duration_seconds`
-- [ ] Dashboard Grafana con latencia p95 y tasa de error
+- [ ] Prometheus + Grafana — diferido a Semana 12 (no bloquea el deploy privado)
 
 ### Criterios de aceptacion Semana 9
 
-- [ ] `docker compose up` levanta TODO el stack sin errores — **pendiente** (falta Dockerfile de la app)
+- [x] `docker compose -f docker-compose.prod.yml up` levanta TODO el stack (requiere `.env` con `SECRET_KEY`, `POSTGRES_*`, `STORAGE_BASE_URL`, `ALLOWED_ORIGINS`)
 - [x] Datos persisten entre reinicios — PostgreSQL + Qdrant con volúmenes persistentes
 - [x] Flujo completo funciona con PostgreSQL — validado; `make dev-pg` levanta el stack completo
+- [x] LLM ocupado retorna 429 con `Retry-After` en lugar de bloquear el worker
 - [ ] ~~Respuestas API usan formato estandarizado~~ — no adoptado
-- [ ] Grafana muestra metricas basicas del sistema — no implementado
+- [ ] Grafana muestra metricas basicas del sistema — diferido
 
 ---
 

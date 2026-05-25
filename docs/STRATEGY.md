@@ -91,15 +91,17 @@ Los resultados J2=1 del harness muestran que `llama3.2` rechaza los prompts adve
 
 ## 5. Hoja de ruta — Semanas 9-12
 
-### Semana 9 — Deployable (estado actual: ~55%)
+### Semana 9 — Deployable ✅ (completada 2026-05-25)
 
 Objetivo: backend containerizado y concurrencia LLM resuelta.
 
-- [ ] `backend/Dockerfile` multi-stage (bloqueante de todo lo demás)
-- [ ] `docker-compose` completo con app FastAPI containerizada
-- [ ] Health checks para PostgreSQL y Redis en compose
-- [ ] HTTP 429 + `Retry-After` en el semáforo LLM
-- [ ] Llama Guard 3 como capa semántica opcional en output (fail-open, timeout configurable)
+- [x] `backend/Dockerfile` multi-stage — builder pre-descarga embedding model (~90 MB en imagen), runtime con usuario no-root `loremaster`
+- [x] `backend/.dockerignore` — excluye venv, DB, media, tests, evals
+- [x] `docker-compose.prod.yml` con servicio `app` — depends_on saludable (PG + Redis + Qdrant), volumen `media_data`, `host.docker.internal` para Ollama/ComfyUI
+- [x] Health checks para PostgreSQL, Redis y Qdrant en compose prod
+- [x] HTTP 429 + `Retry-After: 30` en el semáforo LLM — `LLMBusyError` en 3 rutas (rag_query, content, image_generation)
+- [x] Índice FK `ix_entities_collection_id` — migración Alembic `a1b2c3d4e5f6`
+- [ ] Llama Guard 3 — diferido (impacto bajo para demo de 1 usuario; añadir en Semana 11 si hay margen)
 
 ### Semana 10 — Persistencia e integración
 

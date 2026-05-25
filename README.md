@@ -98,6 +98,18 @@ El contenido compartido se expone en dos superficies sin autenticación:
 - **`/feed`** — Feed global paginado: galería de imágenes + cards de textos compartidos.
 - **`/users/:username`** — Perfil público de cualquier usuario: imágenes y textos compartidos, botón de compartir URL.
 
+## Deploy (demo privada)
+
+El backend está containerizado. Para levantar el stack completo:
+
+```bash
+cd backend
+# Crear .env con SECRET_KEY, POSTGRES_*, STORAGE_BASE_URL, ALLOWED_ORIGINS
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Ver [`backend/README.md`](backend/README.md#docker-producción--demo) para la referencia completa de variables y opciones del compose.
+
 ## Documentación
 
 | Documento | Contenido |
