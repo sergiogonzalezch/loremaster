@@ -14,6 +14,7 @@ from app.core.exceptions import (
 )
 from app.domain.category_rules import validate_category_for_entity
 from app.domain.content_guard import check_generated_output, check_prompt_length, check_user_input
+from app.domain.llama_guard import check_with_llama_guard
 from app.engine.rag_pipeline import EntityContext, invoke_generation_pipeline
 from app.models.db.entity import Entity
 from app.models.db.entity_content import EntityContent
@@ -99,6 +100,7 @@ async def generate(
         model=model,
     )
     check_generated_output(answer)
+    await check_with_llama_guard(query, answer)
 
     generated_text = GeneratedText(
         entity_id=entity.id,

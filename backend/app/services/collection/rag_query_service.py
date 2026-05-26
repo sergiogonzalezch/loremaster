@@ -3,6 +3,7 @@
 import logging
 
 from app.domain.content_guard import check_generated_output, check_prompt_length, check_user_input
+from app.domain.llama_guard import check_with_llama_guard
 from app.engine.rag_pipeline import invoke_rag_pipeline
 
 logger = logging.getLogger(__name__)
@@ -36,5 +37,6 @@ async def execute_rag_query(
         query=query,
     )
     check_generated_output(answer)
+    await check_with_llama_guard(query, answer)
     logger.info("RAG query returned %d context chunks", sources_count)
     return answer, sources_count, source_doc_ids

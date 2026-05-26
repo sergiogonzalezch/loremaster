@@ -99,6 +99,11 @@ class Settings(BaseSettings):
     max_tokens: int = 2000
     max_concurrent_llm_calls: int = 1
     max_pending_contents: int = 5
+
+    # Llama Guard — capa semántica de moderación (fail-open)
+    llama_guard_enabled: bool = False
+    llama_guard_model: str = "llama-guard3:8b"
+    llama_guard_timeout: float = 5.0
     rate_limit_enabled: bool = True
     rate_limit_per_minute: int = 30       # Rate limiting base (req/min)
     rate_limit_llm_per_minute: int = 5    # Endpoints que invocan Ollama
