@@ -265,7 +265,7 @@ pytest -k "test_create"             # por nombre
 | `test_models.py` | 3 | Smoke tests de modelos DB (instanciación SQLModel y relaciones básicas) |
 | `test_deletion_service.py` | 2 | Cascade soft-delete: documentos, entidades, contenidos, vectores Qdrant |
 | `test_content_management_service.py` | 1 | `_discard_sibling_contents` no afecta otras categorías |
-| `test_llama_guard.py` | 9 | Guard desactivado, safe/unsafe, múltiples categorías, timeout/conexión fail-open, respuesta vacía, formato del prompt |
+| `test_llama_guard.py` | 9 | Skip cuando guard está off, safe pass, unsafe block (simple y multi-categoría), timeout/conexión fail-open, respuesta vacía fail-open, formato del prompt LG3 |
 
 **Total: 309 tests.**
 
