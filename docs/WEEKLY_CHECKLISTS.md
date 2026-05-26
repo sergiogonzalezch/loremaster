@@ -617,6 +617,15 @@ Fixes de consistencia entre capas y eliminación de código muerto aplicados sob
 
 - [x] HTTP 429 + `Retry-After: 30` cuando el semáforo LLM está ocupado — `LLMBusyError` en `rag_pipeline.py` e `image_prompt_builder.py`; capturado en `rag_query.py`, `content.py` e `image_generation.py`
 
+### Moderación Semántica — Llama Guard 3 (implementado adelantado en Semana 9)
+
+- [x] `app/domain/llama_guard.py` — módulo de moderación semántica con prompt exacto del formato LG3 (categorías S1-S13, evaluación del rol `Agent`)
+- [x] Integrado en `rag_query_service` y `generation_service` tras `check_generated_output()` — segunda capa después de content_guard
+- [x] Fail-open: timeout, error de red o parseo inesperado → `logger.warning` + pasa sin bloquear
+- [x] `LLAMA_GUARD_ENABLED=false` por defecto (activar en demo/producción con `ollama pull llama-guard3:8b`)
+- [x] Settings: `llama_guard_enabled`, `llama_guard_model` (`llama-guard3:8b`), `llama_guard_timeout` (5.0s)
+- [x] 9 tests en `test_llama_guard.py` — total backend: **309 tests**
+
 ### Refactorizacion de Codigo
 
 - [ ] ~~Estandarizar envelope de respuestas API~~ — no adoptado; schemas Pydantic directos + `PaginatedResponse`
