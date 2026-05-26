@@ -19,7 +19,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Añade índice en entities.collection_id para acelerar queries por colección."""
-    op.create_index('ix_entities_collection_id', 'entities', ['collection_id'])
+    op.create_index('ix_entities_collection_id', 'entities', ['collection_id'], if_not_exists=True)
 
 
 def downgrade() -> None:
