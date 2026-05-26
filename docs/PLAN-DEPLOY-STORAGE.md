@@ -1,8 +1,8 @@
 # Plan — Prueba de Despliegue con Storage S3-Compatible
 
 Referencia de implementación para reemplazar el almacenamiento local por un backend S3-compatible.
-Cubre dos opciones: LocalStack (emulador AWS completo) y MinIO (S3-compatible, más simple y
-recomendado para esta escala).
+Cubre tres opciones: MinIO (recomendado para dev/demo), Floci (emulador AWS ligero, reemplaza
+LocalStack Community que quedó obsoleto en marzo 2026), y Cloudflare R2 (producción real).
 
 ---
 
@@ -23,24 +23,24 @@ Las imágenes generadas no sobreviven un restart del contenedor sin un volumen m
 
 ## Opciones
 
-| | LocalStack | MinIO | Cloudflare R2 |
+| | Floci | MinIO | Cloudflare R2 |
 |---|---|---|---|
-| Tipo | Emulador AWS completo | S3-compatible independiente | S3-compatible en nube |
-| Complejidad | Alta (requiere config extra) | Baja | Media (necesita cuenta) |
-| Uso recomendado | Validar integración AWS SDK | Dev + producción pequeña | Producción real |
+| Tipo | Emulador AWS completo (52 servicios) | S3-compatible independiente | S3-compatible en nube |
+| Docker image | `floci/floci:latest` (90 MB) | `minio/minio` (~200 MB) | N/A |
+| Puerto S3 | 4566 | 9000 | — |
+| Consola web | No | Sí (port 9001) | Sí (dashboard web) |
+| Auth token | No requerido | Credenciales propias | API key Cloudflare |
+| Uso recomendado | Validar integración boto3/AWS SDK | Dev + producción pequeña | Producción real |
 | Egress cost | N/A (local) | N/A (local) | Gratuito |
-| Docker image | `localstack/localstack` | `minio/minio` | N/A |
-| API S3 compatible | Sí (port 4566) | Sí (port 9000) | Sí |
-| Consola web | No (pro) | Sí (port 9001) | Sí (dashboard web) |
 
-**Recomendación:** MinIO para dev/demo, Cloudflare R2 para producción real.
-LocalStack tiene sentido solo si el destino final es AWS (EC2, ECS, etc.).
+**Recomendación:** MinIO para dev/demo, Floci para validar el SDK boto3 contra un emulador AWS
+completo, Cloudflare R2 para producción real.
 
 ---
 
-## Opción A — MinIO (recomendada)
+## Opción A — MinIO (recomendada para dev/demo)
 
-### 1. Añadir MinIO a `docker-compose.prod.yml`
+### Paso 1 — Añadir MinIO a `docker-compose.prod.yml`
 
 ```yaml
   minio:
@@ -63,18 +63,14 @@ LocalStack tiene sentido solo si el destino final es AWS (EC2, ECS, etc.).
       retries: 3
     networks:
       - loremaster
-
-volumes:
-  minio_data:
 ```
 
 Añadir `minio_data:` a la sección `volumes:` global del compose.
 
-### 2. Variables de entorno para el servicio `app`
+### Paso 2 — Variables de entorno para el servicio `app`
 
 ```yaml
     environment:
-      # Storage — S3 via MinIO
       STORAGE_BACKEND: s3
       S3_ENDPOINT_URL: http://minio:9000
       S3_BUCKET: ${S3_BUCKET:-loremaster-media}
@@ -84,7 +80,7 @@ Añadir `minio_data:` a la sección `volumes:` global del compose.
       STORAGE_BASE_URL: http://localhost:9000/${S3_BUCKET:-loremaster-media}
 ```
 
-### 3. Dependencia en el servicio `app`
+### Paso 3 — Dependencia en el servicio `app`
 
 ```yaml
     depends_on:
@@ -94,25 +90,35 @@ Añadir `minio_data:` a la sección `volumes:` global del compose.
 
 ---
 
-## Opción B — LocalStack
+## Opción B — Floci (emulador AWS, reemplaza LocalStack)
 
-### 1. Añadir LocalStack a `docker-compose.prod.yml`
+> LocalStack Community quedó obsoleto en marzo 2026. Floci es su sucesor MIT, sin auth token,
+> imagen 90 MB vs 1 GB, startup 24 ms vs 3.3 s.
+>
+> **Doc principal:** https://github.com/floci-io/floci
+
+### Paso 1 — Añadir Floci a `docker-compose.prod.yml`
+
+> **Referencia:** [docs/configuration/docker-compose.md](https://github.com/floci-io/floci/blob/main/docs/configuration/docker-compose.md)
+> — Variables `FLOCI_HOSTNAME`, `FLOCI_STORAGE_MODE`, `FLOCI_STORAGE_PERSISTENT_PATH`,
+> `FLOCI_DEFAULT_REGION`. Volumen en `/app/data`. Puerto único: `4566`.
 
 ```yaml
-  localstack:
-    image: localstack/localstack:latest
-    container_name: loremaster-localstack
+  floci:
+    image: floci/floci:latest
+    container_name: loremaster-floci
     restart: unless-stopped
     environment:
-      SERVICES: s3
-      DEFAULT_REGION: us-east-1
-      AWS_DEFAULT_REGION: us-east-1
+      FLOCI_HOSTNAME: floci                        # nombre DNS dentro de la red Docker
+      FLOCI_STORAGE_MODE: persistent               # memory | persistent | hybrid | wal
+      FLOCI_STORAGE_PERSISTENT_PATH: /app/data
+      FLOCI_DEFAULT_REGION: us-east-1
     ports:
       - "127.0.0.1:4566:4566"
     volumes:
-      - localstack_data:/var/lib/localstack
+      - floci_data:/app/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:4566"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -120,41 +126,78 @@ Añadir `minio_data:` a la sección `volumes:` global del compose.
       - loremaster
 ```
 
-### 2. Variables de entorno para el servicio `app`
+Añadir `floci_data:` a la sección `volumes:` global del compose.
+
+> **Nota sobre healthcheck:** verificar en
+> [docs/configuration/docker-compose.md](https://github.com/floci-io/floci/blob/main/docs/configuration/docker-compose.md)
+> si floci expone un endpoint dedicado (ej. `/_floci/health`). Si la `curl` al root devuelve
+> error, ajustar el path.
+
+> **Nota sobre Docker socket:** según los docs, `-v /var/run/docker.sock:/var/run/docker.sock`
+> solo es necesario para Lambda, RDS y ElastiCache — **no para S3**. No montarlo.
+
+### Paso 2 — Variables de entorno para el servicio `app`
+
+> **Referencia:** [README — boto3 Python snippet](https://github.com/floci-io/floci#readme)
+> — `endpoint_url="http://localhost:4566"`, `aws_access_key_id="test"`, `aws_secret_access_key="test"`.
+> Floci acepta cualquier valor no vacío como credenciales.
 
 ```yaml
     environment:
       STORAGE_BACKEND: s3
-      S3_ENDPOINT_URL: http://localstack:4566
+      S3_ENDPOINT_URL: http://floci:4566           # nombre de servicio Docker, no localhost
       S3_BUCKET: loremaster-media
       S3_REGION: us-east-1
-      AWS_ACCESS_KEY_ID: test       # LocalStack acepta cualquier valor
+      AWS_ACCESS_KEY_ID: test                      # cualquier string no vacío
       AWS_SECRET_ACCESS_KEY: test
       STORAGE_BASE_URL: http://localhost:4566/loremaster-media
 ```
 
+### Paso 3 — Dependencia en el servicio `app`
+
+```yaml
+    depends_on:
+      floci:
+        condition: service_healthy
+```
+
+### Paso 4 — URL path-style para acceso a archivos
+
+> **Referencia:** [docs/services/s3.md](https://github.com/floci-io/floci/blob/main/docs/services/s3.md)
+> — Floci soporta dos estilos de URL:
+> - Path-style: `http://localhost:4566/{bucket}/{key}` ← usar esta
+> - Virtual-hosted: `http://{bucket}.s3.localhost.floci.io:4566/{key}` ← requiere DNS config adicional
+
+El `STORAGE_BASE_URL` en el paso 2 ya usa path-style. En la función `build_storage_url` del código
+(paso de código 3.4 abajo), la rama S3 construye la URL de este modo:
+`http://localhost:4566/loremaster-media/{key}` — correcto para floci.
+
 ---
 
-## Cambios de código requeridos
+## Cambios de código requeridos (común a MinIO y Floci)
 
-### 3.1 Dependencias — `requirements.txt`
+### Paso de código 1 — Dependencias: `requirements.txt`
 
 ```
 boto3>=1.34.0
 ```
 
-### 3.2 Settings — `app/core/config/__init__.py`
+### Paso de código 2 — Settings: `app/core/config/__init__.py`
 
 ```python
 storage_backend: str = "local"          # "local" | "s3"
-s3_endpoint_url: str | None = None      # None = AWS real; URL = LocalStack/MinIO
+s3_endpoint_url: str | None = None      # None = AWS real; URL = Floci/MinIO/R2
 s3_bucket: str = "loremaster-media"
 s3_region: str = "us-east-1"
 aws_access_key_id: str | None = None
 aws_secret_access_key: str | None = None
 ```
 
-### 3.3 Cliente S3 — `app/core/storage/s3_client.py`
+### Paso de código 3 — Cliente S3: `app/core/storage/s3_client.py`
+
+> **Referencia:** [README — boto3 Python snippet](https://github.com/floci-io/floci#readme)
+> — El ejemplo oficial usa `endpoint_url`, `region_name`, `aws_access_key_id`, `aws_secret_access_key`.
+> Mismo patrón para MinIO y Floci.
 
 ```python
 import boto3
@@ -174,9 +217,11 @@ def get_s3_client():
     return boto3.client("s3", **kwargs)
 ```
 
-### 3.4 Storage — `app/core/storage/__init__.py`
+### Paso de código 4 — Storage: `app/core/storage/__init__.py`
 
-Añadir rama S3 en `save_file` y `build_storage_url`:
+> **Referencia:** [docs/services/s3.md](https://github.com/floci-io/floci/blob/main/docs/services/s3.md)
+> — Operaciones soportadas: `PutObject`, `GetObject`, `CreateBucket`, `HeadBucket`, multipart upload.
+> Todas las operaciones que usa este código están confirmadas en S3 de Floci.
 
 ```python
 def save_file(content: bytes, relative_path: str) -> str:
@@ -194,13 +239,17 @@ def build_storage_url(relative_path: str | None) -> str | None:
     if not relative_path:
         return None
     if settings.storage_backend == "s3" and settings.s3_endpoint_url:
-        # MinIO/LocalStack: URL directa al endpoint
+        # Path-style URL — compatible con Floci, MinIO y R2
         base = settings.s3_endpoint_url.rstrip("/")
         return f"{base}/{settings.s3_bucket}/{relative_path}"
     return f"{settings.storage_base_url.rstrip('/')}/{relative_path}"
 ```
 
-### 3.5 Crear bucket al arrancar — `app/core/lifespan.py`
+### Paso de código 5 — Crear bucket al arrancar: `app/core/lifespan.py`
+
+> **Referencia:** [README — Bucket creation](https://github.com/floci-io/floci#readme)
+> — El ejemplo oficial crea el bucket con `client.create_bucket(Bucket="my-bucket")`.
+> Floci no crea buckets automáticamente; hay que crearlos explícitamente.
 
 ```python
 if settings.storage_backend == "s3":
@@ -213,53 +262,63 @@ if settings.storage_backend == "s3":
 
 ---
 
-## Checklist de validación
+## Checklist de validación (Floci)
 
 ```bash
 # 1. Levantar el stack completo
 docker compose -f backend/docker-compose.prod.yml up -d
 
-# 2. Verificar health de todos los servicios
+# 2. Verificar que floci levantó y está healthy
 docker compose -f backend/docker-compose.prod.yml ps
+# floci debe mostrar "healthy"
 
-# 3. Health del backend
+# 3. Verificar que S3 responde (desde el host)
+curl -s http://localhost:4566
+# debe devolver XML o respuesta vacía — si devuelve "connection refused", floci no arrancó
+
+# 4. Health del backend
 curl http://localhost:8000/health
 
-# 4. Consola MinIO (si usas MinIO) — abrir en browser
-#    http://localhost:9001  →  usuario: loremaster / password: del .env
+# 5. Verificar que el bucket fue creado (lifespan.py lo crea al arrancar)
+# Opción con AWS CLI apuntando a Floci:
+AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test \
+  aws --endpoint-url http://localhost:4566 s3 ls
+# debe mostrar: loremaster-media
 
-# 5. Flujo completo de imagen
+# 6. Flujo completo de imagen
 #    a. Crear colección + subir documento
 #    b. Crear entidad + generar contenido + confirmar
 #    c. POST /image-generation/build-prompt
 #    d. POST /image-generation/generate
 #    e. Verificar que la URL de imagen responde 200
-#    f. Verificar que el archivo aparece en la consola MinIO / LocalStack
+#       curl http://localhost:4566/loremaster-media/<path-de-la-imagen>
 
-# 6. Persistencia: bajar y volver a levantar el stack
+# 7. Persistencia: bajar y volver a levantar (FLOCI_STORAGE_MODE=persistent)
 docker compose -f backend/docker-compose.prod.yml down
 docker compose -f backend/docker-compose.prod.yml up -d
-#    → la imagen generada en el paso 5 debe seguir accesible
+# La imagen del paso 6 debe seguir accesible
 
-# 7. Test suite completa (sin servicios externos)
+# 8. Test suite (no toca servicios externos)
 cd backend && python -m pytest -q
 ```
 
 ---
 
-## Variables `.env` adicionales para la prueba
+## Variables `.env` para la prueba con Floci
 
 ```env
-# MinIO
-MINIO_ROOT_USER=loremaster
-MINIO_ROOT_PASSWORD=<password-seguro-min-8-chars>
-S3_BUCKET=loremaster-media
 STORAGE_BACKEND=s3
+S3_ENDPOINT_URL=http://localhost:4566
+S3_BUCKET=loremaster-media
+S3_REGION=us-east-1
+AWS_ACCESS_KEY_ID=test
+AWS_SECRET_ACCESS_KEY=test
+STORAGE_BASE_URL=http://localhost:4566/loremaster-media
 ```
 
 ---
 
-## Opción C — Cloudflare R2 (producción real, sin LocalStack)
+## Opción C — Cloudflare R2 (producción real)
 
 Si el destino es producción directamente:
 
@@ -287,6 +346,6 @@ Ventaja: egress gratuito (a diferencia de AWS S3). Plan gratuito: 10 GB almacena
 3. Crear `core/storage/s3_client.py`
 4. Modificar `core/storage/__init__.py` con la rama S3
 5. Añadir inicialización del bucket en `lifespan.py`
-6. Añadir MinIO al `docker-compose.prod.yml`
+6. Añadir Floci (o MinIO) al `docker-compose.prod.yml`
 7. Añadir variables al `.env.production.example`
 8. Validar con el checklist de arriba
