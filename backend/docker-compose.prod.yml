@@ -73,6 +73,11 @@ services:
       # Ollama y ComfyUI corren en el host — accesibles via host-gateway en Linux.
       OLLAMA_BASE_URL: http://host.docker.internal:11434
       COMFYUI_URL: http://host.docker.internal:8188
+      # Llama Guard — segunda capa semántica de moderación (fail-open).
+      # Activar en demo/producción. Requiere: ollama pull llama-guard3:8b (~4.9 GB).
+      LLAMA_GUARD_ENABLED: ${LLAMA_GUARD_ENABLED:-false}
+      LLAMA_GUARD_MODEL: ${LLAMA_GUARD_MODEL:-llama-guard3:8b}
+      LLAMA_GUARD_TIMEOUT: ${LLAMA_GUARD_TIMEOUT:-5.0}
       MEDIA_ROOT: /app/media
       STORAGE_BASE_URL: ${STORAGE_BASE_URL:?STORAGE_BASE_URL requerida}
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY requerida}

@@ -59,13 +59,13 @@ Los resultados J2=1 del harness muestran que `llama3.2` rechaza los prompts adve
 
 **Estrategia recomendada:**
 - Documentar en `DEPLOY.md` los modelos validados (llama3.2, mistral:instruct).
-- Añadir Llama Guard 3 como capa semántica opcional en output (fail-open). Ver arquitectura §7.3 de STATUS.
+- ✅ **Llama Guard 3 implementado (2026-05-25)** — `app/domain/llama_guard.py` integrado como segunda capa semántica tras `content_guard`. Fail-open. Activar con `LLAMA_GUARD_ENABLED=true` + `ollama pull llama-guard3:8b` (~4.9 GB, ~5 GB VRAM).
 
 ### 3.3 Features a completar para el deploy
 
 | Feature | Estado real | Impacto |
 |---|---|---|
-| `backend/Dockerfile` | No existe | Sin esto no hay deploy fuera del host |
+| `backend/Dockerfile` | ✅ Implementado (multi-stage, usuario no-root) | — |
 | Storage S3/R2 | Filesystem local funcional; S3 sin implementar | Imágenes no sobreviven restart del servidor |
 | RunPod / GPU cloud | `runpod_client.py` no existe | Sin GPU cloud, generación de imágenes atada al host |
 | Clerk en producción | Variables no probadas con tenant real | Auth Clerk no funciona en cloud sin validación |
@@ -101,7 +101,7 @@ Objetivo: backend containerizado y concurrencia LLM resuelta.
 - [x] Health checks para PostgreSQL, Redis y Qdrant en compose prod
 - [x] HTTP 429 + `Retry-After: 30` en el semáforo LLM — `LLMBusyError` en 3 rutas (rag_query, content, image_generation)
 - [x] Índice FK `ix_entities_collection_id` — migración Alembic `a1b2c3d4e5f6`
-- [ ] Llama Guard 3 — diferido (impacto bajo para demo de 1 usuario; añadir en Semana 11 si hay margen)
+- [x] Llama Guard 3 — implementado (`app/domain/llama_guard.py`); `LLAMA_GUARD_ENABLED=false` por defecto, activar en demo con `ollama pull llama-guard3:8b`
 
 ### Semana 10 — Persistencia e integración
 
