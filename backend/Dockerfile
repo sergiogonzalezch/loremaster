@@ -1,7 +1,7 @@
 # ── Stage 1: builder ──────────────────────────────────────────────────────────
 # Instala dependencias y pre-descarga el embedding model.
 # Resultado: /opt/venv con todo instalado y /root/.cache con el modelo.
-FROM python:3.11-slim AS builder
+FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')"
 
 # ── Stage 2: runtime ──────────────────────────────────────────────────────────
 # Imagen final: solo lo necesario para ejecutar la app.
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 # Parchear paquetes del SO antes de cualquier otra capa.
 RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
