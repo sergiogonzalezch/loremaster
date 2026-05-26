@@ -103,13 +103,20 @@ Objetivo: backend containerizado y concurrencia LLM resuelta.
 - [x] Índice FK `ix_entities_collection_id` — migración Alembic `a1b2c3d4e5f6`
 - [x] Llama Guard 3 — implementado (`app/domain/llama_guard.py`); `LLAMA_GUARD_ENABLED=false` por defecto, activar en demo con `ollama pull llama-guard3:8b`
 
+### Semana 9 (continuación) — Deploy storage + reporte de costos
+
+> **Pendiente esta semana (2026-05-25):** completar antes de cerrar la semana.
+
+- [ ] Prueba de despliegue con storage S3-compatible: MinIO (recomendado) o LocalStack — ver `docs/PLAN-DEPLOY-STORAGE.md`
+- [ ] Reporte de costos finalizado — ver `docs/COST-REPORT.md` (completar con uso real medido)
+
 ### Semana 10 — Persistencia e integración
 
 Objetivo: imágenes persistentes y Clerk validado.
 
 - [ ] Decidir GPU cloud: RunPod Serverless vs Replicate vs filesystem para demo
-- [ ] Storage S3/R2 (o confirmar filesystem como suficiente para demo privada)
-- [ ] Probar Clerk end-to-end con tenant real (`CLERK_JWKS_URL` + `CLERK_AUDIENCE`)
+- [ ] Storage S3/R2 en producción (construye sobre la prueba de Semana 9)
+- [ ] Probar Clerk end-to-end con tenant real (`CLERK_JWKS_URL` + `CLERK_AUDIENCE`) — código ya implementado, solo configuración del tenant
 
 ### Semana 11 — GPU cloud e imagen en producción
 
