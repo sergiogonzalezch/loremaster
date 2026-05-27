@@ -191,7 +191,8 @@ class Settings(BaseSettings):
             )
         if self.environment in ("production", "demo"):
             for origin in self.allowed_origins:
-                if not origin.startswith("https://"):
+                is_localhost = "localhost" in origin or "127.0.0.1" in origin
+                if not origin.startswith("https://") and not is_localhost:
                     msg = f"ALLOWED_ORIGINS en {self.environment} debe usar HTTPS: '{origin}'. Cambia a https:// para entorno {self.environment}"
                     raise ValueError(
                         msg,

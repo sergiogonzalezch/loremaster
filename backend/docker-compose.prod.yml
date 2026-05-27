@@ -17,7 +17,7 @@ services:
     networks:
       - loremaster
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:6333/healthz || exit 1"]
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/6333' 2>/dev/null"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -109,7 +109,7 @@ services:
       S3_REGION: us-east-1
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
-      STORAGE_BASE_URL: ${STORAGE_BASE_URL:-http://localhost:4566/loremaster-media}
+      STORAGE_BASE_URL: http://localhost:4566/loremaster-media
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY requerida}
       COOKIE_SECURE: "true"
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?ALLOWED_ORIGINS requerida}

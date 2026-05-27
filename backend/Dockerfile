@@ -41,6 +41,9 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Copiar código fuente.
 COPY . .
 
+# Crear directorio de media para que el volumen Docker herede los permisos correctos.
+RUN mkdir -p /app/media
+
 # Ajustar permisos: el usuario loremaster necesita el cache y el directorio de trabajo.
 RUN chown -R loremaster:loremaster /home/loremaster/.cache /app
 

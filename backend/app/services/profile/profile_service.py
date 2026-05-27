@@ -149,11 +149,16 @@ async def upload_profile_image(session: Session, user: User, file: UploadFile) -
     unique_filename = generate_unique_filename(ext)
     relative_path = f"users/{user.username}/img/profile/{unique_filename}"
 
-    profile_dir = _get_profile_dir(user.username)
-    profile_dir.mkdir(parents=True, exist_ok=True)
-    for existing in profile_dir.iterdir():
-        if existing.is_file():
-            existing.unlink()
+    if settings.storage_backend == "s3":
+        if user.avatar_path:
+            from app.core.storage.s3_client import get_s3_client
+            get_s3_client().delete_object(Bucket=settings.s3_bucket, Key=user.avatar_path)
+    else:
+        profile_dir = _get_profile_dir(user.username)
+        profile_dir.mkdir(parents=True, exist_ok=True)
+        for existing in profile_dir.iterdir():
+            if existing.is_file():
+                existing.unlink()
 
     save_file(content, relative_path)
 
