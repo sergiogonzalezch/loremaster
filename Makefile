@@ -42,8 +42,5 @@ prod-rebuild:
 # Requiere que loremaster-api esté corriendo (make prod-up).
 # Uso: make make-admin USER=serchglez
 make-admin:
-	@if [ -z "$(USER)" ]; then \
-		echo "ERROR: especifica el usuario -> make make-admin USER=<username>"; \
-		exit 1; \
-	fi
+	$(if $(USER),,$(error Uso: make make-admin USER=^<username^>))
 	docker exec -it loremaster-api python scripts/make_admin.py $(USER) --force
