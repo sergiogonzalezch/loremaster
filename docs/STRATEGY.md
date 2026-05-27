@@ -199,7 +199,4 @@ Los siguientes ítems de `FIX.md` están documentados, mitigados y no bloquean e
 |---|---|---|
 | FIX-13 | Bases `DomainError`/`InfrastructureError` — solo si se añade middleware global de excepciones | Post-Fase 3 |
 | FIX-29 | Log "Auto-discarded" emitido antes de `session.commit()` | Post-Fase 3 |
-| FIX-34 | FK constraint faltante en migración `add_owner_id_to_collections` | Semana 10 (junto con migración de S3) |
-| FIX-35 | Constraint UNIQUE no protege colecciones con `owner_id=NULL` | Post-Fase 3 (backfill de datos pre-refactor) |
-| FIX-42 | `AuthContext` no valida expiración del token en cliente | Post-Fase 3 |
 | FIX-50 | `deletion_service.py` mezcla soft-delete + ficheros + Qdrant | Revisar al integrar S3/R2 (Semana 10) |

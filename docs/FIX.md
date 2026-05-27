@@ -41,15 +41,15 @@ Lista de tech debt identificado y aún no corregido. Ordenado por impacto estima
 | 31 | Paginación hardcodeada en `GET /admin/users` | Backend | ✅ Resuelto | — |
 | 32 | `get_admin_user` no verifica `is_deleted` | Backend | ✅ Resuelto | — |
 | 33 | `User.email` sin `unique=True` en modelo SQLModel | Backend | ✅ Resuelto | — |
-| 34 | FK constraint faltante en migración `add_owner_id_to_collections` | Backend | 🟢 Cubierto | Sin FK en SQL; integridad referencial solo a nivel de aplicación |
-| 35 | Constraint `(name, owner_id)` no protege colecciones con `owner_id=NULL` | Backend | 🟢 Cubierto | SQL `NULL != NULL` en UNIQUE; solo afecta datos migrados sin backfill |
+| 34 | FK constraint faltante en migración `add_owner_id_to_collections` | Backend | ✅ Resuelto | Checkpoint `4332793740fb` crea `collections` con `ForeignKeyConstraint(['owner_id'], ['users.id'])` |
+| 35 | Constraint `(name, owner_id)` no protege colecciones con `owner_id=NULL` | Backend | ✅ Resuelto | Checkpoint crea la tabla desde cero con FK; instalaciones nuevas no tienen datos pre-refactor sin backfill |
 | 36 | `get_collection_or_404_public_or_owned` bypassa Clerk tokens | Backend | ✅ Eliminado | Función borrada como código muerto en 2026-05-08 (endpoint `GET /collections/public` eliminado previamente) |
 | 37 | Admin delete sin cascade — vectores Qdrant y registros hijos huérfanos | Backend | ✅ Resuelto | — |
 | 38 | RAG query sin ownership check | Backend | ✅ Resuelto | — |
 | 39 | ComfyUI partial batch failure silencioso | Backend | 🟢 Cubierto | Solo afecta OPTION_B (en desarrollo); mock siempre completa |
 | 40 | URLs hardcodeadas `localhost:8000` en ImagePanel e ImageGallery | Frontend | ✅ Resuelto | — |
 | 41 | `CollectionsPage.fetchCollections` sin AbortSignal | Frontend | ✅ Resuelto | — |
-| 42 | `AuthContext.decodeUser` no verifica expiración del token | Frontend | 🟢 Cubierto | API interceptor detecta 401 y redirige; solo hay lag de UX |
+| 42 | `AuthContext.decodeUser` no verifica expiración del token | Frontend | ✅ Resuelto | `AuthContext` reescrito: usa `getMyProfile()` server-side + `scheduleLogout(profile.expires_at)`; no hay JWT client-side |
 | 43 | Race condition en límite de pending contents | Backend | ✅ Resuelto | Post-flush recount en `generation_service.py` — rollback si se supera el límite |
 | 44 | `list_contents` y `list/get_generation` sin ownership check | Backend | ✅ Resuelto | Cambiado a `get_entity_or_404_owned` en `entity_content.py` e `image_generation.py` |
 | 45 | `discard_content` no actualiza `updated_at` | Backend | ✅ Resuelto | `content.updated_at` asignado en `discard_content` igual que en `confirm_content` |
@@ -596,36 +596,27 @@ email: Optional[str] = SQLField(default=None, max_length=255, unique=True)
 
 ---
 
-## 34. FK constraint faltante en migración `add_owner_id_to_collections`
+## ~~34. FK constraint faltante en migración `add_owner_id_to_collections`~~ ✅ Resuelto
 
 **Capa:** Backend  
-**Archivo:** `backend/alembic/versions/add_owner_id_to_collections.py:22`  
-**Impacto:** Bajo en SQLite (FK no enforzados por defecto), Medio en PostgreSQL (sin integridad referencial a nivel DB).  
-**Clasificación:** Parcialmente mitigado.
+**Clasificación:** Resuelto — checkpoint `4332793740fb` (2026-05-18).
 
-La migración añade la columna sin FK:
+El checkpoint squashea todas las migraciones anteriores en una sola y crea la tabla `collections` desde cero con la FK correcta:
 
 ```python
-batch_op.add_column(sa.Column("owner_id", sa.String(36), nullable=True))
-# falta: sa.ForeignKey("users.id")
+sa.ForeignKeyConstraint(['owner_id'], ['users.id'], ),
 ```
 
-El modelo SQLAlchemy sí declara `ForeignKey("users.id")`, pero ese metadato no se propaga a una migration que usa `add_column` explícito.
-
-**Mitigación:** La lógica de ownership en `get_collection_or_404_owned` y `create_collection_service` enforza la relación a nivel de aplicación. En entorno SQLite de desarrollo, los FK no se enforzan por defecto.
+La migración incremental `add_owner_id_to_collections` ya no existe como archivo separado. Cualquier instalación nueva parte del checkpoint con integridad referencial completa a nivel de BD.
 
 ---
 
-## 35. Constraint `(name, owner_id)` no protege colecciones con `owner_id=NULL`
+## ~~35. Constraint `(name, owner_id)` no protege colecciones con `owner_id=NULL`~~ ✅ Resuelto
 
 **Capa:** Backend  
-**Archivo:** `backend/alembic/versions/add_owner_id_to_collections.py:26`  
-**Impacto:** Bajo — solo afecta datos pre-refactor sin backfill de `owner_id`.  
-**Clasificación:** Parcialmente mitigado.
+**Clasificación:** Resuelto — checkpoint `4332793740fb` (2026-05-18).
 
-En SQL, `NULL != NULL` en constraints UNIQUE. Dos filas con el mismo `name` y `owner_id=NULL` no violan el constraint. Las colecciones antiguas sin owner asignado quedan sin protección de nombre.
-
-**Mitigación:** Todas las colecciones creadas tras el refactor reciben `owner_id` del usuario autenticado. El camino `NULL` es inalcanzable desde las rutas actuales. El riesgo se limita a instancias pre-refactor hasta que se ejecute un backfill (documentado en `USERS-PROFILE.md`, pendiente).
+El checkpoint crea la tabla `collections` con `ForeignKeyConstraint(['owner_id'], ['users.id'])`. Instalaciones nuevas nunca tienen datos pre-refactor sin `owner_id`, y el camino `NULL` es inalcanzable desde las rutas API (todas requieren autenticación). El escenario de instancias pre-refactor no aplica a despliegues que partan del checkpoint.
 
 ---
 
@@ -766,29 +757,19 @@ Y propagar el signal a `getCollections`.
 
 ---
 
-## 42. `AuthContext.decodeUser` no valida expiración del token
+## ~~42. `AuthContext.decodeUser` no valida expiración del token~~ ✅ Resuelto
 
 **Capa:** Frontend  
 **Archivo:** `frontend/src/contexts/AuthContext.tsx`  
-**Impacto:** Bajo — un token expirado mantiene al usuario con sesión aparentemente activa en la UI hasta que el interceptor de la API detecta un 401 y redirige. Genera lag de UX.  
-**Clasificación:** Parcialmente mitigado.
+**Clasificación:** Resuelto — `AuthContext` reescrito con sesión server-side (2026-05-27).
 
-```typescript
-function decodeUser(token: string): AuthUser | null {
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    // sin verificación de payload.exp
-```
+`AuthContext` fue reescrito completamente. Ya no existe `decodeUser` ni decodificación JWT en el cliente. El token viaja en cookie HttpOnly — el frontend nunca lo lee. La verificación de sesión y la expiración se gestionan íntegramente en el servidor:
 
-Si el token expira mientras el usuario tiene la app abierta (pestaña sin actividad durante 24 h), la UI mostrará al usuario como autenticado hasta la próxima acción que haga una petición.
+1. Al montar, `getMyProfile()` consulta al backend: si la cookie es válida devuelve el perfil incluyendo `expires_at`; si no, devuelve 401.
+2. `scheduleLogout(profile.expires_at)` programa un `setTimeout` que llama `logout({ force: true })` exactamente cuando la sesión expira — sin lag de UX.
+3. El backend valida el token en cada request; un 401 dispara logout inmediato via el interceptor del cliente API.
 
-**Mitigación:** `apiClient.ts` detecta 401 y llama `removeToken()` + redirige a login. La ventana de inconsistencia es pequeña en uso normal.
-
-**Solución sugerida:**
-```typescript
-const now = Math.floor(Date.now() / 1000);
-if (payload.exp && payload.exp < now) return null;
-```
+No queda ventana de inconsistencia: la UI refleja el estado de sesión del servidor en tiempo real.
 
 ---
 
@@ -799,7 +780,8 @@ if (payload.exp && payload.exp < now) return null;
 
 ---
 
-*Generado el 2026-04-25. Actualizado el 2026-04-28 (ítems 17, 18). 
+*Actualizado el 2026-05-27 (ítems 34, 35, 42 marcados ✅ Resuelto — verificación de código; 34-35 resueltos por checkpoint migration `4332793740fb`; 42 resuelto por reescritura de `AuthContext` con sesión server-side + `scheduleLogout`).
+Generado el 2026-04-25. Actualizado el 2026-04-28 (ítems 17, 18). 
 Actualizado el 2026-04-30 (ítems 6 revisado, 21-25 nuevos — análisis del módulo image generation). 
 Actualizado el 2026-04-30 (ítems 22-25 resueltos — correcciones en image generation service, route y models). 
 Actualizado el 2026-04-30 (ítems 6 y 21 resueltos — cascade soft-delete de ImageRecord en deletion_service.py). 
