@@ -2,7 +2,7 @@ BACKEND_DIR  = backend
 FRONTEND_DIR = frontend
 DC_BASE      = docker compose -f $(BACKEND_DIR)/docker-compose.yml
 DC_PG        = $(DC_BASE) -f $(BACKEND_DIR)/docker-compose.postgres.yml
-DC_PROD      = docker compose -f $(BACKEND_DIR)/docker-compose.prod.yml
+DC_PROD      = docker compose -f $(BACKEND_DIR)/docker-compose.prod.yml --env-file .env.production
 
 .PHONY: dev dev-pg infra infra-pg down prod-up prod-down prod-rebuild prod-rebuild-api prod-rebuild-fe make-admin
 

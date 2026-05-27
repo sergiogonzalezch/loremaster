@@ -1,7 +1,7 @@
 # ========================
-# Secrets — nunca commitear el .env real
+# Secrets — nunca commitear el archivo real de producción
 # ========================
-.env
+.env.production
 
 # ========================
 # Debug overrides (solo uso local, no entran al repo)

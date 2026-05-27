@@ -30,27 +30,32 @@ Las migraciones Alembic corren automáticamente en el startup del backend (`life
 
 ## 1. Variables de entorno
 
-Crear un archivo `.env` en la raíz del repo (junto al Makefile) con los secretos requeridos:
+Copiar el archivo de ejemplo y editar los valores reales:
 
 ```bash
-# Secretos — generar SECRET_KEY con:
-#   python -c "import secrets; print(secrets.token_hex(32))"
+cp .env.production.example .env.production
+# Editar .env.production con SECRET_KEY, POSTGRES_PASSWORD y ALLOWED_ORIGINS
+```
+
+`.env.production` contiene las variables que `docker-compose.prod.yml` interpola con `${VAR}`.
+El archivo real nunca se commitea — está en `.gitignore`.
+
+Variables obligatorias (el compose falla si no están definidas):
+
+```bash
+# Generar con: python -c "import secrets; print(secrets.token_hex(32))"
 SECRET_KEY=<valor-generado>
 
-# PostgreSQL
 POSTGRES_USER=loremaster
 POSTGRES_PASSWORD=<contraseña-segura>
 POSTGRES_DB=loremaster
 
-# Orígenes CORS permitidos (en demo local: http://localhost)
+# Demo local: http://localhost | Servidor real: https://tu-dominio.com
 ALLOWED_ORIGINS=http://localhost
-
-# Storage — Nginx proxea /media/ → Floci internamente
-STORAGE_BASE_URL=http://localhost/media
 ```
 
-> Las variables de entorno las interpola `docker-compose.prod.yml` en tiempo de `up`.  
-> No copiar `backend/.env` al servidor — usar secrets manager o variables de entorno CI/CD.
+> El resto de la configuración del backend (Qdrant, Redis, Ollama, storage...) está  
+> hardcodeada en el bloque `environment:` del compose y no requiere `.env.production`.
 
 ---
 
