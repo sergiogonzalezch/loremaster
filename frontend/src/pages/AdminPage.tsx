@@ -125,7 +125,7 @@ export default function AdminPage() {
                   <th>Rol</th>
                   <th>Estado</th>
                   <th>Registrado</th>
-                  <th className="pe-4"></th>
+                  <th className="pe-4" aria-label="Acciones"></th>
                 </tr>
               </thead>
               <tbody>

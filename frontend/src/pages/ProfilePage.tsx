@@ -157,6 +157,7 @@ export default function ProfilePage() {
     <Container fluid="lg" className="py-5">
       <div className="mb-4">
         <button
+          type="button"
           onClick={() => navigate(-1)}
           className="btn btn-sm btn-outline-secondary mb-3"
           style={{ fontSize: "0.8rem" }}

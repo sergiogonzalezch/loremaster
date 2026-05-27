@@ -258,7 +258,7 @@ export default function EntitiesTab({ collectionId }: Props) {
               <th>Tipo</th>
               <th>Descripción</th>
               <th>Creada</th>
-              <th></th>
+              <th aria-label="Acciones"></th>
             </tr>
           </thead>
           <tbody>
@@ -272,25 +272,18 @@ export default function EntitiesTab({ collectionId }: Props) {
                   />
                 </td>
                 <td>
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    className="text-primary fw-semibold"
-                    style={{ cursor: "pointer" }}
+                  <button
+                    type="button"
+                    className="btn btn-link p-0 text-primary fw-semibold"
+                    style={{ cursor: "pointer", textDecoration: "none" }}
                     onClick={() =>
                       navigate(
                         `/collections/${collectionId}/entities/${entity.id}`,
                       )
                     }
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter")
-                        navigate(
-                          `/collections/${collectionId}/entities/${entity.id}`,
-                        );
-                    }}
                   >
                     {entity.name}
-                  </span>
+                  </button>
                 </td>
                 <td>
                   <Badge bg={ENTITY_TYPE_BADGE[entity.type]}>

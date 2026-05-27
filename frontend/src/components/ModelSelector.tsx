@@ -43,9 +43,7 @@ export default function ModelSelector({ disabled, onChange }: Props) {
       .catch(() => {
         // Si Ollama no responde, el selector permanece oculto y el backend usa su default
       });
-    // onChange is stable (useCallback in parent), safe to include
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [onChange]);
 
   if (!visible) return null;
 

@@ -16,7 +16,6 @@ import {
   deleteImage,
   shareImage,
 } from "../api/images";
-import { getContents } from "../api/contents";
 import type { EntityContent, ImageGenerationItem } from "../types";
 import { CATEGORY_LABELS } from "../utils/constants";
 import { getErrorMessage } from "../utils/errors";
@@ -71,29 +70,28 @@ function ImageGrid({
         return (
           <div key={img.id} className="image-cell position-relative">
             {url ? (
-              <img
-                src={url}
-                alt=""
-                role="button"
-                tabIndex={0}
-                className="img-fluid rounded"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  cursor: "pointer",
-                }}
+              <button
+                type="button"
+                aria-label="Ver imagen"
+                className="p-0 border-0 bg-transparent d-block"
+                style={{ width: "100%", height: "100%", cursor: "pointer" }}
                 onClick={() => onSelect(gen, img)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") onSelect(gen, img);
-                }}
-              />
+              >
+                <img
+                  src={url}
+                  alt=""
+                  className="img-fluid rounded"
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              </button>
             ) : (
               <div className="image-placeholder">
                 <span>Generando…</span>
               </div>
             )}
             <button
+              type="button"
+              aria-label="Eliminar imagen"
               className="image-delete-btn"
               onClick={() => onDelete(gen.id, img.id)}
               title="Eliminar"
@@ -121,15 +119,13 @@ export default function ImagePanel({
   const [activeTab, setActiveTab] = useState<"generar" | "historial">(
     "generar",
   );
-  const [confirmedContent, setConfirmedContent] =
-    useState<EntityContent | null>(null);
+  const confirmedContent = initialContent ?? null;
   const [promptData, setPromptData] = useState<{
     auto_prompt: string;
     token_count: number;
   } | null>(null);
   const [finalPrompt, setFinalPrompt] = useState("");
   const [batchSize, setBatchSize] = useState(4);
-  const [loading, setLoading] = useState(true);
   const [building, setBuilding] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -145,37 +141,19 @@ export default function ImagePanel({
   const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
-    if (show) {
-      if (initialContent) {
-        setConfirmedContent(initialContent);
-      }
-    } else {
-      setConfirmedContent(null);
-      setError(null);
-    }
+    setPromptData(null);
+    setFinalPrompt("");
+    if (!show) setError(null);
   }, [show, initialContent]);
 
   const fetchData = useCallback(async () => {
-    setLoading(true);
     setLoadingGenerations(true);
     try {
-      const [contentsRes, generationsRes] = await Promise.all([
-        getContents(collectionId, entityId, {
-          status: "confirmed",
-          page_size: 50,
-        }),
-        listImageGenerations(collectionId, entityId),
-      ]);
-      const contents = contentsRes.data ?? [];
-      // Usar functional updater para leer el estado actual en vez de la clausura.
-      // Evita sobreescribir el initialContent pasado desde ContentCard cuando
-      // fetchData se ejecuta con una clausura antigua (confirmedContent=null).
-      setConfirmedContent((prev) => prev ?? (contents[0] ?? null));
+      const generationsRes = await listImageGenerations(collectionId, entityId);
       setGenerations(generationsRes.generations);
     } catch {
-      setError("Error al cargar datos");
+      setError("Error al cargar historial");
     } finally {
-      setLoading(false);
       setLoadingGenerations(false);
     }
   }, [collectionId, entityId]);
@@ -319,15 +297,6 @@ export default function ImagePanel({
   };
 
   const renderGenerarTab = () => {
-    if (loading) {
-      return (
-        <div className="text-center py-4">
-          <Spinner animation="border" size="sm" className="me-2" />
-          Cargando…
-        </div>
-      );
-    }
-
     if (!confirmedContent) {
       return (
         <div className="lm-empty">

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import {
@@ -44,7 +44,7 @@ export default function PublicProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshKey, incrementRefresh] = useReducer((n: number) => n + 1, 0);
   const [selectedContent, setSelectedContent] =
     useState<SharedContentItem | null>(null);
   const [selectedImage, setSelectedImage] = useState<SharedImageItem | null>(
@@ -64,7 +64,7 @@ export default function PublicProfilePage() {
   useEffect(() => {
     function handleVisibility() {
       if (document.visibilityState === "visible") {
-        setRefreshKey((k) => k + 1);
+        incrementRefresh();
       }
     }
     document.addEventListener("visibilitychange", handleVisibility);
@@ -160,6 +160,7 @@ export default function PublicProfilePage() {
                 </div>
                 <div className="ms-auto d-flex align-items-center gap-2">
                   <button
+                    type="button"
                     onClick={handleShare}
                     className="btn btn-outline-light"
                     title="Compartir perfil"
@@ -169,6 +170,7 @@ export default function PublicProfilePage() {
                   </button>
                   {authUser?.username === username && (
                     <button
+                      type="button"
                       onClick={() => navigate("/profile")}
                       className="btn btn-outline-light"
                       title="Editar perfil"
@@ -197,16 +199,19 @@ export default function PublicProfilePage() {
                   <Row className="g-3">
                     {profile.shared_images.map((img) => (
                       <Col key={img.id} xs={6} sm={4} md={3}>
-                        <div
-                          role="button"
-                          tabIndex={0}
-                          className="lm-shared-image-card"
+                        <button
+                          type="button"
+                          aria-label={`Ver imagen de ${img.entity_name}`}
+                          className="lm-shared-image-card p-0 border-0 bg-transparent"
                           style={{
+                            display: "block",
+                            width: "100%",
                             position: "relative",
                             borderRadius: 8,
                             overflow: "hidden",
                             border: "1px solid var(--lm-border)",
                             aspectRatio: "1",
+                            cursor: "pointer",
                           }}
                           onClick={() => setSelectedImage(img)}
                           onKeyDown={(e) => {
@@ -234,7 +239,7 @@ export default function PublicProfilePage() {
                               img.entity_type as keyof typeof ENTITY_TYPE_LABELS
                             ] ?? img.entity_type}
                           </div>
-                        </div>
+                        </button>
                       </Col>
                     ))}
                   </Row>

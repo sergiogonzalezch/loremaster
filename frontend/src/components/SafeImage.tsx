@@ -49,22 +49,31 @@ export default function SafeImage({
     );
   }
 
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        aria-label={alt}
+        onClick={onClick}
+        className={`p-0 border-0 bg-transparent d-block ${className || ""}`}
+        style={{ cursor: "pointer", ...style }}
+      >
+        <img
+          src={src ?? undefined}
+          alt=""
+          loading="lazy"
+          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+        />
+      </button>
+    );
+  }
+
   return (
     <img
       src={src ?? undefined}
       alt={alt}
       className={className}
       style={style}
-      onClick={onClick}
-      onKeyDown={
-        onClick
-          ? (e) => {
-              if (e.key === "Enter" || e.key === " ") onClick();
-            }
-          : undefined
-      }
-      role={onClick ? "button" : undefined}
-      tabIndex={onClick ? 0 : undefined}
       loading="lazy"
     />
   );

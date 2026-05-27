@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Container,
@@ -37,7 +37,7 @@ export default function PublicFeedPage() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshKey, incrementRefresh] = useReducer((n: number) => n + 1, 0);
   const [selectedItem, setSelectedItem] = useState<PublicFeedItem | null>(null);
   const [selectedImage, setSelectedImage] = useState<PublicImageItem | null>(
     null,
@@ -75,13 +75,13 @@ export default function PublicFeedPage() {
   useEffect(() => {
     function handleVisibility() {
       if (document.visibilityState === "visible") {
-        setRefreshKey((k) => k + 1);
+        incrementRefresh();
       }
     }
     document.addEventListener("visibilitychange", handleVisibility);
     return () =>
       document.removeEventListener("visibilitychange", handleVisibility);
-  }, []);
+  }, [incrementRefresh]);
 
   return (
     <Container fluid="lg" className="py-5">
@@ -126,22 +126,21 @@ export default function PublicFeedPage() {
               <Row className="g-3">
                 {images.map((img) => (
                   <Col key={img.image_id} xs={6} sm={4} md={3} lg={2}>
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      className="lm-shared-image-card"
+                    <button
+                      type="button"
+                      aria-label={`Ver imagen de ${img.entity_name}`}
+                      className="lm-shared-image-card p-0 border-0 bg-transparent"
                       style={{
+                        display: "block",
+                        width: "100%",
                         position: "relative",
                         borderRadius: 8,
                         overflow: "hidden",
                         border: "1px solid var(--lm-border)",
                         aspectRatio: "1",
+                        cursor: "pointer",
                       }}
                       onClick={() => setSelectedImage(img)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ")
-                          setSelectedImage(img);
-                      }}
                     >
                       {(img.storage_path || img.image_url) ? (
                         <SafeImage
@@ -169,7 +168,7 @@ export default function PublicFeedPage() {
                         {" · "}
                         {img.entity_name}
                       </div>
-                    </div>
+                    </button>
                   </Col>
                 ))}
               </Row>

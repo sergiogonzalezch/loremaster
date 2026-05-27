@@ -466,7 +466,7 @@ export default function DocumentsTab({
               <th>Chunks</th>
               <th>Estado</th>
               <th>Creado</th>
-              <th></th>
+              <th aria-label="Acciones"></th>
             </tr>
           </thead>
           <tbody>
@@ -620,7 +620,7 @@ export default function DocumentsTab({
                     {loadingContent ? (
                       <div className="mt-2 d-flex align-items-center gap-2 text-muted">
                         <Spinner animation="border" size="sm" />
-                        <span>Cargando contenido...</span>
+                        <span>Cargando contenido…</span>
                       </div>
                     ) : documentContent ? (
                       <pre

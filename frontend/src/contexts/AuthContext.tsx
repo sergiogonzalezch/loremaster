@@ -10,6 +10,7 @@ import {
   useReducer,
   useEffect,
   useCallback,
+  useMemo,
   useRef,
   type ReactNode,
 } from "react";
@@ -138,11 +139,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       controller.abort();
-      if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
+      const timer = logoutTimerRef.current;
+      if (timer) clearTimeout(timer);
     };
   }, [scheduleLogout]);
 
-  function login(): Promise<void> {
+  const login = useCallback((): Promise<void> => {
     return getMyProfile()
       .then((profile) => {
         dispatch({
@@ -155,13 +157,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .catch(() => {});
       });
     // Sin .catch(): los errores de red o credenciales se propagan al llamador (LoginPage).
-    // No reseteamos user aquí para no desloguear a un usuario ya autenticado por error transitorio.
-  }
+  }, [scheduleLogout]);
+
+  const contextValue = useMemo(
+    () => ({ user, loading, login, logout, avatarUrl, setAvatarUrl }),
+    [user, loading, login, logout, avatarUrl, setAvatarUrl],
+  );
 
   return (
-    <AuthContext.Provider
-      value={{ user, loading, login, logout, avatarUrl, setAvatarUrl }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
