@@ -1,7 +1,7 @@
 # STRATEGY.md — Evaluación técnica y hoja de ruta hacia producción
 
-**Fecha:** 2026-05-20
-**Contexto:** Evaluación honesta del estado del proyecto. Actualizado con prioridades definidas, roadmap ajustado a Semanas 9-12, y correcciones de deuda de documentación.
+**Fecha:** 2026-05-27
+**Contexto:** Evaluación honesta del estado del proyecto. Actualizado tras cierre completo de Semana 9.
 
 ---
 
@@ -14,7 +14,7 @@ La inversión en harnesses es inusualmente sólida para un proyecto de esta esca
 0 errores de lint (Ruff + ESLint), 100/100 React Doctor, cero `any` en producción, useReducer correctamente aplicado, soft-delete en toda la capa de datos, separación limpia de capas (routes → services → domain/engine). El estándar se mantuvo alto durante todo el desarrollo.
 
 ### Trabajo de seguridad real
-53 issues de seguridad cerrados, content guard multi-capa con evaluación cuantitativa, 300 tests. No es seguridad cosmética — los patrones tienen justificación documentada, los casos límite están probados (leetspeak, separadores, multilingüe, NFKD), y las decisiones de producto están anotadas con criterio de revisión futuro.
+53 issues de seguridad cerrados + 1 finding del security review externo cerrado, content guard multi-capa con evaluación cuantitativa, 309 tests. No es seguridad cosmética — los patrones tienen justificación documentada, los casos límite están probados (leetspeak, separadores, multilingüe, NFKD), y las decisiones de producto están anotadas con criterio de revisión futuro.
 
 ### Guardrails sobre textos entrantes
 El content guard opera en tres puntos del pipeline:
@@ -23,6 +23,9 @@ El content guard opera en tres puntos del pipeline:
 - `check_generated_output()` — valida la salida del LLM antes de persistir
 
 Los documentos subidos son escaneados automáticamente. Si el texto extraído contiene patrones bloqueados, la ingesta se rechaza con `ContentNotAllowedError` antes de llegar a Qdrant.
+
+### Stack de demo completamente containerizado
+El stack de producción/demo corre entero en Docker con un único puerto expuesto al host (`:80`). Nginx actúa como reverse proxy: `/api/` → backend, `/media/` → Floci S3 interno. Backend, base de datos, vector store, caché y storage son invisibles al host. Las migraciones Alembic corren automáticamente en startup.
 
 ---
 
@@ -42,31 +45,27 @@ El proyecto tiene tres niveles de prioridad claros:
 
 ## 3. Riesgos identificados
 
-### 3.1 Cuello de botella: semáforo LLM (riesgo: Alto)
+### 3.1 Cuello de botella: semáforo LLM ✅ Resuelto (corto plazo)
 
-El semáforo de 1 llamada LLM concurrente funciona perfectamente en local para un usuario. Con dos usuarios generando contenido simultáneamente, uno espera bloqueado hasta que el otro termina.
+El semáforo de 1 llamada LLM concurrente funciona perfectamente en local para un usuario.
 
-**Síntoma actual:** `PUBLIC-001` falla en eval bajo carga — Ollama retorna 503 cuando el semáforo está ocupado.
+**Resuelto (2026-05-25):** HTTP 429 + `Retry-After: 30` implementado en las 3 rutas que usan el semáforo (`rag_query`, `content`, `image_generation`). El worker ya no bloquea — devuelve 429 inmediatamente si el semáforo está ocupado.
 
-**Estrategia recomendada:**
-- Corto plazo: exponer `HTTP 429 Too Many Requests` con `Retry-After` en lugar de bloquear el worker.
-- Medio plazo: cola de generación con `BackgroundTasks` de FastAPI + estado de job (`pending → running → done`).
+**Pendiente (medio/largo plazo):**
+- Medio plazo: cola de generación con `BackgroundTasks` + estado de job (`pending → running → done`).
 - Largo plazo: worker separado (Celery + Redis o ARQ) si el volumen lo justifica.
 
-### 3.2 Guard regex como primera línea, no como única (riesgo: Medio)
+### 3.2 Guard regex como primera línea, no como única ✅ Resuelto
 
-Los resultados J2=1 del harness muestran que `llama3.2` rechaza los prompts adversariales por su propio safety training. El guard es válido como segunda línea de defensa, pero con un modelo menos alineado los gaps documentados se vuelven explotables (jailbreaks estructurales, base64/ROT13, inyección vía delimitadores).
-
-**Estrategia recomendada:**
-- Documentar en `DEPLOY.md` los modelos validados (llama3.2, mistral:instruct).
-- ✅ **Llama Guard 3 implementado (2026-05-25)** — `app/domain/llama_guard.py` integrado como segunda capa semántica tras `content_guard`. Fail-open. Activar con `LLAMA_GUARD_ENABLED=true` + `ollama pull llama-guard3:8b` (~4.9 GB, ~5 GB VRAM).
+**Resuelto (2026-05-25):** Llama Guard 3 implementado como capa semántica adicional (`app/domain/llama_guard.py`). Fail-open. Activar con `LLAMA_GUARD_ENABLED=true` + `ollama pull llama-guard3:8b` (~4.9 GB, ~5 GB VRAM).
 
 ### 3.3 Features a completar para el deploy
 
 | Feature | Estado real | Impacto |
 |---|---|---|
-| `backend/Dockerfile` | ✅ Implementado (multi-stage, usuario no-root) | — |
-| Storage S3/R2 | Filesystem local funcional; S3 sin implementar | Imágenes no sobreviven restart del servidor |
+| `backend/Dockerfile` | ✅ Multi-stage, usuario no-root, torch CPU-only (~2.6 GB) | — |
+| `frontend/Dockerfile` | ✅ Multi-stage Vite + Nginx (~63 MB) | — |
+| Storage S3-compatible | ✅ Floci como emulador S3 local en demo — imágenes persisten en volumen Docker | Floci es para demo; S3/R2 real pendiente para cloud |
 | RunPod / GPU cloud | `runpod_client.py` no existe | Sin GPU cloud, generación de imágenes atada al host |
 | Clerk en producción | Variables no probadas con tenant real | Auth Clerk no funciona en cloud sin validación |
 | Redis caché semántica | Abandonado | Solo rate limiting activo — sin impacto en deploy |
@@ -74,7 +73,7 @@ Los resultados J2=1 del harness muestran que `llama3.2` rechaza los prompts adve
 
 ### 3.4 Deuda de documentación — `entity_relations` ✅ Resuelta
 
-`entity_relations` aparecía en los criterios de HU-05 y en la tabla ERD de DOCUMENTATION.md como característica planificada, pero **nunca fue implementada ni estuvo en el backlog activo**. Eliminada de DOCUMENTATION.md (HU-05 y tabla ERD) el 2026-05-20.
+`entity_relations` aparecía en los criterios de HU-05 y en la tabla ERD de DOCUMENTATION.md como característica planificada, pero **nunca fue implementada ni estuvo en el backlog activo**. Eliminada de DOCUMENTATION.md el 2026-05-20.
 
 ---
 
@@ -91,31 +90,44 @@ Los resultados J2=1 del harness muestran que `llama3.2` rechaza los prompts adve
 
 ## 5. Hoja de ruta — Semanas 9-12
 
-### Semana 9 — Deployable ✅ (completada 2026-05-25)
+### Semana 9 — Deployable ✅ (completada 2026-05-27)
 
-Objetivo: backend containerizado y concurrencia LLM resuelta.
+Objetivo: backend containerizado, concurrencia LLM resuelta, stack demo completo.
 
-- [x] `backend/Dockerfile` multi-stage — builder pre-descarga embedding model (~90 MB en imagen), runtime con usuario no-root `loremaster`
+**Plan original:**
+- [x] `backend/Dockerfile` multi-stage — builder pre-descarga embedding model, runtime con usuario no-root `loremaster`
 - [x] `backend/.dockerignore` — excluye venv, DB, media, tests, evals
-- [x] `docker-compose.prod.yml` con servicio `app` — depends_on saludable (PG + Redis + Qdrant), volumen `media_data`, `host.docker.internal` para Ollama/ComfyUI
+- [x] `docker-compose.prod.yml` con servicio `app` — depends_on saludable, volumen `media_data`, `host.docker.internal` para Ollama/ComfyUI
 - [x] Health checks para PostgreSQL, Redis y Qdrant en compose prod
-- [x] HTTP 429 + `Retry-After: 30` en el semáforo LLM — `LLMBusyError` en 3 rutas (rag_query, content, image_generation)
-- [x] Índice FK `ix_entities_collection_id` — migración Alembic `a1b2c3d4e5f6`
-- [x] Llama Guard 3 — implementado (`app/domain/llama_guard.py`); `LLAMA_GUARD_ENABLED=false` por defecto, activar en demo con `ollama pull llama-guard3:8b`
+- [x] HTTP 429 + `Retry-After: 30` en el semáforo LLM — `LLMBusyError` en 3 rutas
+- [x] Índice FK `ix_entities_collection_id` — migración Alembic
+- [x] Llama Guard 3 — `app/domain/llama_guard.py`; fail-open, activar con `LLAMA_GUARD_ENABLED=true`
 
-### Semana 9 (continuación) — Deploy storage + reporte de costos
+**Adicional implementado esta semana:**
+- [x] `backend/Dockerfile` — torch CPU-only (`--index-url .../whl/cpu`), imagen reducida de ~6.6 GB a ~2.6 GB
+- [x] `frontend/Dockerfile` + `nginx.conf` — multi-stage Vite + Nginx; 63 MB; único puerto 80 al host
+- [x] `frontend/.dockerignore`
+- [x] `docker-compose.prod.yml` — frontend service añadido; Floci y backend sin puertos al host; `STORAGE_BASE_URL=http://localhost/media` vía Nginx
+- [x] `backend/docker-compose.debug.yml` — override local (gitignored) que expone puertos para inspección
+- [x] Floci S3 integrado como storage de demo — imágenes servidas vía proxy Nginx `/media/`
+- [x] CORS eliminado — toda comunicación pasa por Nginx en puerto 80
+- [x] `make prod-rebuild` / `make prod-rebuild-api` / `make prod-rebuild-fe` — targets de rebuild selectivo
+- [x] `make make-admin USER=<username>` — promueve usuario admin en stack Docker
+- [x] Launchers actualizados: opción 9=prod-rebuild, opción 0=salir
+- [x] Fix imagen URL en páginas públicas — `resolveImageUrl()` centralizado en `utils/media.ts`
+- [x] Fix descarga de imagen con CORS fallback — `downloadImage()` con `cache: 'reload'`
+- [x] Security review finding cerrado — `is_relative_to()` en `delete_image_service()`
+- [x] Documentación actualizada: DEPLOY.md, README, frontend/README, ENVIRONMENT.md, WEEKLY_CHECKLISTS
 
-> **Pendiente esta semana (2026-05-25):** completar antes de cerrar la semana.
-
-- [ ] Prueba de despliegue con storage S3-compatible: MinIO (recomendado) o LocalStack — ver `docs/PLAN-DEPLOY-STORAGE.md`
-- [ ] Reporte de costos finalizado — ver `docs/COST-REPORT.md` (completar con uso real medido)
+**Pendiente de semana 9 continuación:**
+- [ ] Reporte de costos finalizado — ver `docs/COST-REPORT.md`
 
 ### Semana 10 — Persistencia e integración
 
 Objetivo: imágenes persistentes y Clerk validado.
 
 - [ ] Decidir GPU cloud: RunPod Serverless vs Replicate vs filesystem para demo
-- [ ] Storage S3/R2 en producción (construye sobre la prueba de Semana 9)
+- [ ] Storage S3/R2 en producción real (Floci cubre la demo; S3/R2 real necesario para cloud deploy)
 - [ ] Probar Clerk end-to-end con tenant real (`CLERK_JWKS_URL` + `CLERK_AUDIENCE`) — código ya implementado, solo configuración del tenant
 
 ### Semana 11 — GPU cloud e imagen en producción
@@ -130,10 +142,8 @@ Objetivo: flujo RAG imagen completo fuera del host del desarrollador.
 
 Objetivo: entorno de demo funcional y documentación de portafolio.
 
-- [ ] Entorno de demo configurado (Dockerfile + PostgreSQL + S3 o filesystem + ComfyUI/RunPod)
 - [ ] Evaluación final: baseline evals + guard harness contra el entorno de demo
 - [ ] Documentación de portafolio: README con setup completo, arquitectura, decisiones clave
-- [ ] Evaluación final: baseline evals + guard harness contra el entorno de demo
 
 ### Post-Fase 3 (después de Semana 12)
 
@@ -151,6 +161,6 @@ Features complementarias a extender sin bloquear el deploy:
 
 Para un prototipo de aprendizaje, el proyecto está en un estado excepcionalmente bueno. La disciplina de evaluación, testing y calidad de código es real y observable.
 
-Para el deploy privado de portafolio, el único bloqueante real esta semana es el `Dockerfile`. Con eso resuelto y el HTTP 429 en el semáforo, el sistema es demostrable con un usuario a la vez usando auth local y filesystem. Clerk y S3 se añaden en Semanas 10-11 para un entorno completamente funcional.
+El stack de demo es completamente funcional: un solo comando (`make prod-up`) levanta 6 servicios, aplica migraciones automáticamente, sirve el frontend compilado vía Nginx en el puerto 80, y almacena imágenes en Floci S3 con volúmenes persistentes. Esto es un deploy real, no un sketch.
 
-El mayor riesgo no es técnico — es no decidir el GPU cloud a tiempo. Sin esa decisión en Semana 10, el flujo de imágenes queda atado al host del desarrollador para la demo final.
+El mayor riesgo para las semanas restantes sigue siendo la decisión de GPU cloud. Sin esa decisión en Semana 10, el flujo de imágenes queda atado al host del desarrollador para la demo final.
