@@ -21,10 +21,7 @@ import type { EntityContent, ImageGenerationItem } from "../types";
 import { CATEGORY_LABELS } from "../utils/constants";
 import { getErrorMessage } from "../utils/errors";
 import { formatDate } from "../utils/formatters";
-
-const MEDIA_BASE = (
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1"
-).replace("/api/v1", "");
+import { resolveImageUrl } from "../utils/media";
 
 interface Props {
   collectionId: string;
@@ -50,15 +47,7 @@ function ImageGrid({
   const images = gen.images;
   const count = images.length;
 
-  const getImageUrl = (img: ImageItem) => {
-    if (img.image_url) {
-      return img.image_url;
-    }
-    if (img.storage_path) {
-      return `${MEDIA_BASE}/media/${img.storage_path}`;
-    }
-    return "";
-  };
+  const getImageUrl = (img: ImageItem) => resolveImageUrl(img.image_url, img.storage_path);
 
   const getGridClass = () => {
     switch (count) {
@@ -264,9 +253,7 @@ export default function ImagePanel({
   );
 
   const handleDownload = useCallback(async (img: ImageItem) => {
-    const fetchUrl =
-      img.image_url ||
-      (img.storage_path ? `/media/${img.storage_path}` : "");
+    const fetchUrl = resolveImageUrl(img.image_url, img.storage_path);
     if (!fetchUrl) return;
     const response = await fetch(fetchUrl);
     const blob = await response.blob();
@@ -619,12 +606,7 @@ export default function ImagePanel({
             <>
               <div className="text-center">
                 <img
-                  src={
-                    selectedImage.image_url ||
-                    (selectedImage.storage_path
-                      ? `${MEDIA_BASE}/media/${selectedImage.storage_path}`
-                      : "")
-                  }
+                  src={resolveImageUrl(selectedImage.image_url, selectedImage.storage_path)}
                   alt={`Imagen seed ${selectedImage.seed}`}
                   className="img-fluid rounded"
                   style={{ maxHeight: "65vh", objectFit: "contain" }}

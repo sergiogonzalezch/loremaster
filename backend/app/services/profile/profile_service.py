@@ -120,7 +120,7 @@ def get_public_profile(session: Session, username: str) -> PublicProfileResponse
             SharedImageSummary(
                 id=img.id,
                 generation_id=img.generation_id,
-                image_url=img.image_url,
+                image_url=img.image_url or build_storage_url(img.storage_path),
                 storage_path=img.storage_path,
                 seed=img.seed,
                 auto_prompt=gen.auto_prompt,

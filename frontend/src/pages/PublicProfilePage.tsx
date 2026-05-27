@@ -18,6 +18,7 @@ import MarkdownContent from "../components/MarkdownContent";
 import PublicContentModal from "../components/PublicContentModal";
 import PublicImageModal from "../components/PublicImageModal";
 import SafeImage from "../components/SafeImage";
+import { resolveImageUrl } from "../utils/media";
 import { parseApiError } from "../utils/errors";
 import { formatDate } from "../utils/formatters";
 import { CATEGORY_LABELS, ENTITY_TYPE_LABELS } from "../utils/constants";
@@ -215,7 +216,7 @@ export default function PublicProfilePage() {
                         >
                           {(img.storage_path || img.image_url) ? (
                             <SafeImage
-                              src={img.storage_path ? `/media/${img.storage_path}` : img.image_url}
+                              src={resolveImageUrl(img.image_url, img.storage_path)}
                               alt={img.entity_name}
                               style={{
                                 width: "100%",

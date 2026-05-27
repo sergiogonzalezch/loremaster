@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { formatDate } from "../utils/formatters";
 import { ENTITY_TYPE_LABELS } from "../utils/constants";
 import SafeImage from "./SafeImage";
+import { resolveImageUrl } from "../utils/media";
 
 interface Props {
   show: boolean;
@@ -33,13 +34,13 @@ export default function PublicImageModal({
   ownerUsername,
   createdAt,
 }: Props) {
-  const resolvedUrl = storagePath
-    ? `/media/${storagePath}`
-    : (imageUrl ?? "");
+  // imageUrl tiene prioridad (URL completa de S3/Floci devuelta por el backend).
+  // Para imágenes antiguas con image_url null, el backend aplica el fallback
+  // build_storage_url. El segundo término es fallback solo para dev local.
+  const resolvedUrl = resolveImageUrl(imageUrl, storagePath);
 
   const handleDownload = useCallback(async () => {
-    if (!resolvedUrl) return;
-    const fetchUrl = resolvedUrl;
+    const fetchUrl = resolveImageUrl(imageUrl, storagePath);
     if (!fetchUrl) return;
     const response = await fetch(fetchUrl);
     const blob = await response.blob();
@@ -51,7 +52,7 @@ export default function PublicImageModal({
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(blobUrl);
-  }, [resolvedUrl, entityName, seed]);
+  }, [imageUrl, storagePath, entityName, seed]);
 
   return (
     <Modal show={show} onHide={onHide} size="xl" centered>

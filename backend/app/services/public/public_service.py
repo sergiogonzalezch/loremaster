@@ -4,6 +4,7 @@ from sqlmodel import Session, select
 
 from app.core.api.filters import _CONTENT_CONDITIONS, _IMAGE_CONDITIONS
 from app.core.database.utils import paginate
+from app.core.storage import build_storage_url
 from app.models.db.collection import Collection
 from app.models.db.entity import Entity
 from app.models.db.entity_content import EntityContent
@@ -65,7 +66,7 @@ def get_public_images(
         PublicImageItem(
             image_id=img.id,
             generation_id=img.generation_id,
-            image_url=img.image_url,
+            image_url=img.image_url or build_storage_url(img.storage_path),
             storage_path=img.storage_path,
             seed=img.seed,
             auto_prompt=gen.auto_prompt,

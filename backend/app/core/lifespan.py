@@ -53,6 +53,17 @@ async def lifespan(_: FastAPI):
                 _s3.head_bucket(Bucket=settings.s3_bucket)
             except Exception:  # noqa: BLE001
                 _s3.create_bucket(Bucket=settings.s3_bucket)
+            _s3.put_bucket_cors(
+                Bucket=settings.s3_bucket,
+                CORSConfiguration={
+                    "CORSRules": [{
+                        "AllowedHeaders": ["*"],
+                        "AllowedMethods": ["GET", "HEAD"],
+                        "AllowedOrigins": ["*"],
+                        "MaxAgeSeconds": 3600,
+                    }]
+                },
+            )
 
         try:
             await asyncio.wait_for(asyncio.to_thread(_init_s3_bucket), timeout=15.0)

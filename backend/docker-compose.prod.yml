@@ -95,7 +95,13 @@ services:
       REDIS_URL: redis://redis:6379
       # Ollama y ComfyUI corren en el host — accesibles via host-gateway en Linux.
       OLLAMA_BASE_URL: http://host.docker.internal:11434
+      OLLAMA_MODEL: llama3.2:latest
+      # Image generation
+      IMAGE_BACKEND: comfyui
+      IMAGE_PROMPT_MODEL: mistral:latest
       COMFYUI_URL: http://host.docker.internal:8188
+      # Embeddings — debe coincidir con el modelo pre-descargado en el Dockerfile.
+      EMBEDDING_MODEL: paraphrase-multilingual-MiniLM-L12-v2
       # Llama Guard — segunda capa semántica de moderación (fail-open).
       # Activar en demo/producción. Requiere: ollama pull llama-guard3:8b (~4.9 GB).
       LLAMA_GUARD_ENABLED: ${LLAMA_GUARD_ENABLED:-false}
@@ -110,6 +116,14 @@ services:
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
       STORAGE_BASE_URL: http://localhost:4566/loremaster-media
+      # Rate limiting — desactivar durante testing, activar en demo real.
+      RATE_LIMIT_ENABLED: "false"
+      # RATE_LIMIT_PER_MINUTE: "30"
+      # RATE_LIMIT_LLM_PER_MINUTE: "5"
+      # RATE_LIMIT_IMAGE_PER_MINUTE: "3"
+      # Clerk — descomentar cuando se complete la integración en semana 10.
+      # CLERK_JWKS_URL: ${CLERK_JWKS_URL}
+      # CLERK_AUDIENCE: ${CLERK_AUDIENCE}
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY requerida}
       COOKIE_SECURE: "true"
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?ALLOWED_ORIGINS requerida}
