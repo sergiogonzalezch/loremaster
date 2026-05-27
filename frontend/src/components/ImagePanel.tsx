@@ -51,10 +51,13 @@ function ImageGrid({
   const count = images.length;
 
   const getImageUrl = (img: ImageItem) => {
+    if (img.image_url) {
+      return img.image_url;
+    }
     if (img.storage_path) {
       return `${MEDIA_BASE}/media/${img.storage_path}`;
     }
-    return img.image_url || "";
+    return "";
   };
 
   const getGridClass = () => {
@@ -261,9 +264,9 @@ export default function ImagePanel({
   );
 
   const handleDownload = useCallback(async (img: ImageItem) => {
-    const fetchUrl = img.storage_path
-      ? `/media/${img.storage_path}`
-      : img.image_url || "";
+    const fetchUrl =
+      img.image_url ||
+      (img.storage_path ? `/media/${img.storage_path}` : "");
     if (!fetchUrl) return;
     const response = await fetch(fetchUrl);
     const blob = await response.blob();
@@ -617,9 +620,10 @@ export default function ImagePanel({
               <div className="text-center">
                 <img
                   src={
-                    selectedImage.storage_path
+                    selectedImage.image_url ||
+                    (selectedImage.storage_path
                       ? `${MEDIA_BASE}/media/${selectedImage.storage_path}`
-                      : selectedImage.image_url || ""
+                      : "")
                   }
                   alt={`Imagen seed ${selectedImage.seed}`}
                   className="img-fluid rounded"

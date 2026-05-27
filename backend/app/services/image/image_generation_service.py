@@ -197,7 +197,7 @@ def generate_images_service(
         images_result.append(
             ImageResult(
                 id=data.image_id,
-                image_url=_build_url(data.storage_path) or data.image_url,
+                image_url=data.image_url or _build_url(data.storage_path),
                 seed=data.seed,
                 width=settings.image_width,
                 height=settings.image_height,
@@ -252,7 +252,7 @@ def share_image_service(
         collection_id=record.collection_id,
         seed=record.seed,
         storage_path=record.storage_path,
-        image_url=record.image_url,
+        image_url=record.image_url or _build_url(record.storage_path),
         filename=record.filename,
         extension=record.extension,
         width=record.width,
@@ -332,7 +332,7 @@ def get_generation_service(
     images = [
         ImageResult(
             id=r.id,
-            image_url=_build_url(r.storage_path) or r.image_url,
+            image_url=r.image_url or _build_url(r.storage_path),
             seed=r.seed,
             width=r.width,
             height=r.height,
@@ -385,7 +385,7 @@ def list_generations_service(
                 collection_id=r.collection_id,
                 seed=r.seed,
                 storage_path=r.storage_path,
-                image_url=r.image_url,
+                image_url=r.image_url or _build_url(r.storage_path),
                 filename=r.filename,
                 extension=r.extension,
                 width=r.width,

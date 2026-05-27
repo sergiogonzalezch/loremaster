@@ -45,6 +45,21 @@ async def lifespan(_: FastAPI):
             logger.critical("Database migration failed, aborting startup: %s", e)
             raise
 
+    if settings.storage_backend == "s3":
+        def _init_s3_bucket() -> None:
+            from app.core.storage.s3_client import get_s3_client
+            _s3 = get_s3_client()
+            try:
+                _s3.head_bucket(Bucket=settings.s3_bucket)
+            except Exception:  # noqa: BLE001
+                _s3.create_bucket(Bucket=settings.s3_bucket)
+
+        try:
+            await asyncio.wait_for(asyncio.to_thread(_init_s3_bucket), timeout=15.0)
+            logger.info("S3 bucket ready (%s @ %s)", settings.s3_bucket, settings.s3_endpoint_url)
+        except Exception as e:  # noqa: BLE001
+            logger.warning("S3 bucket initialization failed: %s", e)
+
     try:
         await asyncio.wait_for(asyncio.to_thread(ping_qdrant), timeout=10.0)
         logger.info("Qdrant connection OK (%s)", settings.qdrant_url)

@@ -17,10 +17,20 @@ def build_storage_path(*parts: str) -> Path:
 def save_file(content: bytes, relative_path: str) -> str:
     """Guarda el contenido binario en la ruta relativa.
 
-    Crea los directorios padres si no existen dentro del directorio de medios.
+    En modo s3 sube el objeto al bucket configurado.
+    En modo local escribe en disco dentro de media_root.
 
     Retorna la ruta relativa donde se guardó el archivo.
     """
+    if settings.storage_backend == "s3":
+        from app.core.storage.s3_client import get_s3_client
+        get_s3_client().put_object(
+            Bucket=settings.s3_bucket,
+            Key=relative_path,
+            Body=content,
+        )
+        return relative_path
+
     media_root_resolved = Path(settings.media_root).resolve()
     path = (media_root_resolved / relative_path).resolve()
     if not path.is_relative_to(media_root_resolved):

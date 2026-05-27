@@ -12,7 +12,7 @@ import httpx
 
 from app.core.config import settings
 from app.core.exceptions import ComfyUITimeoutError, ComfyUIUnavailableError
-from app.core.storage import build_generation_path, save_file
+from app.core.storage import build_generation_path, build_storage_url, save_file
 from app.engine.comfyui_client import (
     ComfyUIClient,
     inject_prompt,
@@ -156,6 +156,7 @@ def _generate_comfyui_images(
                     filename=filename,
                     seed=seed,
                     storage_path=storage_path,
+                    image_url=build_storage_url(storage_path),
                 )
             )
 

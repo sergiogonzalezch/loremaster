@@ -22,6 +22,27 @@ services:
       timeout: 5s
       retries: 5
 
+  floci:
+    image: floci/floci:latest
+    container_name: loremaster-floci
+    restart: unless-stopped
+    environment:
+      FLOCI_HOSTNAME: floci
+      FLOCI_STORAGE_MODE: persistent
+      FLOCI_STORAGE_PERSISTENT_PATH: /app/data
+      FLOCI_DEFAULT_REGION: us-east-1
+    ports:
+      - "127.0.0.1:4566:4566"
+    volumes:
+      - floci_data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - loremaster
+
   redis:
     image: redis:7-alpine
     container_name: redis
@@ -63,6 +84,8 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_healthy
+      floci:
+        condition: service_healthy
     ports:
       - "127.0.0.1:8000:8000"
     environment:
@@ -79,7 +102,14 @@ services:
       LLAMA_GUARD_MODEL: ${LLAMA_GUARD_MODEL:-llama-guard3:8b}
       LLAMA_GUARD_TIMEOUT: ${LLAMA_GUARD_TIMEOUT:-5.0}
       MEDIA_ROOT: /app/media
-      STORAGE_BASE_URL: ${STORAGE_BASE_URL:?STORAGE_BASE_URL requerida}
+      # Storage — S3 via Floci (emulador AWS local, DNS interno Docker).
+      STORAGE_BACKEND: s3
+      S3_ENDPOINT_URL: http://floci:4566
+      S3_BUCKET: ${S3_BUCKET:-loremaster-media}
+      S3_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      STORAGE_BASE_URL: ${STORAGE_BASE_URL:-http://localhost:4566/loremaster-media}
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY requerida}
       COOKIE_SECURE: "true"
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?ALLOWED_ORIGINS requerida}
@@ -100,6 +130,7 @@ volumes:
   qdrant_data:
   postgres_data:
   media_data:
+  floci_data:
 
 networks:
   loremaster:

@@ -126,8 +126,13 @@ class Settings(BaseSettings):
 
     # Storage
     media_root: str = "./media"
-    storage_backend: str = "local"  # local | s3 | r2
+    storage_backend: str = "local"  # local | s3
     storage_base_url: str = "http://localhost:8000/media"
+    s3_endpoint_url: str | None = None      # None = AWS real; URL = Floci/MinIO/R2
+    s3_bucket: str = "loremaster-media"
+    s3_region: str = "us-east-1"
+    aws_access_key_id: str | None = None
+    aws_secret_access_key: str | None = None
     profile_image_max_size_mb: float = 5.0
     document_max_upload_mb: int = 50
     document_extraction_timeout_seconds: int = 30
