@@ -68,7 +68,7 @@ El launcher valida antes de arrancar: Python, npm, Docker corriendo y Ollama (av
 ```bash
 make infra      # solo Qdrant + Redis
 make infra-pg   # solo Qdrant + Redis + PostgreSQL
-make down       # bajar infraestructura
+make down       # bajar infra dev (qdrant + redis + postgres)
 ```
 
 Ver [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md) para la referencia completa de variables de entorno, modos (local/demo/producción) y checklist de despliegue.

@@ -233,7 +233,7 @@ Presenta un menú con todas las opciones:
 | `2` | Dev PostgreSQL — idem con Postgres en vez de SQLite |
 | `3` | Solo infra SQLite (`make infra`) |
 | `4` | Solo infra PostgreSQL (`make infra-pg`) |
-| `5` | Bajar toda la infra (`make down`) |
+| `5` | Bajar infra dev (`make down`) — no afecta al stack de demo |
 | `6` | Ejecutar suite de tests |
 | `7` | **Producción UP** — stack completo con Floci + PostgreSQL |
 | `8` | **Producción DOWN** |
@@ -320,7 +320,7 @@ make prod-up   # desde la raíz del repo
 ```bash
 make infra      # qdrant + redis (SQLite mode)
 make infra-pg   # qdrant + redis + postgres
-make down       # baja todo
+make down       # baja infra dev (no afecta al stack de demo)
 ```
 
 ## Ejecutar
