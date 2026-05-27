@@ -1,4 +1,9 @@
 # ========================
+# Debug overrides (solo uso local, no entran al repo)
+# ========================
+backend/docker-compose.debug.yml
+
+# ========================
 # Launcher runtime files
 # ========================
 .loremaster_backend_pid
