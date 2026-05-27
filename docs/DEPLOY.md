@@ -124,7 +124,7 @@ docker exec -it loremaster-api python scripts/make_admin.py <username> --force
 
 ### Seguridad (código)
 
-- [ ] Fix moderación HARM-08 aplicado antes del primer deploy público
+- [x] Fix moderación HARM-08 cerrado — patrón bidireccional + leet + separadores, 26 tests (`660c501`, `b225e70`, `9f7c4d0`)
 
 ---
 
