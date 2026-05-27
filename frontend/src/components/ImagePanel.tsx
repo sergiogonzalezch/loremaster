@@ -167,9 +167,10 @@ export default function ImagePanel({
         listImageGenerations(collectionId, entityId),
       ]);
       const contents = contentsRes.data ?? [];
-      if (contents.length > 0 && !confirmedContent) {
-        setConfirmedContent(contents[0]);
-      }
+      // Usar functional updater para leer el estado actual en vez de la clausura.
+      // Evita sobreescribir el initialContent pasado desde ContentCard cuando
+      // fetchData se ejecuta con una clausura antigua (confirmedContent=null).
+      setConfirmedContent((prev) => prev ?? (contents[0] ?? null));
       setGenerations(generationsRes.generations);
     } catch {
       setError("Error al cargar datos");
@@ -177,7 +178,7 @@ export default function ImagePanel({
       setLoading(false);
       setLoadingGenerations(false);
     }
-  }, [collectionId, entityId, confirmedContent]);
+  }, [collectionId, entityId]);
 
   useEffect(() => {
     if (show) {
