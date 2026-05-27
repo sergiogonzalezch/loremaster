@@ -58,9 +58,13 @@ No se exponen puertos del backend ni de Floci al host. Todo el tráfico entra po
 
 ```bash
 # Desde la raíz del repo:
-make prod-up        # levanta todo el stack (construye si no existe imagen)
+make prod-up          # levanta todo el stack (construye si no existe imagen)
 make prod-rebuild-fe  # reconstruye solo el frontend tras cambios React/CSS
 ```
+
+> El frontend no requiere `.env.production` — sus variables de build (`VITE_API_BASE_URL=/api/v1`)
+> están fijadas en el `Dockerfile`. El `.env.production` de la raíz es solo para el backend vía
+> Docker Compose. Ver [`docs/ENV-ARCHITECTURE.md`](../docs/ENV-ARCHITECTURE.md).
 
 Si `VITE_CLERK_PUBLISHABLE_KEY` está definida, la app usa Clerk para autenticación: `ClerkProvider` envuelve la app, `LoginPage` muestra `<SignIn />` de Clerk y `ClerkBridge` sincroniza la sesión con el backend. Sin esta variable, la app usa el formulario de login/registro propio.
 

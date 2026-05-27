@@ -29,6 +29,10 @@ Copia el archivo de ejemplo y ajusta los valores:
 cp .env.example .env
 ```
 
+> Para el stack Docker de demo/producción usar `.env.production` en la raíz del repo
+> (no `backend/.env`). Ver [`docs/ENV-ARCHITECTURE.md`](../docs/ENV-ARCHITECTURE.md)
+> para el flujo completo: qué archivo lee quién, prioridad Pydantic y variables pendientes de mejora.
+
 **General**
 
 | Variable | Por defecto | Propósito |

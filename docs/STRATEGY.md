@@ -177,3 +177,29 @@ Para un prototipo de aprendizaje, el proyecto está en un estado excepcionalment
 El stack de demo es completamente funcional: un solo comando (`make prod-up`) levanta 6 servicios, aplica migraciones automáticamente, sirve el frontend compilado vía Nginx en el puerto 80, y almacena imágenes en Floci S3 con volúmenes persistentes. Esto es un deploy real, no un sketch.
 
 El mayor riesgo para las semanas restantes sigue siendo la decisión de GPU cloud. Sin esa decisión en Semana 10, el flujo de imágenes queda atado al host del desarrollador para la demo final.
+
+---
+
+## 8. Referencias de consulta — mejoras pendientes
+
+Documentos donde se registran puntos de mejora identificados pero no implementados todavía. Consultar aquí antes de planificar cada semana.
+
+| Documento | Sección de mejoras | Contenido |
+|---|---|---|
+| [`docs/FIX.md`](FIX.md) | Tabla de estado rápido + Cobertura de tests | Deuda técnica activa (ítems 🟢 Cubierto sin acción inmediata): 13, 29, 30, 34, 35, 39, 42, 50. Tests pendientes de frontend: botón reintentar en error `CollectionsPage`. |
+| [`docs/ENV-ARCHITECTURE.md §8`](ENV-ARCHITECTURE.md#8-puntos-de-mejora-identificados) | §8 — Puntos de mejora identificados | Variables S3/R2 hardcodeadas en compose → interpolables (Semana 10). `IMAGE_BACKEND` interpolable para RunPod (Semana 11). Inconsistencia `rate_limit_enabled` Python default vs compose fallback. Modelos Ollama configurables sin editar el YAML. |
+| [`docs/DEPLOY.md`](DEPLOY.md) | Checklist de deploy | Estado actualizado del checklist operacional: qué está cubierto, qué falta para un deploy en servidor real (S3/R2, Clerk, dominio HTTPS). |
+| [`docs/DOCUMENTATION.md`](DOCUMENTATION.md) | Roadmap / Decisiones pendientes | Decisiones de arquitectura diferidas: RunPod vs Replicate, modelo en producción, sesiones deslizantes Clerk. |
+
+### Deuda técnica rápida — ítems sin fecha
+
+Los siguientes ítems de `FIX.md` están documentados, mitigados y no bloquean el deploy, pero representan trabajo conocido antes de un lanzamiento público:
+
+| Ítem | Descripción | Cuando abordar |
+|---|---|---|
+| FIX-13 | Bases `DomainError`/`InfrastructureError` — solo si se añade middleware global de excepciones | Post-Fase 3 |
+| FIX-29 | Log "Auto-discarded" emitido antes de `session.commit()` | Post-Fase 3 |
+| FIX-34 | FK constraint faltante en migración `add_owner_id_to_collections` | Semana 10 (junto con migración de S3) |
+| FIX-35 | Constraint UNIQUE no protege colecciones con `owner_id=NULL` | Post-Fase 3 (backfill de datos pre-refactor) |
+| FIX-42 | `AuthContext` no valida expiración del token en cliente | Post-Fase 3 |
+| FIX-50 | `deletion_service.py` mezcla soft-delete + ficheros + Qdrant | Revisar al integrar S3/R2 (Semana 10) |

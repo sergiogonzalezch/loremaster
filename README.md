@@ -129,7 +129,15 @@ make prod-rebuild-fe   # solo frontend
 
 Copiar `.env.production.example` como `.env.production` en la raíz y editar los valores reales (`SECRET_KEY`, `POSTGRES_PASSWORD`, `ALLOWED_ORIGINS=["http://localhost"]`). Docker Compose lee `.env.production` vía `--env-file` e inyecta las variables en el contenedor; Pydantic las lee desde el entorno del proceso.
 
+Verificar que las variables se resuelven correctamente antes de levantar:
+
+```bash
+docker compose -f backend/docker-compose.prod.yml --env-file .env.production config
+```
+
 Ver [`docs/DEPLOY.md`](docs/DEPLOY.md) para el runbook completo, checklist y acceso a servicios internos en debug.
+
+Ver [`docs/ENV-ARCHITECTURE.md`](docs/ENV-ARCHITECTURE.md) para el flujo completo de variables: qué lee cada archivo, prioridad Pydantic, clasificación de variables y mejoras pendientes.
 
 Ver [`backend/README.md`](backend/README.md) para la referencia completa de variables, ambientes y opciones del compose.
 
@@ -138,9 +146,12 @@ Ver [`backend/README.md`](backend/README.md) para la referencia completa de vari
 | Documento | Contenido |
 |---|---|
 | [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md) | Variables de entorno, modos, arranque, checklist de despliegue |
+| [`docs/ENV-ARCHITECTURE.md`](docs/ENV-ARCHITECTURE.md) | Flujo de variables (local vs Docker), mapeo Pydantic, mejoras pendientes |
+| [`docs/DEPLOY.md`](docs/DEPLOY.md) | Runbook operacional: arranque, checklist, debug |
 | [`docs/LIMITERS.md`](docs/LIMITERS.md) | Flujo de validación, límites input/output/DB y constantes del sistema |
 | [`docs/DOCUMENTATION.md`](docs/DOCUMENTATION.md) | Arquitectura, decisiones técnicas y roadmap |
 | [`docs/MOD.md`](docs/MOD.md) | Arquitectura del sistema de moderación y guardrails |
 | [`docs/FIX.md`](docs/FIX.md) | Tracker de deuda técnica |
+| [`docs/STRATEGY.md`](docs/STRATEGY.md) | Estado del proyecto, riesgos, hoja de ruta Semanas 9-12 |
 | [`backend/README.md`](backend/README.md) | API, endpoints, tests, ambientes, estructura del backend |
 | [`frontend/README.md`](frontend/README.md) | Componentes, pantallas, autenticación, tests |
