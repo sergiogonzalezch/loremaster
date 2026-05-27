@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { formatDate } from "../utils/formatters";
 import { ENTITY_TYPE_LABELS } from "../utils/constants";
 import SafeImage from "./SafeImage";
-import { resolveImageUrl } from "../utils/media";
+import { resolveImageUrl, downloadImage } from "../utils/media";
 
 interface Props {
   show: boolean;
@@ -40,19 +40,9 @@ export default function PublicImageModal({
   const resolvedUrl = resolveImageUrl(imageUrl, storagePath);
 
   const handleDownload = useCallback(async () => {
-    const fetchUrl = resolveImageUrl(imageUrl, storagePath);
-    if (!fetchUrl) return;
-    const response = await fetch(fetchUrl);
-    const blob = await response.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = blobUrl;
-    link.download = `${entityName.replace(/\s+/g, "_")}_seed${seed}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(blobUrl);
-  }, [imageUrl, storagePath, entityName, seed]);
+    const filename = `${entityName.replace(/\s+/g, "_")}_seed${seed}.png`;
+    await downloadImage(resolvedUrl, filename);
+  }, [resolvedUrl, entityName, seed]);
 
   return (
     <Modal show={show} onHide={onHide} size="xl" centered>

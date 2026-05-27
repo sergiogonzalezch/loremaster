@@ -21,7 +21,7 @@ import type { EntityContent, ImageGenerationItem } from "../types";
 import { CATEGORY_LABELS } from "../utils/constants";
 import { getErrorMessage } from "../utils/errors";
 import { formatDate } from "../utils/formatters";
-import { resolveImageUrl } from "../utils/media";
+import { resolveImageUrl, downloadImage } from "../utils/media";
 
 interface Props {
   collectionId: string;
@@ -253,18 +253,8 @@ export default function ImagePanel({
   );
 
   const handleDownload = useCallback(async (img: ImageItem) => {
-    const fetchUrl = resolveImageUrl(img.image_url, img.storage_path);
-    if (!fetchUrl) return;
-    const response = await fetch(fetchUrl);
-    const blob = await response.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = blobUrl;
-    link.download = `${img.id}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(blobUrl);
+    const url = resolveImageUrl(img.image_url, img.storage_path);
+    await downloadImage(url, `${img.id}.png`);
   }, []);
 
   const handleBuildPrompt = useCallback(async () => {

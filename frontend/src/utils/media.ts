@@ -30,3 +30,39 @@ export function resolveImageUrl(
 ): string {
   return imageUrl || (storagePath ? `${MEDIA_BASE}/media/${storagePath}` : "");
 }
+
+/**
+ * Descarga una imagen a disco.
+ *
+ * Estrategia:
+ * 1. `fetch(..., { cache: 'reload' })` — evita usar respuestas cacheadas sin
+ *    cabecera CORS (problema común cuando <img> y fetch() comparten caché).
+ *    Funciona cuando el servidor devuelve Access-Control-Allow-Origin.
+ * 2. Fallback `window.open()` — si fetch() sigue bloqueado por CORS (e.g.,
+ *    CORS no configurado en el servidor), abre la imagen en nueva pestaña y el
+ *    usuario puede guardarla. Mantiene la demo funcional sin cambios de backend.
+ *
+ * @param url      URL resuelta de la imagen (resultado de resolveImageUrl).
+ * @param filename Nombre sugerido del archivo descargado (con extensión).
+ */
+export async function downloadImage(url: string, filename: string): Promise<void> {
+  if (!url) return;
+  try {
+    // cache: 'reload' fuerza petición fresca, bypassa respuestas cacheadas sin ACAO.
+    const response = await fetch(url, { cache: "reload" });
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(blobUrl);
+  } catch {
+    // fetch() bloqueado (CORS no activo, red, etc.) → abrir en nueva pestaña.
+    // Content-Type: application/octet-stream de S3/Floci hace que el navegador
+    // descargue el archivo en lugar de mostrarlo.
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+}
