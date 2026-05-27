@@ -116,8 +116,9 @@ services:
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
       # Nginx proxea /media/ → floci:4566/loremaster-media/ (bucket absorbido en proxy_pass).
-      # Las image_url generadas quedan como http://localhost/media/<path>, mismo origen que el frontend.
-      STORAGE_BASE_URL: http://localhost/media
+      # Las image_url generadas quedan como <dominio>/media/<path>, mismo origen que el frontend.
+      # Defecto: http://localhost/media para demo local. Sobreescribir en .env para otros dominios.
+      STORAGE_BASE_URL: ${STORAGE_BASE_URL:-http://localhost/media}
       # Rate limiting — desactivar durante testing, activar en demo real.
       RATE_LIMIT_ENABLED: "false"
       # RATE_LIMIT_PER_MINUTE: "30"

@@ -1,4 +1,9 @@
 # ========================
+# Secrets — nunca commitear el .env real
+# ========================
+.env
+
+# ========================
 # Debug overrides (solo uso local, no entran al repo)
 # ========================
 backend/docker-compose.debug.yml
