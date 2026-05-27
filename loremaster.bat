@@ -30,7 +30,7 @@ echo.
 echo  %Y%  TESTS%Z%
 echo   %G%  6%Z%  Ejecutar suite    cd backend ^&^& make test
 echo.
-echo  %Y%  PRODUCCION / DEMO%Z%
+echo  %Y%  PRODUCCION / DEMO  ^(http://localhost^)%Z%
 echo   %G%  7%Z%  Prod UP           make prod-up
 echo   %G%  8%Z%  Prod DOWN         make prod-down
 echo   %G%  9%Z%  Prod REBUILD      make prod-rebuild

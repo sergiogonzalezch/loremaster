@@ -1,12 +1,13 @@
 # Infraestructura de producción/demo.
-# Incluye Qdrant + Redis + Postgres (siempre activos en prod).
-# Ningún servicio expone puertos al host; solo accesibles dentro de la red interna.
+# Incluye Qdrant + Redis + Postgres + Floci + backend API + frontend Nginx.
+# Un único puerto expuesto al host: 80 (Nginx).
+# Nginx actúa como reverse proxy: /api/ → backend, /media/ → Floci (interno).
 #
 # Uso:
 #   docker compose -f docker-compose.prod.yml up -d
 #
 # Variables requeridas (inyectar via secrets manager o CI/CD, no .env en disco):
-#   POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
+#   POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB, SECRET_KEY, ALLOWED_ORIGINS
 
 services:
   qdrant:
@@ -31,8 +32,8 @@ services:
       FLOCI_STORAGE_MODE: persistent
       FLOCI_STORAGE_PERSISTENT_PATH: /app/data
       FLOCI_DEFAULT_REGION: us-east-1
-    ports:
-      - "127.0.0.1:4566:4566"
+    # Sin ports: Floci solo accesible dentro de la red Docker.
+    # Nginx proxea /media/ → floci:4566 internamente.
     volumes:
       - floci_data:/app/data
     healthcheck:
@@ -86,8 +87,7 @@ services:
         condition: service_healthy
       floci:
         condition: service_healthy
-    ports:
-      - "127.0.0.1:8000:8000"
+    # Sin ports: el backend solo es accesible via Nginx (red interna Docker).
     environment:
       ENVIRONMENT: demo
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
@@ -115,7 +115,9 @@ services:
       S3_REGION: us-east-1
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
-      STORAGE_BASE_URL: http://localhost:4566/loremaster-media
+      # Nginx proxea /media/ → floci:4566/loremaster-media/ (bucket absorbido en proxy_pass).
+      # Las image_url generadas quedan como http://localhost/media/<path>, mismo origen que el frontend.
+      STORAGE_BASE_URL: http://localhost/media
       # Rate limiting — desactivar durante testing, activar en demo real.
       RATE_LIMIT_ENABLED: "false"
       # RATE_LIMIT_PER_MINUTE: "30"
@@ -137,6 +139,20 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+    networks:
+      - loremaster
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: loremaster-frontend
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:80:80"
     networks:
       - loremaster
 

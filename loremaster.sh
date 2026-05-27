@@ -241,7 +241,7 @@ menu() {
     echo -e "  ${Y}TESTS${Z}"
     echo -e "   ${G} 6${Z}  Ejecutar suite    cd backend && make test"
     echo
-    echo -e "  ${Y}PRODUCCION / DEMO${Z}"
+    echo -e "  ${Y}PRODUCCION / DEMO  (http://localhost)${Z}"
     echo -e "   ${G} 7${Z}  Prod UP           make prod-up"
     echo -e "   ${G} 8${Z}  Prod DOWN         make prod-down"
     echo -e "   ${G} 9${Z}  Prod REBUILD      make prod-rebuild"
