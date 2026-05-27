@@ -292,11 +292,21 @@ def delete_image_service(
     record.is_deleted = True
     record.deleted_at = datetime.now(UTC)
 
-    # storage_path puede ser None en imágenes mock aunque el backend cambie
+    # storage_path puede ser None en imágenes mock aunque el backend cambie.
+    # Validar contenimiento dentro de media_root antes de operar (defensa en profundidad:
+    # storage_path viene de la DB y aunque se construye solo vía build_generation_path(),
+    # un compromiso de DB no debería poder escalar a borrado de ficheros arbitrarios).
     if settings.image_backend != "mock" and record.storage_path:
-        full_path = Path(settings.media_root) / record.storage_path
-        with suppress(FileNotFoundError, OSError):
-            full_path.unlink()
+        media_root_resolved = Path(settings.media_root).resolve()
+        full_path = (media_root_resolved / record.storage_path).resolve()
+        if full_path.is_relative_to(media_root_resolved):
+            with suppress(FileNotFoundError, OSError):
+                full_path.unlink()
+        else:
+            logger.warning(
+                "Attempted to delete file outside media_root: %s",
+                record.storage_path,
+            )
 
     db_commit(session, f"delete_image({image_id})")
 
