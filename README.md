@@ -110,7 +110,7 @@ El proyecto define tres entornos. Cambiar entre ellos **no requiere tocar `.env`
 | **Storage** | disco local (`backend/media/`) | Floci S3 | S3 / R2 real |
 | **Auth** | JWT local (formulario propio) | Clerk (acceso privado) | Clerk (acceso público) |
 | **Acceso** | solo tú | portafolio — usuarios invitados | lanzamiento público |
-| **Config** | `.env` (valores por defecto) | `docker-compose.prod.yml` | CI/CD + secrets manager |
+| **Config** | `backend/.env` (copiado de `.env.example`) | `.env.production` (copiado de `.env.production.example`) | CI/CD + secrets manager |
 
 **Demo** es el objetivo realista actual: stack containerizado con Floci como emulador S3 y Clerk para controlar quién accede. **Producción** sería un lanzamiento público, aspiracional y sin fecha definida.
 
@@ -127,7 +127,7 @@ make prod-rebuild-api  # solo backend
 make prod-rebuild-fe   # solo frontend
 ```
 
-El `.env` en la raíz del repo necesita: `SECRET_KEY`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `STORAGE_BASE_URL=http://localhost/media`, `ALLOWED_ORIGINS=http://localhost`.
+Copiar `.env.production.example` como `.env.production` en la raíz y editar los valores reales (`SECRET_KEY`, `POSTGRES_PASSWORD`, `ALLOWED_ORIGINS=["http://localhost"]`). Docker Compose lee `.env.production` vía `--env-file` e inyecta las variables en el contenedor; Pydantic las lee desde el entorno del proceso.
 
 Ver [`docs/DEPLOY.md`](docs/DEPLOY.md) para el runbook completo, checklist y acceso a servicios internos en debug.
 
