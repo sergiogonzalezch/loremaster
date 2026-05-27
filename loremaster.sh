@@ -156,9 +156,8 @@ stop_services() {
         echo -e "${D}  Frontend (5173) cerrado.${Z}"
     fi
 
-    docker compose -f backend/docker-compose.yml down 2>/dev/null \
-        && echo -e "${D}  Infra Docker bajada.${Z}" || true
-    docker stop postgres 2>/dev/null; docker rm postgres 2>/dev/null; true
+    make down 2>/dev/null \
+        && echo -e "${D}  Infra Docker (dev) bajada.${Z}" || true
     echo -e "${G}  Todo cerrado.${Z}"
     echo
 }
@@ -245,8 +244,9 @@ menu() {
     echo -e "  ${Y}PRODUCCION / DEMO${Z}"
     echo -e "   ${G} 7${Z}  Prod UP           make prod-up"
     echo -e "   ${G} 8${Z}  Prod DOWN         make prod-down"
+    echo -e "   ${G} 9${Z}  Prod REBUILD      make prod-rebuild"
     echo
-    echo -e "   ${R} 9${Z}  Salir y cerrar servicios"
+    echo -e "   ${R} 0${Z}  Salir y cerrar servicios"
     echo
     printf "  > "
     read -r -n1 OPT
@@ -299,7 +299,13 @@ menu() {
             echo; echo -e "${G}  Listo.${Z}"
             read -r -p "  Pulsa Enter para continuar..."
             menu ;;
-        9|q|Q)
+        9)
+            echo; echo -e "${C}  Rebuild produccion / demo...${Z}"; echo
+            make prod-rebuild
+            echo; echo -e "${G}  Listo.${Z}"
+            read -r -p "  Pulsa Enter para continuar..."
+            menu ;;
+        0|q|Q)
             stop_services
             exit 0 ;;
         *)

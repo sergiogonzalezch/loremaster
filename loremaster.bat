@@ -33,10 +33,11 @@ echo.
 echo  %Y%  PRODUCCION / DEMO%Z%
 echo   %G%  7%Z%  Prod UP           make prod-up
 echo   %G%  8%Z%  Prod DOWN         make prod-down
+echo   %G%  9%Z%  Prod REBUILD      make prod-rebuild
 echo.
-echo   %R%  9%Z%  Salir y cerrar servicios
+echo   %R%  0%Z%  Salir y cerrar servicios
 echo.
-choice /c 123456789 /n /m "  > "
+choice /c 1234567890 /n /m "  > "
 set OPT=%errorlevel%
 goto HANDLE_%OPT%
 
@@ -132,6 +133,17 @@ goto MENU
 :HANDLE_9
 cls
 echo.
+echo  %C%  Rebuild produccion / demo...%Z%
+echo.
+make prod-rebuild
+echo.
+echo  %G%  Listo.%Z%
+pause
+goto MENU
+
+:HANDLE_10
+cls
+echo.
 echo  %C%  Cerrando backend, frontend e infraestructura...%Z%
 echo.
 
@@ -151,10 +163,8 @@ if exist ".loremaster_frontend_pid" (
 taskkill /F /FI "WINDOWTITLE eq loremaster-frontend" >nul 2>&1
 powershell -NoProfile -Command "for($i=0;$i -lt 5;$i++){$p=(netstat -ano|Select-String ':5173\s+\S+\s+LISTENING')|ForEach-Object{($_ -split '\s+')[-1]}|Select-Object -First 1; if(-not $p){break}; $pp=[int]$p; if($pp -le 4){break}; $r=(Get-CimInstance Win32_Process -Filter('ProcessId='+$pp) -Property ParentProcessId -EA SilentlyContinue).ParentProcessId; if($r -and $r -gt 4){Stop-Process -Id $r -Force -EA SilentlyContinue}; Stop-Process -Id $pp -Force -EA SilentlyContinue; Start-Sleep -Milliseconds 500}"
 
-echo  %D%  Bajando infraestructura Docker...%Z%
-docker compose -f backend\docker-compose.yml down
-docker stop postgres >nul 2>&1
-docker rm   postgres >nul 2>&1
+echo  %D%  Bajando infraestructura Docker (dev)...%Z%
+make down
 
 echo.
 echo  %G%  Todo cerrado.%Z%
