@@ -4,7 +4,7 @@ DC_BASE      = docker compose -f $(BACKEND_DIR)/docker-compose.yml
 DC_PG        = $(DC_BASE) -f $(BACKEND_DIR)/docker-compose.postgres.yml
 DC_PROD      = docker compose -f $(BACKEND_DIR)/docker-compose.prod.yml
 
-.PHONY: dev dev-pg infra infra-pg down prod-up prod-down prod-rebuild
+.PHONY: dev dev-pg infra infra-pg down prod-up prod-down prod-rebuild make-admin
 
 # ── Entorno completo (SQLite) ────────────────────────────────────────────────
 dev: infra
@@ -37,3 +37,13 @@ prod-down:
 # Qdrant, Redis, Floci). Usar cuando hay cambios en código Python del backend.
 prod-rebuild:
 	$(DC_PROD) up -d --build
+
+# Promueve un usuario a admin en el stack de demo/producción.
+# Requiere que loremaster-api esté corriendo (make prod-up).
+# Uso: make make-admin USER=serchglez
+make-admin:
+	@if [ -z "$(USER)" ]; then \
+		echo "ERROR: especifica el usuario -> make make-admin USER=<username>"; \
+		exit 1; \
+	fi
+	docker exec -it loremaster-api python scripts/make_admin.py $(USER) --force
