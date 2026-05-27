@@ -29,9 +29,19 @@ make down       # baja todo
 
 ### Producción / Demo
 ```bash
-make prod-up    # docker-compose.prod.yml — todos los servicios, sin puertos al host
-make prod-down
+make prod-up             # levanta todo el stack (construye imágenes si no existen)
+make prod-down           # baja todo
+make prod-rebuild        # reconstruye backend + frontend tras cambios de código
+make prod-rebuild-api    # solo backend (cambios Python)
+make prod-rebuild-fe     # solo frontend (cambios React/CSS)
+
+# Promover usuario a admin (requiere stack corriendo):
+make make-admin USER=<username>
 ```
+
+Puerto único expuesto al host: **80** (Nginx). Backend (8000), Floci (4566), Postgres (5432), Qdrant (6333) y Redis (6379) son internos a la red Docker.
+
+Para inspección/debug sin modificar el compose de prod, crear `backend/docker-compose.debug.yml` (ya en `.gitignore`) — ver `docs/DEPLOY.md §6`.
 
 ---
 

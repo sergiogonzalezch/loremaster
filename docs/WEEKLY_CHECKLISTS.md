@@ -600,10 +600,21 @@ Fixes de consistencia entre capas y eliminación de código muerto aplicados sob
 
 - [x] `backend/Dockerfile` funcional (multi-stage) — builder instala deps y pre-descarga embedding model; runtime con usuario no-root `loremaster`
 - [x] `backend/.dockerignore` — excluye venv, DB, media, tests, evals, caches
+- [x] `backend/Dockerfile` usa torch CPU-only (`--index-url https://download.pytorch.org/whl/cpu`) — reduce imagen de ~6.6 GB a ~2.6 GB
 - [x] `docker-compose.prod.yml` con servicio `app` FastAPI containerizado — `depends_on` con condición `service_healthy` en PG, Redis y Qdrant
 - [x] Health checks para PostgreSQL y Redis en compose — ya presentes en prod; Qdrant añadido (`/healthz`)
 - [x] Volumenes persistentes para Qdrant — configurado en `docker-compose.yml`
 - [x] Variables de entorno via `.env` (no hardcodeadas en compose) — Pydantic Settings completo
+- [x] `frontend/Dockerfile` multi-stage — builder Vite + runtime Nginx; imagen ~63 MB
+- [x] `frontend/nginx.conf` — Nginx como reverse proxy: `/api/` → backend, `/media/` → Floci (bucket absorbido en proxy_pass), `/*` → SPA
+- [x] `frontend/.dockerignore` — excluye node_modules, dist, .env
+- [x] `docker-compose.prod.yml` servicio `frontend` — único puerto expuesto al host: `127.0.0.1:80:80`
+- [x] Floci (`loremaster-floci`) sin puertos al host — solo accesible dentro de la red Docker via Nginx
+- [x] Backend (`loremaster-api`) sin puertos al host — solo accesible dentro de la red Docker via Nginx
+- [x] `STORAGE_BASE_URL=http://localhost/media` — URLs de imágenes pasan por Nginx, eliminando CORS
+- [x] `backend/docker-compose.debug.yml` — override local (en .gitignore) que expone puertos 6333, 4566, 8000 para inspección
+- [x] `make prod-rebuild` / `make prod-rebuild-api` / `make prod-rebuild-fe` — targets de rebuild selectivo
+- [x] `make make-admin USER=<username>` — promueve usuario a admin en el stack Docker con guard portable Make
 
 ### Migracion a PostgreSQL
 

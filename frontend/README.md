@@ -36,7 +36,31 @@ VITE_API_BASE_URL=http://localhost:8000/api/v1
 VITE_CLERK_PUBLISHABLE_KEY=pk_test_...   # opcional: activa modo Clerk
 ```
 
-El proxy de Vite redirige `/api/*` → `http://localhost:8000` en desarrollo, evitando CORS sin configuración adicional. En producción, `VITE_API_BASE_URL` debe apuntar al backend desplegado.
+El proxy de Vite redirige `/api/*` → `http://localhost:8000` en desarrollo, evitando CORS sin configuración adicional.
+
+En producción (Docker), `VITE_API_BASE_URL` se establece como `/api/v1` (relativo) en tiempo de build — Nginx proxea `/api/` → backend internamente, sin exponer el backend al host.
+
+## Deploy en Docker (producción/demo)
+
+El frontend tiene su propio `Dockerfile` multi-stage:
+
+1. **Stage builder** — `node:22-alpine`: instala deps y compila el bundle con Vite.
+2. **Stage runtime** — `nginx:alpine`: sirve el bundle estático y actúa como reverse proxy.
+
+```
+Nginx (puerto 80):
+  /api/*    → loremaster-api:8000    (backend, interno)
+  /media/*  → loremaster-floci:4566  (Floci S3, interno, bucket absorbido en proxy_pass)
+  /*        → dist/ (SPA — React Router con try_files)
+```
+
+No se exponen puertos del backend ni de Floci al host. Todo el tráfico entra por el puerto 80.
+
+```bash
+# Desde la raíz del repo:
+make prod-up        # levanta todo el stack (construye si no existe imagen)
+make prod-rebuild-fe  # reconstruye solo el frontend tras cambios React/CSS
+```
 
 Si `VITE_CLERK_PUBLISHABLE_KEY` está definida, la app usa Clerk para autenticación: `ClerkProvider` envuelve la app, `LoginPage` muestra `<SignIn />` de Clerk y `ClerkBridge` sincroniza la sesión con el backend. Sin esta variable, la app usa el formulario de login/registro propio.
 

@@ -53,7 +53,7 @@ chmod +x loremaster.sh
 ./loremaster.sh
 ```
 
-Menu con una tecla: Dev SQLite/Postgres, solo infra, tests, prod up/down. La opcion 9 cierra backend, frontend e infra Docker.
+Menu con una tecla: Dev SQLite/Postgres, solo infra, tests, prod up/down/rebuild. La opcion 0 cierra backend, frontend e infra Docker.
 
 El launcher valida antes de arrancar: Python, npm, Docker corriendo y Ollama (aviso si no responde). El venv del backend se crea y sincroniza automáticamente en cada arranque.
 
@@ -81,12 +81,14 @@ La sesión se establece via **cookie HttpOnly** (frontend) o **Bearer token** (`
 
 ### Crear el primer usuario admin
 
-Los administradores se designan desde el servidor con el script `make_admin.py`. No existe endpoint público para ello.
+Los administradores se designan desde el servidor. No existe endpoint público para ello.
 
 ```bash
-# Desde backend/ con el virtualenv activo:
+# En demo/producción (stack Docker corriendo):
+make make-admin USER=<username>
+
+# En desarrollo local (virtualenv activo en backend/):
 python scripts/make_admin.py <username>
-# → User '<username>' is now an admin.
 ```
 
 Los admins tienen acceso a los endpoints `/api/v1/admin/*` (listar todos los usuarios, eliminar cualquier colección o usuario).
@@ -114,15 +116,20 @@ El proyecto define tres entornos. Cambiar entre ellos **no requiere tocar `.env`
 
 ## Deploy (demo)
 
-El `docker-compose.prod.yml` levanta el stack completo de demo — PostgreSQL + Qdrant + Redis + Floci (S3) + API — sin cambios en `.env`:
+El `docker-compose.prod.yml` levanta el stack completo de demo — PostgreSQL + Qdrant + Redis + Floci (S3) + backend API + frontend Nginx — exponiendo solo el puerto 80:
 
 ```bash
 # Desde la raíz del repo:
-make prod-up    # levanta todo
-make prod-down  # baja todo
+make prod-up         # levanta todo (construye si no existe imagen)
+make prod-down       # baja todo
+make prod-rebuild    # reconstruye backend + frontend tras cambios de código
+make prod-rebuild-api  # solo backend
+make prod-rebuild-fe   # solo frontend
 ```
 
-El `.env` solo necesita los secretos interpolados: `SECRET_KEY`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `STORAGE_BASE_URL`, `ALLOWED_ORIGINS`.
+El `.env` en la raíz del repo necesita: `SECRET_KEY`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `STORAGE_BASE_URL=http://localhost/media`, `ALLOWED_ORIGINS=http://localhost`.
+
+Ver [`docs/DEPLOY.md`](docs/DEPLOY.md) para el runbook completo, checklist y acceso a servicios internos en debug.
 
 Ver [`backend/README.md`](backend/README.md) para la referencia completa de variables, ambientes y opciones del compose.
 
