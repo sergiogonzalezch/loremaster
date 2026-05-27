@@ -113,7 +113,7 @@ docker exec -it loremaster-api python scripts/make_admin.py <username> --force
 
 - [ ] `docker compose -f backend/docker-compose.prod.yml ps` muestra todos los servicios `healthy`
 - [ ] `http://localhost` abre el frontend correctamente
-- [ ] `http://localhost/api/v1/health` retorna `{"status": "ok", ...}`
+- [ ] `http://localhost/health` retorna `{"status": "ok", ...}`
 - [ ] `ComfyUI` accesible desde el backend en `COMFYUI_URL` (si se usa generación de imágenes)
 
 ### Pendientes (bloquean producción real, no demo privada)
@@ -132,7 +132,7 @@ docker exec -it loremaster-api python scripts/make_admin.py <username> --force
 
 ```bash
 # Health check del backend (vía Nginx)
-curl http://localhost/api/v1/health
+curl http://localhost/health
 
 # Respuesta esperada:
 # {"status": "ok", "qdrant": "ok", "ollama": "warn"}
