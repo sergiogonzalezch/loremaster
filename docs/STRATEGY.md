@@ -157,7 +157,20 @@ Features complementarias a extender sin bloquear el deploy:
 
 ---
 
-## 6. Evaluación final
+## 6. Deuda de infraestructura local/producción
+
+Identificada en la revisión de arquitectura del 2026-05-27. Los cuatro puntos siguientes no bloquean el demo privado pero sí la mantenibilidad y el despliegue en un servidor diferente.
+
+| # | Área | Descripción | Impacto | Prioridad |
+|---|---|---|---|---|
+| **INF-01** | `.env.production.example` raíz | El checklist de deploy indica crear un `.env` en la raíz con las variables que interpola `docker-compose.prod.yml` (`SECRET_KEY`, `POSTGRES_*`, `ALLOWED_ORIGINS`, `STORAGE_BASE_URL`), pero no existe un archivo de ejemplo con esas 6 variables. Un operador (o tú mismo en un servidor diferente) no sabe qué poner sin leer el YAML del compose. | **Alto** — bloquea el primer deploy en servidor limpio | **Semana 10** — antes de intentar deploy en cloud |
+| **INF-02** | `STORAGE_BASE_URL` hardcodeado en compose | `docker-compose.prod.yml` tiene `STORAGE_BASE_URL: http://localhost/media` como valor literal. Si se despliega con otro dominio, las URLs de imagen generadas serán incorrectas. Cambiar a `${STORAGE_BASE_URL:-http://localhost/media}` para interpolación con fallback. | **Medio** — solo afecta si el dominio cambia; demo local no se ve afectado | **Semana 10** — al configurar el cloud deploy |
+| **INF-03** | Triplicación de launchers | `.bat`, `.ps1`, `.sh` implementan la misma lógica de arranque en tres sitios. Cada fix de launcher requiere tres cambios. La solución canónica: `.ps1` como fuente de verdad; `.bat` como shim de una línea (`powershell.exe -File dev.ps1`); `.sh` detecta `pwsh` y delega. | **Bajo** — solo impacta mantenibilidad; el código funciona correctamente | **Post-Fase 3** — solo si hay más fixes de launcher |
+| **INF-04** | PID stale en launchers | Si el terminal se cierra sin usar "salir", el PID guardado puede quedar huérfano. En Windows, un PID reutilizado por el sistema podría matar el proceso equivocado. Mitigación trivial: verificar que el proceso siga siendo `uvicorn` antes de `Stop-Process`. | **Muy bajo** — edge case en uso personal/demo con un usuario | **Post-Fase 3** — riesgo negligible en el alcance actual |
+
+---
+
+## 7. Evaluación final
 
 Para un prototipo de aprendizaje, el proyecto está en un estado excepcionalmente bueno. La disciplina de evaluación, testing y calidad de código es real y observable.
 
