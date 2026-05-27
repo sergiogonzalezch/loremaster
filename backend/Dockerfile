@@ -9,6 +9,14 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 COPY requirements.txt .
+
+# Instalar torch CPU-only ANTES que el resto de requirements.
+# Por defecto PyPI resuelve torch con CUDA (nvidia-cublas, cuda-toolkit, triton…)
+# lo que añade ~4 GB innecesarios. Al pre-instalar la variante CPU, sentence-transformers
+# lo encuentra ya satisfecho y no arrastra las CUDA libs.
+RUN pip install --no-cache-dir torch \
+        --index-url https://download.pytorch.org/whl/cpu
+
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Pre-descargar el embedding model en tiempo de build para evitar cold-start.
