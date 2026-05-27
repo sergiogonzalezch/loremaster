@@ -91,12 +91,31 @@ cp .env.example .env
 
 | Variable | Por defecto | Propósito |
 |---|---|---|
-| `MEDIA_ROOT` | `./media` | Directorio raíz para archivos multimedia |
-| `STORAGE_BACKEND` | `local` | Backend de almacenamiento: `local`, `s3`, `r2` |
-| `STORAGE_BASE_URL` | `http://localhost:8000/media` | URL base para servir archivos multimedia |
+| `MEDIA_ROOT` | `./media` | Directorio raíz para archivos multimedia (solo backend `local`) |
+| `STORAGE_BACKEND` | `local` | Backend de almacenamiento: `local` (archivos en disco) o `s3` (Floci/MinIO/AWS) |
+| `STORAGE_BASE_URL` | `http://localhost:8000/media` | URL **pública** base para servir archivos. En demo con Floci: `http://localhost:4566/loremaster-media` |
 | `PROFILE_IMAGE_MAX_SIZE_MB` | `5` | Tamaño máximo de avatar en MB |
 | `DOCUMENT_MAX_UPLOAD_MB` | `50` | Tamaño máximo de documentos subidos (PDF/TXT) en MB |
 | `DOCUMENT_EXTRACTION_TIMEOUT_SECONDS` | `30` | Timeout en segundos para extracción de texto de documentos |
+
+**Almacenamiento S3 / Floci** (solo necesario si `STORAGE_BACKEND=s3`)
+
+> En modo demo estas variables se inyectan directamente en `docker-compose.prod.yml` — no hace falta tocar `.env`.
+
+| Variable | Por defecto | Propósito |
+|---|---|---|
+| `S3_ENDPOINT_URL` | *(vacío)* | Endpoint S3 para boto3. En demo Docker: `http://floci:4566` (DNS interno). En AWS real: dejar vacío. |
+| `S3_BUCKET` | `loremaster-media` | Nombre del bucket. Se crea automáticamente en startup si no existe. |
+| `S3_REGION` | `us-east-1` | Región S3 |
+| `AWS_ACCESS_KEY_ID` | *(vacío)* | Clave de acceso. En Floci/LocalStack: `test` |
+| `AWS_SECRET_ACCESS_KEY` | *(vacío)* | Clave secreta. En Floci/LocalStack: `test` |
+
+**Separación S3_ENDPOINT_URL vs STORAGE_BASE_URL**
+
+Estas dos variables tienen propósitos distintos y no deben confundirse:
+
+- `S3_ENDPOINT_URL` → lo usa **boto3** internamente para subir/leer archivos. En Docker es el DNS interno: `http://floci:4566`. El browser nunca ve esta URL.
+- `STORAGE_BASE_URL` → es la URL **pública** que el browser usa para cargar imágenes. En demo local: `http://localhost:4566/loremaster-media`.
 
 **Auth — JWT**
 
@@ -136,7 +155,24 @@ cp .env.example .env
 
 > El entorno `test` (`pytest`) omite rate limiting independientemente de `RATE_LIMIT_ENABLED`.
 
-## Docker (producción / demo)
+## Ambientes: local, demo y producción
+
+El proyecto define tres entornos. Cambiar entre ellos **no requiere tocar `.env`**:
+
+| | Local (dev) | Demo | Producción |
+|---|---|---|---|
+| **Base de datos** | SQLite (`loremaster.db`) | PostgreSQL (contenedor) | PostgreSQL |
+| **Almacenamiento** | disco local (`./media`) | Floci S3 (`http://localhost:4566`) | S3 / R2 real |
+| **Autenticación** | JWT local (formulario propio) | Clerk (acceso privado) | Clerk (acceso público) |
+| **Acceso** | solo desarrollo | portafolio — usuarios invitados | lanzamiento público |
+| **Cómo levantarlo** | `make run` / `dev.ps1` | `make prod-up` / opción 7 del launcher | CI/CD |
+| **Archivo de config** | `.env` (valores locales por defecto) | `docker-compose.prod.yml` (self-contained) | secrets manager |
+
+**Demo** es el objetivo realista actual: stack containerizado con Floci como emulador S3 y Clerk para controlar quién accede. **Producción** sería un lanzamiento público, aspiracional y sin fecha definida.
+
+El `docker-compose.prod.yml` hardcodea `STORAGE_BACKEND=s3`, `S3_ENDPOINT_URL=http://floci:4566` y `DATABASE_URL` apuntando al contenedor postgres; el `.env` local solo provee los secretos interpolados (`SECRET_KEY`, `POSTGRES_*`, etc.) sin necesidad de cambiar nada más.
+
+## Docker (demo)
 
 El backend está containerizado con un `Dockerfile` multi-stage. La imagen final incluye el embedding model pre-descargado para evitar cold-start en el primer deploy.
 
@@ -147,16 +183,21 @@ El backend está containerizado con un `Dockerfile` multi-stage. La imagen final
 docker build -t loremaster-api .
 ```
 
-### Stack completo (demo privada)
+### Stack completo (demo)
+
+El stack incluye: **Qdrant + Redis + PostgreSQL + Floci (S3) + API FastAPI**.
+Ollama y ComfyUI se asume que corren en el host, accesibles via `host.docker.internal`.
 
 ```bash
-# Requiere un .env con SECRET_KEY, POSTGRES_*, STORAGE_BASE_URL, ALLOWED_ORIGINS
+# Desde la raíz del repo:
+make prod-up    # docker compose -f backend/docker-compose.prod.yml up -d
+make prod-down  # idem con down
+
+# O directamente desde backend/:
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-El compose arranca Qdrant + Redis + PostgreSQL + la API FastAPI. Ollama y ComfyUI se asume que corren en el host y son accesibles via `host.docker.internal`.
-
-**Variables requeridas para el compose prod** (inyectar via `.env` o secrets manager):
+**Variables requeridas** (en `.env` en la raíz del repo, o inyectadas por CI/CD):
 
 | Variable | Propósito |
 |---|---|
@@ -164,18 +205,74 @@ El compose arranca Qdrant + Redis + PostgreSQL + la API FastAPI. Ollama y ComfyU
 | `POSTGRES_USER` | Usuario PostgreSQL |
 | `POSTGRES_PASSWORD` | Contraseña PostgreSQL |
 | `POSTGRES_DB` | Nombre de la base de datos |
-| `STORAGE_BASE_URL` | URL pública base para servir imágenes (ej. `https://demo.example.com/media`) |
-| `ALLOWED_ORIGINS` | Array JSON de orígenes CORS (ej. `["https://demo.example.com"]`) |
+| `STORAGE_BASE_URL` | URL pública para imágenes (ej. `http://localhost:4566/loremaster-media`) |
+| `ALLOWED_ORIGINS` | Array JSON de orígenes CORS (ej. `["http://localhost:5173"]`) |
 
 El servicio `app` expone el puerto `8000` solo en `127.0.0.1` (detrás de nginx/proxy).
 
+**URLs con el stack de demo corriendo localmente:**
+
+| Servicio | URL |
+|---|---|
+| API | `http://localhost:8000` |
+| Floci (S3) | `http://localhost:4566` |
+| Imágenes generadas | `http://localhost:4566/loremaster-media/...` |
+
 ---
 
-## Base de datos: dev vs producción
+## Formas de levantar el proyecto
 
-La app soporta **SQLite** (dev local, sin servidor) y **PostgreSQL** (producción/staging). El driver se detecta automáticamente a partir del prefijo de `DATABASE_URL`; no hay cambio de código.
+### Launcher interactivo (recomendado en Windows)
 
-### Dev / local (SQLite)
+Desde la raíz del repo, ejecuta `loremaster.bat` (Windows) o `./loremaster.sh` (Linux/Mac).
+Presenta un menú con todas las opciones:
+
+| Opción | Acción |
+|---|---|
+| `1` | Dev SQLite — infra (Qdrant + Redis) + backend + frontend |
+| `2` | Dev PostgreSQL — idem con Postgres en vez de SQLite |
+| `3` | Solo infra SQLite (`make infra`) |
+| `4` | Solo infra PostgreSQL (`make infra-pg`) |
+| `5` | Bajar toda la infra (`make down`) |
+| `6` | Ejecutar suite de tests |
+| `7` | **Producción UP** — stack completo con Floci + PostgreSQL |
+| `8` | **Producción DOWN** |
+| `9` | Cerrar backend, frontend e infraestructura |
+
+### PowerShell directo (dev)
+
+```powershell
+# Desde la raíz del repo:
+.\dev.ps1            # SQLite: infra + backend + frontend
+.\dev.ps1 -Postgres  # PostgreSQL: idem con Postgres
+```
+
+Crea/activa el venv automáticamente, instala dependencias, levanta Docker y abre backend y frontend en ventanas separadas. Espera al `/health` antes de abrir el frontend.
+
+### Make manual (desde `backend/`)
+
+```bash
+# Dev SQLite
+make infra    # qdrant + redis
+make run      # FastAPI en :8000
+
+# Dev PostgreSQL
+make infra-pg
+make run
+
+# Producción (Floci + PostgreSQL + todo)
+make prod-up
+make prod-down
+
+# Tests
+make test
+```
+
+## Base de datos: local vs producción
+
+La app soporta **SQLite** (dev local, sin servidor) y **PostgreSQL** (producción). El driver se detecta automáticamente a partir del prefijo de `DATABASE_URL`; no hay cambio de código.
+
+### Local (SQLite)
 
 ```dotenv
 DATABASE_URL=sqlite:///./loremaster.db
@@ -186,7 +283,7 @@ make infra      # levanta qdrant + redis
 make run        # la app crea loremaster.db automáticamente
 ```
 
-### Dev / local (PostgreSQL)
+### Local (PostgreSQL)
 
 ```dotenv
 DATABASE_URL=postgresql://loremaster:loremaster@localhost:5433/loremaster
@@ -202,11 +299,12 @@ make run
 
 > El puerto expuesto de PostgreSQL es **5433** (no 5432) para evitar colisión con instalaciones locales.
 
-El modo completo (infra + backend + frontend en ventanas separadas) se lanza desde la raíz del repo:
+### Producción (PostgreSQL en contenedor + Floci S3)
 
-```powershell
-.\dev.ps1            # SQLite
-.\dev.ps1 -Postgres  # PostgreSQL
+No requiere cambios en `.env`. El `docker-compose.prod.yml` configura todo internamente:
+
+```bash
+make prod-up   # desde la raíz del repo
 ```
 
 ---

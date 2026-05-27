@@ -98,17 +98,33 @@ El contenido compartido se expone en dos superficies sin autenticación:
 - **`/feed`** — Feed global paginado: galería de imágenes + cards de textos compartidos.
 - **`/users/:username`** — Perfil público de cualquier usuario: imágenes y textos compartidos, botón de compartir URL.
 
-## Deploy (demo privada)
+## Ambientes
 
-El backend está containerizado. Para levantar el stack completo:
+El proyecto define tres entornos. Cambiar entre ellos **no requiere tocar `.env`**:
+
+| | Local (dev) | Demo | Producción |
+|---|---|---|---|
+| **DB** | SQLite (`loremaster.db`) | PostgreSQL (contenedor) | PostgreSQL |
+| **Storage** | disco local (`backend/media/`) | Floci S3 | S3 / R2 real |
+| **Auth** | JWT local (formulario propio) | Clerk (acceso privado) | Clerk (acceso público) |
+| **Acceso** | solo tú | portafolio — usuarios invitados | lanzamiento público |
+| **Config** | `.env` (valores por defecto) | `docker-compose.prod.yml` | CI/CD + secrets manager |
+
+**Demo** es el objetivo realista actual: stack containerizado con Floci como emulador S3 y Clerk para controlar quién accede. **Producción** sería un lanzamiento público, aspiracional y sin fecha definida.
+
+## Deploy (demo)
+
+El `docker-compose.prod.yml` levanta el stack completo de demo — PostgreSQL + Qdrant + Redis + Floci (S3) + API — sin cambios en `.env`:
 
 ```bash
-cd backend
-# Crear .env con SECRET_KEY, POSTGRES_*, STORAGE_BASE_URL, ALLOWED_ORIGINS
-docker compose -f docker-compose.prod.yml up -d
+# Desde la raíz del repo:
+make prod-up    # levanta todo
+make prod-down  # baja todo
 ```
 
-Ver [`backend/README.md`](backend/README.md#docker-producción--demo) para la referencia completa de variables y opciones del compose.
+El `.env` solo necesita los secretos interpolados: `SECRET_KEY`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `STORAGE_BASE_URL`, `ALLOWED_ORIGINS`.
+
+Ver [`backend/README.md`](backend/README.md) para la referencia completa de variables, ambientes y opciones del compose.
 
 ## Documentación
 
@@ -119,5 +135,5 @@ Ver [`backend/README.md`](backend/README.md#docker-producción--demo) para la re
 | [`docs/DOCUMENTATION.md`](docs/DOCUMENTATION.md) | Arquitectura, decisiones técnicas y roadmap |
 | [`docs/MOD.md`](docs/MOD.md) | Arquitectura del sistema de moderación y guardrails |
 | [`docs/FIX.md`](docs/FIX.md) | Tracker de deuda técnica |
-| [`backend/README.md`](backend/README.md) | API, endpoints, tests, estructura del backend |
+| [`backend/README.md`](backend/README.md) | API, endpoints, tests, ambientes, estructura del backend |
 | [`frontend/README.md`](frontend/README.md) | Componentes, pantallas, autenticación, tests |
