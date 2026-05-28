@@ -8,7 +8,7 @@ import {
   Form,
   Spinner,
 } from "react-bootstrap";
-import { generateText } from "../../api";
+import { generateText } from "../../api/generate";
 import MarkdownContent from "../../components/MarkdownContent";
 import TokenCounter from "../../components/TokenCounter";
 import { useGenerate } from "../../hooks/useGenerate";

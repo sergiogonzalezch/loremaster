@@ -14,14 +14,13 @@ vi.mock("react-router-dom", async (importOriginal) => {
 });
 
 // EntityDetailPage imports from direct modules (no barrel); EntityEditForm still uses "../api"
-vi.mock("../api/entities", () => ({ getEntity: vi.fn() }));
+vi.mock("../api/entities", () => ({ getEntity: vi.fn(), updateEntity: vi.fn() }));
 vi.mock("../api/collections", () => ({ getCollection: vi.fn() }));
 vi.mock("../api/contents", () => ({ generateContent: vi.fn() }));
 vi.mock("../api/metadata", () => ({
   getEntityCategories: vi.fn().mockRejectedValue(new Error("mocked")),
   getLimits: vi.fn().mockRejectedValue(new Error("mocked")),
 }));
-vi.mock("../api", () => ({ updateEntity: vi.fn() }));
 
 vi.mock("../hooks/useEntityContents", () => ({
   useEntityContents: vi.fn(),

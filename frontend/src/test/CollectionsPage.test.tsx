@@ -6,14 +6,14 @@ import CollectionsPage from "../pages/CollectionsPage";
 import { AuthProvider } from "../contexts/AuthContext";
 import type { Collection } from "../types";
 
-vi.mock("../api", () => ({
+vi.mock("../api/collections", () => ({
   getCollections: vi.fn(),
   createCollection: vi.fn(),
   updateCollection: vi.fn(),
   deleteCollection: vi.fn(),
 }));
 
-import { getCollections, createCollection, deleteCollection } from "../api";
+import { getCollections, createCollection, deleteCollection } from "../api/collections";
 const mockGetCollections = vi.mocked(getCollections);
 const mockCreateCollection = vi.mocked(createCollection);
 const mockDeleteCollection = vi.mocked(deleteCollection);

@@ -11,16 +11,25 @@ vi.mock("react-router-dom", async (importOriginal) => {
   return { ...actual, useParams: () => ({ collectionId: "col-1" }) };
 });
 
-vi.mock("../api", () => ({
+vi.mock("../api/collections", () => ({
   getCollection: vi.fn(),
+}));
+
+vi.mock("../api/documents", () => ({
   getDocuments: vi.fn(),
   getDocument: vi.fn(),
   uploadDocument: vi.fn(),
   retryDocument: vi.fn(),
   deleteDocument: vi.fn(),
+}));
+
+vi.mock("../api/entities", () => ({
   getEntities: vi.fn(),
   createEntity: vi.fn(),
   deleteEntity: vi.fn(),
+}));
+
+vi.mock("../api/generate", () => ({
   generateText: vi.fn(),
 }));
 
@@ -32,12 +41,9 @@ vi.mock("../hooks/useGenerate", () => ({
   useGenerate: vi.fn(),
 }));
 
-import {
-  getCollection,
-  getDocuments,
-  retryDocument,
-  getEntities,
-} from "../api";
+import { getCollection } from "../api/collections";
+import { getDocuments, retryDocument } from "../api/documents";
+import { getEntities } from "../api/entities";
 import { useCollectionDocumentsStatus } from "../hooks/useCollectionDocumentsStatus";
 import { useGenerate } from "../hooks/useGenerate";
 

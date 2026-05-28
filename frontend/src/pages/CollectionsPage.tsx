@@ -17,7 +17,7 @@ import {
   updateCollection,
   deleteCollection,
   bulkDeleteCollections,
-} from "../api";
+} from "../api/collections";
 import { ApiAbortError } from "../api/apiClient";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ConfirmModal from "../components/ConfirmModal";

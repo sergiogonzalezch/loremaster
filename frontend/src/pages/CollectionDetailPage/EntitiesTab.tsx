@@ -15,7 +15,7 @@ import {
   createEntity,
   deleteEntity,
   bulkDeleteEntities,
-} from "../../api";
+} from "../../api/entities";
 import { OrderSelect, PageSizeSelect } from "../../components/FilterBar";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import ConfirmModal from "../../components/ConfirmModal";

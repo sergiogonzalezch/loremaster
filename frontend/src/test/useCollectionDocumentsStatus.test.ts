@@ -3,11 +3,11 @@ import { renderHook, act } from "@testing-library/react";
 import { useCollectionDocumentsStatus } from "../hooks/useCollectionDocumentsStatus";
 import { ApiAbortError } from "../api/apiClient";
 
-vi.mock("../api", () => ({
+vi.mock("../api/documents", () => ({
   getDocuments: vi.fn(),
 }));
 
-import { getDocuments } from "../api";
+import { getDocuments } from "../api/documents";
 const mockGetDocuments = vi.mocked(getDocuments);
 
 vi.mock("../utils/token", () => ({

@@ -267,6 +267,7 @@ export default function EntityDetailPage() {
       />
 
       <ImagePanel
+        key={imagePanel.content?.id ?? "none"}
         collectionId={collectionId}
         entityId={entityId}
         show={imagePanel.show}

@@ -12,8 +12,11 @@ vi.mock("react-router-dom", async (importOriginal) => {
   };
 });
 
-vi.mock("../api", () => ({
+vi.mock("../api/collections", () => ({
   getCollection: vi.fn(),
+}));
+
+vi.mock("../api/generate", () => ({
   generateText: vi.fn(),
 }));
 
@@ -25,7 +28,7 @@ vi.mock("../hooks/useCollectionDocumentsStatus", () => ({
   useCollectionDocumentsStatus: vi.fn(),
 }));
 
-import { getCollection } from "../api";
+import { getCollection } from "../api/collections";
 import { useGenerate } from "../hooks/useGenerate";
 import { useCollectionDocumentsStatus } from "../hooks/useCollectionDocumentsStatus";
 

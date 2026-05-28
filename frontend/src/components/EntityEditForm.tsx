@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Button, Form, Modal } from "react-bootstrap";
-import { updateEntity } from "../api";
+import { updateEntity } from "../api/entities";
 import type { Entity, UpdateEntityRequest } from "../types";
 import type { EntityType } from "../utils/enums";
 import { getErrorMessage } from "../utils/errors";

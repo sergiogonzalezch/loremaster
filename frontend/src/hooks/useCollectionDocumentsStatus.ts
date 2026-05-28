@@ -9,7 +9,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getDocuments } from "../api";
+import { getDocuments } from "../api/documents";
 import { ApiAbortError } from "../api/apiClient";
 
 const API_BASE_URL =

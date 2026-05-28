@@ -18,7 +18,7 @@ import {
   retryDocument,
   deleteDocument,
   bulkDeleteDocuments,
-} from "../../api";
+} from "../../api/documents";
 import { ApiAbortError } from "../../api/apiClient";
 import { OrderSelect, PageSizeSelect } from "../../components/FilterBar";
 import LoadingSpinner from "../../components/LoadingSpinner";

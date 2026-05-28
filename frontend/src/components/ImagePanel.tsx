@@ -141,10 +141,8 @@ export default function ImagePanel({
   const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
-    setPromptData(null);
-    setFinalPrompt("");
     if (!show) setError(null);
-  }, [show, initialContent]);
+  }, [show]);
 
   const fetchData = useCallback(async () => {
     setLoadingGenerations(true);

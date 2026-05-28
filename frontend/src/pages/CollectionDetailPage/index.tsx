@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Alert, Breadcrumb, Tab, Tabs } from "react-bootstrap";
-import { getCollection } from "../../api";
+import { getCollection } from "../../api/collections";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import DocumentsTab from "./DocumentsTab";
 import EntitiesTab from "./EntitiesTab";

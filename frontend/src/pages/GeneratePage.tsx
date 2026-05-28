@@ -10,7 +10,8 @@ import {
   Form,
   Spinner,
 } from "react-bootstrap";
-import { getCollection, generateText } from "../api";
+import { getCollection } from "../api/collections";
+import { generateText } from "../api/generate";
 import { parseApiError } from "../utils/errors";
 import MarkdownContent from "../components/MarkdownContent";
 import TokenCounter from "../components/TokenCounter";
