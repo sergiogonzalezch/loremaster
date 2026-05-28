@@ -10,19 +10,39 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
 // Endpoints que no deben intentar refresh al recibir 401 (evita bucles)
 const NO_REFRESH_ENDPOINTS = new Set(["/auth/login", "/auth/refresh"]);
 
-/** Intenta rotar el access token llamando a POST /auth/refresh. */
+/**
+ * Promesa singleton del refresh en vuelo. Si varias peticiones reciben 401
+ * concurrentemente (caso común con N llamadas paralelas tras expirar el
+ * access token), todas comparten la misma promesa de refresh en vez de
+ * disparar N POST /auth/refresh independientes.
+ */
+let _refreshPromise: Promise<boolean> | null = null;
+
+/** Intenta rotar el access token llamando a POST /auth/refresh.
+ * Coalesce llamadas concurrentes en una única request al backend.
+ */
 async function _tryRefresh(): Promise<boolean> {
-  try {
-    const csrf = getCsrfToken();
-    const res = await fetch(`${BASE_URL}/auth/refresh`, {
-      method: "POST",
-      credentials: "include",
-      headers: csrf ? { "X-CSRF-Token": csrf } : {},
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
+  if (_refreshPromise) return _refreshPromise;
+
+  _refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/auth/refresh`, {
+        method: "POST",
+        credentials: "include",
+        // No enviamos X-CSRF-Token: /auth/* está exento en el backend y
+        // así evitamos coupling con el CSRF que podría estar caducado.
+      });
+      return res.ok;
+    } catch {
+      return false;
+    } finally {
+      // Liberar el singleton para permitir refreshes futuros cuando el
+      // access vuelva a expirar.
+      _refreshPromise = null;
+    }
+  })();
+
+  return _refreshPromise;
 }
 
 /** Lee el token CSRF de las cookies del navegador. */

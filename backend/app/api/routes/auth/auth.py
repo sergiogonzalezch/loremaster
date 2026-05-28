@@ -60,9 +60,14 @@ class AuthSuccessResponse(BaseModel):
     expires_at: datetime | None = None
 
 
-def _set_auth_cookies(response: Response, access_token: str, refresh_token: str | None = None) -> None:
-    """Setea access token, CSRF y opcionalmente el refresh token."""
-    csrf = generate_csrf_token()
+def _set_access_cookie(response: Response, access_token: str) -> None:
+    """Setea únicamente la cookie del access token (sin tocar CSRF ni refresh).
+
+    Usada por ``/auth/refresh`` para rotar el access token sin invalidar el
+    CSRF token: si rotáramos CSRF en cada refresh, peticiones POST en vuelo
+    que ya leyeron el CSRF viejo recibirían 403 al llegar al backend con un
+    CSRF que ya no coincide con la cookie nueva.
+    """
     response.set_cookie(
         key=settings.cookie_access_name,
         value=access_token,
@@ -72,9 +77,18 @@ def _set_auth_cookies(response: Response, access_token: str, refresh_token: str 
         path="/",
         domain=settings.cookie_domain,
     )
+
+
+def _set_auth_cookies(response: Response, access_token: str, refresh_token: str | None = None) -> None:
+    """Setea access token, CSRF y opcionalmente el refresh token.
+
+    Usada por login/register/clerk-sync donde sí queremos generar un CSRF
+    fresco (el viejo, si existía, podía ser de una sesión anterior).
+    """
+    _set_access_cookie(response, access_token)
     response.set_cookie(
         key=settings.cookie_csrf_name,
-        value=csrf,
+        value=generate_csrf_token(),
         secure=settings.cookie_secure,
         samesite=settings.cookie_samesite,
         path="/",
@@ -168,8 +182,11 @@ def refresh(
     token_data = {"sub": user.id, "username": user.username, "version": user.token_version}
     new_access = create_access_token(data=token_data)
     expires_at = datetime.now(UTC) + timedelta(minutes=settings.access_token_expire_minutes)
-    # Solo rota el access token y el CSRF; el refresh token sigue igual
-    _set_auth_cookies(response, new_access)
+    # Solo rota el access token. El refresh token y CSRF NO se renuevan:
+    # - refresh: política intencional (sin rotación; invalidado solo por logout)
+    # - csrf: rotarlo aquí invalidaría requests POST en vuelo que ya leyeron
+    #   el csrf viejo (resultarían en 403 falsos)
+    _set_access_cookie(response, new_access)
     return {"username": user.username, "expires_at": expires_at}
 
 
