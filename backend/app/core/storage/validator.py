@@ -27,12 +27,6 @@ IMAGE_MIME_TYPES: set[str] = {
 }
 DOCUMENT_MIME_TYPES: set[str] = {"text/plain", "application/pdf"}
 
-MAGIC_BYTES: dict[bytes, str] = {
-    b"%PDF": "application/pdf",
-    b"PK\x03\x04": "application/pdf",
-    b"text": "text/plain",
-}
-
 
 def _verify_magic_bytes(content: bytes, expected_type: str) -> None:
     """Verifica que el contenido coincida con el tipo esperado usando magic bytes.
@@ -49,7 +43,7 @@ def _verify_magic_bytes(content: bytes, expected_type: str) -> None:
 
     """
     if expected_type == "application/pdf":
-        if not content.startswith((b"%PDF", b"PK\x03\x04")):
+        if not content.startswith(b"%PDF"):
             msg = "El archivo no es un PDF válido"
             raise ValueError(msg)
     elif expected_type == "text/plain":

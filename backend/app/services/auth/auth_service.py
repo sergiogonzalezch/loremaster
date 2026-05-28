@@ -33,14 +33,15 @@ def authenticate_user(session: Session, username_or_email: str, password: str) -
 
 def create_user(session: Session, username: str, email: str, password: str) -> User:
     """Registra un nuevo usuario en la base de datos."""
+    # username y email tienen UNIQUE a nivel de BD que aplica también a filas
+    # soft-deleted; por eso ninguno de los dos checks filtra is_deleted: deben
+    # reflejar la constraint real y devolver 400 en vez de un IntegrityError 500.
     if session.exec(select(User).where(User.username == username)).first():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="El usuario ya existe",
         )
-    if session.exec(
-        select(User).where(User.email == email, User.is_deleted.is_(False)),
-    ).first():
+    if session.exec(select(User).where(User.email == email)).first():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="El correo electrónico ya está registrado",

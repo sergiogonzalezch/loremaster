@@ -27,3 +27,8 @@ SKILLS.md
 # Evaluation reports (generated locally by harness runners)
 # ========================
 docs/reportes/*.md
+
+# ========================
+# Repomix output (generated codebase snapshot, regenerated on demand)
+# ========================
+repomix-output.xml

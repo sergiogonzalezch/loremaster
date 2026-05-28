@@ -114,18 +114,21 @@ def delete_collection_vectors(collection_id: str) -> bool:
     return True
 
 
-def delete_document_chunks(collection_id: str, doc_id: str) -> int:
-    """Elimina los chunks de un documento específico de Qdrant. Retorna el número de puntos eliminados."""
+def delete_document_chunks(collection_id: str, doc_id: str) -> None:
+    """Elimina los chunks de un documento específico de Qdrant.
+
+    Qdrant no devuelve el número de puntos eliminados en un delete por filtro,
+    así que esta función no retorna un conteo. Es un no-op si la colección no existe.
+    """
     name = f"lm_{collection_id}"
     if not _collection_exists(name):
-        return 0
-    result = _qdrant_client.delete(
+        return
+    _qdrant_client.delete(
         collection_name=name,
         points_selector=Filter(
             must=[FieldCondition(key="doc_id", match=MatchValue(value=doc_id))],
         ),
     )
-    return result.operation_id if result else 0
 
 
 def ping_qdrant() -> None:

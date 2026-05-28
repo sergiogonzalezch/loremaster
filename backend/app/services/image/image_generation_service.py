@@ -85,6 +85,28 @@ def _create_image_generation(
     return generation
 
 
+def _to_image_record_response(record: ImageRecord) -> ImageRecordResponse:
+    """Mapea un ImageRecord a su DTO de respuesta, resolviendo la URL pública."""
+    return ImageRecordResponse(
+        id=record.id,
+        generation_id=record.generation_id,
+        entity_id=record.entity_id,
+        collection_id=record.collection_id,
+        seed=record.seed,
+        storage_path=record.storage_path,
+        image_url=record.image_url or build_storage_url(record.storage_path),
+        filename=record.filename,
+        extension=record.extension,
+        width=record.width,
+        height=record.height,
+        generation_ms=record.generation_ms,
+        is_shared=record.is_shared,
+        created_at=record.created_at,
+        is_deleted=record.is_deleted,
+        deleted_at=record.deleted_at,
+    )
+
+
 def _create_image_record(
     session: Session,
     entity: Entity,
@@ -244,24 +266,7 @@ def share_image_service(
     db_commit(session, f"share_image({image_id})")
     session.refresh(record)
 
-    return ImageRecordResponse(
-        id=record.id,
-        generation_id=record.generation_id,
-        entity_id=record.entity_id,
-        collection_id=record.collection_id,
-        seed=record.seed,
-        storage_path=record.storage_path,
-        image_url=record.image_url or build_storage_url(record.storage_path),
-        filename=record.filename,
-        extension=record.extension,
-        width=record.width,
-        height=record.height,
-        generation_ms=record.generation_ms,
-        is_shared=record.is_shared,
-        created_at=record.created_at,
-        is_deleted=record.is_deleted,
-        deleted_at=record.deleted_at,
-    )
+    return _to_image_record_response(record)
 
 
 def delete_image_service(
@@ -417,27 +422,7 @@ def list_generations_service(
 
     result = []
     for gen in generations:
-        images = [
-            ImageRecordResponse(
-                id=r.id,
-                generation_id=r.generation_id,
-                entity_id=r.entity_id,
-                collection_id=r.collection_id,
-                seed=r.seed,
-                storage_path=r.storage_path,
-                image_url=r.image_url or build_storage_url(r.storage_path),
-                filename=r.filename,
-                extension=r.extension,
-                width=r.width,
-                height=r.height,
-                generation_ms=r.generation_ms,
-                is_shared=r.is_shared,
-                created_at=r.created_at,
-                is_deleted=r.is_deleted,
-                deleted_at=r.deleted_at,
-            )
-            for r in records_by_gen.get(gen.id, [])
-        ]
+        images = [_to_image_record_response(r) for r in records_by_gen.get(gen.id, [])]
         result.append(
             ImageGenerationListItem(
                 id=gen.id,

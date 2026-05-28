@@ -12,6 +12,7 @@ para evitar bloquear la aplicación por una caída de caché.
 """
 
 import time
+import uuid
 from collections.abc import Callable
 
 import redis.asyncio as aioredis
@@ -97,9 +98,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         window_start = now - 60
         key = f"rl:{user_id}"
         try:
+            # Miembro único: dos requests con el mismo timestamp no deben colisionar
+            # (colisión = subconteo bajo concurrencia alta).
+            member = f"{now}:{uuid.uuid4().hex}"
             async with self.redis.pipeline(transaction=True) as pipe:
                 pipe.zremrangebyscore(key, 0, window_start)
-                pipe.zadd(key, {str(now): now})
+                pipe.zadd(key, {member: now})
                 pipe.zcard(key)
                 pipe.expire(key, 61)
                 results = await pipe.execute()
