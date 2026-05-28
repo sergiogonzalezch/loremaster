@@ -125,12 +125,12 @@ docker exec -it loremaster-api python scripts/make_admin.py <username> --force
 
 ### Pendientes (bloquean producción real, no demo privada)
 
-| Item | Código | Configuración |
-|---|---|---|
-| **Clerk auth** | ✅ `auth_clerk.py`, `clerk.py`, 6 tests en main | ❌ Descomentar `CLERK_JWKS_URL` + `CLERK_AUDIENCE` en compose y `.env.production` |
-| **Storage S3/R2 real** | ✅ `core/storage/s3_client.py` con boto3 | ❌ Añadir `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_ENDPOINT_URL` reales en `.env.production` |
-| **TLS/HTTPS** | ❌ Nginx solo `listen 80` | ❌ Certificado SSL (Let's Encrypt / certbot) + redirect 80→443 en `nginx.conf` |
-| **GPU cloud** | ❌ `runpod_client.py` no existe | ❌ `RUNPOD_API_KEY` + `RUNPOD_ENDPOINT_ID` pendientes de decisión |
+| Item | Código | Compose | Configuración |
+|---|---|---|---|
+| **Clerk auth** | ✅ `auth_clerk.py`, `clerk.py`, 6 tests | ✅ Vars presentes pero comentadas (líneas 129-130) | ❌ Descomentar en compose + añadir `CLERK_JWKS_URL` y `CLERK_AUDIENCE` en `.env.production` |
+| **Storage S3/R2 real** | ✅ `core/storage/s3_client.py` con boto3 | ❌ `S3_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` hardcodeados para Floci — hacer interpolables | ❌ Añadir credenciales reales en `.env.production` tras el cambio de compose |
+| **TLS/HTTPS** | ❌ Nginx solo `listen 80` | — | ❌ Certificado SSL (Let's Encrypt / certbot) + `listen 443 ssl` + redirect 80→443 en `nginx.conf` |
+| **GPU cloud** | ❌ `runpod_client.py` no existe | ❌ `IMAGE_BACKEND: comfyui` hardcodeado — hacer `${IMAGE_BACKEND:-comfyui}` | ❌ Implementar cliente + añadir `RUNPOD_API_KEY` / `RUNPOD_ENDPOINT_ID` en `.env.production` |
 
 ### Seguridad (código)
 
