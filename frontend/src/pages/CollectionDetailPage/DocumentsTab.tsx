@@ -206,6 +206,7 @@ type BulkState = {
 
 type BulkAction =
   | { type: "TOGGLE_ONE"; id: string }
+  | { type: "REMOVE_ONE"; id: string }
   | { type: "SET_ALL"; ids: string[] }
   | { type: "CLEAR" }
   | { type: "OPEN_CONFIRM" }
@@ -219,6 +220,12 @@ function bulkReducer(state: BulkState, action: BulkAction): BulkState {
       const next = new Set(state.selectedIds);
       if (next.has(action.id)) next.delete(action.id);
       else next.add(action.id);
+      return { ...state, selectedIds: next };
+    }
+    case "REMOVE_ONE": {
+      if (!state.selectedIds.has(action.id)) return state;
+      const next = new Set(state.selectedIds);
+      next.delete(action.id);
       return { ...state, selectedIds: next };
     }
     case "SET_ALL":
@@ -328,6 +335,7 @@ export default function DocumentsTab({
   const deleteConfirm = useDeleteConfirm<Document>({
     onDelete: async (doc) => {
       await deleteDocument(collectionId, doc.id);
+      dispatchBulk({ type: "REMOVE_ONE", id: doc.id });
       await fetchDocuments();
       onDocumentsMutated();
     },

@@ -17,43 +17,50 @@ function formatSize(bytes: number): string {
     : `${(bytes / 1_048_576).toFixed(0)} MB`;
 }
 
+// phase tri-state evita el "pop" del null→render: durante "loading"
+// renderiza un Select deshabilitado con placeholder (reserva el espacio).
+// Si la API falla → "hidden" (no ocupa espacio; backend usa su default).
+type Phase = "loading" | "ready" | "hidden";
+
 type ModelSelectorState = {
+  phase: Phase;
   models: ModelInfo[];
   selected: string;
-  visible: boolean;
 };
 
 export default function ModelSelector({ disabled, onChange }: Props) {
-  // Agrupar models/selected/visible — los 3 se transicionan juntos al cargar.
   const [state, setState] = useState<ModelSelectorState>({
+    phase: "loading",
     models: [],
     selected: "",
-    visible: false,
   });
 
   useEffect(() => {
     getModels()
       .then((list) => {
-        if (!list.length) return;
+        if (!list.length) {
+          setState({ phase: "hidden", models: [], selected: "" });
+          return;
+        }
         const stored = localStorage.getItem(STORAGE_KEY);
         const initial =
           (stored && list.find((m) => m.name === stored)?.name) ||
           list.find((m) => m.is_default)?.name ||
           list[0].name;
 
-        // Una sola transición — evita 3 renders consecutivos.
-        setState({ models: list, selected: initial, visible: true });
+        setState({ phase: "ready", models: list, selected: initial });
 
         // Only propagate non-default selection to avoid adding noise to requests
         const defaultModel = list.find((m) => m.is_default)?.name;
         onChange(initial !== defaultModel ? initial : undefined);
       })
       .catch(() => {
-        // Si Ollama no responde, el selector permanece oculto y el backend usa su default
+        // Si Ollama no responde, el selector se oculta y el backend usa su default
+        setState({ phase: "hidden", models: [], selected: "" });
       });
   }, [onChange]);
 
-  if (!state.visible) return null;
+  if (state.phase === "hidden") return null;
 
   function handleChange(name: string) {
     setState((prev) => ({ ...prev, selected: name }));
@@ -62,22 +69,28 @@ export default function ModelSelector({ disabled, onChange }: Props) {
     onChange(name !== defaultModel ? name : undefined);
   }
 
+  const isLoading = state.phase === "loading";
+
   return (
     <Form.Group style={{ minWidth: 220 }}>
       <Form.Label className="fw-semibold">Modelo</Form.Label>
       <Form.Select
         value={state.selected}
         onChange={(e) => handleChange(e.target.value)}
-        disabled={disabled}
+        disabled={disabled || isLoading}
         size="sm"
       >
-        {state.models.map((m) => (
-          <option key={m.name} value={m.name}>
-            {m.name}
-            {m.is_default ? " (predeterminado)" : ""}
-            {m.size ? ` — ${formatSize(m.size)}` : ""}
-          </option>
-        ))}
+        {isLoading ? (
+          <option>Cargando modelos…</option>
+        ) : (
+          state.models.map((m) => (
+            <option key={m.name} value={m.name}>
+              {m.name}
+              {m.is_default ? " (predeterminado)" : ""}
+              {m.size ? ` — ${formatSize(m.size)}` : ""}
+            </option>
+          ))
+        )}
       </Form.Select>
     </Form.Group>
   );

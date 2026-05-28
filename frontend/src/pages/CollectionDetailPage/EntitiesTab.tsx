@@ -78,6 +78,7 @@ type BulkState = {
 
 type BulkAction =
   | { type: "TOGGLE_ONE"; id: string }
+  | { type: "REMOVE_ONE"; id: string }
   | { type: "SET_ALL"; ids: string[] }
   | { type: "CLEAR" }
   | { type: "OPEN_CONFIRM" }
@@ -91,6 +92,12 @@ const bulkReducer: Reducer<BulkState, BulkAction> = (state, action) => {
       const next = new Set(state.selectedIds);
       if (next.has(action.id)) next.delete(action.id);
       else next.add(action.id);
+      return { ...state, selectedIds: next };
+    }
+    case "REMOVE_ONE": {
+      if (!state.selectedIds.has(action.id)) return state;
+      const next = new Set(state.selectedIds);
+      next.delete(action.id);
       return { ...state, selectedIds: next };
     }
     case "SET_ALL":
@@ -206,6 +213,7 @@ export default function EntitiesTab({ collectionId }: Props) {
   const deleteConfirm = useDeleteConfirm<Entity>({
     onDelete: async (entity) => {
       await deleteEntity(collectionId, entity.id);
+      dispatchBulk({ type: "REMOVE_ONE", id: entity.id });
       await fetchEntities();
     },
     onError: (e) => setError(parseApiError(e, "Error al eliminar entidad")),

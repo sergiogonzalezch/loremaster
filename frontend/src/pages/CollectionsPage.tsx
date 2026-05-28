@@ -110,6 +110,7 @@ type BulkState = {
 
 type BulkAction =
   | { type: "TOGGLE_ONE"; id: string }
+  | { type: "REMOVE_ONE"; id: string }
   | { type: "CLEAR" }
   | { type: "OPEN_CONFIRM" }
   | { type: "CLOSE_CONFIRM" }
@@ -122,6 +123,12 @@ const bulkReducer: Reducer<BulkState, BulkAction> = (state, action) => {
       const next = new Set(state.selectedIds);
       if (next.has(action.id)) next.delete(action.id);
       else next.add(action.id);
+      return { ...state, selectedIds: next };
+    }
+    case "REMOVE_ONE": {
+      if (!state.selectedIds.has(action.id)) return state;
+      const next = new Set(state.selectedIds);
+      next.delete(action.id);
       return { ...state, selectedIds: next };
     }
     case "CLEAR":
@@ -332,6 +339,7 @@ export default function CollectionsPage() {
   const deleteConfirm = useDeleteConfirm<Collection>({
     onDelete: async (col) => {
       await deleteCollection(col.id);
+      dispatchBulk({ type: "REMOVE_ONE", id: col.id });
       await fetchCollections();
     },
     onError: (e) =>
