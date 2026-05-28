@@ -4,14 +4,13 @@ import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from app.core.api.params import DateRangeParams, PaginationParams
 from app.core.auth.dependencies import get_current_user
 from app.core.database.dependencies import (
     get_collection_or_404_owned,
 )
-from app.core.database.utils import bulk_delete_items
 from app.core.exceptions import DatabaseError, DuplicateNameError
 from app.database import get_session
 from app.models.db.collection import Collection
@@ -23,6 +22,7 @@ from app.models.schemas.collection import (
 )
 from app.models.shared import PaginatedResponse
 from app.services.collection.collection_service import (
+    bulk_delete_collections_service,
     create_collection_service,
     delete_collection_service,
     get_collection_with_counts_service,
@@ -133,12 +133,5 @@ def bulk_delete_collections(
     session: Annotated[Session, Depends(get_session)],
 ):
     """Elimina múltiples colecciones en cascada."""
-    collections = session.exec(
-        select(Collection).where(
-            Collection.id.in_(request.ids),
-            Collection.owner_id == current_user["sub"],
-            Collection.is_deleted.is_(False),
-        ),
-    ).all()
-    bulk_delete_items(session, collections, delete_collection_service)
+    bulk_delete_collections_service(session, request.ids, current_user["sub"])
     return Response(status_code=204)

@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.core.api.params import DateRangeParams, PaginationParams
-from app.core.database.utils import paginate_with_sort
+from app.core.database.utils import bulk_delete_items, paginate_with_sort
 from app.core.exceptions import DuplicateNameError
 from app.models.db.collection import Collection
 from app.models.db.document import Document
@@ -222,6 +222,18 @@ def update_collection_service(
     session.refresh(collection)
     logger.info("Collection '%s' updated (id %s)", collection.name, collection.id)
     return collection
+
+
+def bulk_delete_collections_service(session: Session, ids: list[str], owner_id: str) -> None:
+    """Elimina múltiples colecciones en cascada filtrando por propietario."""
+    items = session.exec(
+        select(Collection).where(
+            Collection.id.in_(ids),
+            Collection.owner_id == owner_id,
+            Collection.is_deleted.is_(False),
+        ),
+    ).all()
+    bulk_delete_items(session, items, delete_collection_service)
 
 
 def delete_collection_service(session: Session, collection: Collection) -> bool:

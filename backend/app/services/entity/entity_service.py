@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.core.api.params import DateRangeParams, PaginationParams
-from app.core.database.utils import db_commit, paginate_with_sort
+from app.core.database.utils import bulk_delete_items, db_commit, paginate_with_sort
 from app.core.exceptions import DuplicateNameError
 from app.models.db.entity import Entity, EntityType
 from app.models.schemas.entity import CreateEntityRequest, UpdateEntityRequest
@@ -170,6 +170,18 @@ def update_entity_service(
         entity.collection_id,
     )
     return entity
+
+
+def bulk_delete_entities_service(session: Session, ids: list[str], collection_id: str) -> None:
+    """Elimina múltiples entidades en cascada filtrando por colección."""
+    items = session.exec(
+        select(Entity).where(
+            Entity.id.in_(ids),
+            Entity.collection_id == collection_id,
+            Entity.is_deleted.is_(False),
+        ),
+    ).all()
+    bulk_delete_items(session, items, delete_entity_service)
 
 
 def delete_entity_service(session: Session, entity: Entity) -> bool:

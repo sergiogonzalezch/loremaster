@@ -23,7 +23,6 @@ from app.core.database.dependencies import (
     get_collection_or_404_owned,
     get_document_or_404_owned,
 )
-from app.core.database.utils import bulk_delete_items
 from app.core.exceptions import (
     ContentNotAllowedError,
     DatabaseError,
@@ -43,6 +42,7 @@ from app.models.schemas.document import DocumentContentResponse, DocumentRespons
 from app.models.shared import PaginatedResponse
 from app.services.document.document_service import (
     DocumentFilters,
+    bulk_delete_documents_service,
     delete_document_service,
     ingest_document_service,
     list_documents_service,
@@ -201,16 +201,7 @@ def bulk_delete_documents(
     session: Annotated[Session, Depends(get_session)],
 ):
     """Elimina múltiples documentos: vectores en Qdrant y soft-delete en BD."""
-    docs = session.exec(
-        select(Document).where(
-            Document.id.in_(request.ids),
-            Document.collection_id == collection_id,
-            Document.is_deleted.is_(False),
-            Document.status != DocumentStatus.processing,
-        ),
-    ).all()
-
-    bulk_delete_items(session, docs, delete_document_service)
+    bulk_delete_documents_service(session, request.ids, collection_id)
     return Response(status_code=204)
 
 

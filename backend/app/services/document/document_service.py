@@ -13,7 +13,7 @@ from sqlmodel import Session, select
 from app.core.api.params import DateRangeParams, PaginationParams
 from app.core.config import settings
 from app.core.database.soft_delete import soft_delete
-from app.core.database.utils import db_commit, paginate_with_sort
+from app.core.database.utils import bulk_delete_items, db_commit, paginate_with_sort
 from app.core.exceptions import (
     DocumentExtractionError,
     DocumentNotRetryableError,
@@ -269,6 +269,19 @@ def retry_document_service(
     db_commit(session, f"retry_document({document.id})")
     session.refresh(document)
     return document, raw_text
+
+
+def bulk_delete_documents_service(session: Session, ids: list[str], collection_id: str) -> None:
+    """Elimina múltiples documentos (Qdrant + soft-delete) filtrando por colección."""
+    items = session.exec(
+        select(Document).where(
+            Document.id.in_(ids),
+            Document.collection_id == collection_id,
+            Document.is_deleted.is_(False),
+            Document.status != DocumentStatus.processing,
+        ),
+    ).all()
+    bulk_delete_items(session, items, delete_document_service)
 
 
 def delete_document_service(session: Session, document: Document) -> bool:

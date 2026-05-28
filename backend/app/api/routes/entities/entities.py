@@ -3,7 +3,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from app.core.api.params import DateRangeParams, PaginationParams
 from app.core.auth.dependencies import get_current_user
@@ -11,7 +11,6 @@ from app.core.database.dependencies import (
     get_collection_or_404_owned,
     get_entity_or_404_owned,
 )
-from app.core.database.utils import bulk_delete_items
 from app.core.exceptions import DatabaseError, DuplicateNameError
 from app.database import get_session
 from app.models.db.collection import Collection
@@ -25,6 +24,7 @@ from app.models.schemas.entity import (
 from app.models.shared import PaginatedResponse
 from app.services.entity.entity_service import (
     EntityFilters,
+    bulk_delete_entities_service,
     create_entity_service,
     delete_entity_service,
     list_entities_service,
@@ -127,13 +127,5 @@ def bulk_delete_entities(
     session: Annotated[Session, Depends(get_session)],
 ):
     """Elimina múltiples entidades en cascada."""
-    entities = session.exec(
-        select(Entity).where(
-            Entity.id.in_(request.ids),
-            Entity.collection_id == collection_id,
-            Entity.is_deleted.is_(False),
-        ),
-    ).all()
-
-    bulk_delete_items(session, entities, delete_entity_service)
+    bulk_delete_entities_service(session, request.ids, collection_id)
     return Response(status_code=204)
