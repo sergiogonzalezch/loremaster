@@ -1,8 +1,11 @@
 # Plan de implementación — Llama Guard (capa semántica de moderación)
 
 **Fecha:** 2026-05-25  
-**Rama objetivo:** `feature/week-10` (o la semana que corresponda)  
-**Estado:** Pendiente de implementación
+**Estado:** ✅ Implementado (Semana 9, 2026-05-25 — adelantado al plan original)
+
+> Este documento sirvió de guía de implementación. El código está en `main`:
+> `app/domain/llama_guard.py`, integrado en `rag_query_service` y `generation_service`.
+> 9 tests en `tests/test_llama_guard.py`. Activar con `LLAMA_GUARD_ENABLED=true`.
 
 ---
 

@@ -284,7 +284,8 @@ Las funcionalidades de gestión de entidades y borradores RAG, planificadas orig
 >
 > **Trabajo adicional realizado fuera del plan original (~3-4 semanas extra):**
 > auth completo (Clerk + local + 6 fixes de seguridad), content guard con harness de evaluación,
-> 53 issues de seguridad cerrados, React Doctor 100/100, ESLint 0/0, source attribution,
+> 53 issues de seguridad cerrados, React Doctor 89/100 (81→89 en sesión 2026-05-27; 77 false positives
+> de unused-file inamovibles sin soporte entryPoints en react-doctor), ESLint 0/0, source attribution,
 > perfiles de usuario, feed público, panel de admin, RAG params/LLM params/prompt/image harnesses.
 
 ---
@@ -451,7 +452,7 @@ La integración real con ComfyUI está funcional en `services/image/image_genera
 
 - [ ] ~~Agregar LocalStack al `docker-compose.yml` (puerto 4566)~~ — reemplazado por filesystem local
 - [x] `core/storage/__init__.py` — abstracción de almacenamiento: `save_file`, `build_storage_url`, `build_generation_path` con protección anti-path-traversal
-- [ ] ~~Variables: `STORAGE_BACKEND`, `S3_ENDPOINT_URL`, `S3_BUCKET`~~ — config actual: `media_root` + `storage_base_url` (filesystem local); S3 real **pendiente Fase 3**
+- [x] ~~Variables: `STORAGE_BACKEND`, `S3_ENDPOINT_URL`, `S3_BUCKET`~~ — **implementado en Semana 9**: `core/storage/s3_client.py` con boto3; soporta `STORAGE_BACKEND=local` o `s3`; compatible con AWS S3 real, Cloudflare R2 y Floci. Demo usa Floci; cloud deploy solo requiere credenciales en `.env.production`
 - [x] Imágenes generadas se guardan con key única (`{uuid}.png`) bajo `users/{username}/img/generation/...`
 - [x] URL de imagen retornada al cliente vía `storage_base_url + storage_path`
 
@@ -474,7 +475,7 @@ La integración real con ComfyUI está funcional en `services/image/image_genera
 ### Criterios de aceptacion Semana 8
 
 - [ ] ~~Flujo completo: ingestar lore → build-prompt con contexto RAG → imagen coherente con el lore~~ — descartado (metadata_harness)
-- [ ] ~~Imagen guardada en LocalStack S3 y URL retornada al cliente~~ — filesystem local en su lugar; S3 pendiente
+- [x] ~~Imagen guardada en LocalStack S3 y URL retornada al cliente~~ — filesystem local en Semana 8; **S3 real implementado en Semana 9** via `core/storage/s3_client.py` + Floci en demo
 - [x] CRUD de entidades funcional con soft delete
 - [x] Metadata de generación registrada (`visual_prompt`, `prompt_token_count`, `prompt_source`, `prompt_strategy`, `backend`, `generation_ms`)
 
@@ -660,39 +661,45 @@ Fixes de consistencia entre capas y eliminación de código muerto aplicados sob
 
 ---
 
-## Semana 10 — RunPod Basico (Imagenes)
+## Semana 10 — GPU Cloud + Clerk + TLS
 
-**Hito:** Worker RunPod funcional. Generacion de imagenes en la nube.
+**Hito:** Flujo de imágenes en cloud, auth Clerk validada end-to-end, HTTPS.
 **Objetivos:** O-6
 **Historias:** HU-04
 
-### RunPod Worker
+> **Nota (2026-05-27):** El plan original de Semana 10 era "RunPod Básico". Se reorientó para
+> reflejar el estado real del proyecto: Storage S3 ya implementado, Llama Guard ya implementado,
+> Clerk con código completo en main. Las prioridades reales son GPU cloud, Clerk tenant y TLS.
 
-- [ ] `runpod_worker/Dockerfile` creado: base NVIDIA CUDA + ComfyUI + RunPod SDK
-- [ ] `runpod_worker/builder/setup.sh` descarga modelo Flux.2 Klein durante build
-- [ ] `runpod_worker/src/handler.py` implementado: recibe prompt → ComfyUI → retorna imagen
-- [ ] `runpod_worker/requirements.txt`: `runpod`, `torch`, `httpx`
+### GPU Cloud (decisión + implementación)
 
-### Testing Manual
+- [ ] Decidir backend de imágenes: RunPod Serverless vs Replicate vs filesystem
+- [ ] Si RunPod: `runpod_client.py` — cliente HTTP async, `runsync` endpoint, timeout 120s, errores → 503
+- [ ] Si Replicate: cliente equivalente con API Replicate
+- [ ] Switch `IMAGE_BACKEND=runpod|replicate` transparente — mismo endpoint `/image-generation/generate`
+- [ ] Variables en `.env.production`: `RUNPOD_API_KEY` + `RUNPOD_ENDPOINT_ID` (o equivalente Replicate)
+- [ ] Documentar cold start time (esperado 20-60s RunPod)
 
-- [ ] Imagen Docker construida y probada localmente (si hay GPU disponible)
-- [ ] Worker desplegado en RunPod Serverless
-- [ ] Script de test: enviar prompt manualmente via API RunPod → recibir imagen
-- [ ] Verificar cold start time (documentar: esperado 20-60s)
-- [ ] Verificar que parametros fijos (cfg=1.0, steps=4) se mantienen
+### Clerk end-to-end con tenant real
 
-### Configuracion RunPod
+- [ ] Obtener `CLERK_JWKS_URL` y `CLERK_AUDIENCE` del dashboard de Clerk
+- [ ] Descomentar en `docker-compose.prod.yml`: `CLERK_JWKS_URL` y `CLERK_AUDIENCE`
+- [ ] Añadir a `.env.production` y probar flujo completo: Clerk login → `/auth/clerk/sync` → cookie local
+- [ ] Verificar que `ProtectedRoute` funciona en modo Clerk en el stack Docker
 
-- [ ] Variables en `.env.prod.example`: `RUNPOD_API_KEY`, `RUNPOD_ENDPOINT_ID`, `RUNPOD_ENDPOINT_URL`
-- [ ] Limite de presupuesto configurado en RunPod dashboard
-- [ ] Usar `runsync` (sincronico) para el prototipo
+### TLS/HTTPS
 
-### Criterios de aceptacion Semana 10
+- [ ] Configurar certificado SSL (Let's Encrypt via certbot, o certificado manual)
+- [ ] Añadir `listen 443 ssl` + redirect 80→443 en `frontend/nginx.conf`
+- [ ] Actualizar `ALLOWED_ORIGINS` y `STORAGE_BASE_URL` con `https://` en `.env.production`
+- [ ] Verificar `COOKIE_SECURE=true` activo (ya en compose)
 
-- [ ] Worker RunPod genera imagen desde prompt enviado manualmente
-- [ ] Imagen generada es de calidad comparable a la generacion local
-- [ ] Cold start documentado
-- [ ] Presupuesto configurado en RunPod
+### Criterios de aceptación Semana 10
+
+- [ ] `/image-generation/generate` genera imagen via backend cloud elegido
+- [ ] Clerk login funciona end-to-end en stack Docker
+- [ ] Stack accesible via HTTPS (certificado válido)
+- [ ] `make prod-up` levanta todo sin errores con las nuevas variables
 
 ---
 
@@ -720,15 +727,14 @@ Fixes de consistencia entre capas y eliminación de código muerto aplicados sob
 
 ### Storage Produccion
 
-- [ ] `storage.py` soporta switch entre LocalStack (dev) y S3/R2 real (prod)
-- [ ] Variable `STORAGE_BACKEND`: `localstack` o `s3`
-- [ ] Probar con Cloudflare R2 si es posible (egress gratuito)
+- [x] ~~`storage.py` soporta switch entre LocalStack (dev) y S3/R2 real (prod)~~ — **implementado en Semana 9**: `core/storage/s3_client.py` con boto3; `STORAGE_BACKEND=local|s3`; soporta AWS S3 real y Cloudflare R2
+- [ ] Probar con Cloudflare R2 en cloud deploy real (egress gratuito) — solo requiere credenciales
 
 ### Criterios de aceptacion Semana 11
 
 - [ ] `/image-generation/generate` genera imagen via RunPod cuando `COMFY_BACKEND=runpod`
 - [ ] `/image-generation/generate` genera imagen via ComfyUI local cuando `COMFY_BACKEND=local`
-- [ ] Imagen se guarda en S3 real (no solo LocalStack)
+- [x] ~~Imagen se guarda en S3 real (no solo LocalStack)~~ — implementado en Semana 9; activar con `STORAGE_BACKEND=s3` + credenciales en `.env.production`
 - [ ] Metadata registra correctamente el backend usado
 - [ ] Switch entre backends no requiere cambio de codigo
 
