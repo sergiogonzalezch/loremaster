@@ -123,6 +123,8 @@ class Settings(BaseSettings):
     comfyui_url: str = "http://localhost:8188"
     comfyui_timeout: int = 300
     comfyui_request_timeout: float = 30.0
+    health_check_timeout_seconds: float = 2.0     # timeout para health checks de Qdrant y Ollama
+    ollama_models_timeout_seconds: float = 5.0    # timeout para GET /api/tags de Ollama
 
     # Storage
     media_root: str = "./media"
@@ -136,9 +138,12 @@ class Settings(BaseSettings):
     profile_image_max_size_mb: float = 5.0
     document_max_upload_mb: int = 50
     document_extraction_timeout_seconds: int = 30
+    document_event_stream_max_seconds: int = 300   # duración máxima del SSE de documentos
 
     # Vector DB (Qdrant)
     qdrant_url: str = "http://localhost:6333"
+    qdrant_retry_attempts: int = 3       # reintentos al borrar vectores
+    qdrant_retry_delay_seconds: float = 0.5  # segundos entre reintentos
 
     # Embeddings
     embedding_model: str = "paraphrase-multilingual-MiniLM-L12-v2"

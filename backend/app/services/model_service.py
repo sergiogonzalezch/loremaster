@@ -17,7 +17,7 @@ def list_ollama_models() -> list[dict]:
     """
     response = httpx.get(
         f"{settings.ollama_base_url}/api/tags",
-        timeout=5.0,
+        timeout=settings.ollama_models_timeout_seconds,
     )
     response.raise_for_status()
 

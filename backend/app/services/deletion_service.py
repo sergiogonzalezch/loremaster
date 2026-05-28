@@ -32,14 +32,11 @@ from app.services.profile.profile_service import delete_profile_image
 
 logger = logging.getLogger(__name__)
 
-_QDRANT_RETRY_ATTEMPTS = 3
-_QDRANT_RETRY_DELAY = 0.5
-
 
 def _delete_vectors_with_retry(collection_id: str) -> bool:
     """Elimina vectores de Qdrant con reintentos automáticos.
 
-    Realiza hasta 3 intentos con 0.5 segundos de demora entre cada uno.
+    Realiza hasta settings.qdrant_retry_attempts intentos con settings.qdrant_retry_delay_seconds de demora.
 
     Args:
         collection_id: Identificador de la colección cuyos vectores se eliminarán.
@@ -49,24 +46,24 @@ def _delete_vectors_with_retry(collection_id: str) -> bool:
         (vectores huérfanos que requieren limpieza manual).
 
     """
-    for attempt in range(1, _QDRANT_RETRY_ATTEMPTS + 1):
+    for attempt in range(1, settings.qdrant_retry_attempts + 1):
         try:
             delete_collection_vectors(collection_id)
         except Exception as e:
-            if attempt < _QDRANT_RETRY_ATTEMPTS:
+            if attempt < settings.qdrant_retry_attempts:
                 logger.warning(
                     "Qdrant cleanup attempt %d/%d failed for collection %s: %s",
                     attempt,
-                    _QDRANT_RETRY_ATTEMPTS,
+                    settings.qdrant_retry_attempts,
                     collection_id,
                     e,
                 )
-                time.sleep(_QDRANT_RETRY_DELAY)
+                time.sleep(settings.qdrant_retry_delay_seconds)
             else:
                 logger.exception(
                     "Orphan vectors remain in Qdrant for collection %s after %d attempts — manual cleanup needed. collection_id=%s",
                     collection_id,
-                    _QDRANT_RETRY_ATTEMPTS,
+                    settings.qdrant_retry_attempts,
                     collection_id,
                 )
         else:

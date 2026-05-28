@@ -16,7 +16,7 @@ def check_services_health() -> dict:
     result: dict = {"status": "healthy", "services": {}}
 
     try:
-        with httpx.Client(timeout=2.0) as client:
+        with httpx.Client(timeout=settings.health_check_timeout_seconds) as client:
             resp = client.get(f"{settings.qdrant_url}/ready")
             result["services"]["qdrant"] = "healthy" if resp.status_code == 200 else "unhealthy"
     except httpx.TransportError:
@@ -24,7 +24,7 @@ def check_services_health() -> dict:
         result["status"] = "degraded"
 
     try:
-        with httpx.Client(timeout=2.0) as client:
+        with httpx.Client(timeout=settings.health_check_timeout_seconds) as client:
             resp = client.get(f"{settings.ollama_base_url}/api/tags")
             result["services"]["ollama"] = "healthy" if resp.status_code == 200 else "unhealthy"
     except httpx.TransportError:
