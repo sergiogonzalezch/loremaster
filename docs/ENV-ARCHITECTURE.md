@@ -141,7 +141,7 @@ ninguna fuente, Pydantic lanza `ValidationError` y FastAPI no arranca.
 | `OLLAMA_BASE_URL` | `http://host.docker.internal:11434` | Host gateway, demo siempre local |
 | `COMFYUI_URL` | `http://host.docker.internal:8188` | Host gateway, demo siempre local |
 | `OLLAMA_MODEL` | `llama3.2:latest` | Modelo validado para el pipeline |
-| `IMAGE_BACKEND` | `comfyui` | Cambiará en Semana 11 (RunPod) |
+| `IMAGE_BACKEND` | `comfyui` | Cambiará en Semana 10 (GPU cloud — RunPod/Replicate) |
 | `IMAGE_PROMPT_MODEL` | `mistral:latest` | Modelo validado |
 | `EMBEDDING_MODEL` | `paraphrase-multilingual-MiniLM-L12-v2` | **Debe coincidir con Dockerfile** |
 | `STORAGE_BACKEND` | `s3` | Floci en demo, siempre S3-compatible |
@@ -200,38 +200,48 @@ make prod-up
 
 ## 8. Puntos de mejora identificados
 
-### Pendiente Semana 10 — integración S3/R2 real
+### Pendiente — cloud deploy con S3/R2 real (no bloquea demo local)
 
-Cuando se reemplace Floci por S3/R2 real, estas tres variables hardcodeadas
-deben volverse interpolables en `docker-compose.prod.yml`:
+El backend S3 ya está implementado (`core/storage/s3_client.py` con boto3). Para activar
+S3/R2 real en cloud deploy, las credenciales hardcodeadas para Floci deben volverse
+interpolables en `docker-compose.prod.yml`:
 
 ```yaml
-# Antes (hardcodeado para Floci demo)
-S3_ENDPOINT_URL:      http://floci:4566
-AWS_ACCESS_KEY_ID:    test
+# Actual (hardcodeado para Floci demo)
+S3_ENDPOINT_URL:       http://floci:4566
+AWS_ACCESS_KEY_ID:     test
 AWS_SECRET_ACCESS_KEY: test
 
-# Después (interpolado para S3/R2 real)
-S3_ENDPOINT_URL:      ${S3_ENDPOINT_URL:-http://floci:4566}
-AWS_ACCESS_KEY_ID:    ${AWS_ACCESS_KEY_ID:-test}
+# Para cloud (interpolado con fallback Floci)
+S3_ENDPOINT_URL:       ${S3_ENDPOINT_URL:-http://floci:4566}
+AWS_ACCESS_KEY_ID:     ${AWS_ACCESS_KEY_ID:-test}
 AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
 ```
 
 Y añadir en `.env.production.example`:
 ```bash
-S3_ENDPOINT_URL=https://tu-endpoint-s3
+# S3/R2 real — dejar vacío para usar Floci (demo)
+S3_ENDPOINT_URL=https://tu-endpoint-r2.cloudflare.com   # o vacío para AWS
 AWS_ACCESS_KEY_ID=<via secrets manager>
 AWS_SECRET_ACCESS_KEY=<via secrets manager>
 ```
 
-### Pendiente Semana 11 — RunPod / GPU cloud
+### Pendiente Semana 10 — GPU cloud (RunPod/Replicate)
 
 ```yaml
-# Antes
+# Actual
 IMAGE_BACKEND: comfyui
 
-# Después
-IMAGE_BACKEND: ${IMAGE_BACKEND:-comfyui}   # permite "runpod" sin tocar el compose
+# Después de implementar cliente RunPod/Replicate
+IMAGE_BACKEND: ${IMAGE_BACKEND:-comfyui}   # permite "runpod" o "replicate" sin tocar el compose
+```
+
+Añadir en `.env.production.example`:
+```bash
+# GPU cloud — dejar vacío para usar ComfyUI local
+IMAGE_BACKEND=comfyui
+# RUNPOD_API_KEY=<key>
+# RUNPOD_ENDPOINT_ID=<endpoint>
 ```
 
 ### Sin fecha urgente — modelos Ollama configurables
@@ -253,5 +263,5 @@ el compose dice "por defecto inactivo para demo".
 
 ---
 
-*Última actualización: 2026-05-27. Branch `dev`.*
+*Última actualización: 2026-05-27 (revisado — S3 implementado; GPU cloud movido a Semana 10). Branch `main`.*
 *Ver también: `docs/ENVIRONMENT.md` (referencia completa de variables), `docs/DEPLOY.md` (runbook operacional).*
