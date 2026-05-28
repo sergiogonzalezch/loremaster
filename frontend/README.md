@@ -185,6 +185,8 @@ Los tests se encuentran en `src/test/`. Las llamadas a la API se mockean con `vi
 
 **Total: 121 tests.**
 
+**React Doctor:** 94/100 (sesión 2026-05-28). Componentes refactorizados a `useReducer` agrupando estado relacionado: `DocumentsTab` (4 reducers), `EntitiesTab` (3), `CollectionsPage` (4), `ProfilePage`, `ContentCard`, `LoginPage`, `AdminPage`, `ImagePanel`. Ver `docs/STRATEGY.md §9` para techo práctico y deuda pendiente (componentes >300 líneas).
+
 Aspectos destacados de cobertura:
 
 - **`ContentCard`**: estados pending/confirmed/discarded, busy-lock (doble clic bloqueado), rollback optimista en fallo de API, badges de auditoría `✎ editado` (presencia/ausencia y sección colapsable del output original).
@@ -215,8 +217,9 @@ El JWT de sesión viaja siempre en una cookie HttpOnly (`access_token`). El fron
 
 - **`AuthProvider`** al montar llama `GET /users/me` para verificar si hay sesión activa (cookie válida). `loading=true` hasta que responde, evitando redirect prematuro en refresh.
 - **`apiFetch`**: usa `credentials: "include"` en todas las peticiones (cookies automáticas). Para mutaciones añade `X-CSRF-Token` leído de la cookie `csrf_token`.
-- **401 fuera de `/login`**: `apiClient.ts` emite `new CustomEvent("auth:unauthorized")`. `UnauthorizedHandler` (en `App.tsx`) lo captura, llama `logout()` y navega a `/login` con React Router — sin full-page reload ni flash en blanco.
-- **Auto-logout**: `AuthProvider` programa un `setTimeout` al tiempo exacto de expiración del token (60 min). Al disparar, llama `logout()` que invalida la sesión en servidor y limpia el estado.
+- **Refresh token automático (sesión 2026-05-28)**: el access token dura 15 min. `AuthContext.scheduleRefresh()` programa `POST /auth/refresh` 60 s antes de expirar (proactivo). Si falla → `logout({ force: true })` y redirect a `/login`.
+- **401 con retry transparente**: si una petición autenticada recibe 401 fuera de `/login`, `apiClient.ts` intenta `POST /auth/refresh` **una sola vez** antes de redirigir. Si el refresh devuelve OK, reintenta la petición original (`_isRetry=true` evita bucle). Si falla, emite `auth:unauthorized` y el `UnauthorizedHandler` (en `App.tsx`) navega a `/login` sin full-page reload.
+- **Brute-force defense en login**: tras fallos consecutivos, `LoginPage` aplica delay client-side progresivo (1.º sin espera, 2.º → 2 s, 3.º → 4 s, cap 30 s) además del rate-limit del backend.
 
 ## Pantallas
 

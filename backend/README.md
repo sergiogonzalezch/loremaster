@@ -68,6 +68,8 @@ cp .env.example .env
 | Variable | Por defecto | Propósito |
 |---|---|---|
 | `QDRANT_URL` | `http://localhost:6333` | Base de datos vectorial |
+| `QDRANT_RETRY_ATTEMPTS` | `3` | Reintentos al borrar vectores en Qdrant (subir en red WAN/Qdrant lento) |
+| `QDRANT_RETRY_DELAY_SECONDS` | `0.5` | Segundos entre reintentos de borrado |
 | `EMBEDDING_MODEL` | `paraphrase-multilingual-MiniLM-L12-v2` | Modelo de embeddings |
 | `EMBEDDING_DIMS` | `384` | Dimensiones del vector de embedding |
 | `CHUNK_SIZE` | `400` | Tamaño de chunk en caracteres |
@@ -101,6 +103,9 @@ cp .env.example .env
 | `PROFILE_IMAGE_MAX_SIZE_MB` | `5` | Tamaño máximo de avatar en MB |
 | `DOCUMENT_MAX_UPLOAD_MB` | `50` | Tamaño máximo de documentos subidos (PDF/TXT) en MB |
 | `DOCUMENT_EXTRACTION_TIMEOUT_SECONDS` | `30` | Timeout en segundos para extracción de texto de documentos |
+| `DOCUMENT_EVENT_STREAM_MAX_SECONDS` | `300` | Duración máxima del SSE de notificaciones de documentos (5 min) |
+| `HEALTH_CHECK_TIMEOUT_SECONDS` | `2.0` | Timeout para health checks de Qdrant y Ollama en `GET /health` |
+| `OLLAMA_MODELS_TIMEOUT_SECONDS` | `5.0` | Timeout para `GET /api/tags` de Ollama en el selector de modelos |
 
 **Almacenamiento S3 / Floci** (solo necesario si `STORAGE_BACKEND=s3`)
 
@@ -127,13 +132,15 @@ Estas dos variables tienen propósitos distintos y no deben confundirse:
 |---|---|---|
 | `SECRET_KEY` | *(requerida)* | Clave de firma JWT. Mín. 32 chars en entornos no locales. **Cambiar en producción** |
 | `ALGORITHM` | `HS256` | Algoritmo de firma JWT |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | `60` | Duración del token JWT en minutos (1 h) |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | `15` | Duración del access token en minutos (corto por diseño; el refresh token renueva la sesión) |
+| `REFRESH_TOKEN_EXPIRE_DAYS` | `7` | Duración del refresh token (cookie HttpOnly restringida a `/api/v1/auth/refresh`) |
 
 **Auth — Cookies**
 
 | Variable | Por defecto | Propósito |
 |---|---|---|
 | `COOKIE_ACCESS_NAME` | `access_token` | Nombre de la cookie HttpOnly con el JWT local |
+| `COOKIE_REFRESH_NAME` | `refresh_token` | Nombre de la cookie HttpOnly del refresh token (`path=/api/v1/auth/refresh`) |
 | `COOKIE_CSRF_NAME` | `csrf_token` | Nombre de la cookie CSRF (double-submit pattern) |
 | `COOKIE_SECURE` | `False` | `True` en producción/demo (requiere HTTPS) |
 | `COOKIE_SAMESITE` | `Strict` | Política SameSite: `Strict`, `Lax` o `None` |
@@ -444,10 +451,11 @@ JWT local (HS256). Hay dos modos de entrada:
 
 | Método | Ruta | Auth | Descripción | Status |
 |---|---|---|---|---|
-| `POST` | `/auth/register` | No | Registrar usuario nuevo (modo local) | 200 |
-| `POST` | `/auth/login` | No | Autenticar usuario (modo local) | 200 |
-| `POST` | `/auth/logout` | Requerida | Invalidar la sesión activa incrementando `token_version` | 204 |
-| `POST` | `/auth/clerk/sync` | No (Clerk JWT en header) | Intercambia un JWT de Clerk por una cookie de sesión local | 200 |
+| `POST` | `/auth/register` | No | Registrar usuario nuevo (modo local) — emite access + refresh cookies | 200 |
+| `POST` | `/auth/login` | No | Autenticar usuario (modo local) — emite access + refresh cookies | 200 |
+| `POST` | `/auth/refresh` | No (refresh cookie) | Rota el access token con el refresh token. Devuelve `expires_at` para que el frontend programe el siguiente refresh | 200 |
+| `POST` | `/auth/logout` | Requerida | Invalidar la sesión activa incrementando `token_version` (anula access **y** refresh) | 204 |
+| `POST` | `/auth/clerk/sync` | No (Clerk JWT en header) | Intercambia un JWT de Clerk por cookies de sesión local (access + refresh) | 200 |
 | `GET` | `/auth/clerk/verify` | No (Clerk JWT en header) | Verifica un JWT de Clerk y confirma que el usuario existe en BD | 200 |
 
 **Login/Register response (modo local):** `{ username, access_token }` — el campo `access_token` solo se incluye cuando `ENVIRONMENT=local` (para facilitar el uso de Swagger). La sesión del frontend se establece via cookie HttpOnly `access_token` + cookie `csrf_token`.
@@ -465,7 +473,12 @@ JWT local (HS256). Hay dos modos de entrada:
 
 Todos los endpoints de la API requieren autenticación salvo `/health`, `/` y los endpoints públicos (`/public/*`, `/users/{username}/profile`).
 
-**Gestión de sesiones:** cada token incluye un claim `version` que se compara contra `token_version` del usuario en DB en cada request autenticado. El logout incrementa `token_version`, invalidando todos los tokens previos del usuario sin importar el transporte (cookie o Bearer). Los tokens tienen una vida útil de **60 minutos**.
+**Gestión de sesiones:** cada token incluye un claim `version` que se compara contra `token_version` del usuario en DB en cada request autenticado. El logout incrementa `token_version`, invalidando todos los tokens previos del usuario (access **y** refresh, sin importar el transporte cookie o Bearer).
+
+**Vida útil:**
+- Access token: **15 min** (corto por diseño)
+- Refresh token: **7 días** (cookie HttpOnly con `path=/api/v1/auth/refresh`; `max_age` persistente entre sesiones del navegador)
+- El refresh token NO se rota en cada `/auth/refresh` (mismo token reutilizable hasta expirar o logout); el access token sí se renueva en cada llamada
 
 > **Dependencias:** el hashing de contraseñas usa `bcrypt` directamente (sin `passlib`), compatible con `bcrypt >= 4.x`.
 

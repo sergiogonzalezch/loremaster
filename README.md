@@ -79,6 +79,8 @@ El registro está abierto. Cualquier usuario puede crear una cuenta via `POST /a
 
 La sesión se establece via **cookie HttpOnly** (frontend) o **Bearer token** (`Authorization: Bearer <token>`, para Swagger UI y herramientas externas). Ambos transportes usan el mismo JWT local. `POST /auth/logout` invalida los dos a la vez incrementando `token_version` en la base de datos.
 
+**Refresh token (sesión 2026-05-28):** el access token dura **15 min** por diseño. Cuando expira, el frontend lo rota automáticamente vía `POST /auth/refresh` usando una cookie HttpOnly de refresh token (7 días, `path=/api/v1/auth/refresh`). El `AuthContext` programa el refresh 60 s antes de expirar (proactivo) y `apiClient.ts` reintenta refresh ante un 401 (reactivo, una sola vez por petición). Brute force en login mitigado además con delay progresivo client-side (2 s → 4 s → 8 s → cap 30 s).
+
 ### Crear el primer usuario admin
 
 Los administradores se designan desde el servidor. No existe endpoint público para ello.
@@ -151,7 +153,7 @@ Ver [`backend/README.md`](backend/README.md) para la referencia completa de vari
 | [`docs/LIMITERS.md`](docs/LIMITERS.md) | Flujo de validación, límites input/output/DB y constantes del sistema |
 | [`docs/DOCUMENTATION.md`](docs/DOCUMENTATION.md) | Arquitectura, decisiones técnicas y roadmap |
 | [`docs/MOD.md`](docs/MOD.md) | Arquitectura del sistema de moderación y guardrails |
-| [`docs/FIX.md`](docs/FIX.md) | Tracker de deuda técnica |
-| [`docs/STRATEGY.md`](docs/STRATEGY.md) | Estado del proyecto, riesgos, hoja de ruta Semanas 9-12 |
+| [`docs/FIX.md`](docs/FIX.md) | Tracker de deuda técnica (61 issues, incluye sprint hardening 2026-05-28) |
+| [`docs/STRATEGY.md`](docs/STRATEGY.md) | Estado del proyecto, riesgos, hoja de ruta Semanas 9-12, §9 React Doctor pendientes |
 | [`backend/README.md`](backend/README.md) | API, endpoints, tests, ambientes, estructura del backend |
 | [`frontend/README.md`](frontend/README.md) | Componentes, pantallas, autenticación, tests |

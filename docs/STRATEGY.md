@@ -1,7 +1,7 @@
 # STRATEGY.md — Evaluación técnica y hoja de ruta hacia producción
 
-**Fecha:** 2026-05-27 (revisado 2026-05-27 — verificación contra código)
-**Contexto:** Evaluación honesta del estado del proyecto. Actualizado tras cierre completo de Semana 9 y revisión de items pendientes contra el código fuente real.
+**Fecha:** 2026-05-28 (revisado 2026-05-28 — sesión de hardening backend + frontend)
+**Contexto:** Evaluación honesta del estado del proyecto. Actualizado tras cierre completo de Semana 9, revisión de items pendientes y sprint de seguridad/calidad (rama `bugfix/issues-security`).
 
 ---
 
@@ -39,9 +39,16 @@
 | Migración FK `ix_entities_collection_id` | ✅ | Alembic |
 | Path traversal guard en `delete_image_service` | ✅ | `image_generation_service.py` |
 | CORS eliminado — todo pasa por Nginx en :80 | ✅ | `nginx.conf` |
-| React Doctor 89/100 (subió 81→89) | ✅ | Frontend |
+| Refresh token (access 15 min + refresh 7 d) + brute-force delay | ✅ | `auth.py`, `apiClient.ts`, `AuthContext.tsx` |
+| Cascadas atómicas (`soft_delete(commit=False)`) | ✅ | `soft_delete.py`, `deletion_service.py`, `cascade_service.py` |
+| Bug ImageGenerations huérfanas + migración data-fix | ✅ | `image_generation_service.py`, Alembic `782abfe638bf` |
+| CSP en `index.html` + S3 CORS restringido + SVG XSS bloqueado | ✅ | `index.html`, `lifespan.py`, `utils/strings.ts` |
+| 4 vulnerabilidades npm parchadas (happy-dom RCE, js-cookie, etc.) | ✅ | `package-lock.json` |
+| React Doctor 94/100 (subió 81→94 en sesiones sucesivas) | ✅ | Frontend |
 | Tests: 309 backend · 121 frontend | ✅ | — |
 | Ruff 0 errores · ESLint 0 errores | ✅ | — |
+| `npm audit`: 0 vulnerabilidades | ✅ | — |
+| Integridad BD verificada (0 huérfanos en 8 relaciones de cascade) | ✅ | — |
 
 ---
 
@@ -246,9 +253,11 @@ Los siguientes ítems de `FIX.md` están documentados, mitigados y no bloquean e
 
 ## 9. React Doctor — pendientes y techo práctico
 
-**Estado actual: 95/100** (subió 81→88→91→93→95 a lo largo del proyecto).
+**Estado actual: 94/100** (subió 81→88→91→93→95→94 a lo largo del proyecto).
 
-El techo realista alcanzable sin sprint dedicado de refactor visual es **95-96**. Los 13 issues restantes se dividen entre refactor mayor con riesgo de regresión y falsos positivos de la herramienta.
+La regresión de 95→94 vino del fix del bug visual de `ModelSelector` (tri-state `loading|ready|hidden` para evitar layout shift): el linter detecta 3 `setState` en el `useEffect` aunque sean ramas mutuamente excluyentes (`no-cascading-set-state`). Aceptada conscientemente porque el bug visible al usuario era prioritario.
+
+El techo realista alcanzable sin sprint dedicado de refactor visual es **95-96**. Los 14 issues restantes se dividen entre refactor mayor con riesgo de regresión y falsos positivos de la herramienta.
 
 ### 9.1 Refactor mayor — `no-giant-component` ×7
 

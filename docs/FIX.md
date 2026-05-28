@@ -58,6 +58,17 @@ Lista de tech debt identificado y aún no corregido. Ordenado por impacto estima
 | 48 | `GET /documents/{doc_id}` sin autenticación ni ownership | Backend | ✅ Resuelto | Añadido `Depends(get_current_user)` en `documents.py:111` |
 | 49 | `GET /entities/{entity_id}` sin ownership check | Backend | ✅ Resuelto | `get_entity_or_404_owned` en `entities.py:78`; test actualizado |
 | 50 | `deletion_service.py` mezcla soft-delete DB + borrado ficheros + cleanup Qdrant | Backend | 🟢 Cubierto | Aceptado — tres fases atómicas por diseño; revisar al integrar S3/R2 |
+| 51 | Refresh token + brute-force delay en login | Backend + Frontend | ✅ Resuelto | Access 15 min + refresh 7 d (cookie HttpOnly `path=/api/v1/auth/refresh`); `apiClient.ts` reintenta 1 vez al 401; `LoginPage` delay 2 s→4 s→cap 30 s |
+| 52 | Cascadas no atómicas (N+M+1 commits separados) | Backend | ✅ Resuelto | `soft_delete(commit=False)` + un único `db_commit` al final de `cascade_delete_collection`/`_entity` |
+| 53 | ImageGenerations huérfanas tras borrar última imagen | Backend | ✅ Resuelto | `delete_image_service` ahora limpia la generación padre si queda vacía. Migración data-fix `782abfe638bf` para backfill |
+| 54 | `_set_auth_cookies` sin `max_age` en refresh cookie | Backend | ✅ Resuelto | Cookie tratada como session-cookie por el browser; añadido `max_age=refresh_token_expire_days*86400` |
+| 55 | Clerk sync no emitía refresh token | Backend | ✅ Resuelto | Usuarios Clerk quedaban con sesión de 15 min sin renovación; `auth_clerk.py` ahora emite ambos tokens |
+| 56 | NaN guard en `scheduleRefresh` (AuthContext) | Frontend | ✅ Resuelto | `new Date(invalid).getTime()` → NaN → `setTimeout(fn, NaN)` causaba refresh storm; añadido `isFinite(ms)` guard |
+| 57 | Bulk-delete badge stuck tras delete individual | Frontend | ✅ Resuelto | Nueva acción `REMOVE_ONE` (idempotente) en `bulkReducer` de DocumentsTab/EntitiesTab/CollectionsPage; dispatched en `onDelete` callback |
+| 58 | ModelSelector layout shift al cargar | Frontend | ✅ Resuelto | Tri-state `loading\|ready\|hidden`: renderiza Select disabled con "Cargando modelos…" durante fetch |
+| 59 | Seed input con spinners nativos del navegador | Frontend | ✅ Resuelto | Nueva clase `.lm-input-no-spinner` (CSS global reutilizable); mantiene `type="number"` + `inputMode="numeric"` |
+| 60 | SVG XSS en `isImageUrlAllowed` | Frontend | ✅ Resuelto | Regex específica acepta solo `data:image/(jpeg\|png\|webp\|gif);base64,...`; SVG inline excluido |
+| 61 | 4 vulnerabilidades npm (happy-dom critical, js-cookie, brace-expansion) | Frontend | ✅ Resuelto | `npm audit fix --force` → 0 vulnerabilidades |
 
 **Leyenda:** 🔴 Pendiente urgente · 🟠 Alto · 🟡 Pendiente no urgente · 🟢 Cubierto (mitigado, sin acción inmediata) · ✅ Cerrado
 
