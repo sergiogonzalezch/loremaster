@@ -31,10 +31,12 @@ _REPORTER = _SCRIPT_DIR / "reporter.py"
 _DEFAULT_MODELS = "mistral:latest,llama3.2:latest"
 _DEFAULT_JUDGE = "gemma2:9b"
 _DEFAULT_CONFIGS = "baseline,meta_name,meta_full"
-_DEFAULT_SEEDS = ",".join([
-    str(_SCRIPT_DIR.parent / "dataset" / "golden_seed.txt"),
-    str(_SCRIPT_DIR.parent / "dataset" / "golden_seed_2.txt"),
-])
+_DEFAULT_SEEDS = ",".join(
+    [
+        str(_SCRIPT_DIR.parent / "dataset" / "golden_seed.txt"),
+        str(_SCRIPT_DIR.parent / "dataset" / "golden_seed_2.txt"),
+    ]
+)
 _DEFAULT_REPORT = _SCRIPT_DIR.parents[2] / "docs" / "reportes" / "metadata_eval.md"
 
 
@@ -77,12 +79,18 @@ def main() -> None:
                 idx = i * len(configs) + j + 1
                 print(f"\n[{idx}/{total}] {model}  x  {config}")
                 cmd = [
-                    sys.executable, str(_RUNNER),
-                    "--model", model,
-                    "--config", config,
-                    "--judge", args.judge,
-                    "--out-dir", str(args.out_dir),
-                    "--seeds", args.seeds,
+                    sys.executable,
+                    str(_RUNNER),
+                    "--model",
+                    model,
+                    "--config",
+                    config,
+                    "--judge",
+                    args.judge,
+                    "--out-dir",
+                    str(args.out_dir),
+                    "--seeds",
+                    args.seeds,
                 ]
                 result = subprocess.run(cmd)
                 if result.returncode != 0:
@@ -96,10 +104,14 @@ def main() -> None:
 
     print("\nGenerando reporte final...")
     report_cmd = [
-        sys.executable, str(_REPORTER),
-        "--results-dir", str(args.out_dir),
-        "--output", str(args.report_out),
-        "--title", args.title,
+        sys.executable,
+        str(_REPORTER),
+        "--results-dir",
+        str(args.out_dir),
+        "--output",
+        str(args.report_out),
+        "--title",
+        args.title,
     ]
     subprocess.run(report_cmd)
     print(f"\n[OK] Proceso completo. Reporte en: {args.report_out}")

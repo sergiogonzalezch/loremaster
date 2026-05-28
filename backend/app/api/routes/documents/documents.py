@@ -84,9 +84,12 @@ async def ingest(
         raise HTTPException(status_code=400, detail="File too large") from e
     except ContentNotAllowedError as e:
         log_moderation_event(
-            session, "document", e.snippet,
+            session,
+            "document",
+            e.snippet,
             collection_id=collection_id,
-            operation="upload", pattern_matched=getattr(e, "pattern", None),
+            operation="upload",
+            pattern_matched=getattr(e, "pattern", None),
         )
         raise HTTPException(status_code=422, detail=str(e)) from e
     except DocumentExtractionError as e:

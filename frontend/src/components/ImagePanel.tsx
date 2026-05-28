@@ -46,7 +46,8 @@ function ImageGrid({
   const images = gen.images;
   const count = images.length;
 
-  const getImageUrl = (img: ImageItem) => resolveImageUrl(img.image_url, img.storage_path);
+  const getImageUrl = (img: ImageItem) =>
+    resolveImageUrl(img.image_url, img.storage_path);
 
   const getGridClass = () => {
     switch (count) {
@@ -564,7 +565,10 @@ export default function ImagePanel({
             <>
               <div className="text-center">
                 <img
-                  src={resolveImageUrl(selectedImage.image_url, selectedImage.storage_path)}
+                  src={resolveImageUrl(
+                    selectedImage.image_url,
+                    selectedImage.storage_path,
+                  )}
                   alt={`Imagen seed ${selectedImage.seed}`}
                   className="img-fluid rounded"
                   style={{ maxHeight: "65vh", objectFit: "contain" }}

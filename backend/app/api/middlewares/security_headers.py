@@ -22,10 +22,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
-_PERMISSIONS_POLICY = (
-    "geolocation=(), microphone=(), camera=(), "
-    "payment=(), usb=(), display-capture=()"
-)
+_PERMISSIONS_POLICY = "geolocation=(), microphone=(), camera=(), " "payment=(), usb=(), display-capture=()"
 
 # Rutas de documentación de desarrollo — Swagger/ReDoc cargan recursos externos
 # (CDN de jsdelivr, favicon de fastapi.tiangolo.com, scripts inline) que violan
@@ -70,9 +67,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         if is_https:
             # preload solo cuando el dominio esté consolidado en HTTPS de forma permanente
-            response.headers["Strict-Transport-Security"] = (
-                "max-age=31536000; includeSubDomains"
-            )
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
             csp = (
                 "default-src 'self'; "
                 "script-src 'self'; "

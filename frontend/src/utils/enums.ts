@@ -14,10 +14,7 @@ export type EntityType =
   | "item";
 
 /** Categorías de contenido generable para entidades. */
-export type ContentCategory =
-  | "backstory"
-  | "extended_description"
-  | "scene";
+export type ContentCategory = "backstory" | "extended_description" | "scene";
 
 /** Estados posibles de un contenido generado. */
 export type ContentStatus = "pending" | "confirmed" | "discarded";

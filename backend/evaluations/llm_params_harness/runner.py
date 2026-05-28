@@ -39,7 +39,7 @@ OLLAMA_BASE_URL = "http://localhost:11434"
 # ── Valores de temperatura evaluados (harness 2026-05-16) ─────────────────────
 # Descartados por delta neutral vs baseline en llama3.x y mistral.
 # Conservados aquí como referencia para futuras pruebas con otros modelos.
-_FACTUAL_TEMPERATURE = 0.55   # backstory, extended_description
+_FACTUAL_TEMPERATURE = 0.55  # backstory, extended_description
 _CREATIVE_TEMPERATURE = 0.85  # scene
 
 # ── Cuatro configuraciones a comparar ─────────────────────────────────────────
@@ -263,10 +263,14 @@ def _score_with_judge(judge_model: str, tc: dict, context: str, output: str) -> 
     except Exception:
         pass
     return {
-        "D1": 0, "D1_reason": f"parse_error: {raw[:80]}",
-        "D2": 0, "D2_reason": "parse_error",
-        "D3": 0, "D3_reason": "parse_error",
-        "D4": 0, "D4_reason": "parse_error",
+        "D1": 0,
+        "D1_reason": f"parse_error: {raw[:80]}",
+        "D2": 0,
+        "D2_reason": "parse_error",
+        "D3": 0,
+        "D3_reason": "parse_error",
+        "D4": 0,
+        "D4_reason": "parse_error",
     }
 
 
@@ -304,11 +308,7 @@ def run_eval(
         cat = tc["category"]
         print(f"  {tc['tc_id']} [{cat.value:22}] {tc['entity_name'][:22]:<22} ...", end=" ", flush=True)
 
-        extra = (
-            f"Descripción actual de '{tc['entity_name']}' ({tc['entity_type'].value}):\n{tc['entity_desc']}\n\n"
-            if tc["entity_desc"]
-            else ""
-        )
+        extra = f"Descripción actual de '{tc['entity_name']}' ({tc['entity_type'].value}):\n{tc['entity_desc']}\n\n" if tc["entity_desc"] else ""
         rendered = render_prompt(
             category=cat,
             entity_name=tc["entity_name"],
@@ -352,16 +352,16 @@ def run_eval(
             "error": error,
             "scores": scores,
         }
-        (run_dir / f"{tc['tc_id'].lower()}_result.json").write_text(
-            json.dumps(tc_result, ensure_ascii=False, indent=2), encoding="utf-8"
+        (run_dir / f"{tc['tc_id'].lower()}_result.json").write_text(json.dumps(tc_result, ensure_ascii=False, indent=2), encoding="utf-8")
+        tc_summaries.append(
+            {
+                "tc_id": tc["tc_id"],
+                "status": status,
+                "response_time_sec": elapsed,
+                "error": error,
+                "score_avg": avg,
+            }
         )
-        tc_summaries.append({
-            "tc_id": tc["tc_id"],
-            "status": status,
-            "response_time_sec": elapsed,
-            "error": error,
-            "score_avg": avg,
-        })
 
     summary = {
         "run_id": run_id,
@@ -371,9 +371,7 @@ def run_eval(
         "judge_model": judge_model,
         "results": tc_summaries,
     }
-    (run_dir / "run_summary.json").write_text(
-        json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    (run_dir / "run_summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
 
     global_avg = round(sum(s["score_avg"] for s in tc_summaries) / len(tc_summaries), 2)
     errors = sum(1 for s in tc_summaries if s["status"] == "ERROR")

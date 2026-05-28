@@ -55,8 +55,7 @@ def _generate_mock_images(
         image_id = str(_uuid.uuid4())
         seed = seed_base + i
         placeholder_url = (
-            f"https://placehold.co/{settings.image_width}x{settings.image_height}"
-            f"/1a1a2e/9d6fe8?text={entity.name.replace(' ', '+')}+{i + 1}"
+            f"https://placehold.co/{settings.image_width}x{settings.image_height}" f"/1a1a2e/9d6fe8?text={entity.name.replace(' ', '+')}+{i + 1}"
         )
         images.append(
             _ImageData(
@@ -147,9 +146,7 @@ def _generate_comfyui_images(
 
             image_id = str(_uuid.uuid4())
             filename = f"{image_id}.png"
-            storage_path = _save_comfyui_image(
-                image_bytes, username, entity, generation_id, filename
-            )
+            storage_path = _save_comfyui_image(image_bytes, username, entity, generation_id, filename)
             results.append(
                 _ImageData(
                     image_id=image_id,

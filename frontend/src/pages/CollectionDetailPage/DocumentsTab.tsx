@@ -569,7 +569,10 @@ export default function DocumentsTab({
       />
       <Modal
         show={selectedDocument !== null}
-        onHide={() => { setSelectedDocument(null); setDocumentContent(null); }}
+        onHide={() => {
+          setSelectedDocument(null);
+          setDocumentContent(null);
+        }}
         centered
         size="lg"
       >
@@ -581,7 +584,9 @@ export default function DocumentsTab({
             <div className="d-flex flex-column gap-3">
               <div>
                 <small className="text-muted">Nombre</small>
-                <div style={{ wordBreak: "break-word" }}>{selectedDocument.filename}</div>
+                <div style={{ wordBreak: "break-word" }}>
+                  {selectedDocument.filename}
+                </div>
               </div>
               <div className="row g-3">
                 <div className="col-auto">
@@ -643,7 +648,10 @@ export default function DocumentsTab({
                         {documentContent}
                       </pre>
                     ) : (
-                      <div className="text-muted mt-1" style={{ fontSize: "0.875rem" }}>
+                      <div
+                        className="text-muted mt-1"
+                        style={{ fontSize: "0.875rem" }}
+                      >
                         Contenido no disponible.
                       </div>
                     )}

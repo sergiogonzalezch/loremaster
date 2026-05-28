@@ -116,13 +116,15 @@ async def generate(
     session.flush()
 
     for chunk in chunks:
-        session.add(GeneratedTextChunk(
-            generated_text_id=generated_text.id,
-            document_id=chunk.doc_id or None,
-            chunk_text=chunk.text,
-            position=chunk.position,
-            score=chunk.score,
-        ))
+        session.add(
+            GeneratedTextChunk(
+                generated_text_id=generated_text.id,
+                document_id=chunk.doc_id or None,
+                chunk_text=chunk.text,
+                position=chunk.position,
+                score=chunk.score,
+            )
+        )
 
     content = EntityContent(
         entity_id=entity.id,

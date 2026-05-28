@@ -105,8 +105,12 @@ class TestSettingsJson:
 
     def test_settings_has_no_unknown_top_level_keys(self, settings_data):
         known_keys = {
-            "permissions", "hooks", "env",
-            "includeCoAuthoredBy", "model", "cleanupPeriodDays",
+            "permissions",
+            "hooks",
+            "env",
+            "includeCoAuthoredBy",
+            "model",
+            "cleanupPeriodDays",
         }
         unknown = set(settings_data.keys()) - known_keys
         assert not unknown, f"Unknown top-level keys: {unknown}"
@@ -130,9 +134,7 @@ class TestSettingsJson:
             pytest.skip("No hooks configured")
         for entry in settings_data["hooks"]:
             assert "event" in entry, "Hook entry missing 'event' field"
-            assert entry["event"] in VALID_HOOK_EVENTS, (
-                f"Unknown hook event: {entry['event']}"
-            )
+            assert entry["event"] in VALID_HOOK_EVENTS, f"Unknown hook event: {entry['event']}"
 
     def test_hooks_handlers_have_valid_types(self, settings_data):
         if "hooks" not in settings_data:
@@ -140,9 +142,7 @@ class TestSettingsJson:
         for entry in settings_data["hooks"]:
             for handler in entry.get("hooks", []):
                 assert "type" in handler, "Handler missing 'type' field"
-                assert handler["type"] in VALID_HOOK_HANDLER_TYPES, (
-                    f"Unknown handler type: {handler['type']}"
-                )
+                assert handler["type"] in VALID_HOOK_HANDLER_TYPES, f"Unknown handler type: {handler['type']}"
 
 
 # ---------------------------------------------------------------------------
@@ -209,9 +209,7 @@ class TestProjectConventions:
     def test_conventional_commit_types_documented(self):
         content = (PROJECT_ROOT / "CLAUDE.md").read_text(encoding="utf-8")
         for commit_type in ("feat", "fix", "docs", "test", "chore"):
-            assert commit_type in content, (
-                f"Commit type '{commit_type}' not documented in CLAUDE.md"
-            )
+            assert commit_type in content, f"Commit type '{commit_type}' not documented in CLAUDE.md"
 
     def test_gitignore_exists_at_root(self):
         assert (PROJECT_ROOT / ".gitignore").is_file()

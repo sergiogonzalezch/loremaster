@@ -9,8 +9,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from app.core.exceptions import GeneratedContentBlockedError
 from app.domain.llama_guard import _build_guard_prompt, check_with_llama_guard
 
-
 # ── Helpers ──────────────────────────────────────────────────────────────────
+
 
 def _mock_ollama_response(response_text: str) -> MagicMock:
     """Crea un mock de httpx.Response con el texto dado."""
@@ -22,6 +22,7 @@ def _mock_ollama_response(response_text: str) -> MagicMock:
 
 # ── LG-01: guard desactivado ──────────────────────────────────────────────────
 
+
 @pytest.mark.anyio
 async def test_lg_01_guard_disabled_skips_call(override_settings):
     """Guard desactivado: no llama a Ollama y pasa sin error."""
@@ -32,6 +33,7 @@ async def test_lg_01_guard_disabled_skips_call(override_settings):
 
 
 # ── LG-02: respuesta safe ─────────────────────────────────────────────────────
+
 
 @pytest.mark.anyio
 async def test_lg_02_safe_response_passes(override_settings):
@@ -45,6 +47,7 @@ async def test_lg_02_safe_response_passes(override_settings):
 
 
 # ── LG-03: respuesta unsafe ───────────────────────────────────────────────────
+
 
 @pytest.mark.anyio
 async def test_lg_03_unsafe_response_raises(override_settings):
@@ -72,10 +75,12 @@ async def test_lg_03b_unsafe_multiple_categories(override_settings):
 
 # ── LG-04: timeout ────────────────────────────────────────────────────────────
 
+
 @pytest.mark.anyio
 async def test_lg_04_timeout_is_fail_open(override_settings):
     """Guard activo + timeout de Ollama → fail-open (sin excepción)."""
     import httpx
+
     override_settings(llama_guard_enabled=True)
     mock_post = AsyncMock(side_effect=httpx.TimeoutException("timeout"))
     with patch("app.domain.llama_guard.httpx.AsyncClient") as mock_client:
@@ -85,10 +90,12 @@ async def test_lg_04_timeout_is_fail_open(override_settings):
 
 # ── LG-05: Ollama caído ───────────────────────────────────────────────────────
 
+
 @pytest.mark.anyio
 async def test_lg_05_connection_error_is_fail_open(override_settings):
     """Guard activo + Ollama caído → fail-open (sin excepción)."""
     import httpx
+
     override_settings(llama_guard_enabled=True)
     mock_post = AsyncMock(side_effect=httpx.ConnectError("connection refused"))
     with patch("app.domain.llama_guard.httpx.AsyncClient") as mock_client:
@@ -97,6 +104,7 @@ async def test_lg_05_connection_error_is_fail_open(override_settings):
 
 
 # ── LG-06: respuesta vacía ───────────────────────────────────────────────────
+
 
 @pytest.mark.anyio
 async def test_lg_06_empty_response_is_fail_open(override_settings):
@@ -110,6 +118,7 @@ async def test_lg_06_empty_response_is_fail_open(override_settings):
 
 
 # ── LG-07: prompt builder ────────────────────────────────────────────────────
+
 
 def test_lg_07_prompt_contains_required_sections():
     """El prompt generado contiene todas las secciones requeridas por Llama Guard 3."""
@@ -132,6 +141,7 @@ def test_lg_07b_prompt_contains_agent_role():
 
 
 # ── Fixture ───────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def override_settings():

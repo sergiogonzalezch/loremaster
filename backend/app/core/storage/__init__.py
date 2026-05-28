@@ -24,6 +24,7 @@ def save_file(content: bytes, relative_path: str) -> str:
     """
     if settings.storage_backend == "s3":
         from app.core.storage.s3_client import get_s3_client
+
         get_s3_client().put_object(
             Bucket=settings.s3_bucket,
             Key=relative_path,

@@ -171,10 +171,7 @@ def _custom_openapi() -> dict[str, Any]:
                 continue
             if "security" in operation:
                 # Reemplazar referencias auto-generadas a HTTPBearer
-                operation["security"] = [
-                    {"BearerAuth": []} if "HTTPBearer" in s else s
-                    for s in operation["security"]
-                ]
+                operation["security"] = [{"BearerAuth": []} if "HTTPBearer" in s else s for s in operation["security"]]
             else:
                 operation["security"] = [{"BearerAuth": []}]
     app.openapi_schema = schema

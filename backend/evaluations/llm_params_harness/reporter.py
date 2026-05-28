@@ -116,10 +116,7 @@ def generate_report(runs: list[dict], title: str) -> str:
         best_cfg, best_score = max(candidates, key=lambda x: x[1])
         delta = round(best_score - base_score, 2)
         icon = "🏆" if delta >= 0.3 else ("✅" if delta >= 0.1 else ("⚪" if abs(delta) < 0.1 else "❌"))
-        lines.append(
-            f"- **{model}**: mejor config = `{best_cfg}` → avg={best_score}/3.0 "
-            f"(Δ{delta:+.2f} vs baseline) {icon}"
-        )
+        lines.append(f"- **{model}**: mejor config = `{best_cfg}` → avg={best_score}/3.0 " f"(Δ{delta:+.2f} vs baseline) {icon}")
     lines.append("")
 
     # ── 1. Ranking global ──────────────────────────────────────────────────────
@@ -256,9 +253,7 @@ def generate_report(runs: list[dict], title: str) -> str:
             s = tc["scores"]
             avg_val = round(sum(s.get(f"D{i}", 0) for i in range(1, 5)) / 4, 2)
             lines.append(
-                f"| `{label}` | {run['model']} "
-                f"| {s.get('D1', 0)} | {s.get('D2', 0)} | {s.get('D3', 0)} | {s.get('D4', 0)} "
-                f"| {avg_val} |"
+                f"| `{label}` | {run['model']} " f"| {s.get('D1', 0)} | {s.get('D2', 0)} | {s.get('D3', 0)} | {s.get('D4', 0)} " f"| {avg_val} |"
             )
         lines.append("")
 
@@ -358,9 +353,7 @@ Ejemplos:
         if not args.results_dir.exists():
             print(f"ERROR: directorio de resultados no existe: {args.results_dir}")
             return
-        run_dirs = sorted(
-            [d for d in args.results_dir.iterdir() if d.is_dir() and (d / "run_summary.json").exists()]
-        )
+        run_dirs = sorted([d for d in args.results_dir.iterdir() if d.is_dir() and (d / "run_summary.json").exists()])
 
     if not run_dirs:
         print("No se encontraron runs. Ejecuta runner.py primero.")

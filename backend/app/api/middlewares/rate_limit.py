@@ -43,9 +43,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         """Initialize rate limiter with a Redis-backed sliding window."""
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
-        self.redis: aioredis.Redis = aioredis.from_url(
-            settings.redis_url, decode_responses=True
-        )
+        self.redis: aioredis.Redis = aioredis.from_url(settings.redis_url, decode_responses=True)
 
     async def dispatch(self, request: Request, call_next: Callable) -> JSONResponse:
         """Enforce rate limit; pass through exempt paths and GET requests."""
@@ -82,9 +80,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     def _extract_user_from_token(self, token: str) -> str | None:
         try:
-            payload = jose_jwt.decode(
-                token, settings.secret_key, algorithms=[settings.algorithm]
-            )
+            payload = jose_jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
             return payload.get("sub")
         except JWTError:
             return None

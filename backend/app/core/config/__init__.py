@@ -105,8 +105,8 @@ class Settings(BaseSettings):
     llama_guard_model: str = "llama-guard3:8b"
     llama_guard_timeout: float = 5.0
     rate_limit_enabled: bool = True
-    rate_limit_per_minute: int = 30       # Rate limiting base (req/min)
-    rate_limit_llm_per_minute: int = 5    # Endpoints que invocan Ollama
+    rate_limit_per_minute: int = 30  # Rate limiting base (req/min)
+    rate_limit_llm_per_minute: int = 5  # Endpoints que invocan Ollama
     rate_limit_image_per_minute: int = 3  # Endpoints de generación de imagen
     redis_url: str = "redis://localhost:6379"
 
@@ -128,7 +128,7 @@ class Settings(BaseSettings):
     media_root: str = "./media"
     storage_backend: str = "local"  # local | s3
     storage_base_url: str = "http://localhost:8000/media"
-    s3_endpoint_url: str | None = None      # None = AWS real; URL = Floci/MinIO/R2
+    s3_endpoint_url: str | None = None  # None = AWS real; URL = Floci/MinIO/R2
     s3_bucket: str = "loremaster-media"
     s3_region: str = "us-east-1"
     aws_access_key_id: str | None = None
@@ -204,10 +204,7 @@ class Settings(BaseSettings):
                 msg,
             )
         if self.environment in ("production", "demo") and not self.cookie_secure:
-            msg = (
-                "COOKIE_SECURE debe ser True en entornos production/demo. "
-                "Añade COOKIE_SECURE=true al .env de producción."
-            )
+            msg = "COOKIE_SECURE debe ser True en entornos production/demo. " "Añade COOKIE_SECURE=true al .env de producción."
             raise ValueError(msg)
         if self.environment == "local" and not os.environ.get("ENVIRONMENT"):
             warnings.warn(

@@ -50,10 +50,7 @@ def _dim_avg(run: dict, dim: str) -> float:
 
 
 def _signal_avg(run: dict, signal: str, dim: str | None = None) -> float:
-    tcs = [
-        tc for tc in run["tc_results"].values()
-        if tc.get("source_signal") == signal and tc.get("scores")
-    ]
+    tcs = [tc for tc in run["tc_results"].values() if tc.get("source_signal") == signal and tc.get("scores")]
     if not tcs:
         return 0.0
     if dim:
@@ -114,7 +111,8 @@ def generate_report(results_dir: Path, output: Path, title: str) -> None:
 
     # ── Indice ─────────────────────────────────────────────────────────────────
     lines += [
-        "## Indice", "",
+        "## Indice",
+        "",
         "1. [Corpus y configuraciones](#1-corpus-y-configuraciones)",
         "2. [Score global por config y modelo](#2-score-global-por-config-y-modelo)",
         "3. [D5 — uso de fuente por config](#3-d5--uso-de-fuente-por-config)",
@@ -194,9 +192,7 @@ def generate_report(results_dir: Path, output: Path, title: str) -> None:
     lines += [""]
 
     # Fila de delta vs baseline
-    baseline_avgs = {
-        m: _global_avg(runs[m]["baseline"]) for m in models if "baseline" in runs.get(m, {})
-    }
+    baseline_avgs = {m: _global_avg(runs[m]["baseline"]) for m in models if "baseline" in runs.get(m, {})}
     if baseline_avgs:
         lines += ["**Delta vs baseline:**", "", "| Config |" + "".join(f" {m} |" for m in models) + "|", sep]
         for cfg_key in CONFIG_ORDER:
@@ -262,18 +258,11 @@ def generate_report(results_dir: Path, output: Path, title: str) -> None:
                 lines.append(f"| {model} | — | — | — | — |")
                 continue
             multi_avg = _signal_avg(run, "multi")
-            single_all = [
-                tc for tc in run["tc_results"].values()
-                if tc.get("source_signal") in ("seed1_heavy", "seed2_heavy") and tc.get("scores")
-            ]
-            single_avg = round(
-                sum(tc.get("score_avg", 0) for tc in single_all) / len(single_all), 2
-            ) if single_all else 0.0
+            single_all = [tc for tc in run["tc_results"].values() if tc.get("source_signal") in ("seed1_heavy", "seed2_heavy") and tc.get("scores")]
+            single_avg = round(sum(tc.get("score_avg", 0) for tc in single_all) / len(single_all), 2) if single_all else 0.0
             d5_multi = _signal_avg(run, "multi", "D5")
             n_multi = _multi_source_count(run)
-            lines.append(
-                f"| {model} | {multi_avg} | {single_avg} | {d5_multi} | {n_multi}/10 |"
-            )
+            lines.append(f"| {model} | {multi_avg} | {single_avg} | {d5_multi} | {n_multi}/10 |")
         lines += [""]
 
     # ── 5. Dimensiones D1-D5 ──────────────────────────────────────────────────
@@ -307,10 +296,7 @@ def generate_report(results_dir: Path, output: Path, title: str) -> None:
         lines += [f"### {model}", ""]
 
         # Tabla de TCs con scores por config
-        tc_ids = [tc["tc_id"] for tc in sorted(
-            next(iter(model_runs.values()))["tc_results"].values(),
-            key=lambda x: x["tc_id"]
-        )]
+        tc_ids = [tc["tc_id"] for tc in sorted(next(iter(model_runs.values()))["tc_results"].values(), key=lambda x: x["tc_id"])]
 
         header_parts = ["TC", "source_signal"]
         for cfg_key in CONFIG_ORDER:

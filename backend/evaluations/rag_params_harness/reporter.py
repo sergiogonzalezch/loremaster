@@ -113,10 +113,7 @@ def generate_report(runs: list[dict], title: str) -> str:
         best_cfg, best_score = max(candidates, key=lambda x: x[1])
         delta = round(best_score - base_score, 2)
         verdict = "[OK]" if delta >= 0.1 else ("[~]" if abs(delta) < 0.1 else "[X]")
-        lines.append(
-            f"- **{model}**: mejor config = `{best_cfg}` -> avg={best_score}/3.0 "
-            f"(D{delta:+.2f} vs baseline) {verdict}"
-        )
+        lines.append(f"- **{model}**: mejor config = `{best_cfg}` -> avg={best_score}/3.0 " f"(D{delta:+.2f} vs baseline) {verdict}")
     lines.append("")
 
     # ── 1. Ranking global ──────────────────────────────────────────────────────
@@ -129,10 +126,7 @@ def generate_report(runs: list[dict], title: str) -> str:
         avg = _global_avg(run)
         rs = _retrieval_stats(run)
         label = CONFIG_LABELS.get(run["config"], run["config"])
-        lines.append(
-            f"| {i} | `{label}` | {run['model']} | {d1} | {d2} | {d3} | {d4} "
-            f"| **{avg}** | {rs['avg_chunks']} | {rs['avg_max_sim']} |"
-        )
+        lines.append(f"| {i} | `{label}` | {run['model']} | {d1} | {d2} | {d3} | {d4} " f"| **{avg}** | {rs['avg_chunks']} | {rs['avg_max_sim']} |")
     lines.append("")
 
     # ── 2. Estadisticas de recuperacion ───────────────────────────────────────
@@ -147,8 +141,7 @@ def generate_report(runs: list[dict], title: str) -> str:
         label = CONFIG_LABELS.get(run["config"], run["config"])
         n_indexed = run.get("chunks_indexed", "?")
         lines.append(
-            f"| `{label}` | {run['model']} | {n_indexed} "
-            f"| {rs['avg_chunks']} | {rs['min_chunks']} | {rs['max_chunks']} | {rs['avg_max_sim']} |"
+            f"| `{label}` | {run['model']} | {n_indexed} " f"| {rs['avg_chunks']} | {rs['min_chunks']} | {rs['max_chunks']} | {rs['avg_max_sim']} |"
         )
     lines.append("")
 
@@ -224,9 +217,7 @@ def generate_report(runs: list[dict], title: str) -> str:
         lines.append("")
         lines.append("| Config | D1 | D2 | D3 | D4 | Promedio | vs baseline | Chunks/q |")
         lines.append("|---|---|---|---|---|---|---|---|")
-        baseline_score = _global_avg(
-            next((r for r in model_runs_list if r["config"] == "baseline"), model_runs_list[0])
-        )
+        baseline_score = _global_avg(next((r for r in model_runs_list if r["config"] == "baseline"), model_runs_list[0]))
         for run in model_runs_list:
             d1, d2, d3, d4 = (_dim_avg(run, f"D{j}") for j in range(1, 5))
             avg = _global_avg(run)
@@ -333,9 +324,7 @@ def main() -> None:
         if not args.results_dir.exists():
             print(f"ERROR: directorio no existe: {args.results_dir}")
             return
-        run_dirs = sorted(
-            [d for d in args.results_dir.iterdir() if d.is_dir() and (d / "run_summary.json").exists()]
-        )
+        run_dirs = sorted([d for d in args.results_dir.iterdir() if d.is_dir() and (d / "run_summary.json").exists()])
 
     if not run_dirs:
         print("No se encontraron runs. Ejecuta runner.py primero.")

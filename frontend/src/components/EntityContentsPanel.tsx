@@ -60,7 +60,12 @@ export default function EntityContentsPanel({
     fetchPendingCount(selectedCategory as ContentCategory).then(
       onPendingCountChange,
     );
-  }, [selectedCategory, refreshTrigger, fetchPendingCount, onPendingCountChange]);
+  }, [
+    selectedCategory,
+    refreshTrigger,
+    fetchPendingCount,
+    onPendingCountChange,
+  ]);
 
   useEffect(() => {
     const controller = new AbortController();

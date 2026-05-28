@@ -47,12 +47,13 @@ _RESULTS_DIR = _HARNESS_DIR / "results"
 
 _DATASET_FILES = {
     "adversarial": _DATASET_DIR / "adversarial_inputs.yaml",
-    "rpg":         _DATASET_DIR / "rpg_legitimate.yaml",
-    "bypass":      _DATASET_DIR / "bypass_attempts.yaml",
+    "rpg": _DATASET_DIR / "rpg_legitimate.yaml",
+    "bypass": _DATASET_DIR / "bypass_attempts.yaml",
 }
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _load_dataset(name: str) -> list[dict]:
     path = _DATASET_FILES[name]
@@ -112,6 +113,7 @@ def _print_status(case_id: str, fix: str, input_correct: bool, output_correct: b
 
 
 # ── Dataset runners ───────────────────────────────────────────────────────────
+
 
 def run_adversarial(
     cases: list[dict],
@@ -304,6 +306,7 @@ def run_bypass(
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
+
 def _print_section(title: str) -> None:
     print()
     print("=" * 70)
@@ -312,9 +315,7 @@ def _print_section(title: str) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Guard Harness Runner -evaluación de pipeline con Ollama"
-    )
+    parser = argparse.ArgumentParser(description="Guard Harness Runner -evaluación de pipeline con Ollama")
     parser.add_argument(
         "--dataset",
         choices=["adversarial", "rpg", "bypass", "all"],
@@ -347,8 +348,8 @@ def main() -> None:
     out_dir = _RESULTS_DIR / run_id
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    do_adv    = args.dataset in ("adversarial", "all")
-    do_rpg    = args.dataset in ("rpg", "all")
+    do_adv = args.dataset in ("adversarial", "all")
+    do_rpg = args.dataset in ("rpg", "all")
     do_bypass = args.dataset in ("bypass", "all")
 
     all_results: list[dict] = []
@@ -388,11 +389,11 @@ def main() -> None:
     print("=" * 70)
 
     if adv_results:
-        in_correct  = sum(1 for r in adv_results if r["input_correct"])
-        out_tested  = [r for r in adv_results if r["output_correct"] is not None]
+        in_correct = sum(1 for r in adv_results if r["input_correct"])
+        out_tested = [r for r in adv_results if r["output_correct"] is not None]
         out_correct = sum(1 for r in out_tested if r["output_correct"])
-        fn_input    = [r for r in adv_results if not r["input_blocked"] and r["expected_input_blocked"]]
-        fn_output   = [r for r in out_tested if not r["output_blocked"] and r["expected_output_blocked"]]
+        fn_input = [r for r in adv_results if not r["input_blocked"] and r["expected_input_blocked"]]
+        fn_output = [r for r in out_tested if not r["output_blocked"] and r["expected_output_blocked"]]
         print(f"  Adversarial  : {in_correct}/{len(adv_results)} input correcto")
         if out_tested:
             print(f"                 {out_correct}/{len(out_tested)} output correcto (de los que se llamó LLM)")
@@ -402,10 +403,10 @@ def main() -> None:
             print(f"  FN output    : {len(fn_output)} -{', '.join(r['case_id'] for r in fn_output)}")
 
     if rpg_results:
-        in_correct  = sum(1 for r in rpg_results if r["input_correct"])
-        fp_input    = [r for r in rpg_results if r["input_blocked"] and not r["expected_input_blocked"]]
-        out_tested  = [r for r in rpg_results if r["output_correct"] is not None]
-        fp_output   = [r for r in out_tested if r["output_blocked"] and not r["expected_output_blocked"]]
+        in_correct = sum(1 for r in rpg_results if r["input_correct"])
+        fp_input = [r for r in rpg_results if r["input_blocked"] and not r["expected_input_blocked"]]
+        out_tested = [r for r in rpg_results if r["output_correct"] is not None]
+        fp_output = [r for r in out_tested if r["output_blocked"] and not r["expected_output_blocked"]]
         print(f"  RPG legítimo : {in_correct}/{len(rpg_results)} input correcto")
         if fp_input:
             print(f"  FP input     : {len(fp_input)} -{', '.join(r['case_id'] for r in fp_input)}")
@@ -413,9 +414,9 @@ def main() -> None:
             print(f"  FP output    : {len(fp_output)} -{', '.join(r['case_id'] for r in fp_output)}")
 
     if byp_results:
-        correct       = sum(1 for r in byp_results if r["correct"])
+        correct = sum(1 for r in byp_results if r["correct"])
         active_bypass = [r for r in byp_results if r["is_active_bypass"]]
-        fixed         = [r for r in byp_results if r["correct"] and not r["currently_blocked"]]
+        fixed = [r for r in byp_results if r["correct"] and not r["currently_blocked"]]
         print(f"  Bypass       : {correct}/{len(byp_results)} correcto")
         if active_bypass:
             print(f"  Activos      : {len(active_bypass)} bypass sin parchear")
@@ -434,9 +435,7 @@ def main() -> None:
         "errors": errors,
         "results_dir": str(out_dir),
     }
-    (out_dir / "run_summary.json").write_text(
-        json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    (out_dir / "run_summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"\n  Resultados en: {out_dir}")
 
 

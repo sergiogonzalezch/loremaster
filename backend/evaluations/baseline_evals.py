@@ -109,17 +109,22 @@ def _kill_port(port: int) -> None:
     try:
         if sys.platform == "win32":
             out = subprocess.check_output(
-                ["netstat", "-ano"], text=True, errors="replace",
+                ["netstat", "-ano"],
+                text=True,
+                errors="replace",
             )
             for line in out.splitlines():
                 if f":{port}" in line and "LISTENING" in line:
                     pid = line.strip().split()[-1]
                     subprocess.run(
-                        ["taskkill", "/F", "/T", "/PID", pid], capture_output=True,
+                        ["taskkill", "/F", "/T", "/PID", pid],
+                        capture_output=True,
                     )
         else:
             out = subprocess.check_output(
-                ["lsof", f"-ti:{port}"], text=True, errors="replace",
+                ["lsof", f"-ti:{port}"],
+                text=True,
+                errors="replace",
             )
             for pid in out.split():
                 subprocess.run(["kill", "-9", pid], capture_output=True)
@@ -180,8 +185,12 @@ def _start_eval_backend(eval_db: Path, port: int) -> str:
 
     _eval_proc = subprocess.Popen(
         [
-            sys.executable, "-m", "uvicorn", "app.main:app",
-            "--port", str(port),
+            sys.executable,
+            "-m",
+            "uvicorn",
+            "app.main:app",
+            "--port",
+            str(port),
         ],
         cwd=str(backend_dir),
         env=env,

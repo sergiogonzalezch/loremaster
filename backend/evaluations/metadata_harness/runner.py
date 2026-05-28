@@ -244,9 +244,7 @@ def _build_multi_index(
             all_texts.append(chunk)
             all_sources.append((path.name, idx))
 
-    embeddings = emb_model.encode(
-        all_texts, batch_size=32, show_progress_bar=False, normalize_embeddings=True
-    )
+    embeddings = emb_model.encode(all_texts, batch_size=32, show_progress_bar=False, normalize_embeddings=True)
     return all_texts, all_sources, np.array(embeddings)
 
 
@@ -263,11 +261,7 @@ def _retrieve(
     """
     query_emb = emb_model.encode([query], normalize_embeddings=True)[0]
     scores = embeddings @ query_emb
-    candidates = [
-        (float(scores[i]), texts[i], sources[i][0], sources[i][1])
-        for i in range(len(texts))
-        if scores[i] >= _THRESHOLD
-    ]
+    candidates = [(float(scores[i]), texts[i], sources[i][0], sources[i][1]) for i in range(len(texts)) if scores[i] >= _THRESHOLD]
     candidates.sort(reverse=True)
     top = candidates[:_TOP_K]
     return [(text, fname, idx, score) for score, text, fname, idx in top]
@@ -287,10 +281,7 @@ def _format_context(
         parts = [f'[Fuente: "{r[1]}"]\n{r[0]}' for r in retrieved]
         rag_part = "\n\n---\n\n".join(parts)
     elif format_type == "meta_full":
-        parts = [
-            f'[Fuente: "{r[1]}" · fragmento {r[2] + 1} · relevancia {r[3]:.2f}]\n{r[0]}'
-            for r in retrieved
-        ]
+        parts = [f'[Fuente: "{r[1]}" · fragmento {r[2] + 1} · relevancia {r[3]:.2f}]\n{r[0]}' for r in retrieved]
         rag_part = "\n\n---\n\n".join(parts)
     else:
         rag_part = "\n\n---\n\n".join(r[0] for r in retrieved)
@@ -335,11 +326,16 @@ def _score_with_judge(judge_model: str, tc: dict, context: str, output: str) -> 
     except Exception:
         pass
     return {
-        "D1": 0, "D1_reason": f"parse_error: {raw[:80]}",
-        "D2": 0, "D2_reason": "parse_error",
-        "D3": 0, "D3_reason": "parse_error",
-        "D4": 0, "D4_reason": "parse_error",
-        "D5": 0, "D5_reason": "parse_error",
+        "D1": 0,
+        "D1_reason": f"parse_error: {raw[:80]}",
+        "D2": 0,
+        "D2_reason": "parse_error",
+        "D3": 0,
+        "D3_reason": "parse_error",
+        "D4": 0,
+        "D4_reason": "parse_error",
+        "D5": 0,
+        "D5_reason": "parse_error",
     }
 
 
@@ -393,11 +389,7 @@ def run_eval(
         max_score = round(max(r[3] for r in retrieved), 3) if retrieved else 0.0
         multi_source = len(unique_sources_retrieved) > 1
 
-        extra = (
-            f"Descripcion de '{tc['entity_name']}' ({tc['entity_type'].value}):\n{tc['entity_desc']}\n\n"
-            if tc["entity_desc"]
-            else ""
-        )
+        extra = f"Descripcion de '{tc['entity_name']}' ({tc['entity_type'].value}):\n{tc['entity_desc']}\n\n" if tc["entity_desc"] else ""
 
         context = _format_context(retrieved, cfg["format"], extra)
 
@@ -447,22 +439,22 @@ def run_eval(
             "scores": scores,
             "score_avg": avg,
         }
-        (run_dir / f"{tc['tc_id'].lower()}_result.json").write_text(
-            json.dumps(tc_result, ensure_ascii=False, indent=2), encoding="utf-8"
+        (run_dir / f"{tc['tc_id'].lower()}_result.json").write_text(json.dumps(tc_result, ensure_ascii=False, indent=2), encoding="utf-8")
+        tc_summaries.append(
+            {
+                "tc_id": tc["tc_id"],
+                "status": status,
+                "source_signal": tc["source_signal"],
+                "response_time_sec": elapsed,
+                "error": error,
+                "score_avg": avg,
+                "d5": scores.get("D5", 0) if scores else 0,
+                "chunks_retrieved": n_chunks,
+                "max_retrieval_score": max_score,
+                "multi_source_retrieved": multi_source,
+                "sources_retrieved": unique_sources_retrieved,
+            }
         )
-        tc_summaries.append({
-            "tc_id": tc["tc_id"],
-            "status": status,
-            "source_signal": tc["source_signal"],
-            "response_time_sec": elapsed,
-            "error": error,
-            "score_avg": avg,
-            "d5": scores.get("D5", 0) if scores else 0,
-            "chunks_retrieved": n_chunks,
-            "max_retrieval_score": max_score,
-            "multi_source_retrieved": multi_source,
-            "sources_retrieved": unique_sources_retrieved,
-        })
 
     summary = {
         "run_id": run_id,
@@ -475,16 +467,16 @@ def run_eval(
         "chunks_per_file": chunks_per_file,
         "results": tc_summaries,
     }
-    (run_dir / "run_summary.json").write_text(
-        json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    (run_dir / "run_summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
 
     global_avg = round(sum(s["score_avg"] for s in tc_summaries) / len(tc_summaries), 2)
     d5_avg = round(sum(s["d5"] for s in tc_summaries) / len(tc_summaries), 2)
     errors = sum(1 for s in tc_summaries if s["status"] == "ERROR")
     multi_tcs = sum(1 for s in tc_summaries if s["multi_source_retrieved"])
     print(f"\n  -> {run_id}")
-    print(f"  -> Score global: {global_avg}/3.0  |  D5 avg: {d5_avg}/3.0  |  Errores: {errors}/{len(TEST_CASES)}  |  TCs multi-fuente: {multi_tcs}/{len(TEST_CASES)}")  # noqa: E501
+    print(
+        f"  -> Score global: {global_avg}/3.0  |  D5 avg: {d5_avg}/3.0  |  Errores: {errors}/{len(TEST_CASES)}  |  TCs multi-fuente: {multi_tcs}/{len(TEST_CASES)}"
+    )  # noqa: E501
     return run_dir
 
 
@@ -502,10 +494,12 @@ def main() -> None:
     parser.add_argument(
         "--seeds",
         type=str,
-        default=",".join([
-            str(Path(__file__).parent.parent / "dataset" / "golden_seed.txt"),
-            str(Path(__file__).parent.parent / "dataset" / "golden_seed_2.txt"),
-        ]),
+        default=",".join(
+            [
+                str(Path(__file__).parent.parent / "dataset" / "golden_seed.txt"),
+                str(Path(__file__).parent.parent / "dataset" / "golden_seed_2.txt"),
+            ]
+        ),
         help="Rutas a los seed files separadas por coma",
     )
     args = parser.parse_args()

@@ -35,7 +35,9 @@ export default function EntityGenerateForm({
 }: Props) {
   const [query, setQuery] = useState("");
   const [lastSubmittedQuery, setLastSubmittedQuery] = useState("");
-  const [selectedModel, setSelectedModel] = useState<string | undefined>(undefined);
+  const [selectedModel, setSelectedModel] = useState<string | undefined>(
+    undefined,
+  );
 
   const pendingLimitReached =
     selectedCategory !== "" && pendingInCategoryCount >= maxPendingContents;
@@ -62,7 +64,11 @@ export default function EntityGenerateForm({
     <>
       <p className="lm-section-title">Generar contenido</p>
       {alertConfig != null && (
-        <Alert variant={alertConfig.variant} onClose={onDismissError} dismissible>
+        <Alert
+          variant={alertConfig.variant}
+          onClose={onDismissError}
+          dismissible
+        >
           {alertConfig.text}
         </Alert>
       )}
@@ -73,8 +79,9 @@ export default function EntityGenerateForm({
       )}
       {pendingLimitReached && (
         <Alert variant="warning">
-          Ya tienes {pendingInCategoryCount} contenidos pendientes en esta categoría (máximo{" "}
-          {maxPendingContents}). Confirma o descarta alguno antes de generar uno nuevo.
+          Ya tienes {pendingInCategoryCount} contenidos pendientes en esta
+          categoría (máximo {maxPendingContents}). Confirma o descarta alguno
+          antes de generar uno nuevo.
         </Alert>
       )}
       <Form onSubmit={handleSubmit} className="mb-4">
@@ -83,7 +90,9 @@ export default function EntityGenerateForm({
             <Form.Label className="fw-semibold">Categoría</Form.Label>
             <Form.Select
               value={selectedCategory}
-              onChange={(e) => onCategoryChange(e.target.value as ContentCategory)}
+              onChange={(e) =>
+                onCategoryChange(e.target.value as ContentCategory)
+              }
               disabled={generating}
               style={{ maxWidth: 280 }}
             >
@@ -171,8 +180,8 @@ export default function EntityGenerateForm({
             !pendingLimitReached &&
             pendingInCategoryCount > 0 && (
               <small className="text-muted">
-                {pendingInCategoryCount} / {maxPendingContents} borradores pendientes en esta
-                categoría.
+                {pendingInCategoryCount} / {maxPendingContents} borradores
+                pendientes en esta categoría.
               </small>
             )}
         </div>

@@ -45,7 +45,10 @@ export function resolveImageUrl(
  * @param url      URL resuelta de la imagen (resultado de resolveImageUrl).
  * @param filename Nombre sugerido del archivo descargado (con extensión).
  */
-export async function downloadImage(url: string, filename: string): Promise<void> {
+export async function downloadImage(
+  url: string,
+  filename: string,
+): Promise<void> {
   if (!url) return;
   try {
     // cache: 'reload' fuerza petición fresca, bypassa respuestas cacheadas sin ACAO.

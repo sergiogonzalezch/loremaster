@@ -37,8 +37,11 @@ async def rag_query(
         answer, sources_count, source_doc_ids = await execute_rag_query(collection_id, query)
     except ContentNotAllowedError as e:
         log_moderation_event(
-            session, "input", e.snippet,
-            collection_id=collection_id, operation="query",
+            session,
+            "input",
+            e.snippet,
+            collection_id=collection_id,
+            operation="query",
             pattern_matched=getattr(e, "pattern", None),
         )
         raise HTTPException(status_code=422, detail=str(e)) from e
@@ -46,8 +49,11 @@ async def rag_query(
         raise HTTPException(status_code=422, detail=str(e)) from e
     except GeneratedContentBlockedError as e:
         log_moderation_event(
-            session, "output", e.snippet,
-            collection_id=collection_id, operation="query",
+            session,
+            "output",
+            e.snippet,
+            collection_id=collection_id,
+            operation="query",
             pattern_matched=getattr(e, "pattern", None),
         )
         raise HTTPException(status_code=422, detail=str(e)) from e

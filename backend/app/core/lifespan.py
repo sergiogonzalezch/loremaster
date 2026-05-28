@@ -33,6 +33,7 @@ async def lifespan(_: FastAPI):
     Al cerrar: yield (sin limpieza especial).
     """
     import os as _os
+
     if _os.getenv("SKIP_MIGRATIONS", "").lower() in ("1", "true", "yes"):
         logger.info("Database migrations skipped (SKIP_MIGRATIONS)")
     else:
@@ -46,8 +47,10 @@ async def lifespan(_: FastAPI):
             raise
 
     if settings.storage_backend == "s3":
+
         def _init_s3_bucket() -> None:
             from app.core.storage.s3_client import get_s3_client
+
             _s3 = get_s3_client()
             try:
                 _s3.head_bucket(Bucket=settings.s3_bucket)
@@ -56,12 +59,14 @@ async def lifespan(_: FastAPI):
             _s3.put_bucket_cors(
                 Bucket=settings.s3_bucket,
                 CORSConfiguration={
-                    "CORSRules": [{
-                        "AllowedHeaders": ["*"],
-                        "AllowedMethods": ["GET", "HEAD"],
-                        "AllowedOrigins": ["*"],
-                        "MaxAgeSeconds": 3600,
-                    }]
+                    "CORSRules": [
+                        {
+                            "AllowedHeaders": ["*"],
+                            "AllowedMethods": ["GET", "HEAD"],
+                            "AllowedOrigins": ["*"],
+                            "MaxAgeSeconds": 3600,
+                        }
+                    ]
                 },
             )
 

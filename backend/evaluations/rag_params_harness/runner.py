@@ -239,9 +239,7 @@ def _build_index(
         separators=["\n\n", "\n", ". ", " ", ""],
     )
     chunks = splitter.split_text(text)
-    embeddings = emb_model.encode(
-        chunks, batch_size=32, show_progress_bar=False, normalize_embeddings=True
-    )
+    embeddings = emb_model.encode(chunks, batch_size=32, show_progress_bar=False, normalize_embeddings=True)
     return chunks, np.array(embeddings)
 
 
@@ -298,10 +296,14 @@ def _score_with_judge(judge_model: str, tc: dict, context: str, output: str) -> 
     except Exception:
         pass
     return {
-        "D1": 0, "D1_reason": f"parse_error: {raw[:80]}",
-        "D2": 0, "D2_reason": "parse_error",
-        "D3": 0, "D3_reason": "parse_error",
-        "D4": 0, "D4_reason": "parse_error",
+        "D1": 0,
+        "D1_reason": f"parse_error: {raw[:80]}",
+        "D2": 0,
+        "D2_reason": "parse_error",
+        "D3": 0,
+        "D3_reason": "parse_error",
+        "D4": 0,
+        "D4_reason": "parse_error",
     }
 
 
@@ -345,15 +347,9 @@ def run_eval(
         cat = tc["category"]
         print(f"  {tc['tc_id']} [{cat.value:22}] {tc['entity_name'][:22]:<22} ...", end=" ", flush=True)
 
-        retrieved_chunks, retrieval_scores = _retrieve(
-            tc["query"], chunks, embeddings, emb_model, cfg["rag_score_threshold"]
-        )
+        retrieved_chunks, retrieval_scores = _retrieve(tc["query"], chunks, embeddings, emb_model, cfg["rag_score_threshold"])
 
-        extra = (
-            f"Descripcion de '{tc['entity_name']}' ({tc['entity_type'].value}):\n{tc['entity_desc']}\n\n"
-            if tc["entity_desc"]
-            else ""
-        )
+        extra = f"Descripcion de '{tc['entity_name']}' ({tc['entity_type'].value}):\n{tc['entity_desc']}\n\n" if tc["entity_desc"] else ""
         rag_context = "\n\n---\n\n".join(retrieved_chunks) if retrieved_chunks else ""
         parts = [p for p in (extra, rag_context) if p]
         context = "\n\n---\n\n".join(parts) if parts else ""
@@ -404,18 +400,18 @@ def run_eval(
             "error": error,
             "scores": scores,
         }
-        (run_dir / f"{tc['tc_id'].lower()}_result.json").write_text(
-            json.dumps(tc_result, ensure_ascii=False, indent=2), encoding="utf-8"
+        (run_dir / f"{tc['tc_id'].lower()}_result.json").write_text(json.dumps(tc_result, ensure_ascii=False, indent=2), encoding="utf-8")
+        tc_summaries.append(
+            {
+                "tc_id": tc["tc_id"],
+                "status": status,
+                "response_time_sec": elapsed,
+                "error": error,
+                "score_avg": avg,
+                "chunks_retrieved": n_chunks,
+                "max_retrieval_score": max_score,
+            }
         )
-        tc_summaries.append({
-            "tc_id": tc["tc_id"],
-            "status": status,
-            "response_time_sec": elapsed,
-            "error": error,
-            "score_avg": avg,
-            "chunks_retrieved": n_chunks,
-            "max_retrieval_score": max_score,
-        })
 
     summary = {
         "run_id": run_id,
@@ -429,9 +425,7 @@ def run_eval(
         "chunks_indexed": len(chunks),
         "results": tc_summaries,
     }
-    (run_dir / "run_summary.json").write_text(
-        json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    (run_dir / "run_summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
 
     global_avg = round(sum(s["score_avg"] for s in tc_summaries) / len(tc_summaries), 2)
     errors = sum(1 for s in tc_summaries if s["status"] == "ERROR")

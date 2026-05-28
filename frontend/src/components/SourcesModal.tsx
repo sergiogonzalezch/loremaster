@@ -30,11 +30,14 @@ export default function SourcesModal({
     return () => controller.abort();
   }, [collectionId, entityId, contentId]);
 
-  const grouped = chunks.reduce<Record<string, ContentChunkItem[]>>((acc, chunk) => {
-    const key = chunk.filename ?? "Documento eliminado";
-    (acc[key] ??= []).push(chunk);
-    return acc;
-  }, {});
+  const grouped = chunks.reduce<Record<string, ContentChunkItem[]>>(
+    (acc, chunk) => {
+      const key = chunk.filename ?? "Documento eliminado";
+      (acc[key] ??= []).push(chunk);
+      return acc;
+    },
+    {},
+  );
 
   return (
     <Modal show={show} onHide={onHide} centered size="lg">
@@ -47,7 +50,9 @@ export default function SourcesModal({
             <Spinner animation="border" size="sm" />
           </div>
         ) : chunks.length === 0 ? (
-          <p className="text-muted small mb-0 py-1">Sin información de fuentes.</p>
+          <p className="text-muted small mb-0 py-1">
+            Sin información de fuentes.
+          </p>
         ) : (
           <Accordion flush>
             {Object.entries(grouped).map(([filename, items]) => (

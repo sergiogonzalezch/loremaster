@@ -71,9 +71,7 @@ async def invoke_rag_pipeline(
     try:
         loop = asyncio.get_running_loop()
         async with _llm_semaphore:
-            answer = await loop.run_in_executor(
-                None, lambda: chain.invoke({"context": context, "query": query})
-            )
+            answer = await loop.run_in_executor(None, lambda: chain.invoke({"context": context, "query": query}))
     except _TRANSPORT_ERRORS as e:
         logger.exception("LLM generation failed for collection %s", collection_id)
         msg = "LLM service unavailable"

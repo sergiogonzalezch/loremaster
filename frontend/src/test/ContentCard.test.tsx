@@ -12,7 +12,13 @@ vi.mock("../api/contents", () => ({
   deleteContent: vi.fn(),
   updateContent: vi.fn(),
   shareContent: vi.fn(),
-  getContentChunks: vi.fn().mockResolvedValue({ content_id: "cnt-1", generated_text_id: "gt-1", chunks: [] }),
+  getContentChunks: vi
+    .fn()
+    .mockResolvedValue({
+      content_id: "cnt-1",
+      generated_text_id: "gt-1",
+      chunks: [],
+    }),
 }));
 
 import * as contentsApi from "../api/contents";

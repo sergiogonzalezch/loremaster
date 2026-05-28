@@ -142,7 +142,7 @@ export default function PublicFeedPage() {
                       }}
                       onClick={() => setSelectedImage(img)}
                     >
-                      {(img.storage_path || img.image_url) ? (
+                      {img.storage_path || img.image_url ? (
                         <SafeImage
                           src={resolveImageUrl(img.image_url, img.storage_path)}
                           alt={img.entity_name}

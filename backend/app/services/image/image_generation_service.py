@@ -43,6 +43,7 @@ ALLOWED_IMAGE_CATEGORIES = {
 
 # ── Helpers de consulta / persistencia ───────────────────────────────────────
 
+
 def _get_confirmed_content(
     session: Session,
     entity: Entity,
@@ -112,6 +113,7 @@ def _create_image_record(
 
 
 # ── API pública ───────────────────────────────────────────────────────────────
+
 
 def build_prompt_service(
     session: Session,

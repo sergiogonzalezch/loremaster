@@ -43,7 +43,12 @@ function entityLoadReducer(
     case "FETCH_START":
       return { ...state, loading: true, error: null };
     case "FETCH_SUCCESS":
-      return { loading: false, error: null, entity: action.entity, collection: action.collection };
+      return {
+        loading: false,
+        error: null,
+        entity: action.entity,
+        collection: action.collection,
+      };
     case "FETCH_ERROR":
       return { ...state, loading: false, error: action.error };
     case "UPDATE_ENTITY":
@@ -66,7 +71,11 @@ type PageUIState = {
 };
 
 type PageUIAction =
-  | { type: "SET_CONFIG"; categoryMap: typeof ENTITY_CATEGORY_MAP; maxPendingContents: number }
+  | {
+      type: "SET_CONFIG";
+      categoryMap: typeof ENTITY_CATEGORY_MAP;
+      maxPendingContents: number;
+    }
   | { type: "SET_CATEGORY"; category: ContentCategory | "" }
   | { type: "SET_PENDING_COUNT"; count: number }
   | { type: "SET_EDIT"; show: boolean }
@@ -77,7 +86,11 @@ type PageUIAction =
 function pageUIReducer(state: PageUIState, action: PageUIAction): PageUIState {
   switch (action.type) {
     case "SET_CONFIG":
-      return { ...state, categoryMap: action.categoryMap, maxPendingContents: action.maxPendingContents };
+      return {
+        ...state,
+        categoryMap: action.categoryMap,
+        maxPendingContents: action.maxPendingContents,
+      };
     case "SET_CATEGORY":
       return { ...state, selectedCategory: action.category };
     case "SET_PENDING_COUNT":
@@ -89,7 +102,10 @@ function pageUIReducer(state: PageUIState, action: PageUIAction): PageUIState {
     case "CLOSE_IMAGE_PANEL":
       return { ...state, imagePanel: { show: false, content: null } };
     case "BUMP_REFRESH":
-      return { ...state, contentsRefreshTrigger: state.contentsRefreshTrigger + 1 };
+      return {
+        ...state,
+        contentsRefreshTrigger: state.contentsRefreshTrigger + 1,
+      };
   }
 }
 
@@ -109,7 +125,12 @@ export default function EntityDetailPage() {
     loading: true,
     error: null,
   });
-  const { entity, collection, loading: loadingEntity, error: entityError } = entityLoad;
+  const {
+    entity,
+    collection,
+    loading: loadingEntity,
+    error: entityError,
+  } = entityLoad;
 
   const [ui, dispatchUI] = useReducer(pageUIReducer, {
     categoryMap: ENTITY_CATEGORY_MAP,
@@ -135,9 +156,19 @@ export default function EntityDetailPage() {
       .then((map) => {
         getLimits()
           .then((l) =>
-            dispatchUI({ type: "SET_CONFIG", categoryMap: map, maxPendingContents: l.max_pending_contents }),
+            dispatchUI({
+              type: "SET_CONFIG",
+              categoryMap: map,
+              maxPendingContents: l.max_pending_contents,
+            }),
           )
-          .catch(() => dispatchUI({ type: "SET_CONFIG", categoryMap: map, maxPendingContents: 5 }));
+          .catch(() =>
+            dispatchUI({
+              type: "SET_CONFIG",
+              categoryMap: map,
+              maxPendingContents: 5,
+            }),
+          );
       })
       .catch(() => {}); // fallback: keep local constants if backend unreachable
   }, []);
@@ -168,7 +199,10 @@ export default function EntityDetailPage() {
         dispatchEntity({ type: "FETCH_SUCCESS", entity: ent, collection: col });
       } catch (e) {
         if (e instanceof ApiAbortError) return;
-        dispatchEntity({ type: "FETCH_ERROR", error: getErrorMessage(e, "Error al cargar") });
+        dispatchEntity({
+          type: "FETCH_ERROR",
+          error: getErrorMessage(e, "Error al cargar"),
+        });
       }
     },
     [collectionId, entityId],
@@ -201,7 +235,9 @@ export default function EntityDetailPage() {
   const currentEntityId = entity?.id;
   const currentEntityType = entity?.type;
   useEffect(() => {
-    const cats = currentEntityType ? (categoryMap[currentEntityType] ?? []) : [];
+    const cats = currentEntityType
+      ? (categoryMap[currentEntityType] ?? [])
+      : [];
     dispatchUI({ type: "SET_CATEGORY", category: cats[0] ?? "" });
   }, [currentEntityId, currentEntityType, categoryMap]);
 
@@ -209,7 +245,10 @@ export default function EntityDetailPage() {
     dispatchUI({ type: "SET_PENDING_COUNT", count });
   }, []);
 
-  async function handleGenerateSubmit(queryText: string, model: string | undefined) {
+  async function handleGenerateSubmit(
+    queryText: string,
+    model: string | undefined,
+  ) {
     if (!collectionId || !entityId || selectedCategory === "") return;
     const result = await runGenerateContent(
       collectionId,
@@ -239,12 +278,17 @@ export default function EntityDetailPage() {
         <Breadcrumb.Item active>{entity.name}</Breadcrumb.Item>
       </Breadcrumb>
 
-      <EntityHeaderCard entity={entity} onEdit={() => dispatchUI({ type: "SET_EDIT", show: true })} />
+      <EntityHeaderCard
+        entity={entity}
+        onEdit={() => dispatchUI({ type: "SET_EDIT", show: true })}
+      />
 
       <EntityGenerateForm
         availableCategories={availableCategories}
         selectedCategory={selectedCategory}
-        onCategoryChange={(cat) => dispatchUI({ type: "SET_CATEGORY", category: cat })}
+        onCategoryChange={(cat) =>
+          dispatchUI({ type: "SET_CATEGORY", category: cat })
+        }
         generating={generating}
         generateError={generateError}
         generateCancelled={generateCancelled}
@@ -263,7 +307,9 @@ export default function EntityDetailPage() {
         refreshTrigger={contentsRefreshTrigger}
         onRefreshEntity={refreshEntityQuiet}
         onPendingCountChange={handlePendingCountChange}
-        onOpenImagePanel={(content) => dispatchUI({ type: "OPEN_IMAGE_PANEL", content })}
+        onOpenImagePanel={(content) =>
+          dispatchUI({ type: "OPEN_IMAGE_PANEL", content })
+        }
       />
 
       <ImagePanel

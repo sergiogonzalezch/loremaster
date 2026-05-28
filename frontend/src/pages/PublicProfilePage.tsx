@@ -219,9 +219,12 @@ export default function PublicProfilePage() {
                               setSelectedImage(img);
                           }}
                         >
-                          {(img.storage_path || img.image_url) ? (
+                          {img.storage_path || img.image_url ? (
                             <SafeImage
-                              src={resolveImageUrl(img.image_url, img.storage_path)}
+                              src={resolveImageUrl(
+                                img.image_url,
+                                img.storage_path,
+                              )}
                               alt={img.entity_name}
                               style={{
                                 width: "100%",

@@ -13,7 +13,11 @@ vi.mock("../api/collections", () => ({
   deleteCollection: vi.fn(),
 }));
 
-import { getCollections, createCollection, deleteCollection } from "../api/collections";
+import {
+  getCollections,
+  createCollection,
+  deleteCollection,
+} from "../api/collections";
 const mockGetCollections = vi.mocked(getCollections);
 const mockCreateCollection = vi.mocked(createCollection);
 const mockDeleteCollection = vi.mocked(deleteCollection);

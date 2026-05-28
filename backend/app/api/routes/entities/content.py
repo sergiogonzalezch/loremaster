@@ -62,9 +62,13 @@ async def generate_content(
         raise HTTPException(status_code=409, detail=str(e)) from e
     except ContentNotAllowedError as e:
         log_moderation_event(
-            session, "input", e.snippet,
-            collection_id=entity.collection_id, entity_id=entity.id,
-            operation="generate", pattern_matched=getattr(e, "pattern", None),
+            session,
+            "input",
+            e.snippet,
+            collection_id=entity.collection_id,
+            entity_id=entity.id,
+            operation="generate",
+            pattern_matched=getattr(e, "pattern", None),
         )
         raise HTTPException(status_code=422, detail=str(e)) from e
     except InvalidCategoryError as e:
@@ -73,9 +77,13 @@ async def generate_content(
         raise HTTPException(status_code=422, detail=str(e)) from e
     except GeneratedContentBlockedError as e:
         log_moderation_event(
-            session, "output", e.snippet,
-            collection_id=entity.collection_id, entity_id=entity.id,
-            operation="generate", pattern_matched=getattr(e, "pattern", None),
+            session,
+            "output",
+            e.snippet,
+            collection_id=entity.collection_id,
+            entity_id=entity.id,
+            operation="generate",
+            pattern_matched=getattr(e, "pattern", None),
         )
         raise HTTPException(status_code=422, detail=str(e)) from e
     except LLMBusyError as e:
@@ -148,9 +156,14 @@ def edit_content(
         )
     except ContentNotAllowedError as e:
         log_moderation_event(
-            session, "input", e.snippet,
-            user_id=current_user["sub"], collection_id=collection_id, entity_id=entity_id,
-            operation="edit", pattern_matched=getattr(e, "pattern", None),
+            session,
+            "input",
+            e.snippet,
+            user_id=current_user["sub"],
+            collection_id=collection_id,
+            entity_id=entity_id,
+            operation="edit",
+            pattern_matched=getattr(e, "pattern", None),
         )
         raise HTTPException(status_code=422, detail=str(e)) from e
     except ContentDiscardedError as e:
@@ -244,9 +257,13 @@ def share_content(
         raise HTTPException(status_code=409, detail=str(e)) from e
     except GeneratedContentBlockedError as e:
         log_moderation_event(
-            session, "output", e.snippet,
-            collection_id=collection_id, entity_id=entity_id,
-            operation="share", pattern_matched=getattr(e, "pattern", None),
+            session,
+            "output",
+            e.snippet,
+            collection_id=collection_id,
+            entity_id=entity_id,
+            operation="share",
+            pattern_matched=getattr(e, "pattern", None),
         )
         raise HTTPException(status_code=422, detail=str(e)) from e
     except DatabaseError as e:
@@ -312,9 +329,7 @@ def get_content_chunks(
         raise HTTPException(status_code=404, detail="Contenido no encontrado.")
 
     chunks = session.exec(
-        select(GeneratedTextChunk)
-        .where(GeneratedTextChunk.generated_text_id == content.generated_text_id)
-        .order_by(GeneratedTextChunk.position),
+        select(GeneratedTextChunk).where(GeneratedTextChunk.generated_text_id == content.generated_text_id).order_by(GeneratedTextChunk.position),
     ).all()
 
     doc_ids = {c.document_id for c in chunks if c.document_id}

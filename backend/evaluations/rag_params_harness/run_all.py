@@ -76,12 +76,18 @@ def main() -> None:
                 idx = i * len(configs) + j + 1
                 print(f"\n[{idx}/{total}] {model}  x  {config}")
                 cmd = [
-                    sys.executable, str(_RUNNER),
-                    "--model", model,
-                    "--config", config,
-                    "--judge", args.judge,
-                    "--out-dir", str(args.out_dir),
-                    "--seed", str(args.seed),
+                    sys.executable,
+                    str(_RUNNER),
+                    "--model",
+                    model,
+                    "--config",
+                    config,
+                    "--judge",
+                    args.judge,
+                    "--out-dir",
+                    str(args.out_dir),
+                    "--seed",
+                    str(args.seed),
                 ]
                 result = subprocess.run(cmd)
                 if result.returncode != 0:
@@ -95,10 +101,14 @@ def main() -> None:
 
     print("\nGenerando reporte final...")
     report_cmd = [
-        sys.executable, str(_REPORTER),
-        "--results-dir", str(args.out_dir),
-        "--output", str(args.report_out),
-        "--title", args.title,
+        sys.executable,
+        str(_REPORTER),
+        "--results-dir",
+        str(args.out_dir),
+        "--output",
+        str(args.report_out),
+        "--title",
+        args.title,
     ]
     subprocess.run(report_cmd)
     print(f"\n[OK] Proceso completo. Reporte en: {args.report_out}")

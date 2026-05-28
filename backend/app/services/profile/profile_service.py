@@ -152,6 +152,7 @@ async def upload_profile_image(session: Session, user: User, file: UploadFile) -
     if settings.storage_backend == "s3":
         if user.avatar_path:
             from app.core.storage.s3_client import get_s3_client
+
             get_s3_client().delete_object(Bucket=settings.s3_bucket, Key=user.avatar_path)
     else:
         profile_dir = _get_profile_dir(user.username)

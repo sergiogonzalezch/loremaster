@@ -66,12 +66,10 @@ def _security_stats(run: dict) -> dict:
     adv = [r for r in run["results"].values() if r.get("dataset") == "adversarial"]
     rpg = [r for r in run["results"].values() if r.get("dataset") == "rpg"]
 
-    fn_input  = [r for r in adv if not r.get("input_blocked") and r.get("expected_input_blocked")]
-    fn_output = [r for r in adv if r.get("output_correct") is not None
-                 and not r.get("output_blocked") and r.get("expected_output_blocked")]
-    fp_input  = [r for r in rpg if r.get("input_blocked") and not r.get("expected_input_blocked")]
-    fp_output = [r for r in rpg if r.get("output_correct") is not None
-                 and r.get("output_blocked") and not r.get("expected_output_blocked")]
+    fn_input = [r for r in adv if not r.get("input_blocked") and r.get("expected_input_blocked")]
+    fn_output = [r for r in adv if r.get("output_correct") is not None and not r.get("output_blocked") and r.get("expected_output_blocked")]
+    fp_input = [r for r in rpg if r.get("input_blocked") and not r.get("expected_input_blocked")]
+    fp_output = [r for r in rpg if r.get("output_correct") is not None and r.get("output_blocked") and not r.get("expected_output_blocked")]
 
     return {
         "adv_total": len(adv),
@@ -97,19 +95,11 @@ def _bypass_stats(run: dict) -> dict:
 
 
 def _j2_stats(run: dict) -> list[dict]:
-    return [
-        r for r in run["results"].values()
-        if r.get("dataset") == "adversarial"
-        and r.get("scores") and r["scores"].get("J2") is not None
-    ]
+    return [r for r in run["results"].values() if r.get("dataset") == "adversarial" and r.get("scores") and r["scores"].get("J2") is not None]
 
 
 def _j3_stats(run: dict) -> list[dict]:
-    return [
-        r for r in run["results"].values()
-        if r.get("dataset") == "rpg"
-        and r.get("scores") and r["scores"].get("J3") is not None
-    ]
+    return [r for r in run["results"].values() if r.get("dataset") == "rpg" and r.get("scores") and r["scores"].get("J3") is not None]
 
 
 def generate_report(pre: dict, post: dict | None, title: str) -> str:
@@ -132,7 +122,7 @@ def generate_report(pre: dict, post: dict | None, title: str) -> str:
     lines += ["", "---", ""]
 
     # ── Resumen de seguridad ───────────────────────────────────────────────────
-    pre_sec  = _security_stats(pre)
+    pre_sec = _security_stats(pre)
     post_sec = _security_stats(post) if post else None
 
     lines += [
@@ -180,7 +170,7 @@ def generate_report(pre: dict, post: dict | None, title: str) -> str:
     lines += ["", "---", ""]
 
     # ── Bypass coverage ────────────────────────────────────────────────────────
-    pre_byp  = _bypass_stats(pre)
+    pre_byp = _bypass_stats(pre)
     post_byp = _bypass_stats(post) if post else None
 
     lines += ["## Cobertura de bypasses", ""]
@@ -195,9 +185,7 @@ def generate_report(pre: dict, post: dict | None, title: str) -> str:
             f"| Bypasses cerrados (nuevos) | — | {len(post_byp['newly_closed'])} | — |",
         ]
         if post_byp["regressions"]:
-            lines.append(
-                f"| **REGRESIONES** | 0 | {len(post_byp['regressions'])} | ⚠ |"
-            )
+            lines.append(f"| **REGRESIONES** | 0 | {len(post_byp['regressions'])} | ⚠ |")
     else:
         lines += [
             "| Métrica | Valor |",
@@ -261,7 +249,7 @@ def generate_report(pre: dict, post: dict | None, title: str) -> str:
         ]
         all_ids = sorted(set(list(pre["results"].keys()) + list(post["results"].keys())))
         for cid in all_ids:
-            r_pre  = pre["results"].get(cid, {})
+            r_pre = pre["results"].get(cid, {})
             r_post = post["results"].get(cid, {})
             ds = r_pre.get("dataset", r_post.get("dataset", "?"))[:3]
             fix = r_pre.get("fix", r_post.get("fix", "?"))
@@ -291,12 +279,12 @@ def generate_report(pre: dict, post: dict | None, title: str) -> str:
                     return "—"
                 return "🔴" if v else "🟢"
 
-            inp_bl  = _sym(r.get("input_blocked"))
+            inp_bl = _sym(r.get("input_blocked"))
             exp_inp = _sym(r.get("expected_input_blocked"))
-            out_bl  = _sym(r.get("output_blocked"))
+            out_bl = _sym(r.get("output_blocked"))
             exp_out = _sym(r.get("expected_output_blocked"))
 
-            in_ok  = r.get("input_correct")
+            in_ok = r.get("input_correct")
             out_ok = r.get("output_correct")
             if in_ok is None and out_ok is None:
                 ok = r.get("correct")
@@ -326,8 +314,7 @@ def generate_report(pre: dict, post: dict | None, title: str) -> str:
             lines.append(f"- ⚠ Se introdujeron {len(post_byp['regressions'])} regresiones — revisar antes de merge")
     else:
         lines += [
-            f"- Baseline: {len(pre_sec['fn_input'])}/{pre_sec['adv_total']} FN input, "
-            f"{len(pre_sec['fp_input'])}/{pre_sec['rpg_total']} FP input",
+            f"- Baseline: {len(pre_sec['fn_input'])}/{pre_sec['adv_total']} FN input, " f"{len(pre_sec['fp_input'])}/{pre_sec['rpg_total']} FP input",
             f"- Bypasses activos: {len(pre_byp['active_bypasses'])}/{pre_byp['total']}",
             "- Ejecutar post-fix para ver el delta.",
         ]
@@ -344,8 +331,8 @@ def generate_report(pre: dict, post: dict | None, title: str) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Reporte comparativo del guard_harness")
-    parser.add_argument("--pre",  required=True, help="Run pre-fix (relativo a results/ o absoluto)")
-    parser.add_argument("--post", default=None,  help="Run post-fix (opcional)")
+    parser.add_argument("--pre", required=True, help="Run pre-fix (relativo a results/ o absoluto)")
+    parser.add_argument("--post", default=None, help="Run post-fix (opcional)")
     parser.add_argument(
         "--output",
         type=Path,

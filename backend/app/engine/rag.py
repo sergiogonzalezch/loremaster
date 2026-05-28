@@ -29,6 +29,7 @@ class ChunkInfo:
     position: int
     score: float | None
 
+
 logger = logging.getLogger(__name__)
 
 _qdrant_client = QdrantClient(url=settings.qdrant_url)

@@ -95,25 +95,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "SET_AVATAR", url });
   }, []);
 
-  const logout = useCallback(async ({ force = false }: { force?: boolean } = {}) => {
-    if (logoutTimerRef.current) {
-      clearTimeout(logoutTimerRef.current);
-      logoutTimerRef.current = null;
-    }
-    if (!force) {
-      await logoutApi();   // lanza si falla; el llamador decide qué mostrar
-    }
-    dispatch({ type: "LOGOUT" });
-  }, []);
+  const logout = useCallback(
+    async ({ force = false }: { force?: boolean } = {}) => {
+      if (logoutTimerRef.current) {
+        clearTimeout(logoutTimerRef.current);
+        logoutTimerRef.current = null;
+      }
+      if (!force) {
+        await logoutApi(); // lanza si falla; el llamador decide qué mostrar
+      }
+      dispatch({ type: "LOGOUT" });
+    },
+    [],
+  );
 
-  const scheduleLogout = useCallback((expiresAt: string | null | undefined) => {
-    if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
-    if (!expiresAt) return;
-    const ms = new Date(expiresAt).getTime() - Date.now();
-    if (ms <= 0) return;
-    // force=true: la sesión ya expiró cuando dispara el timer, no necesita confirmación backend
-    logoutTimerRef.current = setTimeout(() => { void logout({ force: true }); }, ms);
-  }, [logout]);
+  const scheduleLogout = useCallback(
+    (expiresAt: string | null | undefined) => {
+      if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
+      if (!expiresAt) return;
+      const ms = new Date(expiresAt).getTime() - Date.now();
+      if (ms <= 0) return;
+      // force=true: la sesión ya expiró cuando dispara el timer, no necesita confirmación backend
+      logoutTimerRef.current = setTimeout(() => {
+        void logout({ force: true });
+      }, ms);
+    },
+    [logout],
+  );
 
   // Verifica la sesión activa al montar (lee la cookie HttpOnly automáticamente).
   // AbortController cancela la petición si el componente desmonta (Strict Mode safe).
@@ -125,11 +133,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((profile) => {
         dispatch({
           type: "INIT_SUCCESS",
-          user: { id: profile.id, username: profile.username, is_admin: profile.is_admin ?? false },
+          user: {
+            id: profile.id,
+            username: profile.username,
+            is_admin: profile.is_admin ?? false,
+          },
         });
         scheduleLogout(profile.expires_at);
         return getMyAvatar({ signal: controller.signal })
-          .then((r) => dispatch({ type: "SET_AVATAR", url: r.avatar_url ?? null }))
+          .then((r) =>
+            dispatch({ type: "SET_AVATAR", url: r.avatar_url ?? null }),
+          )
           .catch(() => {});
       })
       .catch((err) => {
@@ -145,17 +159,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [scheduleLogout]);
 
   const login = useCallback((): Promise<void> => {
-    return getMyProfile()
-      .then((profile) => {
-        dispatch({
-          type: "INIT_SUCCESS",
-          user: { id: profile.id, username: profile.username, is_admin: profile.is_admin ?? false },
-        });
-        scheduleLogout(profile.expires_at);
-        return getMyAvatar()
-          .then((r) => dispatch({ type: "SET_AVATAR", url: r.avatar_url ?? null }))
-          .catch(() => {});
+    return getMyProfile().then((profile) => {
+      dispatch({
+        type: "INIT_SUCCESS",
+        user: {
+          id: profile.id,
+          username: profile.username,
+          is_admin: profile.is_admin ?? false,
+        },
       });
+      scheduleLogout(profile.expires_at);
+      return getMyAvatar()
+        .then((r) =>
+          dispatch({ type: "SET_AVATAR", url: r.avatar_url ?? null }),
+        )
+        .catch(() => {});
+    });
     // Sin .catch(): los errores de red o credenciales se propagan al llamador (LoginPage).
   }, [scheduleLogout]);
 
@@ -165,8 +184,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <AuthContext.Provider value={contextValue}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 }
