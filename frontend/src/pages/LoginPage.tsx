@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -76,18 +76,33 @@ function LocalLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  // Brute-force protection: delay progresivo tras intentos fallidos de login.
+  // 1.º fallo: sin espera. 2.º: 2s. 3.º: 4s. 4.º: 8s. 5.º+: 30s (cap).
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [retryAfter, setRetryAfter] = useState(0);
+
+  useEffect(() => {
+    if (retryAfter <= 0) return;
+    const timer = setTimeout(() => setRetryAfter((s) => s - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [retryAfter]);
 
   async function handleLogin(e: FormEvent) {
     e.preventDefault();
+    if (retryAfter > 0) return;
     setError(null);
     setLoading(true);
     try {
       await login(loginForm);
+      setFailedAttempts(0);
       await contextLogin();
       navigate(redirectTo, { replace: true });
     } catch (err) {
       const { text } = parseApiError(err);
       setError(text);
+      const next = failedAttempts + 1;
+      setFailedAttempts(next);
+      if (next >= 2) setRetryAfter(Math.min(2 ** (next - 1), 30));
     } finally {
       setLoading(false);
     }
@@ -234,17 +249,19 @@ function LocalLoginPage() {
               <Button
                 type="submit"
                 className="w-100"
-                disabled={loading}
+                disabled={loading || retryAfter > 0}
                 style={{
                   backgroundColor: "var(--lm-accent)",
                   borderColor: "var(--lm-accent)",
                 }}
               >
-                {loading
-                  ? "Cargando..."
-                  : tab === "login"
-                    ? "Iniciar sesión"
-                    : "Crear cuenta"}
+                {retryAfter > 0
+                  ? `Espera ${retryAfter}s…`
+                  : loading
+                    ? "Cargando..."
+                    : tab === "login"
+                      ? "Iniciar sesión"
+                      : "Crear cuenta"}
               </Button>
             </Form>
           </Card.Body>
