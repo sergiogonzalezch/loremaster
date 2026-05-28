@@ -5,6 +5,7 @@ import uuid as _uuid
 from contextlib import suppress
 from pathlib import Path
 
+from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.core.config import settings
@@ -271,6 +272,10 @@ def delete_image_service(
 ) -> None:
     """Elimina una imagen individual del batch (soft delete + borrado de fichero).
 
+    Si era la última imagen activa de la generación, también marca la
+    ``ImageGeneration`` padre como eliminada para que no quede huérfana
+    (sin contenido visible) en el historial.
+
     Raises:
         NoContextAvailableError: Si la imagen no existe o no pertenece a la entidad.
 
@@ -304,7 +309,28 @@ def delete_image_service(
                 record.storage_path,
             )
 
-    soft_delete(session, record)
+    soft_delete(session, record, commit=False)
+
+    # Si era el último ImageRecord activo de esta generación, marcar también
+    # la ImageGeneration padre como eliminada para evitar generaciones huérfanas.
+    remaining = session.exec(
+        select(func.count())
+        .select_from(ImageRecord)
+        .where(
+            ImageRecord.generation_id == generation_id,
+            ImageRecord.is_deleted.is_(False),
+        ),
+    ).one()
+    if remaining == 0:
+        generation = session.get(ImageGeneration, generation_id)
+        if generation and not generation.is_deleted:
+            soft_delete(session, generation, commit=False)
+            logger.info(
+                "ImageGeneration %s soft-deleted (last image removed)",
+                generation_id,
+            )
+
+    db_commit(session, f"delete_image({image_id})")
 
 
 def get_generation_service(
