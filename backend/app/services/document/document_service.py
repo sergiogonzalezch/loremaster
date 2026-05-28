@@ -292,7 +292,6 @@ def delete_document_service(session: Session, document: Document) -> bool:
         raise VectorStoreError from e
 
     soft_delete(session, document)
-    db_commit(session, f"delete_document({document.id})")
     logger.info(
         "Document %s soft-deleted from collection %s",
         document.id,

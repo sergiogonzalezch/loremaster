@@ -17,6 +17,7 @@ from sqlmodel import Session, select
 
 from app.core.config import settings
 from app.core.database.soft_delete import soft_delete
+from app.core.database.utils import db_commit
 from app.engine.rag import delete_collection_vectors
 from app.models.db.collection import Collection
 from app.models.db.document import Document
@@ -102,7 +103,7 @@ def cascade_delete_entity(session: Session, entity: Entity) -> None:
         entity.id,
     )
 
-    soft_delete(session, entity)
+    soft_delete(session, entity, commit=False)
     logger.info(
         "Entity %s soft-deleted from collection %s",
         entity.id,
@@ -135,7 +136,7 @@ def cascade_delete_collection(session: Session, collection: Collection) -> bool:
         ),
     ).all()
     for doc in docs:
-        soft_delete(session, doc)
+        soft_delete(session, doc, commit=False)
     logger.info(
         "Soft-deleted %d document(s) for collection %s",
         len(docs),
@@ -172,9 +173,10 @@ def cascade_delete_collection(session: Session, collection: Collection) -> bool:
             collection.id,
         )
 
-    soft_delete(session, collection)
+    soft_delete(session, collection, commit=False)
     logger.info("Collection %s soft-deleted", collection.id)
 
+    db_commit(session, f"cascade_delete_collection({collection.id})")
     return _delete_vectors_with_retry(collection.id)
 
 
@@ -235,7 +237,7 @@ def _cascade_delete_images(
     for img in images:
         if delete_files:
             _delete_image_file(img.storage_path)
-        soft_delete(session, img)
+        soft_delete(session, img, commit=False)
     return len(images)
 
 

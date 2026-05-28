@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.core.api.params import DateRangeParams, PaginationParams
-from app.core.database.utils import db_commit, paginate_with_sort
+from app.core.database.utils import paginate_with_sort
 from app.core.exceptions import DuplicateNameError
 from app.models.db.collection import Collection
 from app.models.db.document import Document
@@ -237,6 +237,5 @@ def delete_collection_service(session: Session, collection: Collection) -> bool:
 
     """
     vectors_cleaned = cascade_delete_collection(session, collection)
-    db_commit(session, f"delete_collection({collection.id})")
     logger.info("Collection '%s' (%s) deleted", collection.name, collection.id)
     return vectors_cleaned

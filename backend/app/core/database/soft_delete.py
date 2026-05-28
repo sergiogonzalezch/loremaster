@@ -14,10 +14,13 @@ class SoftDeleteMixin:
     deleted_at: datetime | None = None
 
 
-def soft_delete(session: Session, record: SoftDeleteMixin) -> bool:
+def soft_delete(session: Session, record: SoftDeleteMixin, *, commit: bool = True) -> bool:
     """Marca un registro como eliminado (soft-delete).
 
-    Actualiza is_deleted, deleted_at y updated_at, y hace commit en la sesión.
+    Actualiza is_deleted, deleted_at y updated_at.
+    Con commit=True (default) hace commit inmediato — correcto para operaciones
+    de un solo elemento. Con commit=False acumula el cambio sin commitear,
+    permitiendo que operaciones de cascada los agrupen en una sola transacción.
 
     Retorna True si la operación fue exitosa.
     """
@@ -26,5 +29,7 @@ def soft_delete(session: Session, record: SoftDeleteMixin) -> bool:
     record.deleted_at = now
     if hasattr(record, "updated_at"):
         record.updated_at = now
-    db_commit(session, f"soft delete {record.__class__.__name__}")
+    session.add(record)
+    if commit:
+        db_commit(session, f"soft delete {record.__class__.__name__}")
     return True

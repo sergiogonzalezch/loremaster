@@ -294,7 +294,6 @@ def soft_delete_content(
         return False
     content.is_shared = False
     soft_delete(session, content)
-    db_commit(session, f"soft_delete_content({content_id})")
     logger.info("EntityContent %s soft-deleted", content_id)
     return True
 
