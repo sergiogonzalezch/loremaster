@@ -1452,6 +1452,21 @@ textarea.form-control {
   }
 }
 
+/* ── Input numérico sin spinners nativos (homogéneo cross-browser) ───────── */
+/* Aplicar como className="lm-input-no-spinner" en inputs type="number"
+   donde las flechas de incremento/decremento son redundantes (p.ej. seed
+   con botón aleatorio adyacente). Mantiene validación numérica y
+   inputMode pero quita la UI inconsistente de cada navegador. */
+.lm-input-no-spinner {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.lm-input-no-spinner::-webkit-outer-spin-button,
+.lm-input-no-spinner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 /* ── Avatar placeholder dashed (ProfilePage) ─────────────────────────────── */
 .lm-avatar-placeholder {
   width: 80px;

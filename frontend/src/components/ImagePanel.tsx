@@ -520,10 +520,12 @@ export default function ImagePanel({
                 <Form.Label className="mb-0 small text-muted">Seed:</Form.Label>
                 <Form.Control
                   type="number"
+                  inputMode="numeric"
                   value={seedBase}
                   onChange={(e) => setSeedBase(Number(e.target.value))}
                   disabled={gen.generating}
                   size="sm"
+                  className="lm-input-no-spinner"
                   style={{ width: 120 }}
                 />
                 <Button
