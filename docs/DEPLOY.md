@@ -11,6 +11,7 @@ Runbook operacional para demo y producción. Cubre solo los pasos que difieren d
 ```
                     ┌─────────────────────────────────────────┐
  http://localhost ──► loremaster-frontend (Nginx :80)         │
+                    │   /health  → loremaster-api:8000/health │
                     │   /api/*   → loremaster-api:8000        │
                     │   /media/* → loremaster-floci:4566      │
                     │   /*       → bundle React (SPA)         │
@@ -108,6 +109,7 @@ docker exec -it loremaster-api python scripts/make_admin.py <username> --force
 - [ ] `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` definidas
 - [ ] `COOKIE_SECURE=true` (ya en `docker-compose.prod.yml`)
 - [ ] `RATE_LIMIT_ENABLED=false` para demo, `true` para producción real
+- [ ] `LLAMA_GUARD_ENABLED=false` por defecto — activar con `true` + `ollama pull llama-guard3:8b` si se quiere moderación semántica (añade ~400-900 ms por respuesta)
 
 ### Base de datos
 
@@ -131,6 +133,8 @@ docker exec -it loremaster-api python scripts/make_admin.py <username> --force
 ### Seguridad (código)
 
 - [x] Fix moderación HARM-08 cerrado — patrón bidireccional + leet + separadores, 26 tests (`660c501`, `b225e70`, `9f7c4d0`)
+- [x] Fix moderación HARM-12 cerrado — 12 tests adicionales de content guard
+- [x] Path traversal guard en `delete_image_service` — `is_relative_to()` valida que el path esté dentro de `media_root` (`3a5818b`)
 
 ---
 
