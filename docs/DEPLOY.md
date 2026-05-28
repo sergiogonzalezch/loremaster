@@ -2,7 +2,7 @@
 
 Runbook operacional para demo y producción. Cubre solo los pasos que difieren del entorno local.
 
-> **Pendiente de configuración en futuras sesiones:** Clerk (auth en prod), ComfyUI (URL del servidor), Storage S3/R2 real.
+> **Pendiente de configuración en futuras sesiones:** Clerk (auth en prod), ComfyUI (URL del servidor), TLS/HTTPS. Storage S3/R2 ya implementado — solo requiere credenciales en `.env.production`.
 
 ---
 
@@ -123,9 +123,10 @@ docker exec -it loremaster-api python scripts/make_admin.py <username> --force
 
 ### Pendientes (bloquean producción real, no demo privada)
 
-- [ ] Clerk configurado (`CLERK_JWKS_URL`, `CLERK_AUDIENCE`) y probado end-to-end
-- [ ] Storage S3/R2 real configurado (actualmente usa Floci como emulador S3 local)
-- [ ] TLS/HTTPS configurado (Nginx o proxy externo)
+- [ ] **Clerk** — código completo en main (`auth_clerk.py`, `clerk.py`, 6 tests); descomentar en compose y añadir `CLERK_JWKS_URL` + `CLERK_AUDIENCE` en `.env.production`
+- [ ] **Storage S3/R2 real** — ✅ ya implementado en código (`core/storage/s3_client.py` con boto3). Para cloud: añadir `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_ENDPOINT_URL` y `STORAGE_BASE_URL=https://tu-dominio.com/media` en `.env.production`
+- [ ] **TLS/HTTPS** — Nginx actualmente solo `listen 80`; añadir certificado SSL (Let's Encrypt / certbot) y redirect 80→443
+- [ ] **GPU cloud** — actualmente ComfyUI on-premise vía `host.docker.internal`; `runpod_client.py` no existe
 
 ### Seguridad (código)
 
@@ -169,4 +170,4 @@ Con el override activo:
 
 ---
 
-*Última actualización: 2026-05-27*
+*Última actualización: 2026-05-27 (revisado — Storage S3/R2 ya implementado; TLS/GPU cloud añadidos como pendientes)*

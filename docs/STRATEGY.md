@@ -1,7 +1,7 @@
 # STRATEGY.md — Evaluación técnica y hoja de ruta hacia producción
 
-**Fecha:** 2026-05-27
-**Contexto:** Evaluación honesta del estado del proyecto. Actualizado tras cierre completo de Semana 9.
+**Fecha:** 2026-05-27 (revisado 2026-05-27 — verificación contra código)
+**Contexto:** Evaluación honesta del estado del proyecto. Actualizado tras cierre completo de Semana 9 y revisión de items pendientes contra el código fuente real.
 
 ---
 
@@ -11,7 +11,7 @@
 La inversión en harnesses es inusualmente sólida para un proyecto de esta escala. Tener evaluación automatizada en cinco dimensiones (RAG params, LLM params, prompt quality, image prompt, guard harness) con runner/judge/reporter y 83 casos de baseline refleja disciplina de ingeniería real. La mayoría de proyectos similares no tienen nada de esto. Es un activo que protege la calidad a medida que el proyecto evoluciona.
 
 ### Calidad de código consistente
-0 errores de lint (Ruff + ESLint), 100/100 React Doctor, cero `any` en producción, useReducer correctamente aplicado, soft-delete en toda la capa de datos, separación limpia de capas (routes → services → domain/engine). El estándar se mantuvo alto durante todo el desarrollo.
+0 errores de lint (Ruff + ESLint), **89/100 React Doctor** (77 false positives de `unused-file` — react-doctor no detecta `main.tsx` como entry point de Vite; los 60 issues restantes bajaron de 56 a 60 issues reales tras la sesión de 2026-05-27), cero `any` en producción, useReducer correctamente aplicado, soft-delete en toda la capa de datos, separación limpia de capas (routes → services → domain/engine). El estándar se mantuvo alto durante todo el desarrollo.
 
 ### Trabajo de seguridad real
 53 issues de seguridad cerrados + 1 finding del security review externo cerrado, content guard multi-capa con evaluación cuantitativa, 309 tests. No es seguridad cosmética — los patrones tienen justificación documentada, los casos límite están probados (leetspeak, separadores, multilingüe, NFKD), y las decisiones de producto están anotadas con criterio de revisión futuro.
@@ -65,9 +65,9 @@ El semáforo de 1 llamada LLM concurrente funciona perfectamente en local para u
 |---|---|---|
 | `backend/Dockerfile` | ✅ Multi-stage, usuario no-root, torch CPU-only (~2.6 GB) | — |
 | `frontend/Dockerfile` | ✅ Multi-stage Vite + Nginx (~63 MB) | — |
-| Storage S3-compatible | ✅ Floci como emulador S3 local en demo — imágenes persisten en volumen Docker | Floci es para demo; S3/R2 real pendiente para cloud |
-| RunPod / GPU cloud | `runpod_client.py` no existe | Sin GPU cloud, generación de imágenes atada al host |
-| Clerk en producción | Variables no probadas con tenant real | Auth Clerk no funciona en cloud sin validación |
+| Storage S3-compatible | ✅ **Implementado** — `core/storage/s3_client.py` con boto3 funciona con AWS S3 real, Cloudflare R2 y Floci. En demo usa Floci; en cloud solo requiere credenciales en `.env.production` | Para cloud deploy: configurar `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_ENDPOINT_URL` y `STORAGE_BASE_URL` |
+| RunPod / GPU cloud | ❌ `runpod_client.py` no existe — solo ComfyUI on-premise | Sin GPU cloud, generación de imágenes atada al host del desarrollador |
+| Clerk en producción | ⚠️ **Código completo en main** — `auth_clerk.py`, `clerk.py`, 6 tests. Vars comentadas en compose. Solo falta configurar tenant real | Descomentar `CLERK_JWKS_URL` + `CLERK_AUDIENCE` en `.env.production` |
 | Redis caché semántica | Abandonado | Solo rate limiting activo — sin impacto en deploy |
 | Sesiones deslizantes | Diferido — Issue #6 AUTH-CONTEXT | Diferir hasta que el volumen lo justifique |
 
@@ -122,13 +122,14 @@ Objetivo: backend containerizado, concurrencia LLM resuelta, stack demo completo
 **Pendiente de semana 9 continuación:**
 - [ ] Reporte de costos finalizado — ver `docs/COST-REPORT.md`
 
-### Semana 10 — Persistencia e integración
+### Semana 10 — GPU cloud + Clerk + TLS
 
-Objetivo: imágenes persistentes y Clerk validado.
+Objetivo: flujo de imágenes en cloud y auth Clerk validada.
 
-- [ ] Decidir GPU cloud: RunPod Serverless vs Replicate vs filesystem para demo
-- [ ] Storage S3/R2 en producción real (Floci cubre la demo; S3/R2 real necesario para cloud deploy)
-- [ ] Probar Clerk end-to-end con tenant real (`CLERK_JWKS_URL` + `CLERK_AUDIENCE`) — código ya implementado, solo configuración del tenant
+- [ ] **Decidir e implementar GPU cloud**: RunPod Serverless vs Replicate vs filesystem — `runpod_client.py` no existe aún
+- [x] ~~Storage S3/R2 en producción real~~ — **ya implementado** (`core/storage/s3_client.py` con boto3; soporta AWS, R2 y Floci). Para cloud: solo configurar credenciales en `.env.production`
+- [ ] **Clerk end-to-end con tenant real**: código completo en main; descomentar `CLERK_JWKS_URL` + `CLERK_AUDIENCE` en compose y `.env.production`
+- [ ] **TLS/HTTPS**: Nginx solo tiene `listen 80`; necesario certbot o proxy externo antes de URL pública
 
 ### Semana 11 — GPU cloud e imagen en producción
 
@@ -187,7 +188,7 @@ Documentos donde se registran puntos de mejora identificados pero no implementad
 | Documento | Sección de mejoras | Contenido |
 |---|---|---|
 | [`docs/FIX.md`](FIX.md) | Tabla de estado rápido + Cobertura de tests | Deuda técnica activa (ítems 🟢 Cubierto sin acción inmediata): 13, 29, 30, 34, 35, 39, 42, 50. Tests pendientes de frontend: botón reintentar en error `CollectionsPage`. |
-| [`docs/ENV-ARCHITECTURE.md §8`](ENV-ARCHITECTURE.md#8-puntos-de-mejora-identificados) | §8 — Puntos de mejora identificados | Variables S3/R2 hardcodeadas en compose → interpolables (Semana 10). `IMAGE_BACKEND` interpolable para RunPod (Semana 11). Inconsistencia `rate_limit_enabled` Python default vs compose fallback. Modelos Ollama configurables sin editar el YAML. |
+| [`docs/ENV-ARCHITECTURE.md §8`](ENV-ARCHITECTURE.md#8-puntos-de-mejora-identificados) | §8 — Puntos de mejora identificados | ~~Variables S3/R2 hardcodeadas~~ resuelto. `IMAGE_BACKEND` interpolable para RunPod (Semana 10). Inconsistencia `rate_limit_enabled` Python default vs compose fallback. Modelos Ollama configurables sin editar el YAML. |
 | [`docs/DEPLOY.md`](DEPLOY.md) | Checklist de deploy | Estado actualizado del checklist operacional: qué está cubierto, qué falta para un deploy en servidor real (S3/R2, Clerk, dominio HTTPS). |
 | [`docs/DOCUMENTATION.md`](DOCUMENTATION.md) | Roadmap / Decisiones pendientes | Decisiones de arquitectura diferidas: RunPod vs Replicate, modelo en producción, sesiones deslizantes Clerk. |
 
@@ -199,4 +200,4 @@ Los siguientes ítems de `FIX.md` están documentados, mitigados y no bloquean e
 |---|---|---|
 | FIX-13 | Bases `DomainError`/`InfrastructureError` — solo si se añade middleware global de excepciones | Post-Fase 3 |
 | FIX-29 | Log "Auto-discarded" emitido antes de `session.commit()` | Post-Fase 3 |
-| FIX-50 | `deletion_service.py` mezcla soft-delete + ficheros + Qdrant | Revisar al integrar S3/R2 (Semana 10) |
+| FIX-50 | `deletion_service.py` mezcla soft-delete + ficheros + Qdrant | Revisar al activar S3/R2 real en cloud deploy |
