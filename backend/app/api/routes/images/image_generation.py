@@ -64,6 +64,8 @@ def build_prompt(
             status_code=422,
             detail="El contenido indicado no existe, no está confirmado o no pertenece a esta entidad.",
         ) from e
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
 
 
 @router.post(

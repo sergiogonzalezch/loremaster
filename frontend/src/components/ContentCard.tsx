@@ -144,6 +144,9 @@ export default function ContentCard({
 
   const isPending = content.status === "pending";
   const isConfirmed = content.status === "confirmed";
+  const supportsImage = ["extended_description", "backstory", "scene"].includes(
+    content.category,
+  );
 
   return (
     <>
@@ -392,7 +395,7 @@ export default function ContentCard({
                 >
                   {content.is_shared ? "✦ Compartido" : "Compartir"}
                 </Button>
-                {onOpenImagePanel && (
+                {onOpenImagePanel && supportsImage && (
                   <Button
                     variant="outline-primary"
                     size="sm"
