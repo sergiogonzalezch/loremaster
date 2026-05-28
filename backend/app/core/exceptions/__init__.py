@@ -146,9 +146,8 @@ class DocumentNotRetryableError(Exception):
 class DuplicateDocumentError(Exception):
     """Lanzada cuando se detecta un documento duplicado por su contenido."""
 
-    def __init__(self, existing_id: str) -> None:
-        """Inicializa la excepción con el ID del documento existente."""
-        self.existing_id = existing_id
+    def __init__(self) -> None:
+        """Inicializa la excepción."""
         super().__init__("El contenido del documento ya existe en esta colección.")
 
 

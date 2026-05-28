@@ -132,7 +132,7 @@ async def ingest_document_service(
                 _sanitize_for_log(data.filename),
                 existing.id,
             )
-            raise DuplicateDocumentError(existing.id)
+            raise DuplicateDocumentError
 
     document = Document(
         collection_id=collection_id,
