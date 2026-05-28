@@ -17,25 +17,33 @@ function formatSize(bytes: number): string {
     : `${(bytes / 1_048_576).toFixed(0)} MB`;
 }
 
+type ModelSelectorState = {
+  models: ModelInfo[];
+  selected: string;
+  visible: boolean;
+};
+
 export default function ModelSelector({ disabled, onChange }: Props) {
-  const [models, setModels] = useState<ModelInfo[]>([]);
-  const [selected, setSelected] = useState<string>("");
-  const [visible, setVisible] = useState(false);
+  // Agrupar models/selected/visible — los 3 se transicionan juntos al cargar.
+  const [state, setState] = useState<ModelSelectorState>({
+    models: [],
+    selected: "",
+    visible: false,
+  });
 
   useEffect(() => {
     getModels()
       .then((list) => {
         if (!list.length) return;
-        setModels(list);
-        setVisible(true);
-
         const stored = localStorage.getItem(STORAGE_KEY);
         const initial =
           (stored && list.find((m) => m.name === stored)?.name) ||
           list.find((m) => m.is_default)?.name ||
           list[0].name;
 
-        setSelected(initial);
+        // Una sola transición — evita 3 renders consecutivos.
+        setState({ models: list, selected: initial, visible: true });
+
         // Only propagate non-default selection to avoid adding noise to requests
         const defaultModel = list.find((m) => m.is_default)?.name;
         onChange(initial !== defaultModel ? initial : undefined);
@@ -45,12 +53,12 @@ export default function ModelSelector({ disabled, onChange }: Props) {
       });
   }, [onChange]);
 
-  if (!visible) return null;
+  if (!state.visible) return null;
 
   function handleChange(name: string) {
-    setSelected(name);
+    setState((prev) => ({ ...prev, selected: name }));
     localStorage.setItem(STORAGE_KEY, name);
-    const defaultModel = models.find((m) => m.is_default)?.name;
+    const defaultModel = state.models.find((m) => m.is_default)?.name;
     onChange(name !== defaultModel ? name : undefined);
   }
 
@@ -58,12 +66,12 @@ export default function ModelSelector({ disabled, onChange }: Props) {
     <Form.Group style={{ minWidth: 220 }}>
       <Form.Label className="fw-semibold">Modelo</Form.Label>
       <Form.Select
-        value={selected}
+        value={state.selected}
         onChange={(e) => handleChange(e.target.value)}
         disabled={disabled}
         size="sm"
       >
-        {models.map((m) => (
+        {state.models.map((m) => (
           <option key={m.name} value={m.name}>
             {m.name}
             {m.is_default ? " (predeterminado)" : ""}

@@ -1,4 +1,5 @@
 import { useEffect, useReducer, useState } from "react";
+import type { Reducer } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import {
@@ -28,6 +29,28 @@ import type {
   SharedImageItem,
 } from "../types/user";
 
+type FetchState = {
+  profile: PublicProfile | null;
+  loading: boolean;
+  error: string | null;
+};
+
+type FetchAction =
+  | { type: "FETCH_START" }
+  | { type: "FETCH_SUCCESS"; profile: PublicProfile }
+  | { type: "FETCH_ERROR"; error: string };
+
+const fetchReducer: Reducer<FetchState, FetchAction> = (state, action) => {
+  switch (action.type) {
+    case "FETCH_START":
+      return { ...state, loading: true, error: null };
+    case "FETCH_SUCCESS":
+      return { profile: action.profile, loading: false, error: null };
+    case "FETCH_ERROR":
+      return { ...state, loading: false, error: action.error };
+  }
+};
+
 /**
  * Página de perfil público de un usuario.
  *
@@ -40,9 +63,12 @@ export default function PublicProfilePage() {
   const { username } = useParams<{ username: string }>();
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
-  const [profile, setProfile] = useState<PublicProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [fetch, dispatchFetch] = useReducer(fetchReducer, {
+    profile: null,
+    loading: true,
+    error: null,
+  });
+  const { profile, loading, error } = fetch;
   const [copied, setCopied] = useState(false);
   const [refreshKey, incrementRefresh] = useReducer((n: number) => n + 1, 0);
   const [selectedContent, setSelectedContent] =
@@ -53,12 +79,12 @@ export default function PublicProfilePage() {
 
   useEffect(() => {
     if (!username) return;
-    setLoading(true);
-    setError(null);
+    dispatchFetch({ type: "FETCH_START" });
     getPublicProfile(username)
-      .then(setProfile)
-      .catch((e) => setError(parseApiError(e).text))
-      .finally(() => setLoading(false));
+      .then((p) => dispatchFetch({ type: "FETCH_SUCCESS", profile: p }))
+      .catch((e) =>
+        dispatchFetch({ type: "FETCH_ERROR", error: parseApiError(e).text }),
+      );
   }, [username, refreshKey]);
 
   useEffect(() => {

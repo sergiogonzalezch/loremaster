@@ -29,8 +29,10 @@ export function trimStringValues<T extends object>(obj: T): T {
 const _EXTRA_MEDIA_HOSTNAMES: Set<string> = new Set(
   ((import.meta.env.VITE_MEDIA_HOST ?? "") as string)
     .split(",")
-    .map((h) => h.trim().toLowerCase())
-    .filter(Boolean),
+    .flatMap((h) => {
+      const trimmed = h.trim().toLowerCase();
+      return trimmed ? [trimmed] : [];
+    }),
 );
 
 /**

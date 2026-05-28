@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useReducer } from "react";
+import type { Reducer } from "react";
 import { Accordion, Badge, Modal, Spinner } from "react-bootstrap";
 import { getContentChunks } from "../api/contents";
 import type { ContentChunkItem } from "../types";
@@ -11,6 +12,14 @@ interface SourcesModalProps {
   contentId: string;
 }
 
+type State = { chunks: ContentChunkItem[]; loading: boolean };
+type Action = { type: "DONE"; chunks: ContentChunkItem[] };
+
+const reducer: Reducer<State, Action> = (_state, action) => ({
+  chunks: action.chunks,
+  loading: false,
+});
+
 export default function SourcesModal({
   show,
   onHide,
@@ -18,15 +27,16 @@ export default function SourcesModal({
   entityId,
   contentId,
 }: SourcesModalProps) {
-  const [chunks, setChunks] = useState<ContentChunkItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [{ chunks, loading }, dispatch] = useReducer(reducer, {
+    chunks: [],
+    loading: true,
+  });
 
   useEffect(() => {
     const controller = new AbortController();
     getContentChunks(collectionId, entityId, contentId, controller.signal)
-      .then((res) => setChunks(res.chunks))
-      .catch(() => setChunks([]))
-      .finally(() => setLoading(false));
+      .then((res) => dispatch({ type: "DONE", chunks: res.chunks }))
+      .catch(() => dispatch({ type: "DONE", chunks: [] }));
     return () => controller.abort();
   }, [collectionId, entityId, contentId]);
 

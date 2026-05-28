@@ -1,4 +1,5 @@
 import { useEffect, useReducer, useState } from "react";
+import type { Reducer } from "react";
 import { Link } from "react-router-dom";
 import {
   Container,
@@ -23,6 +24,41 @@ import type { PaginatedResponse } from "../types";
 
 const PAGE_SIZE = 12;
 
+type FeedState = {
+  items: PublicFeedItem[];
+  images: PublicImageItem[];
+  totalPages: number;
+  loading: boolean;
+  error: string | null;
+};
+
+type FeedAction =
+  | { type: "FETCH_START" }
+  | {
+      type: "FETCH_SUCCESS";
+      items: PublicFeedItem[];
+      images: PublicImageItem[];
+      totalPages: number;
+    }
+  | { type: "FETCH_ERROR"; error: string };
+
+const feedReducer: Reducer<FeedState, FeedAction> = (state, action) => {
+  switch (action.type) {
+    case "FETCH_START":
+      return { ...state, loading: true, error: null };
+    case "FETCH_SUCCESS":
+      return {
+        items: action.items,
+        images: action.images,
+        totalPages: action.totalPages,
+        loading: false,
+        error: null,
+      };
+    case "FETCH_ERROR":
+      return { ...state, loading: false, error: action.error };
+  }
+};
+
 /**
  * Página de feed público con contenido e imágenes compartidas.
  *
@@ -31,12 +67,15 @@ const PAGE_SIZE = 12;
  * Permite navegar por páginas y abrir modales con el detalle completo.
  */
 export default function PublicFeedPage() {
-  const [items, setItems] = useState<PublicFeedItem[]>([]);
-  const [images, setImages] = useState<PublicImageItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [feed, dispatchFeed] = useReducer(feedReducer, {
+    items: [],
+    images: [],
+    totalPages: 0,
+    loading: true,
+    error: null,
+  });
+  const { items, images, totalPages, loading, error } = feed;
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
   const [refreshKey, incrementRefresh] = useReducer((n: number) => n + 1, 0);
   const [selectedItem, setSelectedItem] = useState<PublicFeedItem | null>(null);
   const [selectedImage, setSelectedImage] = useState<PublicImageItem | null>(
@@ -49,8 +88,7 @@ export default function PublicFeedPage() {
    */
   useEffect(() => {
     const ctrl = new AbortController();
-    setLoading(true);
-    setError(null);
+    dispatchFeed({ type: "FETCH_START" });
     Promise.all([
       getPublicFeed({ page, page_size: PAGE_SIZE }, ctrl.signal),
       getPublicImages({ page_size: 8 }, ctrl.signal),
@@ -60,15 +98,19 @@ export default function PublicFeedPage() {
           PaginatedResponse<PublicFeedItem>,
           PaginatedResponse<PublicImageItem>,
         ]) => {
-          setItems(feedRes.data);
-          setTotalPages(feedRes.meta.total_pages);
-          setImages(imgRes.data);
+          dispatchFeed({
+            type: "FETCH_SUCCESS",
+            items: feedRes.data,
+            images: imgRes.data,
+            totalPages: feedRes.meta.total_pages,
+          });
         },
       )
       .catch((e) => {
-        if (e?.name !== "ApiAbortError") setError(parseApiError(e).text);
-      })
-      .finally(() => setLoading(false));
+        if (e?.name !== "ApiAbortError") {
+          dispatchFeed({ type: "FETCH_ERROR", error: parseApiError(e).text });
+        }
+      });
     return () => ctrl.abort();
   }, [page, refreshKey]);
 
