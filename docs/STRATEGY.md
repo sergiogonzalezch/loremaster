@@ -5,6 +5,46 @@
 
 ---
 
+## 0. Estado rápido — pendientes y resueltos
+
+> Sección de consulta rápida. Verificado contra el código el 2026-05-27.
+
+### Pendiente Semana 10
+
+| # | Item | Esfuerzo | Bloqueante para |
+|---|---|---|---|
+| P1 | **GPU cloud** — implementar `runpod_client.py` o cliente Replicate; hacer `IMAGE_BACKEND` interpolable en compose | Alto | Imágenes fuera del host |
+| P2 | **Clerk end-to-end** — descomentar 2 vars en compose + `CLERK_JWKS_URL`/`CLERK_AUDIENCE` en `.env.production` | Bajo | Auth en cloud |
+| P3 | **TLS/HTTPS** — certificado SSL + `listen 443 ssl` en `nginx.conf` + redirect 80→443 | Medio | Cualquier URL pública |
+
+### Pendiente sin fecha urgente (no bloquea demo)
+
+| # | Item | Cuándo |
+|---|---|---|
+| P4 | **Variables S3/R2 interpolables** — `S3_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` como `${VAR:-fallback}` en compose | Al activar S3/R2 real en cloud |
+| P5 | **Modelos Ollama configurables** — `${OLLAMA_MODEL:-llama3.2:latest}` en compose | Calidad de vida; sin urgencia |
+| P6 | **Cola de generación** — `BackgroundTasks` + job state `pending→running→done` | Si el volumen lo justifica |
+
+### Resuelto (referencia)
+
+| Item | Estado | Dónde |
+|---|---|---|
+| Dockerfile backend multi-stage (torch CPU-only, ~2.6 GB) | ✅ | `backend/Dockerfile` |
+| Dockerfile frontend multi-stage (Nginx, ~63 MB) | ✅ | `frontend/Dockerfile` |
+| Stack demo completo (`make prod-up`, 6 servicios, puerto :80) | ✅ | `docker-compose.prod.yml` |
+| Storage S3-compatible con boto3 (AWS, R2, Floci) | ✅ | `core/storage/s3_client.py` |
+| Semáforo LLM → HTTP 429 + `Retry-After: 30` | ✅ | `rag_query.py`, `content.py`, `image_generation.py` |
+| Llama Guard 3 — capa semántica fail-open | ✅ | `app/domain/llama_guard.py` |
+| Clerk — código completo en main (sync, verify, 6 tests) | ✅ código / ⚠️ config | `auth_clerk.py`, `clerk.py` |
+| Migración FK `ix_entities_collection_id` | ✅ | Alembic |
+| Path traversal guard en `delete_image_service` | ✅ | `image_generation_service.py` |
+| CORS eliminado — todo pasa por Nginx en :80 | ✅ | `nginx.conf` |
+| React Doctor 89/100 (subió 81→89) | ✅ | Frontend |
+| Tests: 309 backend · 121 frontend | ✅ | — |
+| Ruff 0 errores · ESLint 0 errores | ✅ | — |
+
+---
+
 ## 1. Fortalezas reales
 
 ### Infraestructura de evaluación
