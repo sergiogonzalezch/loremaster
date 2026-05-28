@@ -241,3 +241,44 @@ Los siguientes ítems de `FIX.md` están documentados, mitigados y no bloquean e
 | FIX-13 | Bases `DomainError`/`InfrastructureError` — solo si se añade middleware global de excepciones | Post-Fase 3 |
 | FIX-29 | Log "Auto-discarded" emitido antes de `session.commit()` | Post-Fase 3 |
 | FIX-50 | `deletion_service.py` mezcla soft-delete + ficheros + Qdrant | Revisar al activar S3/R2 real en cloud deploy |
+
+---
+
+## 9. React Doctor — pendientes y techo práctico
+
+**Estado actual: 95/100** (subió 81→88→91→93→95 a lo largo del proyecto).
+
+El techo realista alcanzable sin sprint dedicado de refactor visual es **95-96**. Los 13 issues restantes se dividen entre refactor mayor con riesgo de regresión y falsos positivos de la herramienta.
+
+### 9.1 Refactor mayor — `no-giant-component` ×7
+
+Componentes >300 líneas. Partirlos en sub-componentes daría ~+3 puntos pero requiere validación visual por componente. Cada uno es un refactor con riesgo de regresión.
+
+| Componente | Líneas | Sub-componentes sugeridos |
+|---|---|---|
+| `DocumentsTab.tsx` | ~770 | `<DocumentFilters>`, `<DocumentList>`, `<UploadSection>`, `<DocumentDetailModal>` |
+| `ImagePanel.tsx` | ~700 | `<GenerateTab>`, `<HistoryTab>`, `<ImagePreviewModal>` |
+| `CollectionsPage.tsx` | ~620 | `<CollectionFilters>`, `<CollectionGrid>`, `<CollectionModals>` |
+| `ContentCard.tsx` | ~570 | `<ContentHeader>`, `<ContentActions>`, `<EditModal>` |
+| `EntitiesTab.tsx` | ~440 | `<EntityFilters>`, `<EntityCreateModal>` |
+| `ProfilePage.tsx` | ~370 | `<AvatarUploader>` |
+| `PublicProfilePage.tsx` | 332 | `<ProfileHeader>`, `<SharedImagesSection>`, `<SharedContentsSection>` |
+
+**Esfuerzo estimado:** 3-5 días total. **Riesgo:** medio — necesita pruebas manuales de UX por componente. **Cuándo:** Post-Fase 3, sprint dedicado.
+
+### 9.2 Falsos positivos documentados (no tocar)
+
+Estos warnings persisten pero no son arreglables sin introducir bugs o cambiar a API experimental:
+
+| Issue | Archivo:Línea | Por qué es falso positivo |
+|---|---|---|
+| `deslop/unused-file` ×77 | varios | react-doctor no traza routing dinámico de Vite SPA (`main.tsx → App.tsx → React Router`). Los 77 archivos sí se alcanzan en runtime. **Resta ~5-7 puntos del techo**. |
+| `no-derived-state` ×2 | `CollectionDetailPage/index.tsx:44`, `AdminPage:62` | `loading` viene de `useEffect → fetchX → setLoading(false)`. NO es estado derivado de props — es estado de fetch async, no se puede computar inline en render |
+| `async-defer-await` | `useGenerate.ts:81` | El guard `if (!isMountedRef.current)` **debe** ejecutarse DESPUÉS del await — verifica que el componente sigue montado tras la operación async. Moverlo antes cambia la semántica. |
+| `no-pass-live-state-to-parent` | `EntityContentsPanel:54` | Ya refactorizado a event-driven (`onContentMutated`). El linter detecta otro patrón residual, requiere revisión profunda para confirmar. |
+| `exhaustive-deps` | `AuthContext:151` | Ya está bien — el cleanup copia `logoutTimerRef.current` a `const timer` antes de usarlo |
+| `prefer-use-effect-event` | `DocumentsTab:313` | `useEffectEvent` aún es API experimental en React 19, no usable en producción estable |
+
+### 9.3 Recomendación
+
+**Parar en 95.** Los componentes gigantes son deuda real pero su refactor pertenece a un sprint dedicado de UX/refactor visual, no a un cleanup de mantenibilidad. Los demás warnings son limitaciones de la herramienta que no se pueden cerrar sin introducir bugs o adoptar APIs experimentales.
