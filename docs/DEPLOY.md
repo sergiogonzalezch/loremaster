@@ -103,18 +103,18 @@ docker exec -it loremaster-api python scripts/make_admin.py <username> --force
 
 ### Configuración
 
-- [ ] `SECRET_KEY` generada con `secrets.token_hex(32)` y guardada en secrets manager
+- [ ] `SECRET_KEY` generada con `secrets.token_hex(32)` y añadida a `.env.production`
 - [ ] `ALLOWED_ORIGINS` contiene el dominio real (ej. `http://localhost` en demo local)
 - [ ] `STORAGE_BASE_URL=http://localhost/media` (o dominio real en producción)
-- [ ] `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` definidas
-- [ ] `COOKIE_SECURE=true` (ya en `docker-compose.prod.yml`)
+- [ ] `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` definidas en `.env.production`
+- [x] `COOKIE_SECURE=true` — ya hardcodeado en `docker-compose.prod.yml`
 - [ ] `RATE_LIMIT_ENABLED=false` para demo, `true` para producción real
 - [ ] `LLAMA_GUARD_ENABLED=false` por defecto — activar con `true` + `ollama pull llama-guard3:8b` si se quiere moderación semántica (añade ~400-900 ms por respuesta)
 
 ### Base de datos
 
-- [ ] Las migraciones Alembic corren automáticamente en startup — verificar logs del contenedor `loremaster-api`
-- [ ] Si las migraciones fallan: `docker logs loremaster-api | grep alembic`
+- [x] Migraciones Alembic configuradas para correr automáticamente en startup (`lifespan.py`)
+- [ ] Verificar en el primer arranque: `docker logs loremaster-api | grep alembic`
 
 ### Infraestructura
 
@@ -125,10 +125,12 @@ docker exec -it loremaster-api python scripts/make_admin.py <username> --force
 
 ### Pendientes (bloquean producción real, no demo privada)
 
-- [ ] **Clerk** — código completo en main (`auth_clerk.py`, `clerk.py`, 6 tests); descomentar en compose y añadir `CLERK_JWKS_URL` + `CLERK_AUDIENCE` en `.env.production`
-- [ ] **Storage S3/R2 real** — ✅ ya implementado en código (`core/storage/s3_client.py` con boto3). Para cloud: añadir `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_ENDPOINT_URL` y `STORAGE_BASE_URL=https://tu-dominio.com/media` en `.env.production`
-- [ ] **TLS/HTTPS** — Nginx actualmente solo `listen 80`; añadir certificado SSL (Let's Encrypt / certbot) y redirect 80→443
-- [ ] **GPU cloud** — actualmente ComfyUI on-premise vía `host.docker.internal`; `runpod_client.py` no existe
+| Item | Código | Configuración |
+|---|---|---|
+| **Clerk auth** | ✅ `auth_clerk.py`, `clerk.py`, 6 tests en main | ❌ Descomentar `CLERK_JWKS_URL` + `CLERK_AUDIENCE` en compose y `.env.production` |
+| **Storage S3/R2 real** | ✅ `core/storage/s3_client.py` con boto3 | ❌ Añadir `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_ENDPOINT_URL` reales en `.env.production` |
+| **TLS/HTTPS** | ❌ Nginx solo `listen 80` | ❌ Certificado SSL (Let's Encrypt / certbot) + redirect 80→443 en `nginx.conf` |
+| **GPU cloud** | ❌ `runpod_client.py` no existe | ❌ `RUNPOD_API_KEY` + `RUNPOD_ENDPOINT_ID` pendientes de decisión |
 
 ### Seguridad (código)
 
