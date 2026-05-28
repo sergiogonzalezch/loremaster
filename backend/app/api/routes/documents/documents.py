@@ -104,7 +104,7 @@ async def ingest(
             status_code=500,
             detail="Error interno del servidor.",
         ) from e
-    background_tasks.add_task(process_ingest_background, session, document, text)
+    background_tasks.add_task(process_ingest_background, session.bind, document.id, text)
     return document
 
 
@@ -189,7 +189,7 @@ async def retry_ingest(
             status_code=500,
             detail="Error interno del servidor.",
         ) from e
-    background_tasks.add_task(process_ingest_background, session, document, text)
+    background_tasks.add_task(process_ingest_background, session.bind, document.id, text)
     return document
 
 

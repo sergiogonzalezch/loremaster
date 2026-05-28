@@ -2,6 +2,16 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
+    <!--
+      CSP base para la build estática (CDN/S3). Cubre los vectores más críticos
+      sin depender del deployment. Las directivas completas (frame-ancestors,
+      connect-src, script-src) son aplicadas por SecurityHeadersMiddleware del
+      backend cuando la app se sirve a través de FastAPI.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="object-src 'none'; base-uri 'self'; form-action 'self';"
+    />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LoreMaster</title>

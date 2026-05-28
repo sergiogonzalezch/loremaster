@@ -20,6 +20,20 @@ export function trimStringValues<T extends object>(obj: T): T {
 }
 
 /**
+ * Hostnames adicionales permitidos para imágenes, leídos una vez al iniciar.
+ *
+ * Configúralo cuando el backend sirva imágenes desde un dominio externo
+ * (S3, R2, Floci, CDN). Ejemplo en .env:
+ *   VITE_MEDIA_HOST=pub-abc123.r2.dev,cdn.example.com
+ */
+const _EXTRA_MEDIA_HOSTNAMES: Set<string> = new Set(
+  ((import.meta.env.VITE_MEDIA_HOST ?? "") as string)
+    .split(",")
+    .map((h) => h.trim().toLowerCase())
+    .filter(Boolean),
+);
+
+/**
  * Valida que una URL de imagen sea segura para renderizar.
  *
  * Implementa la protección L-9: validar origen de URLs de imágenes
@@ -31,6 +45,7 @@ export function trimStringValues<T extends object>(obj: T): T {
  * - Blob URLs (blob:...): permitidas (generadas localmente)
  * - localhost / 127.0.0.1: permitidas (desarrollo)
  * - Mismo hostname que la página: permitido
+ * - Hostnames extra definidos en VITE_MEDIA_HOST: permitidos (CDN/S3)
  * - Cualquier otro origen: rechazado
  *
  * @param url - URL de la imagen a validar
@@ -62,12 +77,13 @@ export function isImageUrlAllowed(url: string | null | undefined): boolean {
     const parsed = new URL(trimmed);
     const hostname = parsed.hostname.toLowerCase();
 
-    // Permitir localhost (desarrollo) y mismos dominios
+    // Permitir localhost (desarrollo), mismo dominio y hostnames de CDN/S3 configurados
     if (
       hostname === "localhost" ||
       hostname === "127.0.0.1" ||
       hostname.endsWith(".localhost") ||
-      hostname === window.location.hostname
+      hostname === window.location.hostname ||
+      _EXTRA_MEDIA_HOSTNAMES.has(hostname)
     ) {
       return true;
     }

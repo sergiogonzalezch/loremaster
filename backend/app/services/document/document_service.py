@@ -7,6 +7,7 @@ import re
 from dataclasses import dataclass
 
 from fastapi import UploadFile
+from sqlalchemy import Engine
 from sqlmodel import Session, select
 
 from app.core.api.params import DateRangeParams, PaginationParams
@@ -148,37 +149,45 @@ async def ingest_document_service(
     return document, extracted_text
 
 
-def process_ingest_background(session: Session, document: Document, text: str) -> None:
+def process_ingest_background(engine: Engine, document_id: str, text: str) -> None:
     """Procesa la indexación vectorial de un documento en segundo plano.
+
+    Abre una sesión propia para evitar compartir la sesión del request HTTP
+    que ya puede haber cerrado al regresar 202 Accepted.
 
     Divide el texto en chunks, los embeddea y los almacena en Qdrant.
     Actualiza el estado del documento a 'completed' o 'failed'.
 
     Args:
-        session: Sesión de base de datos activa.
-        document: Instancia del documento a indexar.
+        engine: Motor SQLAlchemy desde el que abrir la sesión.
+        document_id: ID del documento a indexar.
         text: Texto extraído del documento.
 
     """
-    try:
-        chunk_count = ingest_chunks(
-            doc_id=document.id,
-            collection_id=document.collection_id,
-            text=text,
-        )
-        document.status = DocumentStatus.completed
-        document.chunk_count = chunk_count
-        document.processing_error = None
-    except Exception as e:
-        logger.exception(
-            "Background ingest failed for '%s'",
-            _sanitize_for_log(document.filename),
-        )
-        document.status = DocumentStatus.failed
-        document.processing_error = str(e)
-    session.add(document)
-    db_commit(session, f"process_ingest_background({document.id})")
-    logger.info("Document %s finished with status=%s", document.id, document.status)
+    with Session(engine) as session:
+        document = session.get(Document, document_id)
+        if not document:
+            logger.error("Background ingest: document %s not found", document_id)
+            return
+        try:
+            chunk_count = ingest_chunks(
+                doc_id=document.id,
+                collection_id=document.collection_id,
+                text=text,
+            )
+            document.status = DocumentStatus.completed
+            document.chunk_count = chunk_count
+            document.processing_error = None
+        except Exception as e:  # noqa: BLE001
+            logger.exception(
+                "Background ingest failed for '%s'",
+                _sanitize_for_log(document.filename),
+            )
+            document.status = DocumentStatus.failed
+            document.processing_error = str(e)
+        session.add(document)
+        db_commit(session, f"process_ingest_background({document.id})")
+        logger.info("Document %s finished with status=%s", document.id, document.status)
 
 
 def list_documents_service(
