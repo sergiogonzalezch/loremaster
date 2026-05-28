@@ -44,7 +44,10 @@ type FiltersAction =
   | { type: "SET_ORDER"; value: "asc" | "desc" }
   | { type: "RESET" };
 
-const filtersReducer: Reducer<FiltersState, FiltersAction> = (state, action) => {
+const filtersReducer: Reducer<FiltersState, FiltersAction> = (
+  state,
+  action,
+) => {
   switch (action.type) {
     case "SET_NAME":
       return { ...state, name: action.value };
@@ -69,8 +72,14 @@ type ListState = {
 type ListAction =
   | { type: "FETCH_START" }
   | { type: "FETCH_SUCCESS"; collections: Collection[]; totalPages: number }
-  | { type: "FETCH_ERROR"; error: { variant: "warning" | "danger"; text: string } }
-  | { type: "SHOW_ERROR"; error: { variant: "warning" | "danger"; text: string } }
+  | {
+      type: "FETCH_ERROR";
+      error: { variant: "warning" | "danger"; text: string };
+    }
+  | {
+      type: "SHOW_ERROR";
+      error: { variant: "warning" | "danger"; text: string };
+    }
   | { type: "DISMISS_ERROR" };
 
 const listReducer: Reducer<ListState, ListAction> = (state, action) => {
@@ -124,11 +133,20 @@ const bulkReducer: Reducer<BulkState, BulkAction> = (state, action) => {
     case "DELETE_START":
       return { ...state, bulkDeleting: true };
     case "DELETE_DONE":
-      return { selectedIds: new Set(), bulkDeleting: false, showBulkConfirm: false };
+      return {
+        selectedIds: new Set(),
+        bulkDeleting: false,
+        showBulkConfirm: false,
+      };
   }
 };
 
-type CreateState = { show: boolean; name: string; description: string; creating: boolean };
+type CreateState = {
+  show: boolean;
+  name: string;
+  description: string;
+  creating: boolean;
+};
 type CreateAction =
   | { type: "OPEN" }
   | { type: "CLOSE" }
@@ -154,7 +172,12 @@ const createReducer: Reducer<CreateState, CreateAction> = (state, action) => {
   }
 };
 
-type EditState = { target: Collection | null; name: string; description: string; editing: boolean };
+type EditState = {
+  target: Collection | null;
+  name: string;
+  description: string;
+  editing: boolean;
+};
 type EditAction =
   | { type: "OPEN"; target: Collection }
   | { type: "CLOSE" }
@@ -295,7 +318,15 @@ export default function CollectionsPage() {
         });
       }
     },
-    [page, pageSize, debouncedName, createdAfter, createdBefore, order, setParam],
+    [
+      page,
+      pageSize,
+      debouncedName,
+      createdAfter,
+      createdBefore,
+      order,
+      setParam,
+    ],
   );
 
   const deleteConfirm = useDeleteConfirm<Collection>({
@@ -344,7 +375,10 @@ export default function CollectionsPage() {
     } catch (e) {
       dispatchList({
         type: "SHOW_ERROR",
-        error: parseApiError(e, "Error al eliminar las colecciones seleccionadas"),
+        error: parseApiError(
+          e,
+          "Error al eliminar las colecciones seleccionadas",
+        ),
       });
       dispatchBulk({ type: "DELETE_DONE" });
     }
@@ -405,7 +439,10 @@ export default function CollectionsPage() {
               Eliminar seleccionadas ({bulk.selectedIds.size})
             </Button>
           )}
-          <Button variant="warning" onClick={() => dispatchCreate({ type: "OPEN" })}>
+          <Button
+            variant="warning"
+            onClick={() => dispatchCreate({ type: "OPEN" })}
+          >
             + Nueva colección
           </Button>
         </div>
@@ -445,7 +482,10 @@ export default function CollectionsPage() {
                 type="date"
                 value={createdBefore}
                 onChange={(e) => {
-                  dispatchFilters({ type: "SET_BEFORE", value: e.target.value });
+                  dispatchFilters({
+                    type: "SET_BEFORE",
+                    value: e.target.value,
+                  });
                   setParam({
                     page: "1",
                     created_before: e.target.value || null,
@@ -679,7 +719,10 @@ export default function CollectionsPage() {
                 rows={3}
                 value={edit.description}
                 onChange={(e) =>
-                  dispatchEdit({ type: "SET_DESCRIPTION", value: e.target.value })
+                  dispatchEdit({
+                    type: "SET_DESCRIPTION",
+                    value: e.target.value,
+                  })
                 }
               />
             </Form.Group>
@@ -732,7 +775,10 @@ export default function CollectionsPage() {
                 rows={3}
                 value={create.description}
                 onChange={(e) =>
-                  dispatchCreate({ type: "SET_DESCRIPTION", value: e.target.value })
+                  dispatchCreate({
+                    type: "SET_DESCRIPTION",
+                    value: e.target.value,
+                  })
                 }
                 placeholder="Descripción opcional"
               />

@@ -50,7 +50,10 @@ type FiltersAction =
   | { type: "SET_PAGE_SIZE"; value: number }
   | { type: "SET_TOTAL_PAGES"; value: number };
 
-const filtersReducer: Reducer<FiltersState, FiltersAction> = (state, action) => {
+const filtersReducer: Reducer<FiltersState, FiltersAction> = (
+  state,
+  action,
+) => {
   switch (action.type) {
     case "SET_NAME":
       return { ...state, nameFilter: action.value, page: 1 };
@@ -101,7 +104,12 @@ const bulkReducer: Reducer<BulkState, BulkAction> = (state, action) => {
     case "DELETE_START":
       return { ...state, bulkDeleting: true };
     case "DELETE_DONE":
-      return { ...state, bulkDeleting: false, selectedIds: new Set(), showBulkConfirm: false };
+      return {
+        ...state,
+        bulkDeleting: false,
+        selectedIds: new Set(),
+        showBulkConfirm: false,
+      };
   }
 };
 
@@ -118,7 +126,11 @@ type CreateAction =
   | { type: "SUBMIT_START" }
   | { type: "SUBMIT_DONE" };
 
-const initialForm: CreateEntityRequest = { type: "character", name: "", description: "" };
+const initialForm: CreateEntityRequest = {
+  type: "character",
+  name: "",
+  description: "",
+};
 
 const createReducer: Reducer<CreateState, CreateAction> = (state, action) => {
   switch (action.type) {
@@ -221,7 +233,9 @@ export default function EntitiesTab({ collectionId }: Props) {
       dispatchBulk({ type: "DELETE_DONE" });
       await fetchEntities();
     } catch (e) {
-      setError(parseApiError(e, "Error al eliminar las entidades seleccionadas"));
+      setError(
+        parseApiError(e, "Error al eliminar las entidades seleccionadas"),
+      );
       dispatchBulk({ type: "DELETE_DONE" });
     }
   }
@@ -300,7 +314,10 @@ export default function EntitiesTab({ collectionId }: Props) {
             </Button>
           )}
         </div>
-        <Button variant="warning" onClick={() => dispatchCreate({ type: "OPEN" })}>
+        <Button
+          variant="warning"
+          onClick={() => dispatchCreate({ type: "OPEN" })}
+        >
           + Nueva entidad
         </Button>
       </div>
@@ -460,7 +477,10 @@ export default function EntitiesTab({ collectionId }: Props) {
                 type="text"
                 value={create.form.name}
                 onChange={(e) =>
-                  dispatchCreate({ type: "FIELD", patch: { name: e.target.value } })
+                  dispatchCreate({
+                    type: "FIELD",
+                    patch: { name: e.target.value },
+                  })
                 }
                 placeholder="Nombre de la entidad"
                 required

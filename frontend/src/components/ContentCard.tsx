@@ -212,7 +212,9 @@ export default function ContentCard({
               eventKey="content"
               className="lm-content-accordion-item"
             >
-              <Accordion.Header onClick={() => dispatchUI({ type: "TOGGLE_EXPAND" })}>
+              <Accordion.Header
+                onClick={() => dispatchUI({ type: "TOGGLE_EXPAND" })}
+              >
                 <div className="d-flex justify-content-between align-items-center w-100 me-2">
                   <div className="d-flex flex-column gap-1">
                     <div className="d-flex align-items-center gap-2">

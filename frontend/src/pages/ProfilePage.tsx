@@ -346,7 +346,10 @@ export default function ProfilePage() {
                     type="text"
                     value={displayName}
                     onChange={(e) =>
-                      dispatchForm({ type: "SET_DISPLAY", value: e.target.value })
+                      dispatchForm({
+                        type: "SET_DISPLAY",
+                        value: e.target.value,
+                      })
                     }
                     placeholder="Tu nombre o alias"
                     maxLength={100}

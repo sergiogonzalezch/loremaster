@@ -101,7 +101,10 @@ type HistoryAction =
   | { type: "LOAD_ERROR" }
   | { type: "SET"; generations: ImageGenerationItem[] };
 
-const historyReducer: Reducer<HistoryState, HistoryAction> = (state, action) => {
+const historyReducer: Reducer<HistoryState, HistoryAction> = (
+  state,
+  action,
+) => {
   switch (action.type) {
     case "LOAD_START":
       return { ...state, loading: true };
@@ -313,19 +316,16 @@ export default function ImagePanel({
     [],
   );
 
-  const handleRegenFromHistory = useCallback(
-    (g: ImageGenerationItem) => {
-      dispatchGen({
-        type: "REUSE_FROM_HISTORY",
-        finalPrompt: g.final_prompt,
-        autoPrompt: g.auto_prompt,
-      });
-      setSeedBase(Math.floor(Math.random() * 999983) + 1);
-      dispatchModal({ type: "CLOSE" });
-      setActiveTab("generar");
-    },
-    [],
-  );
+  const handleRegenFromHistory = useCallback((g: ImageGenerationItem) => {
+    dispatchGen({
+      type: "REUSE_FROM_HISTORY",
+      finalPrompt: g.final_prompt,
+      autoPrompt: g.auto_prompt,
+    });
+    setSeedBase(Math.floor(Math.random() * 999983) + 1);
+    dispatchModal({ type: "CLOSE" });
+    setActiveTab("generar");
+  }, []);
 
   const handleShareImage = useCallback(
     async (g: ImageGenerationItem, img: ImageItem) => {
@@ -354,7 +354,11 @@ export default function ImagePanel({
     dispatchGen({ type: "BUILD_START" });
     setError(null);
     try {
-      const data = await buildPrompt(collectionId, entityId, confirmedContent.id);
+      const data = await buildPrompt(
+        collectionId,
+        entityId,
+        confirmedContent.id,
+      );
       dispatchGen({ type: "BUILD_SUCCESS", promptData: data });
     } catch (e) {
       dispatchGen({ type: "BUILD_ERROR" });
@@ -476,7 +480,10 @@ export default function ImagePanel({
                 rows={6}
                 value={gen.finalPrompt}
                 onChange={(e) =>
-                  dispatchGen({ type: "SET_FINAL_PROMPT", value: e.target.value })
+                  dispatchGen({
+                    type: "SET_FINAL_PROMPT",
+                    value: e.target.value,
+                  })
                 }
                 disabled={gen.generating}
                 placeholder="Edita el prompt si deseas..."
@@ -595,8 +602,9 @@ export default function ImagePanel({
                   {g.batch_size}
                 </Badge>
                 <Badge bg="info">
-                  {CATEGORY_LABELS[g.category as keyof typeof CATEGORY_LABELS] ||
-                    g.category}
+                  {CATEGORY_LABELS[
+                    g.category as keyof typeof CATEGORY_LABELS
+                  ] || g.category}
                 </Badge>
                 <small className="text-muted ms-2">
                   {formatDate(g.created_at)}
@@ -712,7 +720,10 @@ export default function ImagePanel({
                 }
                 size="sm"
                 onClick={() =>
-                  handleShareImage(imageModal.selectedGen!, imageModal.selectedImage!)
+                  handleShareImage(
+                    imageModal.selectedGen!,
+                    imageModal.selectedImage!,
+                  )
                 }
                 disabled={imageModal.sharing}
                 title={

@@ -38,7 +38,12 @@ const listReducer: Reducer<ListState, ListAction> = (state, action) => {
     case "FETCH_START":
       return { ...state, loading: true, error: null };
     case "FETCH_SUCCESS":
-      return { users: action.users, total: action.total, loading: false, error: null };
+      return {
+        users: action.users,
+        total: action.total,
+        loading: false,
+        error: null,
+      };
     case "FETCH_ERROR":
       return { ...state, loading: false, error: action.error };
     case "DISMISS_ERROR":
@@ -98,7 +103,11 @@ export default function AdminPage() {
     dispatchList({ type: "FETCH_START" });
     try {
       const res = await getAdminUsers({ page, page_size: PAGE_SIZE });
-      dispatchList({ type: "FETCH_SUCCESS", users: res.data, total: res.meta.total });
+      dispatchList({
+        type: "FETCH_SUCCESS",
+        users: res.data,
+        total: res.meta.total,
+      });
     } catch (e) {
       dispatchList({ type: "FETCH_ERROR", error: parseApiError(e).text });
     }
@@ -279,7 +288,9 @@ export default function AdminPage() {
                         <Button
                           variant="outline-danger"
                           size="sm"
-                          onClick={() => dispatchDel({ type: "OPEN", target: u })}
+                          onClick={() =>
+                            dispatchDel({ type: "OPEN", target: u })
+                          }
                         >
                           Eliminar
                         </Button>

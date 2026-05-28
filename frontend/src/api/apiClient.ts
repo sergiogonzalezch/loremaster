@@ -125,8 +125,11 @@ export async function apiFetch<T>(
       let message = "Usuario o contraseña incorrectos.";
       try {
         const body = await response.json();
-        if (typeof body?.detail === "string" && body.detail.trim()) message = body.detail;
-      } catch { /* body no parseable */ }
+        if (typeof body?.detail === "string" && body.detail.trim())
+          message = body.detail;
+      } catch {
+        /* body no parseable */
+      }
       throw new ApiError(401, message);
     }
 

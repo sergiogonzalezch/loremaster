@@ -53,7 +53,10 @@ type FiltersAction =
   | { type: "SET_PAGE_SIZE"; value: number }
   | { type: "SET_TOTAL_PAGES"; value: number };
 
-function filtersReducer(state: FiltersState, action: FiltersAction): FiltersState {
+function filtersReducer(
+  state: FiltersState,
+  action: FiltersAction,
+): FiltersState {
   switch (action.type) {
     case "SET_FILENAME":
       return { ...state, filename: action.value, page: 1 };
@@ -90,22 +93,40 @@ type UploadAction =
   | { type: "DISMISS_MSG" }
   | { type: "RETRY_START"; id: string; movedDoc: Document }
   | { type: "RETRY_END"; id: string }
-  | { type: "PROCESSING_DONE"; completedIds: string[]; failedIds: string[]; msg: UploadMsg };
+  | {
+      type: "PROCESSING_DONE";
+      completedIds: string[];
+      failedIds: string[];
+      msg: UploadMsg;
+    };
 
 function uploadReducer(state: UploadState, action: UploadAction): UploadState {
   switch (action.type) {
     case "UPLOAD_START":
-      return { ...state, uploading: true, selectedFileName: action.filename, uploadMsg: null };
+      return {
+        ...state,
+        uploading: true,
+        selectedFileName: action.filename,
+        uploadMsg: null,
+      };
     case "UPLOAD_SUCCESS":
       return {
         ...state,
         uploading: false,
         selectedFileName: "",
         processingDocs: [action.doc, ...state.processingDocs],
-        uploadMsg: { type: "secondary", text: `"${action.filename}" subido. Procesando...` },
+        uploadMsg: {
+          type: "secondary",
+          text: `"${action.filename}" subido. Procesando...`,
+        },
       };
     case "UPLOAD_ERROR":
-      return { ...state, uploading: false, selectedFileName: "", uploadMsg: action.msg };
+      return {
+        ...state,
+        uploading: false,
+        selectedFileName: "",
+        uploadMsg: action.msg,
+      };
     case "DISMISS_MSG":
       return { ...state, uploadMsg: null };
     case "RETRY_START":
@@ -123,7 +144,9 @@ function uploadReducer(state: UploadState, action: UploadAction): UploadState {
       const done = [...action.completedIds, ...action.failedIds];
       return {
         ...state,
-        processingDocs: state.processingDocs.filter((d) => !done.includes(d.id)),
+        processingDocs: state.processingDocs.filter(
+          (d) => !done.includes(d.id),
+        ),
         uploadMsg: action.msg,
       };
     }
@@ -150,13 +173,21 @@ function detailReducer(state: DetailState, action: DetailAction): DetailState {
     case "OPEN_START":
       return { ...state, loadingDocumentDetail: true, documentContent: null };
     case "OPEN_SUCCESS":
-      return { ...state, loadingDocumentDetail: false, selectedDocument: action.doc };
+      return {
+        ...state,
+        loadingDocumentDetail: false,
+        selectedDocument: action.doc,
+      };
     case "OPEN_ERROR":
       return { ...state, loadingDocumentDetail: false };
     case "CONTENT_LOADING":
       return { ...state, loadingContent: true };
     case "CONTENT_LOADED":
-      return { ...state, loadingContent: false, documentContent: action.content };
+      return {
+        ...state,
+        loadingContent: false,
+        documentContent: action.content,
+      };
     case "CLOSE":
       return {
         selectedDocument: null,
@@ -201,7 +232,12 @@ function bulkReducer(state: BulkState, action: BulkAction): BulkState {
     case "DELETE_START":
       return { ...state, bulkDeleting: true };
     case "DELETE_DONE":
-      return { ...state, bulkDeleting: false, selectedIds: new Set(), showBulkConfirm: false };
+      return {
+        ...state,
+        bulkDeleting: false,
+        selectedIds: new Set(),
+        showBulkConfirm: false,
+      };
   }
 }
 
@@ -275,7 +311,10 @@ export default function DocumentsTab({
           signal,
         );
         setDocuments(res.data);
-        dispatchFilters({ type: "SET_TOTAL_PAGES", value: res.meta.total_pages });
+        dispatchFilters({
+          type: "SET_TOTAL_PAGES",
+          value: res.meta.total_pages,
+        });
       } catch (e) {
         if (e instanceof ApiAbortError) return;
         setError(parseApiError(e, "Error al cargar documentos"));
@@ -321,7 +360,11 @@ export default function DocumentsTab({
       await Promise.allSettled(
         upload.processingDocs.map(async (d) => {
           try {
-            const updated = await getDocument(collectionId, d.id, controller.signal);
+            const updated = await getDocument(
+              collectionId,
+              d.id,
+              controller.signal,
+            );
             if (updated.status === "completed") justCompleted.push(d.id);
             else if (updated.status === "failed") justFailed.push(d.id);
           } catch {
@@ -332,9 +375,13 @@ export default function DocumentsTab({
       const allDone = [...justCompleted, ...justFailed];
       if (allDone.length === 0) return;
 
-      const doneDocs = upload.processingDocs.filter((d) => allDone.includes(d.id));
+      const doneDocs = upload.processingDocs.filter((d) =>
+        allDone.includes(d.id),
+      );
       const failedDocs = doneDocs.filter((d) => justFailed.includes(d.id));
-      const completedDocs = doneDocs.filter((d) => justCompleted.includes(d.id));
+      const completedDocs = doneDocs.filter((d) =>
+        justCompleted.includes(d.id),
+      );
 
       const msg: UploadMsg =
         failedDocs.length > 0
@@ -389,7 +436,9 @@ export default function DocumentsTab({
       await fetchDocuments();
       onDocumentsMutated();
     } catch (e) {
-      setError(parseApiError(e, "Error al eliminar los documentos seleccionados"));
+      setError(
+        parseApiError(e, "Error al eliminar los documentos seleccionados"),
+      );
       dispatchBulk({ type: "DELETE_DONE" });
     }
   }
@@ -400,7 +449,9 @@ export default function DocumentsTab({
       setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
       dispatchUpload({ type: "RETRY_START", id: doc.id, movedDoc: retried });
     } catch (err) {
-      setError(parseApiError(err, "Error al reintentar la ingestión del documento."));
+      setError(
+        parseApiError(err, "Error al reintentar la ingestión del documento."),
+      );
     } finally {
       dispatchUpload({ type: "RETRY_END", id: doc.id });
     }
@@ -412,7 +463,11 @@ export default function DocumentsTab({
     dispatchUpload({ type: "UPLOAD_START", filename: file.name });
     try {
       const uploaded = await uploadDocument(collectionId, file);
-      dispatchUpload({ type: "UPLOAD_SUCCESS", doc: uploaded, filename: file.name });
+      dispatchUpload({
+        type: "UPLOAD_SUCCESS",
+        doc: uploaded,
+        filename: file.name,
+      });
       onDocumentsMutated();
     } catch (err) {
       const { variant, text } = parseApiError(err, "Error al subir");
@@ -454,7 +509,10 @@ export default function DocumentsTab({
               <Form.Control
                 value={filename}
                 onChange={(e) =>
-                  dispatchFilters({ type: "SET_FILENAME", value: e.target.value })
+                  dispatchFilters({
+                    type: "SET_FILENAME",
+                    value: e.target.value,
+                  })
                 }
                 placeholder="Ej. worldbuilding.pdf"
               />
@@ -594,7 +652,9 @@ export default function DocumentsTab({
                   <Form.Check
                     type="checkbox"
                     checked={bulk.selectedIds.has(doc.id)}
-                    onChange={() => dispatchBulk({ type: "TOGGLE_ONE", id: doc.id })}
+                    onChange={() =>
+                      dispatchBulk({ type: "TOGGLE_ONE", id: doc.id })
+                    }
                     disabled={doc.status === "processing"}
                   />
                 </td>
@@ -633,9 +693,13 @@ export default function DocumentsTab({
                       size="sm"
                       className="me-2"
                       onClick={() => handleRetry(doc)}
-                      disabled={upload.retrying.has(doc.id) || deleteConfirm.deleting}
+                      disabled={
+                        upload.retrying.has(doc.id) || deleteConfirm.deleting
+                      }
                     >
-                      {upload.retrying.has(doc.id) ? "Reintentando…" : "Reintentar"}
+                      {upload.retrying.has(doc.id)
+                        ? "Reintentando…"
+                        : "Reintentar"}
                     </Button>
                   )}
                   <Button
@@ -718,7 +782,9 @@ export default function DocumentsTab({
                 </div>
                 <div className="col-auto">
                   <small className="text-muted d-block">Creado</small>
-                  <div>{formatDate(detail.selectedDocument.created_at, true)}</div>
+                  <div>
+                    {formatDate(detail.selectedDocument.created_at, true)}
+                  </div>
                 </div>
               </div>
               {detail.selectedDocument.processing_error && (

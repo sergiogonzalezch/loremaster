@@ -62,7 +62,8 @@ const authUIReducer: Reducer<AuthUIState, AuthUIAction> = (state, action) => {
         loading: false,
         error: action.error,
         failedAttempts: next,
-        retryAfter: next >= 2 ? Math.min(2 ** (next - 1), 30) : state.retryAfter,
+        retryAfter:
+          next >= 2 ? Math.min(2 ** (next - 1), 30) : state.retryAfter,
       };
     }
     case "REGISTER_OK":
