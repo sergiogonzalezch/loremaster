@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { Alert, Breadcrumb } from "react-bootstrap";
 import { getEntity } from "../api/entities";
 import { getCollection } from "../api/collections";
-import { generateContent } from "../api/contents";
+import { generateContent, getContents } from "../api/contents";
 import { getEntityCategories, getLimits } from "../api/metadata";
 import { ApiAbortError } from "../api/apiClient";
 import EntityContentsPanel from "../components/EntityContentsPanel";
@@ -208,7 +208,10 @@ export default function EntityDetailPage() {
     [collectionId, entityId],
   );
 
-  const refreshEntityQuiet = useCallback(async () => {
+  // Notificada por EntityContentsPanel tras cualquier acción de contenido
+  // (confirm/discard/edit/share/delete). Refresca la entity y dispara
+  // BUMP_REFRESH para que el efecto de pendingCount se re-ejecute.
+  const handleContentMutated = useCallback(async () => {
     if (!collectionId || !entityId) return;
     try {
       const ent = await getEntity(collectionId, entityId);
@@ -218,6 +221,7 @@ export default function EntityDetailPage() {
         // silent: la acción principal ya reporta errores
       }
     }
+    dispatchUI({ type: "BUMP_REFRESH" });
   }, [collectionId, entityId]);
 
   useEffect(() => {
@@ -241,9 +245,31 @@ export default function EntityDetailPage() {
     dispatchUI({ type: "SET_CATEGORY", category: cats[0] ?? "" });
   }, [currentEntityId, currentEntityType, categoryMap]);
 
-  const handlePendingCountChange = useCallback((count: number) => {
-    dispatchUI({ type: "SET_PENDING_COUNT", count });
-  }, []);
+  // El padre dueño del count: lo refresca cuando cambia la categoría o
+  // contentsRefreshTrigger (bumpeado tras generar/confirmar/descartar).
+  // Evita el anti-patrón prop-callback-in-effect.
+  useEffect(() => {
+    if (!collectionId || !entityId || !selectedCategory) {
+      dispatchUI({ type: "SET_PENDING_COUNT", count: 0 });
+      return;
+    }
+    const controller = new AbortController();
+    getContents(
+      collectionId,
+      entityId,
+      { category: selectedCategory, status: "pending", page: 1, page_size: 1 },
+      controller.signal,
+    )
+      .then((res) =>
+        dispatchUI({ type: "SET_PENDING_COUNT", count: res.meta.total }),
+      )
+      .catch((e) => {
+        if (!(e instanceof ApiAbortError)) {
+          dispatchUI({ type: "SET_PENDING_COUNT", count: 0 });
+        }
+      });
+    return () => controller.abort();
+  }, [collectionId, entityId, selectedCategory, contentsRefreshTrigger]);
 
   async function handleGenerateSubmit(
     queryText: string,
@@ -303,10 +329,8 @@ export default function EntityDetailPage() {
         collectionId={collectionId}
         entityId={entityId}
         availableCategories={availableCategories}
-        selectedCategory={selectedCategory}
         refreshTrigger={contentsRefreshTrigger}
-        onRefreshEntity={refreshEntityQuiet}
-        onPendingCountChange={handlePendingCountChange}
+        onContentMutated={handleContentMutated}
         onOpenImagePanel={(content) =>
           dispatchUI({ type: "OPEN_IMAGE_PANEL", content })
         }

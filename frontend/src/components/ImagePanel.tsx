@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback, useReducer } from "react";
 import {
   Offcanvas,
   Nav,
@@ -32,6 +32,98 @@ interface Props {
 }
 
 type ImageItem = ImageGenerationItem["images"][0];
+
+// ── Reducers ─────────────────────────────────────────────────────────────────
+
+type GenState = {
+  promptData: { auto_prompt: string; token_count: number } | null;
+  finalPrompt: string;
+  batchSize: number;
+  building: boolean;
+  generating: boolean;
+};
+
+type GenAction =
+  | { type: "BUILD_START" }
+  | {
+      type: "BUILD_SUCCESS";
+      promptData: { auto_prompt: string; token_count: number };
+    }
+  | { type: "BUILD_ERROR" }
+  | { type: "SET_FINAL_PROMPT"; value: string }
+  | { type: "SET_BATCH_SIZE"; value: number }
+  | { type: "GENERATE_START" }
+  | { type: "GENERATE_DONE" }
+  | { type: "REUSE_FROM_HISTORY"; finalPrompt: string; autoPrompt: string };
+
+function genReducer(state: GenState, action: GenAction): GenState {
+  switch (action.type) {
+    case "BUILD_START":
+      return { ...state, building: true };
+    case "BUILD_SUCCESS":
+      return {
+        ...state,
+        building: false,
+        promptData: action.promptData,
+        finalPrompt: action.promptData.auto_prompt,
+      };
+    case "BUILD_ERROR":
+      return { ...state, building: false };
+    case "SET_FINAL_PROMPT":
+      return { ...state, finalPrompt: action.value };
+    case "SET_BATCH_SIZE":
+      return { ...state, batchSize: action.value };
+    case "GENERATE_START":
+      return { ...state, generating: true };
+    case "GENERATE_DONE":
+      return { ...state, generating: false };
+    case "REUSE_FROM_HISTORY":
+      return {
+        ...state,
+        finalPrompt: action.finalPrompt,
+        promptData: {
+          auto_prompt: action.autoPrompt,
+          token_count: Math.ceil(action.finalPrompt.length / 4),
+        },
+      };
+  }
+}
+
+type ModalState = {
+  show: boolean;
+  selectedImage: ImageItem | null;
+  selectedGen: ImageGenerationItem | null;
+  sharing: boolean;
+};
+
+type ModalAction =
+  | { type: "OPEN"; image: ImageItem; gen: ImageGenerationItem }
+  | { type: "CLOSE" }
+  | { type: "SHARE_START" }
+  | { type: "SHARE_DONE"; updatedImage: ImageItem }
+  | { type: "SHARE_ERROR" };
+
+function modalReducer(state: ModalState, action: ModalAction): ModalState {
+  switch (action.type) {
+    case "OPEN":
+      return {
+        show: true,
+        selectedImage: action.image,
+        selectedGen: action.gen,
+        sharing: false,
+      };
+    case "CLOSE":
+      return { ...state, show: false };
+    case "SHARE_START":
+      return { ...state, sharing: true };
+    case "SHARE_DONE":
+      return { ...state, sharing: false, selectedImage: action.updatedImage };
+    case "SHARE_ERROR":
+      return { ...state, sharing: false };
+  }
+}
+
+// ── Sub-componente ────────────────────────────────────────────────────────────
 
 function ImageGrid({
   gen,
@@ -109,6 +201,8 @@ function ImageGrid({
   );
 }
 
+// ── Componente principal ──────────────────────────────────────────────────────
+
 export default function ImagePanel({
   collectionId,
   entityId,
@@ -117,39 +211,38 @@ export default function ImagePanel({
   onGenerated,
   initialContent,
 }: Props) {
+  const confirmedContent = initialContent ?? null;
+
   const [activeTab, setActiveTab] = useState<"generar" | "historial">(
     "generar",
   );
-  const confirmedContent = initialContent ?? null;
-  const [promptData, setPromptData] = useState<{
-    auto_prompt: string;
-    token_count: number;
-  } | null>(null);
-  const [finalPrompt, setFinalPrompt] = useState("");
-  const [batchSize, setBatchSize] = useState(4);
-  const [building, setBuilding] = useState(false);
-  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generations, setGenerations] = useState<ImageGenerationItem[]>([]);
   const [loadingGenerations, setLoadingGenerations] = useState(false);
   const [seedBase, setSeedBase] = useState(
     () => Math.floor(Math.random() * 999983) + 1,
   );
-  const [showModal, setShowModal] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<ImageItem | null>(null);
-  const [selectedGenForModal, setSelectedGenForModal] =
-    useState<ImageGenerationItem | null>(null);
-  const [sharing, setSharing] = useState(false);
 
-  useEffect(() => {
-    if (!show) setError(null);
-  }, [show]);
+  const [gen, dispatchGen] = useReducer(genReducer, {
+    promptData: null,
+    finalPrompt: "",
+    batchSize: 4,
+    building: false,
+    generating: false,
+  });
+
+  const [imageModal, dispatchModal] = useReducer(modalReducer, {
+    show: false,
+    selectedImage: null,
+    selectedGen: null,
+    sharing: false,
+  });
 
   const fetchData = useCallback(async () => {
     setLoadingGenerations(true);
     try {
-      const generationsRes = await listImageGenerations(collectionId, entityId);
-      setGenerations(generationsRes.generations);
+      const res = await listImageGenerations(collectionId, entityId);
+      setGenerations(res.generations);
     } catch {
       setError("Error al cargar historial");
     } finally {
@@ -157,32 +250,33 @@ export default function ImagePanel({
     }
   }, [collectionId, entityId]);
 
-  useEffect(() => {
-    if (show) {
-      fetchData();
-    }
-  }, [show, fetchData]);
+  // Se invoca cuando el Offcanvas termina de abrirse — sin efecto reactivo
+  const handleShow = useCallback(() => {
+    void fetchData();
+  }, [fetchData]);
 
-  const closeModal = useCallback(() => setShowModal(false), []);
+  // Se invoca al cerrar — limpia error sin efecto
+  const handleHide = useCallback(() => {
+    setError(null);
+    onHide();
+  }, [onHide]);
 
   const handleDeleteImage = useCallback(
     async (generationId: string, imageId: string) => {
       try {
         await deleteImage(collectionId, entityId, generationId, imageId);
-        closeModal();
+        dispatchModal({ type: "CLOSE" });
         await fetchData();
       } catch (e) {
         setError(getErrorMessage(e, "Error al eliminar imagen"));
       }
     },
-    [collectionId, entityId, fetchData, closeModal],
+    [collectionId, entityId, fetchData],
   );
 
   const handleSelectImage = useCallback(
-    (gen: ImageGenerationItem, img: ImageItem) => {
-      setSelectedGenForModal(gen);
-      setSelectedImage(img);
-      setShowModal(true);
+    (g: ImageGenerationItem, img: ImageItem) => {
+      dispatchModal({ type: "OPEN", image: img, gen: g });
     },
     [],
   );
@@ -193,38 +287,31 @@ export default function ImagePanel({
   );
 
   const handleRegenFromHistory = useCallback(
-    (gen: ImageGenerationItem) => {
-      setFinalPrompt(gen.final_prompt);
-      setPromptData({
-        auto_prompt: gen.auto_prompt,
-        token_count: Math.ceil(gen.final_prompt.length / 4),
+    (g: ImageGenerationItem) => {
+      dispatchGen({
+        type: "REUSE_FROM_HISTORY",
+        finalPrompt: g.final_prompt,
+        autoPrompt: g.auto_prompt,
       });
       setSeedBase(Math.floor(Math.random() * 999983) + 1);
-      closeModal();
+      dispatchModal({ type: "CLOSE" });
       setActiveTab("generar");
     },
-    [closeModal],
+    [],
   );
 
   const handleShareImage = useCallback(
-    async (gen: ImageGenerationItem, img: ImageItem) => {
-      setSharing(true);
+    async (g: ImageGenerationItem, img: ImageItem) => {
+      dispatchModal({ type: "SHARE_START" });
       try {
-        const updated = await shareImage(
-          collectionId,
-          entityId,
-          gen.id,
-          img.id,
-          {
-            shared: !img.is_shared,
-          },
-        );
-        setSelectedImage(updated);
+        const updated = await shareImage(collectionId, entityId, g.id, img.id, {
+          shared: !img.is_shared,
+        });
+        dispatchModal({ type: "SHARE_DONE", updatedImage: updated });
         await fetchData();
       } catch (e) {
+        dispatchModal({ type: "SHARE_ERROR" });
         setError(getErrorMessage(e, "Error al cambiar la visibilidad"));
-      } finally {
-        setSharing(false);
       }
     },
     [collectionId, entityId, fetchData],
@@ -237,37 +324,27 @@ export default function ImagePanel({
 
   const handleBuildPrompt = useCallback(async () => {
     if (!confirmedContent) return;
-    setBuilding(true);
+    dispatchGen({ type: "BUILD_START" });
     setError(null);
     try {
-      const data = await buildPrompt(
-        collectionId,
-        entityId,
-        confirmedContent.id,
-      );
-      setPromptData(data);
-      setFinalPrompt(data.auto_prompt);
+      const data = await buildPrompt(collectionId, entityId, confirmedContent.id);
+      dispatchGen({ type: "BUILD_SUCCESS", promptData: data });
     } catch (e) {
+      dispatchGen({ type: "BUILD_ERROR" });
       setError(getErrorMessage(e, "Error al construir prompt"));
-    } finally {
-      setBuilding(false);
     }
   }, [collectionId, entityId, confirmedContent]);
 
-  const handleRegenerate = useCallback(async () => {
-    await handleBuildPrompt();
-  }, [handleBuildPrompt]);
-
   const handleGenerate = useCallback(async () => {
-    if (!finalPrompt.trim() || !confirmedContent) return;
-    setGenerating(true);
+    if (!gen.finalPrompt.trim() || !confirmedContent) return;
+    dispatchGen({ type: "GENERATE_START" });
     setError(null);
     try {
       await generateImages(collectionId, entityId, {
         content_id: confirmedContent.id,
-        auto_prompt: promptData?.auto_prompt || finalPrompt,
-        final_prompt: finalPrompt.trim(),
-        batch_size: batchSize,
+        auto_prompt: gen.promptData?.auto_prompt || gen.finalPrompt,
+        final_prompt: gen.finalPrompt.trim(),
+        batch_size: gen.batchSize,
         seed_base: seedBase,
       });
       onGenerated();
@@ -278,22 +355,18 @@ export default function ImagePanel({
     } catch (e) {
       setError(getErrorMessage(e, "Error al generar imágenes"));
     } finally {
-      setGenerating(false);
+      dispatchGen({ type: "GENERATE_DONE" });
     }
   }, [
     collectionId,
     entityId,
-    finalPrompt,
-    batchSize,
+    gen.finalPrompt,
+    gen.batchSize,
+    gen.promptData,
     seedBase,
     confirmedContent,
     onGenerated,
-    promptData,
   ]);
-
-  const handleTabChange = (tab: "generar" | "historial") => {
-    setActiveTab(tab);
-  };
 
   const renderGenerarTab = () => {
     if (!confirmedContent) {
@@ -337,25 +410,25 @@ export default function ImagePanel({
           <Button
             variant="outline-primary"
             onClick={handleBuildPrompt}
-            disabled={!!promptData || building || generating}
+            disabled={!!gen.promptData || gen.building || gen.generating}
             className="flex-grow-1"
           >
-            {building ? (
+            {gen.building ? (
               <>
                 <Spinner animation="border" size="sm" className="me-1" />
                 Construyendo…
               </>
-            ) : promptData ? (
+            ) : gen.promptData ? (
               "Listo"
             ) : (
               "Crear prompt visual"
             )}
           </Button>
-          {promptData && (
+          {gen.promptData && (
             <Button
               variant="outline-secondary"
-              onClick={handleRegenerate}
-              disabled={building || generating}
+              onClick={handleBuildPrompt}
+              disabled={gen.building || gen.generating}
               size="sm"
             >
               ↻ Nuevo auto-prompt
@@ -363,10 +436,10 @@ export default function ImagePanel({
           )}
         </div>
 
-        {promptData && (
+        {gen.promptData && (
           <>
             <div className="text-muted small">
-              {promptData.token_count} tokens
+              {gen.promptData.token_count} tokens
             </div>
 
             <Form.Group>
@@ -374,9 +447,11 @@ export default function ImagePanel({
               <Form.Control
                 as="textarea"
                 rows={6}
-                value={finalPrompt}
-                onChange={(e) => setFinalPrompt(e.target.value)}
-                disabled={generating}
+                value={gen.finalPrompt}
+                onChange={(e) =>
+                  dispatchGen({ type: "SET_FINAL_PROMPT", value: e.target.value })
+                }
+                disabled={gen.generating}
                 placeholder="Edita el prompt si deseas..."
                 className="lm-input"
               />
@@ -388,9 +463,14 @@ export default function ImagePanel({
                   Imágenes:
                 </Form.Label>
                 <Form.Select
-                  value={batchSize}
-                  onChange={(e) => setBatchSize(Number(e.target.value))}
-                  disabled={generating}
+                  value={gen.batchSize}
+                  onChange={(e) =>
+                    dispatchGen({
+                      type: "SET_BATCH_SIZE",
+                      value: Number(e.target.value),
+                    })
+                  }
+                  disabled={gen.generating}
                   className="lm-select"
                   style={{ width: "auto" }}
                   size="sm"
@@ -408,7 +488,7 @@ export default function ImagePanel({
                   type="number"
                   value={seedBase}
                   onChange={(e) => setSeedBase(Number(e.target.value))}
-                  disabled={generating}
+                  disabled={gen.generating}
                   size="sm"
                   style={{ width: 120 }}
                 />
@@ -416,7 +496,7 @@ export default function ImagePanel({
                   variant="outline-secondary"
                   size="sm"
                   onClick={randomizeSeedBase}
-                  disabled={generating}
+                  disabled={gen.generating}
                   title="Seed aleatorio"
                 >
                   🎲
@@ -427,16 +507,16 @@ export default function ImagePanel({
             <Button
               variant="primary"
               onClick={handleGenerate}
-              disabled={generating || !finalPrompt.trim()}
+              disabled={gen.generating || !gen.finalPrompt.trim()}
               className="lm-btn"
             >
-              {generating ? (
+              {gen.generating ? (
                 <>
                   <Spinner animation="border" size="sm" className="me-2" />
                   Generando…
                 </>
               ) : (
-                `Generar ${batchSize} imagen${batchSize > 1 ? "es" : ""}`
+                `Generar ${gen.batchSize} imagen${gen.batchSize > 1 ? "es" : ""}`
               )}
             </Button>
           </>
@@ -480,25 +560,24 @@ export default function ImagePanel({
         className="d-flex flex-column gap-3"
         style={{ maxHeight: "calc(100vh - 220px)", overflowY: "auto" }}
       >
-        {generations.map((gen) => (
-          <div key={gen.id} className="lm-card p-3">
+        {generations.map((g) => (
+          <div key={g.id} className="lm-card p-3">
             <div className="d-flex justify-content-between align-items-center mb-2">
               <div>
                 <Badge bg="secondary" className="me-2">
-                  {gen.batch_size}
+                  {g.batch_size}
                 </Badge>
                 <Badge bg="info">
-                  {CATEGORY_LABELS[
-                    gen.category as keyof typeof CATEGORY_LABELS
-                  ] || gen.category}
+                  {CATEGORY_LABELS[g.category as keyof typeof CATEGORY_LABELS] ||
+                    g.category}
                 </Badge>
                 <small className="text-muted ms-2">
-                  {formatDate(gen.created_at)}
+                  {formatDate(g.created_at)}
                 </small>
               </div>
             </div>
             <ImageGrid
-              gen={gen}
+              gen={g}
               onDelete={handleDeleteImage}
               onSelect={handleSelectImage}
             />
@@ -511,7 +590,8 @@ export default function ImagePanel({
   return (
     <Offcanvas
       show={show}
-      onHide={onHide}
+      onHide={handleHide}
+      onShow={handleShow}
       placement="end"
       className="lm-offcanvas"
       style={{ width: 480 }}
@@ -527,7 +607,7 @@ export default function ImagePanel({
           <Nav.Item>
             <Nav.Link
               active={activeTab === "generar"}
-              onClick={() => handleTabChange("generar")}
+              onClick={() => setActiveTab("generar")}
             >
               Generar
             </Nav.Link>
@@ -535,7 +615,7 @@ export default function ImagePanel({
           <Nav.Item>
             <Nav.Link
               active={activeTab === "historial"}
-              onClick={() => handleTabChange("historial")}
+              onClick={() => setActiveTab("historial")}
             >
               Historial
             </Nav.Link>
@@ -546,37 +626,34 @@ export default function ImagePanel({
       </Offcanvas.Body>
 
       <Modal
-        show={showModal}
-        onHide={closeModal}
-        onExited={() => {
-          setSelectedImage(null);
-          setSelectedGenForModal(null);
-        }}
+        show={imageModal.show}
+        onHide={() => dispatchModal({ type: "CLOSE" })}
+        onExited={() => dispatchModal({ type: "CLOSE" })}
         size="xl"
         centered
       >
         <Modal.Header closeButton>
           <Modal.Title className="small text-muted">
-            Seed: {selectedImage?.seed}
+            Seed: {imageModal.selectedImage?.seed}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body className="p-2">
-          {selectedImage && selectedGenForModal && (
+          {imageModal.selectedImage && imageModal.selectedGen && (
             <>
               <div className="text-center">
                 <img
                   src={resolveImageUrl(
-                    selectedImage.image_url,
-                    selectedImage.storage_path,
+                    imageModal.selectedImage.image_url,
+                    imageModal.selectedImage.storage_path,
                   )}
-                  alt={`Imagen seed ${selectedImage.seed}`}
+                  alt={`Imagen seed ${imageModal.selectedImage.seed}`}
                   className="img-fluid rounded"
                   style={{ maxHeight: "65vh", objectFit: "contain" }}
                 />
               </div>
               <div className="mt-3 px-1">
                 <small className="text-muted">
-                  <strong>Prompt:</strong> {selectedGenForModal.final_prompt}
+                  <strong>Prompt:</strong> {imageModal.selectedGen.final_prompt}
                 </small>
               </div>
             </>
@@ -587,60 +664,69 @@ export default function ImagePanel({
             variant="outline-danger"
             size="sm"
             onClick={() =>
-              selectedGenForModal &&
-              selectedImage &&
-              handleDeleteImage(selectedGenForModal.id, selectedImage.id)
+              imageModal.selectedGen &&
+              imageModal.selectedImage &&
+              handleDeleteImage(
+                imageModal.selectedGen.id,
+                imageModal.selectedImage.id,
+              )
             }
-            disabled={sharing}
+            disabled={imageModal.sharing}
           >
             Eliminar
           </Button>
           <div className="d-flex gap-2">
-            {selectedGenForModal && selectedImage && (
+            {imageModal.selectedGen && imageModal.selectedImage && (
               <Button
                 variant={
-                  selectedImage.is_shared ? "success" : "outline-secondary"
+                  imageModal.selectedImage.is_shared
+                    ? "success"
+                    : "outline-secondary"
                 }
                 size="sm"
                 onClick={() =>
-                  handleShareImage(selectedGenForModal, selectedImage)
+                  handleShareImage(imageModal.selectedGen!, imageModal.selectedImage!)
                 }
-                disabled={sharing}
+                disabled={imageModal.sharing}
                 title={
-                  selectedImage.is_shared
+                  imageModal.selectedImage.is_shared
                     ? "Imagen visible en el feed público"
                     : "Compartir en el feed público"
                 }
               >
-                {sharing
+                {imageModal.sharing
                   ? "..."
-                  : selectedImage.is_shared
+                  : imageModal.selectedImage.is_shared
                     ? "✦ Compartida"
                     : "Compartir"}
               </Button>
             )}
-            {selectedGenForModal && (
+            {imageModal.selectedGen && (
               <Button
                 variant="outline-primary"
                 size="sm"
-                onClick={() => handleRegenFromHistory(selectedGenForModal)}
-                disabled={sharing}
+                onClick={() => handleRegenFromHistory(imageModal.selectedGen!)}
+                disabled={imageModal.sharing}
                 title="Reutilizar prompt en el tab de generar"
               >
                 ↻ Regenerar
               </Button>
             )}
-            {selectedImage && (
+            {imageModal.selectedImage && (
               <Button
                 variant="primary"
                 size="sm"
-                onClick={() => handleDownload(selectedImage)}
-                disabled={sharing}
+                onClick={() => handleDownload(imageModal.selectedImage!)}
+                disabled={imageModal.sharing}
               >
                 Descargar
               </Button>
             )}
-            <Button variant="secondary" onClick={closeModal} disabled={sharing}>
+            <Button
+              variant="secondary"
+              onClick={() => dispatchModal({ type: "CLOSE" })}
+              disabled={imageModal.sharing}
+            >
               Cerrar
             </Button>
           </div>

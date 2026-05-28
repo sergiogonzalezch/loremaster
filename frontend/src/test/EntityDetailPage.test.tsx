@@ -19,7 +19,13 @@ vi.mock("../api/entities", () => ({
   updateEntity: vi.fn(),
 }));
 vi.mock("../api/collections", () => ({ getCollection: vi.fn() }));
-vi.mock("../api/contents", () => ({ generateContent: vi.fn() }));
+vi.mock("../api/contents", () => ({
+  generateContent: vi.fn(),
+  getContents: vi.fn().mockResolvedValue({
+    data: [],
+    meta: { total: 0, page: 1, page_size: 1, total_pages: 0 },
+  }),
+}));
 vi.mock("../api/metadata", () => ({
   getEntityCategories: vi.fn().mockRejectedValue(new Error("mocked")),
   getLimits: vi.fn().mockRejectedValue(new Error("mocked")),
@@ -35,11 +41,13 @@ vi.mock("../hooks/useGenerate", () => ({
 
 import { getEntity } from "../api/entities";
 import { getCollection } from "../api/collections";
+import { getContents } from "../api/contents";
 import { useEntityContents } from "../hooks/useEntityContents";
 import { useGenerate } from "../hooks/useGenerate";
 
 const mockGetEntity = vi.mocked(getEntity);
 const mockGetCollection = vi.mocked(getCollection);
+const mockGetContents = vi.mocked(getContents);
 const mockUseEntityContents = vi.mocked(useEntityContents);
 const mockUseGenerate = vi.mocked(useGenerate);
 
@@ -97,6 +105,10 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockGetEntity.mockResolvedValue(SAMPLE_ENTITY);
   mockGetCollection.mockResolvedValue(SAMPLE_COLLECTION);
+  mockGetContents.mockResolvedValue({
+    data: [],
+    meta: { total: 0, page: 1, page_size: 1, total_pages: 0 },
+  });
   mockUseEntityContents.mockReturnValue(DEFAULT_CONTENTS_HOOK);
   mockUseGenerate.mockReturnValue(DEFAULT_GENERATE_HOOK);
 });
@@ -167,6 +179,11 @@ describe("EntityDetailPage", () => {
       ...DEFAULT_CONTENTS_HOOK,
       contents: pendingContents,
       fetchPendingCount: vi.fn().mockResolvedValue(5),
+    });
+    // El padre fetchea el pending count directamente (no via el hijo)
+    mockGetContents.mockResolvedValue({
+      data: [],
+      meta: { total: 5, page: 1, page_size: 1, total_pages: 5 },
     });
 
     renderPage();

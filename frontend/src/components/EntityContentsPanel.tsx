@@ -13,10 +13,12 @@ interface Props {
   collectionId: string;
   entityId: string;
   availableCategories: ContentCategory[];
-  selectedCategory: ContentCategory | "";
   refreshTrigger: number;
-  onRefreshEntity: () => void;
-  onPendingCountChange: (count: number) => void;
+  /**
+   * Notifica al padre que un contenido fue mutado (confirm/discard/edit/share/delete).
+   * El padre re-fetcha lo que necesite (entity, pending count, etc.).
+   */
+  onContentMutated: () => void;
   onOpenImagePanel?: (content: EntityContent) => void;
 }
 
@@ -24,10 +26,8 @@ export default function EntityContentsPanel({
   collectionId,
   entityId,
   availableCategories,
-  selectedCategory,
   refreshTrigger,
-  onRefreshEntity,
-  onPendingCountChange,
+  onContentMutated,
   onOpenImagePanel,
 }: Props) {
   const {
@@ -37,7 +37,6 @@ export default function EntityContentsPanel({
     error,
     refresh,
     applyOptimisticUpdate,
-    fetchPendingCount,
     clearError,
   } = useEntityContents(collectionId, entityId);
 
@@ -49,23 +48,6 @@ export default function EntityContentsPanel({
   >("pending");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-
-  // Consulta al servidor el total real de pendientes en la categoría seleccionada.
-  // Evita el bug de contar solo los ítems de la página visible cuando hay >pageSize pendientes.
-  useEffect(() => {
-    if (!selectedCategory) {
-      onPendingCountChange(0);
-      return;
-    }
-    fetchPendingCount(selectedCategory as ContentCategory).then(
-      onPendingCountChange,
-    );
-  }, [
-    selectedCategory,
-    refreshTrigger,
-    fetchPendingCount,
-    onPendingCountChange,
-  ]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -88,9 +70,9 @@ export default function EntityContentsPanel({
         page,
         page_size: pageSize,
       }),
-      onRefreshEntity(),
+      onContentMutated(),
     ]);
-  }, [categoryFilter, statusFilter, page, pageSize, refresh, onRefreshEntity]);
+  }, [categoryFilter, statusFilter, page, pageSize, refresh, onContentMutated]);
 
   return (
     <>

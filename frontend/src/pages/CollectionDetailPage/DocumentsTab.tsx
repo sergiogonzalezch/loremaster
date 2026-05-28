@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import {
   Alert,
@@ -34,6 +34,179 @@ interface Props {
   onDocumentsMutated: () => void;
 }
 
+// ── Reducers ─────────────────────────────────────────────────────────────────
+
+type FiltersState = {
+  filename: string;
+  status: "" | "completed" | "failed";
+  order: "asc" | "desc";
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
+type FiltersAction =
+  | { type: "SET_FILENAME"; value: string }
+  | { type: "SET_STATUS"; value: "" | "completed" | "failed" }
+  | { type: "SET_ORDER"; value: "asc" | "desc" }
+  | { type: "SET_PAGE"; value: number }
+  | { type: "SET_PAGE_SIZE"; value: number }
+  | { type: "SET_TOTAL_PAGES"; value: number };
+
+function filtersReducer(state: FiltersState, action: FiltersAction): FiltersState {
+  switch (action.type) {
+    case "SET_FILENAME":
+      return { ...state, filename: action.value, page: 1 };
+    case "SET_STATUS":
+      return { ...state, status: action.value, page: 1 };
+    case "SET_ORDER":
+      return { ...state, order: action.value, page: 1 };
+    case "SET_PAGE":
+      return { ...state, page: action.value };
+    case "SET_PAGE_SIZE":
+      return { ...state, pageSize: action.value, page: 1 };
+    case "SET_TOTAL_PAGES":
+      return { ...state, totalPages: action.value };
+  }
+}
+
+type UploadMsg = {
+  type: "success" | "warning" | "danger" | "secondary";
+  text: string;
+} | null;
+
+type UploadState = {
+  uploading: boolean;
+  selectedFileName: string;
+  uploadMsg: UploadMsg;
+  processingDocs: Document[];
+  retrying: Set<string>;
+};
+
+type UploadAction =
+  | { type: "UPLOAD_START"; filename: string }
+  | { type: "UPLOAD_SUCCESS"; doc: Document; filename: string }
+  | { type: "UPLOAD_ERROR"; msg: UploadMsg }
+  | { type: "DISMISS_MSG" }
+  | { type: "RETRY_START"; id: string; movedDoc: Document }
+  | { type: "RETRY_END"; id: string }
+  | { type: "PROCESSING_DONE"; completedIds: string[]; failedIds: string[]; msg: UploadMsg };
+
+function uploadReducer(state: UploadState, action: UploadAction): UploadState {
+  switch (action.type) {
+    case "UPLOAD_START":
+      return { ...state, uploading: true, selectedFileName: action.filename, uploadMsg: null };
+    case "UPLOAD_SUCCESS":
+      return {
+        ...state,
+        uploading: false,
+        selectedFileName: "",
+        processingDocs: [action.doc, ...state.processingDocs],
+        uploadMsg: { type: "secondary", text: `"${action.filename}" subido. Procesando...` },
+      };
+    case "UPLOAD_ERROR":
+      return { ...state, uploading: false, selectedFileName: "", uploadMsg: action.msg };
+    case "DISMISS_MSG":
+      return { ...state, uploadMsg: null };
+    case "RETRY_START":
+      return {
+        ...state,
+        retrying: new Set(state.retrying).add(action.id),
+        processingDocs: [action.movedDoc, ...state.processingDocs],
+      };
+    case "RETRY_END": {
+      const next = new Set(state.retrying);
+      next.delete(action.id);
+      return { ...state, retrying: next };
+    }
+    case "PROCESSING_DONE": {
+      const done = [...action.completedIds, ...action.failedIds];
+      return {
+        ...state,
+        processingDocs: state.processingDocs.filter((d) => !done.includes(d.id)),
+        uploadMsg: action.msg,
+      };
+    }
+  }
+}
+
+type DetailState = {
+  selectedDocument: Document | null;
+  loadingDocumentDetail: boolean;
+  documentContent: string | null;
+  loadingContent: boolean;
+};
+
+type DetailAction =
+  | { type: "OPEN_START" }
+  | { type: "OPEN_SUCCESS"; doc: Document }
+  | { type: "OPEN_ERROR" }
+  | { type: "CONTENT_LOADING" }
+  | { type: "CONTENT_LOADED"; content: string | null }
+  | { type: "CLOSE" };
+
+function detailReducer(state: DetailState, action: DetailAction): DetailState {
+  switch (action.type) {
+    case "OPEN_START":
+      return { ...state, loadingDocumentDetail: true, documentContent: null };
+    case "OPEN_SUCCESS":
+      return { ...state, loadingDocumentDetail: false, selectedDocument: action.doc };
+    case "OPEN_ERROR":
+      return { ...state, loadingDocumentDetail: false };
+    case "CONTENT_LOADING":
+      return { ...state, loadingContent: true };
+    case "CONTENT_LOADED":
+      return { ...state, loadingContent: false, documentContent: action.content };
+    case "CLOSE":
+      return {
+        selectedDocument: null,
+        loadingDocumentDetail: false,
+        documentContent: null,
+        loadingContent: false,
+      };
+  }
+}
+
+type BulkState = {
+  selectedIds: Set<string>;
+  bulkDeleting: boolean;
+  showBulkConfirm: boolean;
+};
+
+type BulkAction =
+  | { type: "TOGGLE_ONE"; id: string }
+  | { type: "SET_ALL"; ids: string[] }
+  | { type: "CLEAR" }
+  | { type: "OPEN_CONFIRM" }
+  | { type: "CLOSE_CONFIRM" }
+  | { type: "DELETE_START" }
+  | { type: "DELETE_DONE" };
+
+function bulkReducer(state: BulkState, action: BulkAction): BulkState {
+  switch (action.type) {
+    case "TOGGLE_ONE": {
+      const next = new Set(state.selectedIds);
+      if (next.has(action.id)) next.delete(action.id);
+      else next.add(action.id);
+      return { ...state, selectedIds: next };
+    }
+    case "SET_ALL":
+      return { ...state, selectedIds: new Set(action.ids) };
+    case "CLEAR":
+      return { ...state, selectedIds: new Set() };
+    case "OPEN_CONFIRM":
+      return { ...state, showBulkConfirm: true };
+    case "CLOSE_CONFIRM":
+      return { ...state, showBulkConfirm: false };
+    case "DELETE_START":
+      return { ...state, bulkDeleting: true };
+    case "DELETE_DONE":
+      return { ...state, bulkDeleting: false, selectedIds: new Set(), showBulkConfirm: false };
+  }
+}
+
+// ── Componente ────────────────────────────────────────────────────────────────
+
 /**
  * Pestaña de documentos dentro del detalle de una colección.
  *
@@ -41,9 +214,6 @@ interface Props {
  * permite subir nuevos archivos (PDF o TXT), reintentar documentos
  * fallidos, eliminar documentos y ver su detalle. Gestiona el polling
  * automático de documentos en proceso.
- *
- * @param collectionId - Identificador de la colección.
- * @param onDocumentsMutated - Callback cuando la lista de documentos cambia.
  */
 export default function DocumentsTab({
   collectionId,
@@ -56,43 +226,38 @@ export default function DocumentsTab({
     variant: "warning" | "danger";
     text: string;
   } | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadMsg, setUploadMsg] = useState<{
-    type: "success" | "warning" | "danger" | "secondary";
-    text: string;
-  } | null>(null);
-  const deleteConfirm = useDeleteConfirm<Document>({
-    onDelete: async (doc) => {
-      await deleteDocument(collectionId, doc.id);
-      await fetchDocuments();
-      onDocumentsMutated();
-    },
-    onError: (e) => setError(parseApiError(e, "Error al eliminar documento")),
-  });
-  const [filename, setFilename] = useState("");
-  const [status, setStatus] = useState<"" | "completed" | "failed">("");
-  const [order, setOrder] = useState<"asc" | "desc">("desc");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [totalPages, setTotalPages] = useState(0);
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(
-    null,
-  );
-  const [loadingDocumentDetail, setLoadingDocumentDetail] = useState(false);
-  const [documentContent, setDocumentContent] = useState<string | null>(null);
-  const [loadingContent, setLoadingContent] = useState(false);
-  const [selectedFileName, setSelectedFileName] = useState("");
-  const [processingDocs, setProcessingDocs] = useState<Document[]>([]);
-  const [retrying, setRetrying] = useState<Set<string>>(new Set());
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [bulkDeleting, setBulkDeleting] = useState(false);
-  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
 
-  /**
-   * Carga la lista de documentos aplicando filtros y paginación.
-   *
-   * @param signal - Señal de aborto para cancelar la petición.
-   */
+  const [filters, dispatchFilters] = useReducer(filtersReducer, {
+    filename: "",
+    status: "",
+    order: "desc",
+    page: 1,
+    pageSize: 10,
+    totalPages: 0,
+  });
+  const { filename, status, order, page, pageSize, totalPages } = filters;
+
+  const [upload, dispatchUpload] = useReducer(uploadReducer, {
+    uploading: false,
+    selectedFileName: "",
+    uploadMsg: null,
+    processingDocs: [],
+    retrying: new Set<string>(),
+  });
+
+  const [detail, dispatchDetail] = useReducer(detailReducer, {
+    selectedDocument: null,
+    loadingDocumentDetail: false,
+    documentContent: null,
+    loadingContent: false,
+  });
+
+  const [bulk, dispatchBulk] = useReducer(bulkReducer, {
+    selectedIds: new Set<string>(),
+    bulkDeleting: false,
+    showBulkConfirm: false,
+  });
+
   const fetchDocuments = useCallback(
     async (signal?: AbortSignal) => {
       setLoading(true);
@@ -110,7 +275,7 @@ export default function DocumentsTab({
           signal,
         );
         setDocuments(res.data);
-        setTotalPages(res.meta.total_pages);
+        dispatchFilters({ type: "SET_TOTAL_PAGES", value: res.meta.total_pages });
       } catch (e) {
         if (e instanceof ApiAbortError) return;
         setError(parseApiError(e, "Error al cargar documentos"));
@@ -120,6 +285,15 @@ export default function DocumentsTab({
     },
     [collectionId, filename, order, page, pageSize, status],
   );
+
+  const deleteConfirm = useDeleteConfirm<Document>({
+    onDelete: async (doc) => {
+      await deleteDocument(collectionId, doc.id);
+      await fetchDocuments();
+      onDocumentsMutated();
+    },
+    onError: (e) => setError(parseApiError(e, "Error al eliminar documento")),
+  });
 
   useEffect(() => {
     const controller = new AbortController();
@@ -139,19 +313,15 @@ export default function DocumentsTab({
   }, [hasProcessing, fetchDocuments]);
 
   useEffect(() => {
-    if (processingDocs.length === 0) return;
+    if (upload.processingDocs.length === 0) return;
     const controller = new AbortController();
     const interval = setInterval(async () => {
       const justCompleted: string[] = [];
       const justFailed: string[] = [];
       await Promise.allSettled(
-        processingDocs.map(async (d) => {
+        upload.processingDocs.map(async (d) => {
           try {
-            const updated = await getDocument(
-              collectionId,
-              d.id,
-              controller.signal,
-            );
+            const updated = await getDocument(collectionId, d.id, controller.signal);
             if (updated.status === "completed") justCompleted.push(d.id);
             else if (updated.status === "failed") justFailed.push(d.id);
           } catch {
@@ -160,168 +330,119 @@ export default function DocumentsTab({
         }),
       );
       const allDone = [...justCompleted, ...justFailed];
-      if (allDone.length > 0) {
-        const doneDocs = processingDocs.filter((d) => allDone.includes(d.id));
-        const failedDocs = doneDocs.filter((d) => justFailed.includes(d.id));
-        setProcessingDocs((prev) =>
-          prev.filter((d) => !allDone.includes(d.id)),
-        );
-        fetchDocuments();
-        onDocumentsMutated();
-        if (failedDocs.length > 0) {
-          setUploadMsg({
-            type: "danger",
-            text:
-              failedDocs.length === 1
-                ? `Error al procesar "${failedDocs[0].filename}".`
-                : `Error al procesar ${failedDocs.length} documentos.`,
-          });
-        } else {
-          const completedDocs = doneDocs.filter((d) =>
-            justCompleted.includes(d.id),
-          );
-          setUploadMsg({
-            type: "success",
-            text:
-              completedDocs.length === 1
-                ? `"${completedDocs[0].filename}" procesado correctamente.`
-                : `${completedDocs.length} documentos procesados correctamente.`,
-          });
-        }
-      }
+      if (allDone.length === 0) return;
+
+      const doneDocs = upload.processingDocs.filter((d) => allDone.includes(d.id));
+      const failedDocs = doneDocs.filter((d) => justFailed.includes(d.id));
+      const completedDocs = doneDocs.filter((d) => justCompleted.includes(d.id));
+
+      const msg: UploadMsg =
+        failedDocs.length > 0
+          ? {
+              type: "danger",
+              text:
+                failedDocs.length === 1
+                  ? `Error al procesar "${failedDocs[0].filename}".`
+                  : `Error al procesar ${failedDocs.length} documentos.`,
+            }
+          : {
+              type: "success",
+              text:
+                completedDocs.length === 1
+                  ? `"${completedDocs[0].filename}" procesado correctamente.`
+                  : `${completedDocs.length} documentos procesados correctamente.`,
+            };
+
+      dispatchUpload({
+        type: "PROCESSING_DONE",
+        completedIds: justCompleted,
+        failedIds: justFailed,
+        msg,
+      });
+      fetchDocuments();
+      onDocumentsMutated();
     }, 3000);
     return () => {
       clearInterval(interval);
       controller.abort();
     };
-  }, [processingDocs, collectionId, fetchDocuments, onDocumentsMutated]);
+  }, [upload.processingDocs, collectionId, fetchDocuments, onDocumentsMutated]);
 
   const selectableDocs = documents.filter((d) => d.status !== "processing");
   const allSelectableSelected =
     selectableDocs.length > 0 &&
-    selectableDocs.every((d) => selectedIds.has(d.id));
+    selectableDocs.every((d) => bulk.selectedIds.has(d.id));
 
   function toggleSelectAll() {
     if (allSelectableSelected) {
-      setSelectedIds(new Set());
+      dispatchBulk({ type: "CLEAR" });
     } else {
-      setSelectedIds(new Set(selectableDocs.map((d) => d.id)));
+      dispatchBulk({ type: "SET_ALL", ids: selectableDocs.map((d) => d.id) });
     }
-  }
-
-  function toggleSelect(id: string) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
   }
 
   async function handleBulkDelete() {
-    setBulkDeleting(true);
+    dispatchBulk({ type: "DELETE_START" });
     try {
-      await bulkDeleteDocuments(collectionId, [...selectedIds]);
-      setSelectedIds(new Set());
-      setShowBulkConfirm(false);
+      await bulkDeleteDocuments(collectionId, [...bulk.selectedIds]);
+      dispatchBulk({ type: "DELETE_DONE" });
       await fetchDocuments();
       onDocumentsMutated();
     } catch (e) {
-      setError(
-        parseApiError(e, "Error al eliminar los documentos seleccionados"),
-      );
-      setShowBulkConfirm(false);
-    } finally {
-      setBulkDeleting(false);
+      setError(parseApiError(e, "Error al eliminar los documentos seleccionados"));
+      dispatchBulk({ type: "DELETE_DONE" });
     }
   }
 
-  /**
-   * Reintenta la ingestión de un documento fallido y lo mueve
-   * a la lista de documentos en proceso.
-   *
-   * @param doc - Documento a reintentar.
-   */
   async function handleRetry(doc: Document) {
-    setRetrying((prev) => new Set(prev).add(doc.id));
     try {
       const retried = await retryDocument(collectionId, doc.id);
       setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
-      setProcessingDocs((prev) => [retried, ...prev]);
+      dispatchUpload({ type: "RETRY_START", id: doc.id, movedDoc: retried });
     } catch (err) {
-      setError(
-        parseApiError(err, "Error al reintentar la ingestión del documento."),
-      );
+      setError(parseApiError(err, "Error al reintentar la ingestión del documento."));
     } finally {
-      setRetrying((prev) => {
-        const next = new Set(prev);
-        next.delete(doc.id);
-        return next;
-      });
+      dispatchUpload({ type: "RETRY_END", id: doc.id });
     }
   }
 
-  /**
-   * Sube un nuevo archivo a la colección y lo añade a la lista
-   * de documentos en proceso.
-   *
-   * @param e - Evento de cambio del input de tipo archivo.
-   */
   async function handleUpload(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setSelectedFileName(file.name);
-    setUploading(true);
-    setUploadMsg(null);
+    dispatchUpload({ type: "UPLOAD_START", filename: file.name });
     try {
       const uploaded = await uploadDocument(collectionId, file);
-      setUploadMsg({
-        type: "secondary",
-        text: `"${file.name}" subido. Procesando...`,
-      });
-      setProcessingDocs((prev) => [uploaded, ...prev]);
+      dispatchUpload({ type: "UPLOAD_SUCCESS", doc: uploaded, filename: file.name });
       onDocumentsMutated();
     } catch (err) {
       const { variant, text } = parseApiError(err, "Error al subir");
-      setUploadMsg({ type: variant, text });
+      dispatchUpload({ type: "UPLOAD_ERROR", msg: { type: variant, text } });
     } finally {
-      setUploading(false);
-      setSelectedFileName("");
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
 
-  /**
-   * Abre el modal de detalle cargando la información completa
-   * de un documento.
-   *
-   * @param docId - Identificador del documento.
-   */
   async function handleOpenDocumentDetail(docId: string) {
-    setLoadingDocumentDetail(true);
-    setDocumentContent(null);
+    dispatchDetail({ type: "OPEN_START" });
     try {
       const doc = await getDocument(collectionId, docId);
-      setSelectedDocument(doc);
+      dispatchDetail({ type: "OPEN_SUCCESS", doc });
       if (doc.status === "completed") {
-        setLoadingContent(true);
+        dispatchDetail({ type: "CONTENT_LOADING" });
         try {
           const { raw_text } = await getDocumentContent(collectionId, docId);
-          setDocumentContent(raw_text);
+          dispatchDetail({ type: "CONTENT_LOADED", content: raw_text });
         } catch {
-          setDocumentContent(null);
-        } finally {
-          setLoadingContent(false);
+          dispatchDetail({ type: "CONTENT_LOADED", content: null });
         }
       }
     } catch (e) {
+      dispatchDetail({ type: "OPEN_ERROR" });
       setError(parseApiError(e, "Error al cargar el detalle del documento"));
-    } finally {
-      setLoadingDocumentDetail(false);
     }
   }
 
-  const allDocs = [...processingDocs, ...documents];
+  const allDocs = [...upload.processingDocs, ...documents];
 
   return (
     <>
@@ -332,10 +453,9 @@ export default function DocumentsTab({
               <Form.Label>Buscar archivo</Form.Label>
               <Form.Control
                 value={filename}
-                onChange={(e) => {
-                  setFilename(e.target.value);
-                  setPage(1);
-                }}
+                onChange={(e) =>
+                  dispatchFilters({ type: "SET_FILENAME", value: e.target.value })
+                }
                 placeholder="Ej. worldbuilding.pdf"
               />
             </Form.Group>
@@ -343,10 +463,12 @@ export default function DocumentsTab({
               <Form.Label>Estado</Form.Label>
               <Form.Select
                 value={status}
-                onChange={(e) => {
-                  setStatus(e.target.value as "" | "completed" | "failed");
-                  setPage(1);
-                }}
+                onChange={(e) =>
+                  dispatchFilters({
+                    type: "SET_STATUS",
+                    value: e.target.value as "" | "completed" | "failed",
+                  })
+                }
               >
                 <option value="">Todos</option>
                 <option value="completed">Completado</option>
@@ -355,17 +477,13 @@ export default function DocumentsTab({
             </Form.Group>
             <OrderSelect
               value={order}
-              onChange={(o) => {
-                setOrder(o);
-                setPage(1);
-              }}
+              onChange={(o) => dispatchFilters({ type: "SET_ORDER", value: o })}
             />
             <PageSizeSelect
               value={pageSize}
-              onChange={(size) => {
-                setPageSize(size);
-                setPage(1);
-              }}
+              onChange={(size) =>
+                dispatchFilters({ type: "SET_PAGE_SIZE", value: size })
+              }
             />
           </div>
         </Card.Body>
@@ -373,14 +491,14 @@ export default function DocumentsTab({
 
       <div className="d-flex justify-content-between align-items-center mb-2">
         <div>
-          {selectedIds.size > 0 && (
+          {bulk.selectedIds.size > 0 && (
             <Button
               variant="danger"
               size="sm"
-              onClick={() => setShowBulkConfirm(true)}
-              disabled={bulkDeleting}
+              onClick={() => dispatchBulk({ type: "OPEN_CONFIRM" })}
+              disabled={bulk.bulkDeleting}
             >
-              Eliminar seleccionados ({selectedIds.size})
+              Eliminar seleccionados ({bulk.selectedIds.size})
             </Button>
           )}
         </div>
@@ -396,7 +514,7 @@ export default function DocumentsTab({
             type="file"
             accept=".pdf,.txt"
             onChange={handleUpload}
-            disabled={uploading}
+            disabled={upload.uploading}
             className="d-none"
           />
           <Button
@@ -404,14 +522,14 @@ export default function DocumentsTab({
             variant="outline-secondary"
             className="lm-upload-trigger"
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
+            disabled={upload.uploading}
           >
-            {uploading ? "Subiendo..." : "↑ Seleccionar archivo"}
+            {upload.uploading ? "Subiendo..." : "↑ Seleccionar archivo"}
           </Button>
           <small className="text-muted">
-            {selectedFileName || "Ningún archivo seleccionado"}
+            {upload.selectedFileName || "Ningún archivo seleccionado"}
           </small>
-          {uploading && (
+          {upload.uploading && (
             <Spinner
               animation="border"
               size="sm"
@@ -419,14 +537,14 @@ export default function DocumentsTab({
             />
           )}
         </div>
-        {uploadMsg && (
+        {upload.uploadMsg && (
           <Alert
-            variant={uploadMsg.type}
+            variant={upload.uploadMsg.type}
             className="mt-2 mb-0 py-2"
-            onClose={() => setUploadMsg(null)}
+            onClose={() => dispatchUpload({ type: "DISMISS_MSG" })}
             dismissible
           >
-            {uploadMsg.text}
+            {upload.uploadMsg.text}
           </Alert>
         )}
       </div>
@@ -475,8 +593,8 @@ export default function DocumentsTab({
                 <td>
                   <Form.Check
                     type="checkbox"
-                    checked={selectedIds.has(doc.id)}
-                    onChange={() => toggleSelect(doc.id)}
+                    checked={bulk.selectedIds.has(doc.id)}
+                    onChange={() => dispatchBulk({ type: "TOGGLE_ONE", id: doc.id })}
                     disabled={doc.status === "processing"}
                   />
                 </td>
@@ -515,9 +633,9 @@ export default function DocumentsTab({
                       size="sm"
                       className="me-2"
                       onClick={() => handleRetry(doc)}
-                      disabled={retrying.has(doc.id) || deleteConfirm.deleting}
+                      disabled={upload.retrying.has(doc.id) || deleteConfirm.deleting}
                     >
-                      {retrying.has(doc.id) ? "Reintentando…" : "Reintentar"}
+                      {upload.retrying.has(doc.id) ? "Reintentando…" : "Reintentar"}
                     </Button>
                   )}
                   <Button
@@ -526,7 +644,7 @@ export default function DocumentsTab({
                     className="me-2"
                     onClick={() => handleOpenDocumentDetail(doc.id)}
                     disabled={
-                      loadingDocumentDetail ||
+                      detail.loadingDocumentDetail ||
                       deleteConfirm.deleting ||
                       doc.status === "processing"
                     }
@@ -560,19 +678,16 @@ export default function DocumentsTab({
       />
 
       <ConfirmModal
-        show={showBulkConfirm}
+        show={bulk.showBulkConfirm}
         title="Eliminar documentos seleccionados"
-        message={`¿Eliminar ${selectedIds.size} documento${selectedIds.size !== 1 ? "s" : ""}? Se borrarán sus chunks del índice vectorial.`}
+        message={`¿Eliminar ${bulk.selectedIds.size} documento${bulk.selectedIds.size !== 1 ? "s" : ""}? Se borrarán sus chunks del índice vectorial.`}
         onConfirm={handleBulkDelete}
-        onCancel={() => setShowBulkConfirm(false)}
-        loading={bulkDeleting}
+        onCancel={() => dispatchBulk({ type: "CLOSE_CONFIRM" })}
+        loading={bulk.bulkDeleting}
       />
       <Modal
-        show={selectedDocument !== null}
-        onHide={() => {
-          setSelectedDocument(null);
-          setDocumentContent(null);
-        }}
+        show={detail.selectedDocument !== null}
+        onHide={() => dispatchDetail({ type: "CLOSE" })}
         centered
         size="lg"
       >
@@ -580,54 +695,54 @@ export default function DocumentsTab({
           <Modal.Title>Detalle del documento</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {selectedDocument && (
+          {detail.selectedDocument && (
             <div className="d-flex flex-column gap-3">
               <div>
                 <small className="text-muted">Nombre</small>
                 <div style={{ wordBreak: "break-word" }}>
-                  {selectedDocument.filename}
+                  {detail.selectedDocument.filename}
                 </div>
               </div>
               <div className="row g-3">
                 <div className="col-auto">
                   <small className="text-muted d-block">Tipo</small>
-                  <div>{selectedDocument.file_type.toUpperCase()}</div>
+                  <div>{detail.selectedDocument.file_type.toUpperCase()}</div>
                 </div>
                 <div className="col-auto">
                   <small className="text-muted d-block">Chunks</small>
-                  <div>{selectedDocument.chunk_count}</div>
+                  <div>{detail.selectedDocument.chunk_count}</div>
                 </div>
                 <div className="col-auto">
                   <small className="text-muted d-block">Estado</small>
-                  <div>{selectedDocument.status}</div>
+                  <div>{detail.selectedDocument.status}</div>
                 </div>
                 <div className="col-auto">
                   <small className="text-muted d-block">Creado</small>
-                  <div>{formatDate(selectedDocument.created_at, true)}</div>
+                  <div>{formatDate(detail.selectedDocument.created_at, true)}</div>
                 </div>
               </div>
-              {selectedDocument.processing_error && (
+              {detail.selectedDocument.processing_error && (
                 <div>
                   <small className="text-muted">Error de procesamiento</small>
                   <div
                     className="text-danger mt-1"
                     style={{ fontSize: "0.875rem", wordBreak: "break-word" }}
                   >
-                    {selectedDocument.processing_error}
+                    {detail.selectedDocument.processing_error}
                   </div>
                 </div>
               )}
-              {selectedDocument.status === "completed" && (
+              {detail.selectedDocument.status === "completed" && (
                 <>
                   <hr style={{ borderColor: "var(--lm-border)", margin: 0 }} />
                   <div>
                     <small className="text-muted">Contenido extraído</small>
-                    {loadingContent ? (
+                    {detail.loadingContent ? (
                       <div className="mt-2 d-flex align-items-center gap-2 text-muted">
                         <Spinner animation="border" size="sm" />
                         <span>Cargando contenido…</span>
                       </div>
-                    ) : documentContent ? (
+                    ) : detail.documentContent ? (
                       <pre
                         style={{
                           maxHeight: 320,
@@ -645,7 +760,7 @@ export default function DocumentsTab({
                           marginBottom: 0,
                         }}
                       >
-                        {documentContent}
+                        {detail.documentContent}
                       </pre>
                     ) : (
                       <div
@@ -665,7 +780,7 @@ export default function DocumentsTab({
       <PaginationControls
         page={page}
         totalPages={totalPages}
-        onPageChange={setPage}
+        onPageChange={(p) => dispatchFilters({ type: "SET_PAGE", value: p })}
       />
     </>
   );
