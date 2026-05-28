@@ -19,24 +19,16 @@ export default function SourcesModal({
   contentId,
 }: SourcesModalProps) {
   const [chunks, setChunks] = useState<ContentChunkItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!show) return;
     const controller = new AbortController();
-    setLoading(true);
     getContentChunks(collectionId, entityId, contentId, controller.signal)
-      .then((res) => {
-        setChunks(res.chunks);
-      })
-      .catch(() => {
-        setChunks([]);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+      .then((res) => setChunks(res.chunks))
+      .catch(() => setChunks([]))
+      .finally(() => setLoading(false));
     return () => controller.abort();
-  }, [show, collectionId, entityId, contentId]);
+  }, [collectionId, entityId, contentId]);
 
   const grouped = chunks.reduce<Record<string, ContentChunkItem[]>>((acc, chunk) => {
     const key = chunk.filename ?? "Documento eliminado";

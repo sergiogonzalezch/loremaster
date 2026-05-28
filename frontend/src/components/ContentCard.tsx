@@ -53,7 +53,7 @@ export default function ContentCard({
   const [busy, setBusy] = useState(false);
 
   const [showEdit, setShowEdit] = useState(false);
-  const [editText, setEditText] = useState(content.content);
+  const [editText, setEditText] = useState("");
   const [saving, setSaving] = useState(false);
 
   const [showDiscard, setShowDiscard] = useState(false);
@@ -483,13 +483,15 @@ export default function ContentCard({
         loading={deleteConfirm.deleting}
       />
 
-      <SourcesModal
-        show={showSources}
-        onHide={() => setShowSources(false)}
-        collectionId={collectionId}
-        entityId={content.entity_id}
-        contentId={content.id}
-      />
+      {showSources && (
+        <SourcesModal
+          show={showSources}
+          onHide={() => setShowSources(false)}
+          collectionId={collectionId}
+          entityId={content.entity_id}
+          contentId={content.id}
+        />
+      )}
     </>
   );
 }
