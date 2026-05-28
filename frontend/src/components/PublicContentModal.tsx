@@ -36,7 +36,7 @@ export default function PublicContentModal({
       >
         <div className="d-flex flex-column gap-1">
           <div className="d-flex align-items-center gap-2 flex-wrap">
-            <Badge bg="dark" style={{ fontSize: "0.65rem" }}>
+            <Badge bg="dark" style={{ fontSize: "0.75rem" }}>
               {CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] ??
                 category}
             </Badge>
@@ -45,7 +45,7 @@ export default function PublicContentModal({
                 background: "var(--lm-accent-glow)",
                 color: "var(--lm-accent)",
                 border: "1px solid var(--lm-border-accent)",
-                fontSize: "0.6rem",
+                fontSize: "0.75rem",
               }}
             >
               {ENTITY_TYPE_LABELS[

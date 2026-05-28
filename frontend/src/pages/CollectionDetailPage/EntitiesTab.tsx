@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import type { FormEvent } from "react";
+import { useCallback, useEffect, useReducer, useState } from "react";
+import type { FormEvent, Reducer } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Alert,
@@ -31,13 +31,114 @@ interface Props {
   collectionId: string;
 }
 
+// ── Reducers ─────────────────────────────────────────────────────────────────
+
+type FiltersState = {
+  nameFilter: string;
+  typeFilter: "" | EntityType;
+  order: "asc" | "desc";
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
+type FiltersAction =
+  | { type: "SET_NAME"; value: string }
+  | { type: "SET_TYPE"; value: "" | EntityType }
+  | { type: "SET_ORDER"; value: "asc" | "desc" }
+  | { type: "SET_PAGE"; value: number }
+  | { type: "SET_PAGE_SIZE"; value: number }
+  | { type: "SET_TOTAL_PAGES"; value: number };
+
+const filtersReducer: Reducer<FiltersState, FiltersAction> = (state, action) => {
+  switch (action.type) {
+    case "SET_NAME":
+      return { ...state, nameFilter: action.value, page: 1 };
+    case "SET_TYPE":
+      return { ...state, typeFilter: action.value, page: 1 };
+    case "SET_ORDER":
+      return { ...state, order: action.value, page: 1 };
+    case "SET_PAGE":
+      return { ...state, page: action.value };
+    case "SET_PAGE_SIZE":
+      return { ...state, pageSize: action.value, page: 1 };
+    case "SET_TOTAL_PAGES":
+      return { ...state, totalPages: action.value };
+  }
+};
+
+type BulkState = {
+  selectedIds: Set<string>;
+  bulkDeleting: boolean;
+  showBulkConfirm: boolean;
+};
+
+type BulkAction =
+  | { type: "TOGGLE_ONE"; id: string }
+  | { type: "SET_ALL"; ids: string[] }
+  | { type: "CLEAR" }
+  | { type: "OPEN_CONFIRM" }
+  | { type: "CLOSE_CONFIRM" }
+  | { type: "DELETE_START" }
+  | { type: "DELETE_DONE" };
+
+const bulkReducer: Reducer<BulkState, BulkAction> = (state, action) => {
+  switch (action.type) {
+    case "TOGGLE_ONE": {
+      const next = new Set(state.selectedIds);
+      if (next.has(action.id)) next.delete(action.id);
+      else next.add(action.id);
+      return { ...state, selectedIds: next };
+    }
+    case "SET_ALL":
+      return { ...state, selectedIds: new Set(action.ids) };
+    case "CLEAR":
+      return { ...state, selectedIds: new Set() };
+    case "OPEN_CONFIRM":
+      return { ...state, showBulkConfirm: true };
+    case "CLOSE_CONFIRM":
+      return { ...state, showBulkConfirm: false };
+    case "DELETE_START":
+      return { ...state, bulkDeleting: true };
+    case "DELETE_DONE":
+      return { ...state, bulkDeleting: false, selectedIds: new Set(), showBulkConfirm: false };
+  }
+};
+
+type CreateState = {
+  show: boolean;
+  form: CreateEntityRequest;
+  creating: boolean;
+};
+
+type CreateAction =
+  | { type: "OPEN" }
+  | { type: "CLOSE" }
+  | { type: "FIELD"; patch: Partial<CreateEntityRequest> }
+  | { type: "SUBMIT_START" }
+  | { type: "SUBMIT_DONE" };
+
+const initialForm: CreateEntityRequest = { type: "character", name: "", description: "" };
+
+const createReducer: Reducer<CreateState, CreateAction> = (state, action) => {
+  switch (action.type) {
+    case "OPEN":
+      return { ...state, show: true };
+    case "CLOSE":
+      return { show: false, form: initialForm, creating: false };
+    case "FIELD":
+      return { ...state, form: { ...state.form, ...action.patch } };
+    case "SUBMIT_START":
+      return { ...state, creating: true };
+    case "SUBMIT_DONE":
+      return { show: false, form: initialForm, creating: false };
+  }
+};
+
+// ── Componente ────────────────────────────────────────────────────────────────
+
 /**
  * Pestaña de entidades dentro del detalle de una colección.
- *
- * Lista las entidades de la colección con filtros por nombre y tipo,
- * permite crear nuevas entidades y navegar al detalle de cada una.
- *
- * @param collectionId - Identificador de la colección.
  */
 export default function EntitiesTab({ collectionId }: Props) {
   const navigate = useNavigate();
@@ -47,34 +148,29 @@ export default function EntitiesTab({ collectionId }: Props) {
     variant: "warning" | "danger";
     text: string;
   } | null>(null);
-  const deleteConfirm = useDeleteConfirm<Entity>({
-    onDelete: async (entity) => {
-      await deleteEntity(collectionId, entity.id);
-      await fetchEntities();
-    },
-    onError: (e) => setError(parseApiError(e, "Error al eliminar entidad")),
-  });
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [bulkDeleting, setBulkDeleting] = useState(false);
-  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
-  const [nameFilter, setNameFilter] = useState("");
-  const [typeFilter, setTypeFilter] = useState<"" | EntityType>("");
-  const [order, setOrder] = useState<"asc" | "desc">("desc");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [totalPages, setTotalPages] = useState(0);
 
-  const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState<CreateEntityRequest>({
-    type: "character",
-    name: "",
-    description: "",
+  const [filters, dispatchFilters] = useReducer(filtersReducer, {
+    nameFilter: "",
+    typeFilter: "",
+    order: "desc",
+    page: 1,
+    pageSize: 10,
+    totalPages: 0,
   });
-  const [creating, setCreating] = useState(false);
+  const { nameFilter, typeFilter, order, page, pageSize, totalPages } = filters;
 
-  /**
-   * Carga la lista de entidades aplicando filtros y paginación.
-   */
+  const [bulk, dispatchBulk] = useReducer(bulkReducer, {
+    selectedIds: new Set<string>(),
+    bulkDeleting: false,
+    showBulkConfirm: false,
+  });
+
+  const [create, dispatchCreate] = useReducer(createReducer, {
+    show: false,
+    form: initialForm,
+    creating: false,
+  });
+
   const fetchEntities = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -87,7 +183,7 @@ export default function EntitiesTab({ collectionId }: Props) {
         order,
       });
       setEntities(res.data);
-      setTotalPages(res.meta.total_pages);
+      dispatchFilters({ type: "SET_TOTAL_PAGES", value: res.meta.total_pages });
     } catch (e) {
       setError(parseApiError(e, "Error al cargar entidades"));
     } finally {
@@ -95,64 +191,51 @@ export default function EntitiesTab({ collectionId }: Props) {
     }
   }, [collectionId, nameFilter, order, page, pageSize, typeFilter]);
 
+  const deleteConfirm = useDeleteConfirm<Entity>({
+    onDelete: async (entity) => {
+      await deleteEntity(collectionId, entity.id);
+      await fetchEntities();
+    },
+    onError: (e) => setError(parseApiError(e, "Error al eliminar entidad")),
+  });
+
   useEffect(() => {
     fetchEntities();
   }, [fetchEntities]);
 
   const allOnPageSelected =
-    entities.length > 0 && entities.every((e) => selectedIds.has(e.id));
+    entities.length > 0 && entities.every((e) => bulk.selectedIds.has(e.id));
 
   function toggleSelectAll() {
     if (allOnPageSelected) {
-      setSelectedIds(new Set());
+      dispatchBulk({ type: "CLEAR" });
     } else {
-      setSelectedIds(new Set(entities.map((e) => e.id)));
+      dispatchBulk({ type: "SET_ALL", ids: entities.map((e) => e.id) });
     }
-  }
-
-  function toggleSelect(id: string) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
   }
 
   async function handleBulkDelete() {
-    setBulkDeleting(true);
+    dispatchBulk({ type: "DELETE_START" });
     try {
-      await bulkDeleteEntities(collectionId, [...selectedIds]);
-      setSelectedIds(new Set());
-      setShowBulkConfirm(false);
+      await bulkDeleteEntities(collectionId, [...bulk.selectedIds]);
+      dispatchBulk({ type: "DELETE_DONE" });
       await fetchEntities();
     } catch (e) {
-      setError(
-        parseApiError(e, "Error al eliminar las entidades seleccionadas"),
-      );
-      setShowBulkConfirm(false);
-    } finally {
-      setBulkDeleting(false);
+      setError(parseApiError(e, "Error al eliminar las entidades seleccionadas"));
+      dispatchBulk({ type: "DELETE_DONE" });
     }
   }
 
-  /**
-   * Crea una nueva entidad en la colección con los datos del formulario.
-   *
-   * @param e - Evento del formulario de creación.
-   */
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
-    setCreating(true);
+    dispatchCreate({ type: "SUBMIT_START" });
     try {
-      await createEntity(collectionId, form);
-      setShowCreate(false);
-      setForm({ type: "character", name: "", description: "" });
+      await createEntity(collectionId, create.form);
+      dispatchCreate({ type: "SUBMIT_DONE" });
       await fetchEntities();
     } catch (err) {
       setError(parseApiError(err, "Error al crear entidad"));
-    } finally {
-      setCreating(false);
+      dispatchCreate({ type: "SUBMIT_DONE" });
     }
   }
 
@@ -165,10 +248,9 @@ export default function EntitiesTab({ collectionId }: Props) {
               <Form.Label>Buscar entidad</Form.Label>
               <Form.Control
                 value={nameFilter}
-                onChange={(e) => {
-                  setNameFilter(e.target.value);
-                  setPage(1);
-                }}
+                onChange={(e) =>
+                  dispatchFilters({ type: "SET_NAME", value: e.target.value })
+                }
                 placeholder="Ej. Aria"
               />
             </Form.Group>
@@ -176,10 +258,12 @@ export default function EntitiesTab({ collectionId }: Props) {
               <Form.Label>Tipo</Form.Label>
               <Form.Select
                 value={typeFilter}
-                onChange={(e) => {
-                  setTypeFilter(e.target.value as "" | EntityType);
-                  setPage(1);
-                }}
+                onChange={(e) =>
+                  dispatchFilters({
+                    type: "SET_TYPE",
+                    value: e.target.value as "" | EntityType,
+                  })
+                }
               >
                 <option value="">Todos</option>
                 {(Object.keys(ENTITY_TYPE_LABELS) as EntityType[]).map((t) => (
@@ -191,17 +275,13 @@ export default function EntitiesTab({ collectionId }: Props) {
             </Form.Group>
             <OrderSelect
               value={order}
-              onChange={(o) => {
-                setOrder(o);
-                setPage(1);
-              }}
+              onChange={(o) => dispatchFilters({ type: "SET_ORDER", value: o })}
             />
             <PageSizeSelect
               value={pageSize}
-              onChange={(size) => {
-                setPageSize(size);
-                setPage(1);
-              }}
+              onChange={(size) =>
+                dispatchFilters({ type: "SET_PAGE_SIZE", value: size })
+              }
             />
           </div>
         </Card.Body>
@@ -209,18 +289,18 @@ export default function EntitiesTab({ collectionId }: Props) {
 
       <div className="d-flex justify-content-between align-items-center mb-3">
         <div>
-          {selectedIds.size > 0 && (
+          {bulk.selectedIds.size > 0 && (
             <Button
               variant="danger"
               size="sm"
-              onClick={() => setShowBulkConfirm(true)}
-              disabled={bulkDeleting}
+              onClick={() => dispatchBulk({ type: "OPEN_CONFIRM" })}
+              disabled={bulk.bulkDeleting}
             >
-              Eliminar seleccionadas ({selectedIds.size})
+              Eliminar seleccionadas ({bulk.selectedIds.size})
             </Button>
           )}
         </div>
-        <Button variant="warning" onClick={() => setShowCreate(true)}>
+        <Button variant="warning" onClick={() => dispatchCreate({ type: "OPEN" })}>
           + Nueva entidad
         </Button>
       </div>
@@ -267,8 +347,10 @@ export default function EntitiesTab({ collectionId }: Props) {
                 <td>
                   <Form.Check
                     type="checkbox"
-                    checked={selectedIds.has(entity.id)}
-                    onChange={() => toggleSelect(entity.id)}
+                    checked={bulk.selectedIds.has(entity.id)}
+                    onChange={() =>
+                      dispatchBulk({ type: "TOGGLE_ONE", id: entity.id })
+                    }
                   />
                 </td>
                 <td>
@@ -336,15 +418,19 @@ export default function EntitiesTab({ collectionId }: Props) {
       />
 
       <ConfirmModal
-        show={showBulkConfirm}
+        show={bulk.showBulkConfirm}
         title="Eliminar entidades seleccionadas"
-        message={`¿Eliminar ${selectedIds.size} entidad${selectedIds.size !== 1 ? "es" : ""}? También se eliminarán todos sus drafts.`}
+        message={`¿Eliminar ${bulk.selectedIds.size} entidad${bulk.selectedIds.size !== 1 ? "es" : ""}? También se eliminarán todos sus drafts.`}
         onConfirm={handleBulkDelete}
-        onCancel={() => setShowBulkConfirm(false)}
-        loading={bulkDeleting}
+        onCancel={() => dispatchBulk({ type: "CLOSE_CONFIRM" })}
+        loading={bulk.bulkDeleting}
       />
 
-      <Modal show={showCreate} onHide={() => setShowCreate(false)} centered>
+      <Modal
+        show={create.show}
+        onHide={() => dispatchCreate({ type: "CLOSE" })}
+        centered
+      >
         <Modal.Header closeButton>
           <Modal.Title>Nueva entidad</Modal.Title>
         </Modal.Header>
@@ -353,9 +439,12 @@ export default function EntitiesTab({ collectionId }: Props) {
             <Form.Group className="mb-3">
               <Form.Label>Tipo *</Form.Label>
               <Form.Select
-                value={form.type}
+                value={create.form.type}
                 onChange={(e) =>
-                  setForm((f) => ({ ...f, type: e.target.value as EntityType }))
+                  dispatchCreate({
+                    type: "FIELD",
+                    patch: { type: e.target.value as EntityType },
+                  })
                 }
               >
                 {(Object.keys(ENTITY_TYPE_LABELS) as EntityType[]).map((t) => (
@@ -369,9 +458,9 @@ export default function EntitiesTab({ collectionId }: Props) {
               <Form.Label>Nombre *</Form.Label>
               <Form.Control
                 type="text"
-                value={form.name}
+                value={create.form.name}
                 onChange={(e) =>
-                  setForm((f) => ({ ...f, name: e.target.value }))
+                  dispatchCreate({ type: "FIELD", patch: { name: e.target.value } })
                 }
                 placeholder="Nombre de la entidad"
                 required
@@ -382,9 +471,12 @@ export default function EntitiesTab({ collectionId }: Props) {
               <Form.Control
                 as="textarea"
                 rows={3}
-                value={form.description}
+                value={create.form.description}
                 onChange={(e) =>
-                  setForm((f) => ({ ...f, description: e.target.value }))
+                  dispatchCreate({
+                    type: "FIELD",
+                    patch: { description: e.target.value },
+                  })
                 }
                 placeholder="Descripción opcional"
               />
@@ -393,17 +485,17 @@ export default function EntitiesTab({ collectionId }: Props) {
           <Modal.Footer>
             <Button
               variant="secondary"
-              onClick={() => setShowCreate(false)}
-              disabled={creating}
+              onClick={() => dispatchCreate({ type: "CLOSE" })}
+              disabled={create.creating}
             >
               Cancelar
             </Button>
             <Button
               variant="warning"
               type="submit"
-              disabled={creating || !form.name.trim()}
+              disabled={create.creating || !create.form.name.trim()}
             >
-              {creating ? "Creando..." : "Crear"}
+              {create.creating ? "Creando..." : "Crear"}
             </Button>
           </Modal.Footer>
         </Form>
@@ -411,7 +503,7 @@ export default function EntitiesTab({ collectionId }: Props) {
       <PaginationControls
         page={page}
         totalPages={totalPages}
-        onPageChange={setPage}
+        onPageChange={(p) => dispatchFilters({ type: "SET_PAGE", value: p })}
       />
     </>
   );

@@ -171,17 +171,7 @@ export default function PublicFeedPage() {
                     <button
                       type="button"
                       aria-label={`Ver imagen de ${img.entity_name}`}
-                      className="lm-shared-image-card p-0 border-0 bg-transparent"
-                      style={{
-                        display: "block",
-                        width: "100%",
-                        position: "relative",
-                        borderRadius: 8,
-                        overflow: "hidden",
-                        border: "1px solid var(--lm-border)",
-                        aspectRatio: "1",
-                        cursor: "pointer",
-                      }}
+                      className="lm-shared-image-card lm-shared-image-button p-0 border-0 bg-transparent"
                       onClick={() => setSelectedImage(img)}
                     >
                       {img.storage_path || img.image_url ? (
@@ -234,7 +224,7 @@ export default function PublicFeedPage() {
                     >
                       <Card.Body>
                         <div className="d-flex align-items-center gap-2 mb-2 flex-wrap">
-                          <Badge bg="dark" style={{ fontSize: "0.65rem" }}>
+                          <Badge bg="dark" style={{ fontSize: "0.75rem" }}>
                             {CATEGORY_LABELS[
                               item.category as keyof typeof CATEGORY_LABELS
                             ] ?? item.category}
@@ -244,7 +234,7 @@ export default function PublicFeedPage() {
                               background: "var(--lm-accent-glow)",
                               color: "var(--lm-accent)",
                               border: "1px solid var(--lm-border-accent)",
-                              fontSize: "0.6rem",
+                              fontSize: "0.75rem",
                             }}
                           >
                             {ENTITY_TYPE_LABELS[
@@ -287,7 +277,7 @@ export default function PublicFeedPage() {
                           </Link>
                           <small
                             className="text-muted d-block"
-                            style={{ fontSize: "0.72rem" }}
+                            style={{ fontSize: "0.75rem" }}
                           >
                             {item.confirmed_at
                               ? formatDate(item.confirmed_at)
@@ -296,7 +286,7 @@ export default function PublicFeedPage() {
                         </div>
                         <small
                           className="text-muted"
-                          style={{ fontSize: "0.7rem" }}
+                          style={{ fontSize: "0.75rem" }}
                         >
                           Leer más →
                         </small>

@@ -89,7 +89,7 @@ export default function SourcesModal({
                         <span
                           className="badge me-2"
                           style={{
-                            fontSize: "0.7rem",
+                            fontSize: "0.75rem",
                             background: "var(--lm-accent-glow)",
                             color: "var(--lm-accent)",
                             border: "1px solid var(--lm-border-accent)",

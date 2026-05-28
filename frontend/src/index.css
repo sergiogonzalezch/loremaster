@@ -1451,3 +1451,46 @@ textarea.form-control {
     align-items: flex-start;
   }
 }
+
+/* ── Avatar placeholder dashed (ProfilePage) ─────────────────────────────── */
+.lm-avatar-placeholder {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: var(--lm-bg-secondary);
+  border: 2px dashed var(--lm-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--lm-accent);
+  font-size: 1.5rem;
+}
+
+/* ── Shared image card button (PublicProfilePage, PublicFeedPage) ────────── */
+.lm-shared-image-button {
+  display: block;
+  width: 100%;
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--lm-border);
+  aspect-ratio: 1;
+  cursor: pointer;
+}
+
+/* ── Pre block para texto extraído de documento (DocumentsTab) ──────────── */
+.lm-doc-content-pre {
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.78rem;
+  font-family: var(--lm-font-body);
+  background: var(--lm-raised);
+  border: 1px solid var(--lm-border);
+  color: var(--lm-text);
+  padding: 0.75rem;
+  border-radius: var(--lm-radius);
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+}

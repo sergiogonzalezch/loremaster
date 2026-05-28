@@ -1,5 +1,5 @@
-import { useState } from "react";
-import type { FormEvent } from "react";
+import { useReducer, useState } from "react";
+import type { FormEvent, Reducer } from "react";
 import {
   Accordion,
   Alert,
@@ -26,6 +26,60 @@ import { CATEGORY_LABELS } from "../utils/constants";
 import { formatDate } from "../utils/formatters";
 import { parseApiError } from "../utils/errors";
 
+// Estado UI agrupado: modales y expansión cambian de forma independiente
+// pero comparten el mismo dominio de "controles visuales del card".
+type UIState = {
+  expanded: boolean;
+  showDiscard: boolean;
+  showSources: boolean;
+};
+
+type UIAction =
+  | { type: "TOGGLE_EXPAND" }
+  | { type: "OPEN_DISCARD" }
+  | { type: "CLOSE_DISCARD" }
+  | { type: "OPEN_SOURCES" }
+  | { type: "CLOSE_SOURCES" };
+
+const uiReducer: Reducer<UIState, UIAction> = (state, action) => {
+  switch (action.type) {
+    case "TOGGLE_EXPAND":
+      return { ...state, expanded: !state.expanded };
+    case "OPEN_DISCARD":
+      return { ...state, showDiscard: true };
+    case "CLOSE_DISCARD":
+      return { ...state, showDiscard: false };
+    case "OPEN_SOURCES":
+      return { ...state, showSources: true };
+    case "CLOSE_SOURCES":
+      return { ...state, showSources: false };
+  }
+};
+
+type EditState = { show: boolean; text: string; saving: boolean };
+
+type EditAction =
+  | { type: "OPEN"; text: string }
+  | { type: "CLOSE" }
+  | { type: "SET_TEXT"; value: string }
+  | { type: "SAVE_START" }
+  | { type: "SAVE_DONE" };
+
+const editReducer: Reducer<EditState, EditAction> = (state, action) => {
+  switch (action.type) {
+    case "OPEN":
+      return { show: true, text: action.text, saving: false };
+    case "CLOSE":
+      return { show: false, text: "", saving: false };
+    case "SET_TEXT":
+      return { ...state, text: action.value };
+    case "SAVE_START":
+      return { ...state, saving: true };
+    case "SAVE_DONE":
+      return { show: false, text: "", saving: false };
+  }
+};
+
 interface ContentCardProps {
   content: EntityContent;
   collectionId: string;
@@ -51,14 +105,16 @@ export default function ContentCard({
     text: string;
   } | null>(null);
   const [busy, setBusy] = useState(false);
-
-  const [showEdit, setShowEdit] = useState(false);
-  const [editText, setEditText] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  const [showDiscard, setShowDiscard] = useState(false);
-  const [showSources, setShowSources] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [edit, dispatchEdit] = useReducer(editReducer, {
+    show: false,
+    text: "",
+    saving: false,
+  });
+  const [ui, dispatchUI] = useReducer(uiReducer, {
+    expanded: false,
+    showDiscard: false,
+    showSources: false,
+  });
 
   const deleteConfirm = useDeleteConfirm<EntityContent>({
     onDelete: async (c) => {
@@ -90,22 +146,21 @@ export default function ContentCard({
 
   async function handleSaveEdit(e: FormEvent) {
     e.preventDefault();
-    setSaving(true);
+    dispatchEdit({ type: "SAVE_START" });
     onOptimisticUpdate?.(content.id, {
-      content: editText,
+      content: edit.text,
       updated_at: new Date().toISOString(),
     });
     try {
       await updateContent(collectionId, entityId, content.id, {
-        content: editText,
+        content: edit.text,
       });
-      setShowEdit(false);
+      dispatchEdit({ type: "SAVE_DONE" });
       onAction();
     } catch (e) {
       onOptimisticUpdate?.(content.id, content);
       setError(parseApiError(e, "Error al guardar"));
-    } finally {
-      setSaving(false);
+      dispatchEdit({ type: "SAVE_DONE" });
     }
   }
 
@@ -131,12 +186,12 @@ export default function ContentCard({
     onOptimisticUpdate?.(content.id, { status: "discarded" });
     try {
       await discardContent(collectionId, entityId, content.id);
-      setShowDiscard(false);
+      dispatchUI({ type: "CLOSE_DISCARD" });
       onAction();
     } catch (e) {
       onOptimisticUpdate?.(content.id, content);
       setError(parseApiError(e, "Error al descartar"));
-      setShowDiscard(false);
+      dispatchUI({ type: "CLOSE_DISCARD" });
     } finally {
       setBusy(false);
     }
@@ -152,12 +207,12 @@ export default function ContentCard({
     <>
       <Card className="mb-3">
         <Card.Header className="p-0">
-          <Accordion activeKey={isExpanded ? "content" : undefined}>
+          <Accordion activeKey={ui.expanded ? "content" : undefined}>
             <Accordion.Item
               eventKey="content"
               className="lm-content-accordion-item"
             >
-              <Accordion.Header onClick={() => setIsExpanded((open) => !open)}>
+              <Accordion.Header onClick={() => dispatchUI({ type: "TOGGLE_EXPAND" })}>
                 <div className="d-flex justify-content-between align-items-center w-100 me-2">
                   <div className="d-flex flex-column gap-1">
                     <div className="d-flex align-items-center gap-2">
@@ -186,7 +241,7 @@ export default function ContentCard({
                         background: "var(--lm-accent-glow)",
                         color: "var(--lm-accent)",
                         border: "1px solid var(--lm-border-accent)",
-                        fontSize: "0.65rem",
+                        fontSize: "0.75rem",
                       }}
                     >
                       {content.sources_count} fuentes
@@ -197,7 +252,7 @@ export default function ContentCard({
                           background: "transparent",
                           color: "var(--lm-text-muted, #888)",
                           border: "1px solid var(--lm-border, #444)",
-                          fontSize: "0.65rem",
+                          fontSize: "0.75rem",
                         }}
                         title={`Generado con ${content.model_used}`}
                       >
@@ -210,7 +265,7 @@ export default function ContentCard({
                           background: "var(--lm-accent-glow)",
                           color: "var(--lm-accent)",
                           border: "1px solid var(--lm-border-accent)",
-                          fontSize: "0.65rem",
+                          fontSize: "0.75rem",
                         }}
                       >
                         ~{content.token_count} tokens
@@ -222,7 +277,7 @@ export default function ContentCard({
                           background: "rgba(201,162,39,0.1)",
                           color: "#c9a227",
                           border: "1px solid rgba(201,162,39,0.3)",
-                          fontSize: "0.6rem",
+                          fontSize: "0.75rem",
                         }}
                         title="Editado por el usuario. Output original del LLM preservado para auditoría."
                       >
@@ -241,7 +296,7 @@ export default function ContentCard({
                       <Badge bg="secondary">Descartado</Badge>
                     )}
                     <small className="text-muted">
-                      {isExpanded ? "Ocultar" : "Ver contenido"}
+                      {ui.expanded ? "Ocultar" : "Ver contenido"}
                     </small>
                   </div>
                 </div>
@@ -306,10 +361,9 @@ export default function ContentCard({
               <Button
                 variant="outline-secondary"
                 size="sm"
-                onClick={() => {
-                  setEditText(content.content);
-                  setShowEdit(true);
-                }}
+                onClick={() =>
+                  dispatchEdit({ type: "OPEN", text: content.content })
+                }
                 disabled={busy || deleteConfirm.deleting}
               >
                 Editar
@@ -318,7 +372,7 @@ export default function ContentCard({
               <Button
                 variant="outline-warning"
                 size="sm"
-                onClick={() => setShowDiscard(true)}
+                onClick={() => dispatchUI({ type: "OPEN_DISCARD" })}
                 disabled={busy || deleteConfirm.deleting}
               >
                 Descartar
@@ -327,7 +381,7 @@ export default function ContentCard({
                 <Button
                   variant="outline-secondary"
                   size="sm"
-                  onClick={() => setShowSources(true)}
+                  onClick={() => dispatchUI({ type: "OPEN_SOURCES" })}
                   disabled={busy || deleteConfirm.deleting}
                 >
                   Fuentes
@@ -348,7 +402,7 @@ export default function ContentCard({
                 <Button
                   variant="outline-secondary"
                   size="sm"
-                  onClick={() => setShowSources(true)}
+                  onClick={() => dispatchUI({ type: "OPEN_SOURCES" })}
                   disabled={busy || deleteConfirm.deleting}
                 >
                   Fuentes
@@ -374,10 +428,9 @@ export default function ContentCard({
                 <Button
                   variant="outline-secondary"
                   size="sm"
-                  onClick={() => {
-                    setEditText(content.content);
-                    setShowEdit(true);
-                  }}
+                  onClick={() =>
+                    dispatchEdit({ type: "OPEN", text: content.content })
+                  }
                   disabled={busy || deleteConfirm.deleting}
                 >
                   Editar
@@ -409,7 +462,7 @@ export default function ContentCard({
                   <Button
                     variant="outline-secondary"
                     size="sm"
-                    onClick={() => setShowSources(true)}
+                    onClick={() => dispatchUI({ type: "OPEN_SOURCES" })}
                     disabled={busy || deleteConfirm.deleting}
                   >
                     Fuentes
@@ -430,8 +483,8 @@ export default function ContentCard({
       </Card>
 
       <Modal
-        show={showEdit}
-        onHide={() => setShowEdit(false)}
+        show={edit.show}
+        onHide={() => dispatchEdit({ type: "CLOSE" })}
         centered
         size="lg"
       >
@@ -443,36 +496,38 @@ export default function ContentCard({
             <Form.Control
               as="textarea"
               rows={10}
-              value={editText}
-              onChange={(e) => setEditText(e.target.value)}
+              value={edit.text}
+              onChange={(e) =>
+                dispatchEdit({ type: "SET_TEXT", value: e.target.value })
+              }
               required
             />
           </Modal.Body>
           <Modal.Footer>
             <Button
               variant="secondary"
-              onClick={() => setShowEdit(false)}
-              disabled={saving}
+              onClick={() => dispatchEdit({ type: "CLOSE" })}
+              disabled={edit.saving}
             >
               Cancelar
             </Button>
             <Button
               variant="warning"
               type="submit"
-              disabled={saving || !editText.trim()}
+              disabled={edit.saving || !edit.text.trim()}
             >
-              {saving ? "Guardando..." : "Guardar"}
+              {edit.saving ? "Guardando..." : "Guardar"}
             </Button>
           </Modal.Footer>
         </Form>
       </Modal>
 
       <ConfirmModal
-        show={showDiscard}
+        show={ui.showDiscard}
         title="Descartar contenido"
         message="¿Descartar este contenido? El texto no se perderá pero no podrás confirmarlo."
         onConfirm={handleDiscard}
-        onCancel={() => setShowDiscard(false)}
+        onCancel={() => dispatchUI({ type: "CLOSE_DISCARD" })}
         variant="warning"
       />
 
@@ -486,10 +541,10 @@ export default function ContentCard({
         loading={deleteConfirm.deleting}
       />
 
-      {showSources && (
+      {ui.showSources && (
         <SourcesModal
-          show={showSources}
-          onHide={() => setShowSources(false)}
+          show={ui.showSources}
+          onHide={() => dispatchUI({ type: "CLOSE_SOURCES" })}
           collectionId={collectionId}
           entityId={content.entity_id}
           contentId={content.id}

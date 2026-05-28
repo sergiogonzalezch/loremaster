@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useReducer } from "react";
+import type { Reducer } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import {
@@ -19,6 +20,56 @@ import type { UserAdminRecord } from "../types/user";
 
 const PAGE_SIZE = 20;
 
+type ListState = {
+  users: UserAdminRecord[];
+  total: number;
+  loading: boolean;
+  error: string | null;
+};
+
+type ListAction =
+  | { type: "FETCH_START" }
+  | { type: "FETCH_SUCCESS"; users: UserAdminRecord[]; total: number }
+  | { type: "FETCH_ERROR"; error: string }
+  | { type: "DISMISS_ERROR" };
+
+const listReducer: Reducer<ListState, ListAction> = (state, action) => {
+  switch (action.type) {
+    case "FETCH_START":
+      return { ...state, loading: true, error: null };
+    case "FETCH_SUCCESS":
+      return { users: action.users, total: action.total, loading: false, error: null };
+    case "FETCH_ERROR":
+      return { ...state, loading: false, error: action.error };
+    case "DISMISS_ERROR":
+      return { ...state, error: null };
+  }
+};
+
+type DeleteState = {
+  target: UserAdminRecord | null;
+  deleting: boolean;
+};
+
+type DeleteAction =
+  | { type: "OPEN"; target: UserAdminRecord }
+  | { type: "CANCEL" }
+  | { type: "START" }
+  | { type: "DONE" };
+
+const deleteReducer: Reducer<DeleteState, DeleteAction> = (state, action) => {
+  switch (action.type) {
+    case "OPEN":
+      return { target: action.target, deleting: false };
+    case "CANCEL":
+      return { target: null, deleting: false };
+    case "START":
+      return { ...state, deleting: true };
+    case "DONE":
+      return { target: null, deleting: false };
+  }
+};
+
 /**
  * Panel de administración para gestionar usuarios del sistema.
  *
@@ -28,33 +79,28 @@ const PAGE_SIZE = 20;
  */
 export default function AdminPage() {
   const { user: currentUser } = useAuth();
-  const [users, setUsers] = useState<UserAdminRecord[]>([]);
-  const [total, setTotal] = useState(0);
+  const [list, dispatchList] = useReducer(listReducer, {
+    users: [],
+    total: 0,
+    loading: true,
+    error: null,
+  });
+  const { users, total, loading, error } = list;
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const [deleteTarget, setDeleteTarget] = useState<UserAdminRecord | null>(
-    null,
-  );
-  const [deleting, setDeleting] = useState(false);
+  const [del, dispatchDel] = useReducer(deleteReducer, {
+    target: null,
+    deleting: false,
+  });
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
-  /**
-   * Carga el listado paginado de usuarios desde el endpoint de admin.
-   */
   const fetchUsers = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+    dispatchList({ type: "FETCH_START" });
     try {
       const res = await getAdminUsers({ page, page_size: PAGE_SIZE });
-      setUsers(res.data);
-      setTotal(res.meta.total);
+      dispatchList({ type: "FETCH_SUCCESS", users: res.data, total: res.meta.total });
     } catch (e) {
-      setError(parseApiError(e).text);
-    } finally {
-      setLoading(false);
+      dispatchList({ type: "FETCH_ERROR", error: parseApiError(e).text });
     }
   }, [page]);
 
@@ -62,21 +108,16 @@ export default function AdminPage() {
     fetchUsers();
   }, [fetchUsers]);
 
-  /**
-   * Desactiva el usuario seleccionado y refresca el listado.
-   */
   async function handleDelete() {
-    if (!deleteTarget) return;
-    setDeleting(true);
+    if (!del.target) return;
+    dispatchDel({ type: "START" });
     try {
-      await adminDeleteUser(deleteTarget.id);
-      setDeleteTarget(null);
+      await adminDeleteUser(del.target.id);
+      dispatchDel({ type: "DONE" });
       await fetchUsers();
     } catch (e) {
-      setError(parseApiError(e).text);
-      setDeleteTarget(null);
-    } finally {
-      setDeleting(false);
+      dispatchList({ type: "FETCH_ERROR", error: parseApiError(e).text });
+      dispatchDel({ type: "DONE" });
     }
   }
 
@@ -95,7 +136,11 @@ export default function AdminPage() {
       </div>
 
       {error && (
-        <Alert variant="warning" dismissible onClose={() => setError(null)}>
+        <Alert
+          variant="warning"
+          dismissible
+          onClose={() => dispatchList({ type: "DISMISS_ERROR" })}
+        >
           {error}
         </Alert>
       )}
@@ -156,7 +201,7 @@ export default function AdminPage() {
                             style={{
                               width: 32,
                               height: 32,
-                              fontSize: "0.65rem",
+                              fontSize: "0.75rem",
                             }}
                           >
                             {u.username.slice(0, 2).toUpperCase()}
@@ -185,7 +230,7 @@ export default function AdminPage() {
                               <small
                                 style={{
                                   color: "var(--lm-accent)",
-                                  fontSize: "0.7rem",
+                                  fontSize: "0.75rem",
                                 }}
                               >
                                 (tú)
@@ -234,7 +279,7 @@ export default function AdminPage() {
                         <Button
                           variant="outline-danger"
                           size="sm"
-                          onClick={() => setDeleteTarget(u)}
+                          onClick={() => dispatchDel({ type: "OPEN", target: u })}
                         >
                           Eliminar
                         </Button>
@@ -273,12 +318,12 @@ export default function AdminPage() {
       )}
 
       <ConfirmModal
-        show={deleteTarget !== null}
+        show={del.target !== null}
         title="Eliminar usuario"
-        message={`¿Eliminar a "${deleteTarget?.username}"? El usuario quedará desactivado y no podrá iniciar sesión.`}
+        message={`¿Eliminar a "${del.target?.username}"? El usuario quedará desactivado y no podrá iniciar sesión.`}
         onConfirm={handleDelete}
-        onCancel={() => setDeleteTarget(null)}
-        loading={deleting}
+        onCancel={() => dispatchDel({ type: "CANCEL" })}
+        loading={del.deleting}
         variant="danger"
       />
     </div>

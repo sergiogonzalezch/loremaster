@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import type { FormEvent } from "react";
+import { useEffect, useReducer, useState } from "react";
+import type { FormEvent, Reducer } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Container,
@@ -27,6 +27,54 @@ interface RegisterForm {
   email: string;
   password: string;
 }
+
+// Estado UI: loading, mensajes y brute-force se transicionan juntos.
+type AuthUIState = {
+  loading: boolean;
+  error: string | null;
+  success: string | null;
+  failedAttempts: number;
+  retryAfter: number;
+};
+
+type AuthUIAction =
+  | { type: "SUBMIT_START" }
+  | { type: "SUBMIT_DONE" }
+  | { type: "LOGIN_OK" }
+  | { type: "LOGIN_FAIL"; error: string }
+  | { type: "REGISTER_OK"; message: string }
+  | { type: "REGISTER_FAIL"; error: string }
+  | { type: "TAB_CHANGED" }
+  | { type: "TICK_RETRY" };
+
+const authUIReducer: Reducer<AuthUIState, AuthUIAction> = (state, action) => {
+  switch (action.type) {
+    case "SUBMIT_START":
+      return { ...state, loading: true, error: null };
+    case "SUBMIT_DONE":
+      return { ...state, loading: false };
+    case "LOGIN_OK":
+      return { ...state, loading: false, failedAttempts: 0, retryAfter: 0 };
+    case "LOGIN_FAIL": {
+      const next = state.failedAttempts + 1;
+      return {
+        ...state,
+        loading: false,
+        error: action.error,
+        failedAttempts: next,
+        retryAfter: next >= 2 ? Math.min(2 ** (next - 1), 30) : state.retryAfter,
+      };
+    }
+    case "REGISTER_OK":
+      return { ...state, loading: false, success: action.message };
+    case "REGISTER_FAIL":
+      return { ...state, loading: false, error: action.error };
+    case "TAB_CHANGED":
+      return { ...state, error: null, success: null };
+    case "TICK_RETRY":
+      return { ...state, retryAfter: Math.max(0, state.retryAfter - 1) };
+  }
+};
 
 /**
  * Página de autenticación con Clerk (demo/production).
@@ -73,56 +121,51 @@ function LocalLoginPage() {
     email: "",
     password: "",
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   // Brute-force protection: delay progresivo tras intentos fallidos de login.
   // 1.º fallo: sin espera. 2.º: 2s. 3.º: 4s. 4.º: 8s. 5.º+: 30s (cap).
-  const [failedAttempts, setFailedAttempts] = useState(0);
-  const [retryAfter, setRetryAfter] = useState(0);
+  const [ui, dispatchUI] = useReducer(authUIReducer, {
+    loading: false,
+    error: null,
+    success: null,
+    failedAttempts: 0,
+    retryAfter: 0,
+  });
+  const { loading, error, success, retryAfter } = ui;
 
   useEffect(() => {
     if (retryAfter <= 0) return;
-    const timer = setTimeout(() => setRetryAfter((s) => s - 1), 1000);
+    const timer = setTimeout(() => dispatchUI({ type: "TICK_RETRY" }), 1000);
     return () => clearTimeout(timer);
   }, [retryAfter]);
 
   async function handleLogin(e: FormEvent) {
     e.preventDefault();
     if (retryAfter > 0) return;
-    setError(null);
-    setLoading(true);
+    dispatchUI({ type: "SUBMIT_START" });
     try {
       await login(loginForm);
-      setFailedAttempts(0);
+      dispatchUI({ type: "LOGIN_OK" });
       await contextLogin();
       navigate(redirectTo, { replace: true });
     } catch (err) {
-      const { text } = parseApiError(err);
-      setError(text);
-      const next = failedAttempts + 1;
-      setFailedAttempts(next);
-      if (next >= 2) setRetryAfter(Math.min(2 ** (next - 1), 30));
-    } finally {
-      setLoading(false);
+      dispatchUI({ type: "LOGIN_FAIL", error: parseApiError(err).text });
     }
   }
 
   async function handleRegister(e: FormEvent) {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
+    dispatchUI({ type: "SUBMIT_START" });
     try {
       await register(registerForm);
-      setSuccess("Usuario creado correctamente. Ya puedes iniciar sesión.");
+      dispatchUI({
+        type: "REGISTER_OK",
+        message: "Usuario creado correctamente. Ya puedes iniciar sesión.",
+      });
       setRegisterForm({ username: "", email: "", password: "" });
       setTab("login");
       setLoginForm({ username_or_email: registerForm.username, password: "" });
     } catch (err) {
-      const { text } = parseApiError(err);
-      setError(text);
-    } finally {
-      setLoading(false);
+      dispatchUI({ type: "REGISTER_FAIL", error: parseApiError(err).text });
     }
   }
 
@@ -151,8 +194,7 @@ function LocalLoginPage() {
               activeKey={tab}
               onSelect={(k) => {
                 setTab(k ?? "login");
-                setError(null);
-                setSuccess(null);
+                dispatchUI({ type: "TAB_CHANGED" });
               }}
               className="mb-3"
             >

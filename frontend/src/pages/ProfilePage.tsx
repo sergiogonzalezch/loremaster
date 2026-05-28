@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import type { FormEvent } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
+import type { FormEvent, Reducer } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import {
@@ -24,6 +24,76 @@ import { parseApiError } from "../utils/errors";
 import { formatDate } from "../utils/formatters";
 import type { UserProfile, UpdateProfileRequest } from "../types/user";
 
+// Estado de status: loading, saving, uploadingAvatar, error y success.
+type StatusState = {
+  loading: boolean;
+  saving: boolean;
+  uploadingAvatar: boolean;
+  error: string | null;
+  success: boolean;
+};
+
+type StatusAction =
+  | { type: "INIT_DONE" }
+  | { type: "INIT_ERROR"; error: string }
+  | { type: "SAVE_START" }
+  | { type: "SAVE_OK" }
+  | { type: "SAVE_ERROR"; error: string }
+  | { type: "UPLOAD_START" }
+  | { type: "UPLOAD_DONE" }
+  | { type: "UPLOAD_ERROR"; error: string }
+  | { type: "SHOW_ERROR"; error: string }
+  | { type: "DISMISS_ERROR" }
+  | { type: "DISMISS_SUCCESS" };
+
+const statusReducer: Reducer<StatusState, StatusAction> = (state, action) => {
+  switch (action.type) {
+    case "INIT_DONE":
+      return { ...state, loading: false };
+    case "INIT_ERROR":
+      return { ...state, loading: false, error: action.error };
+    case "SAVE_START":
+      return { ...state, saving: true, error: null, success: false };
+    case "SAVE_OK":
+      return { ...state, saving: false, success: true };
+    case "SAVE_ERROR":
+      return { ...state, saving: false, error: action.error };
+    case "UPLOAD_START":
+      return { ...state, uploadingAvatar: true, error: null };
+    case "UPLOAD_DONE":
+      return { ...state, uploadingAvatar: false };
+    case "UPLOAD_ERROR":
+      return { ...state, uploadingAvatar: false, error: action.error };
+    case "SHOW_ERROR":
+      return { ...state, error: action.error };
+    case "DISMISS_ERROR":
+      return { ...state, error: null };
+    case "DISMISS_SUCCESS":
+      return { ...state, success: false };
+  }
+};
+
+// Form state: 3 campos relacionados.
+type FormState = { displayName: string; bio: string; email: string };
+type FormAction =
+  | { type: "RESET"; displayName: string; bio: string }
+  | { type: "SET_DISPLAY"; value: string }
+  | { type: "SET_BIO"; value: string }
+  | { type: "SET_EMAIL"; value: string };
+
+const formReducer: Reducer<FormState, FormAction> = (state, action) => {
+  switch (action.type) {
+    case "RESET":
+      return { displayName: action.displayName, bio: action.bio, email: "" };
+    case "SET_DISPLAY":
+      return { ...state, displayName: action.value };
+    case "SET_BIO":
+      return { ...state, bio: action.value };
+    case "SET_EMAIL":
+      return { ...state, email: action.value };
+  }
+};
+
 /**
  * Página de edición del perfil del usuario autenticado.
  *
@@ -34,31 +104,39 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const { setAvatarUrl: setContextAvatarUrl } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const [displayName, setDisplayName] = useState("");
-  const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
-  const [email, setEmail] = useState("");
-
+  const [status, dispatchStatus] = useReducer(statusReducer, {
+    loading: true,
+    saving: false,
+    uploadingAvatar: false,
+    error: null,
+    success: false,
+  });
+  const { loading, saving, uploadingAvatar, error, success } = status;
+  const [form, dispatchForm] = useReducer(formReducer, {
+    displayName: "",
+    bio: "",
+    email: "",
+  });
+  const { displayName, bio, email } = form;
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => {
     Promise.all([getMyProfile(), getMyAvatar()])
       .then(([p, avatar]) => {
         setProfile(p);
-        setDisplayName(p.display_name ?? "");
-        setBio(p.bio ?? "");
+        dispatchForm({
+          type: "RESET",
+          displayName: p.display_name ?? "",
+          bio: p.bio ?? "",
+        });
         const url = avatar.avatar_url;
         setAvatarUrl(url ? `${url}?t=${Date.now()}` : "");
-        setEmail("");
+        dispatchStatus({ type: "INIT_DONE" });
       })
-      .catch((e) => setError(parseApiError(e).text))
-      .finally(() => setLoading(false));
+      .catch((e) =>
+        dispatchStatus({ type: "INIT_ERROR", error: parseApiError(e).text }),
+      );
   }, []);
 
   /**
@@ -72,58 +150,51 @@ export default function ProfilePage() {
 
     const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (!allowedTypes.includes(file.type)) {
-      setError("Solo se permiten imágenes (JPEG, PNG, WebP, GIF).");
+      dispatchStatus({
+        type: "SHOW_ERROR",
+        error: "Solo se permiten imágenes (JPEG, PNG, WebP, GIF).",
+      });
       return;
     }
 
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-      setError("La imagen excede el tamaño máximo de 5MB.");
+      dispatchStatus({
+        type: "SHOW_ERROR",
+        error: "La imagen excede el tamaño máximo de 5MB.",
+      });
       return;
     }
 
-    setUploadingAvatar(true);
-    setError(null);
-
+    dispatchStatus({ type: "UPLOAD_START" });
     try {
       const result = await uploadMyAvatar(file);
       const url = result.avatar_url;
       const busted = url ? `${url}?t=${Date.now()}` : "";
       setAvatarUrl(busted);
       setContextAvatarUrl(busted || null);
+      dispatchStatus({ type: "UPLOAD_DONE" });
     } catch (e) {
-      setError(parseApiError(e).text);
+      dispatchStatus({ type: "UPLOAD_ERROR", error: parseApiError(e).text });
     } finally {
-      setUploadingAvatar(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
 
-  /**
-   * Elimina el avatar actual del usuario.
-   */
   async function handleDeleteAvatar() {
-    setError(null);
+    dispatchStatus({ type: "DISMISS_ERROR" });
     try {
       await deleteMyAvatar();
       setAvatarUrl("");
       setContextAvatarUrl(null);
     } catch (e) {
-      setError(parseApiError(e).text);
+      dispatchStatus({ type: "SHOW_ERROR", error: parseApiError(e).text });
     }
   }
 
-  /**
-   * Envía los cambios del perfil al backend, actualizando solo
-   * los campos que han sido modificados.
-   *
-   * @param e - Evento del formulario de perfil.
-   */
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setSaving(true);
-    setError(null);
-    setSuccess(false);
+    dispatchStatus({ type: "SAVE_START" });
 
     const patch: UpdateProfileRequest = {};
     if (displayName !== (profile?.display_name ?? ""))
@@ -134,14 +205,14 @@ export default function ProfilePage() {
     try {
       const updated = await updateMyProfile(patch);
       setProfile(updated);
-      setDisplayName(updated.display_name ?? "");
-      setBio(updated.bio ?? "");
-      setEmail("");
-      setSuccess(true);
+      dispatchForm({
+        type: "RESET",
+        displayName: updated.display_name ?? "",
+        bio: updated.bio ?? "",
+      });
+      dispatchStatus({ type: "SAVE_OK" });
     } catch (e) {
-      setError(parseApiError(e).text);
-    } finally {
-      setSaving(false);
+      dispatchStatus({ type: "SAVE_ERROR", error: parseApiError(e).text });
     }
   }
 
@@ -188,7 +259,7 @@ export default function ProfilePage() {
                 <Alert
                   variant="danger"
                   dismissible
-                  onClose={() => setError(null)}
+                  onClose={() => dispatchStatus({ type: "DISMISS_ERROR" })}
                 >
                   {error}
                 </Alert>
@@ -197,7 +268,7 @@ export default function ProfilePage() {
                 <Alert
                   variant="success"
                   dismissible
-                  onClose={() => setSuccess(false)}
+                  onClose={() => dispatchStatus({ type: "DISMISS_SUCCESS" })}
                 >
                   Perfil actualizado correctamente.
                 </Alert>
@@ -221,20 +292,7 @@ export default function ProfilePage() {
                         }}
                       />
                     ) : (
-                      <div
-                        style={{
-                          width: "80px",
-                          height: "80px",
-                          borderRadius: "50%",
-                          backgroundColor: "var(--lm-bg-secondary)",
-                          border: "2px dashed var(--lm-accent)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: "var(--lm-accent)",
-                          fontSize: "1.5rem",
-                        }}
-                      >
+                      <div className="lm-avatar-placeholder">
                         <i className="bi bi-person" />
                       </div>
                     )}
@@ -287,7 +345,9 @@ export default function ProfilePage() {
                   <Form.Control
                     type="text"
                     value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
+                    onChange={(e) =>
+                      dispatchForm({ type: "SET_DISPLAY", value: e.target.value })
+                    }
                     placeholder="Tu nombre o alias"
                     maxLength={100}
                   />
@@ -301,7 +361,9 @@ export default function ProfilePage() {
                     as="textarea"
                     rows={3}
                     value={bio}
-                    onChange={(e) => setBio(e.target.value)}
+                    onChange={(e) =>
+                      dispatchForm({ type: "SET_BIO", value: e.target.value })
+                    }
                     placeholder="Cuéntanos algo sobre ti..."
                     maxLength={500}
                   />
@@ -315,7 +377,9 @@ export default function ProfilePage() {
                   <Form.Control
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) =>
+                      dispatchForm({ type: "SET_EMAIL", value: e.target.value })
+                    }
                     placeholder="Dejar vacío para no cambiar"
                   />
                 </Form.Group>

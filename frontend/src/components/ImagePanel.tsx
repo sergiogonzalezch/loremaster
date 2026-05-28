@@ -1,4 +1,5 @@
-import { useState, useCallback, useReducer } from "react";
+import { useCallback, useReducer, useState } from "react";
+import type { Reducer } from "react";
 import {
   Offcanvas,
   Nav,
@@ -88,6 +89,30 @@ function genReducer(state: GenState, action: GenAction): GenState {
       };
   }
 }
+
+type HistoryState = {
+  generations: ImageGenerationItem[];
+  loading: boolean;
+};
+
+type HistoryAction =
+  | { type: "LOAD_START" }
+  | { type: "LOAD_OK"; generations: ImageGenerationItem[] }
+  | { type: "LOAD_ERROR" }
+  | { type: "SET"; generations: ImageGenerationItem[] };
+
+const historyReducer: Reducer<HistoryState, HistoryAction> = (state, action) => {
+  switch (action.type) {
+    case "LOAD_START":
+      return { ...state, loading: true };
+    case "LOAD_OK":
+      return { generations: action.generations, loading: false };
+    case "LOAD_ERROR":
+      return { ...state, loading: false };
+    case "SET":
+      return { ...state, generations: action.generations };
+  }
+};
 
 type ModalState = {
   show: boolean;
@@ -217,8 +242,11 @@ export default function ImagePanel({
     "generar",
   );
   const [error, setError] = useState<string | null>(null);
-  const [generations, setGenerations] = useState<ImageGenerationItem[]>([]);
-  const [loadingGenerations, setLoadingGenerations] = useState(false);
+  const [history, dispatchHistory] = useReducer(historyReducer, {
+    generations: [],
+    loading: false,
+  });
+  const { generations, loading: loadingGenerations } = history;
   const [seedBase, setSeedBase] = useState(
     () => Math.floor(Math.random() * 999983) + 1,
   );
@@ -239,14 +267,13 @@ export default function ImagePanel({
   });
 
   const fetchData = useCallback(async () => {
-    setLoadingGenerations(true);
+    dispatchHistory({ type: "LOAD_START" });
     try {
       const res = await listImageGenerations(collectionId, entityId);
-      setGenerations(res.generations);
+      dispatchHistory({ type: "LOAD_OK", generations: res.generations });
     } catch {
+      dispatchHistory({ type: "LOAD_ERROR" });
       setError("Error al cargar historial");
-    } finally {
-      setLoadingGenerations(false);
     }
   }, [collectionId, entityId]);
 
@@ -349,7 +376,7 @@ export default function ImagePanel({
       });
       onGenerated();
       const genRes = await listImageGenerations(collectionId, entityId);
-      setGenerations(genRes.generations);
+      dispatchHistory({ type: "SET", generations: genRes.generations });
       setActiveTab("historial");
       setSeedBase(Math.floor(Math.random() * 999983) + 1);
     } catch (e) {

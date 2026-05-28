@@ -743,23 +743,7 @@ export default function DocumentsTab({
                         <span>Cargando contenido…</span>
                       </div>
                     ) : detail.documentContent ? (
-                      <pre
-                        style={{
-                          maxHeight: 320,
-                          overflow: "auto",
-                          whiteSpace: "pre-wrap",
-                          wordBreak: "break-word",
-                          fontSize: "0.78rem",
-                          fontFamily: "var(--lm-font-body)",
-                          background: "var(--lm-raised)",
-                          border: "1px solid var(--lm-border)",
-                          color: "var(--lm-text)",
-                          padding: "0.75rem",
-                          borderRadius: "var(--lm-radius)",
-                          marginTop: "0.5rem",
-                          marginBottom: 0,
-                        }}
-                      >
+                      <pre className="lm-doc-content-pre">
                         {detail.documentContent}
                       </pre>
                     ) : (

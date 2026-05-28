@@ -19,7 +19,7 @@ function InitialsCircle({ username }: { username: string }) {
   return (
     <div
       className="lm-avatar-initials"
-      style={{ width: 32, height: 32, fontSize: "0.7rem" }}
+      style={{ width: 32, height: 32, fontSize: "0.75rem" }}
     >
       {initials}
     </div>

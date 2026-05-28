@@ -192,7 +192,7 @@ export default function GenerateTab({ collectionId, refreshKey }: Props) {
                         background: "var(--lm-accent-glow)",
                         color: "var(--lm-accent)",
                         border: "1px solid var(--lm-border-accent)",
-                        fontSize: "0.65rem",
+                        fontSize: "0.75rem",
                       }}
                     >
                       {result.sources_count} fuentes

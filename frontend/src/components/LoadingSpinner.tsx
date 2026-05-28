@@ -19,7 +19,7 @@ export default function LoadingSpinner({
       <span
         style={{
           fontFamily: "'Cinzel', serif",
-          fontSize: "0.72rem",
+          fontSize: "0.75rem",
           letterSpacing: "0.15em",
           textTransform: "uppercase",
         }}
