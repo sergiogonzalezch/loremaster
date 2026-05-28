@@ -177,7 +177,7 @@ def process_ingest_background(session: Session, document: Document, text: str) -
         document.status = DocumentStatus.failed
         document.processing_error = str(e)
     session.add(document)
-    session.commit()
+    db_commit(session, f"process_ingest_background({document.id})")
     logger.info("Document %s finished with status=%s", document.id, document.status)
 
 

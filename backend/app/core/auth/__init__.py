@@ -1,5 +1,6 @@
 """Utilidades de autenticación JWT y hashing de contraseñas."""
 
+import secrets
 from datetime import UTC, datetime, timedelta
 
 import bcrypt
@@ -11,6 +12,11 @@ from app.core.config import settings
 SECRET_KEY = settings.secret_key
 ALGORITHM = settings.algorithm
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
+
+# Hash dummy válido (60 chars) generado una vez al arrancar para la protección
+# de timing en authenticate_user cuando el usuario no existe.
+# bcrypt.checkpw lanza ValueError para hashes <60 chars, dejando el timing en 0ms.
+DUMMY_HASH: str = bcrypt.hashpw(secrets.token_bytes(16), bcrypt.gensalt()).decode()
 
 # Politica de token_version:
 # - token_version se incrementa en logout para invalidar tokens previos
@@ -64,11 +70,7 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verifica una contraseña en texto plano contra un hash bcrypt.
-
-    Retorna False silenciosamente si el hash es inválido (timing-safe
-    dummy checks con hashes dummy no válidos).
-    """
+    """Verifica una contraseña en texto plano contra un hash bcrypt."""
     try:
         return bcrypt.checkpw(plain_password.encode(), hashed_password.encode())
     except ValueError:

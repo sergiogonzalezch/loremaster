@@ -60,7 +60,9 @@ function LocalLoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login: contextLogin } = useAuth();
-  const redirectTo = (location.state as { from?: string } | null)?.from ?? "/";
+  const from = (location.state as { from?: string } | null)?.from;
+  // Solo rutas internas — descarta cualquier valor que no empiece por "/" para evitar open redirect
+  const redirectTo = from?.startsWith("/") ? from : "/";
   const [tab, setTab] = useState<string>("login");
   const [loginForm, setLoginForm] = useState<LoginForm>({
     username_or_email: "",

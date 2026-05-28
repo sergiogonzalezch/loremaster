@@ -15,11 +15,13 @@ from app.core.exceptions import (
     ContentNotShareableError,
 )
 from app.domain.content_guard import check_generated_output, check_user_input
+from app.models.db.document import Document
 from app.models.db.entity import Entity
 from app.models.db.entity_content import EntityContent
 from app.models.db.generated_text import GeneratedText
+from app.models.db.generated_text_chunk import GeneratedTextChunk
 from app.models.enums import ContentCategory, ContentStatus
-from app.models.schemas.entity_content import EntityContentResponse
+from app.models.schemas.entity_content import ContentChunkItem, ContentChunksResponse, EntityContentResponse
 
 logger = logging.getLogger(__name__)
 
@@ -321,6 +323,49 @@ def _to_response(
         created_at=content.created_at,
         confirmed_at=content.confirmed_at,
         updated_at=content.updated_at,
+    )
+
+
+def get_content_chunks_service(
+    session: Session,
+    content_id: str,
+    entity_id: str,
+    collection_id: str,
+) -> ContentChunksResponse | None:
+    """Obtiene los fragmentos RAG usados al generar un contenido con nombres de documento resueltos.
+
+    Returns:
+        ContentChunksResponse si el contenido existe, None si no se encontró.
+
+    """
+    content = _get_active_content(session, content_id, entity_id, collection_id)
+    if not content:
+        return None
+
+    chunks = session.exec(
+        select(GeneratedTextChunk).where(GeneratedTextChunk.generated_text_id == content.generated_text_id).order_by(GeneratedTextChunk.position),
+    ).all()
+
+    doc_ids = {c.document_id for c in chunks if c.document_id}
+    filename_map: dict[str, str] = {}
+    if doc_ids:
+        docs = session.exec(select(Document).where(Document.id.in_(doc_ids))).all()
+        filename_map = {d.id: d.filename for d in docs}
+
+    return ContentChunksResponse(
+        content_id=content_id,
+        generated_text_id=content.generated_text_id,
+        chunks=[
+            ContentChunkItem(
+                id=c.id,
+                document_id=c.document_id,
+                filename=filename_map.get(c.document_id) if c.document_id else None,
+                chunk_text=c.chunk_text,
+                position=c.position,
+                score=c.score,
+            )
+            for c in chunks
+        ],
     )
 
 

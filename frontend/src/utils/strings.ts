@@ -27,7 +27,7 @@ export function trimStringValues<T extends object>(obj: T): T {
  *
  * Reglas de validación:
  * - Rutas relativas (./ o /): permitidas (mismo origin)
- * - Data URIs (data:image/...): permitidas (inline seguro)
+ * - Data URIs rasterizadas (jpeg/png/webp/gif base64): permitidas. SVG excluido (puede contener JS).
  * - Blob URLs (blob:...): permitidas (generadas localmente)
  * - localhost / 127.0.0.1: permitidas (desarrollo)
  * - Mismo hostname que la página: permitido
@@ -47,8 +47,9 @@ export function isImageUrlAllowed(url: string | null | undefined): boolean {
     return true;
   }
 
-  // Data URIs (base64 inline)
-  if (trimmed.startsWith("data:image/")) {
+  // Data URIs — solo tipos rasterizados seguros; SVG se excluye porque puede
+  // contener JS ejecutable (e.g. <svg onload=alert(1)>).
+  if (/^data:image\/(jpeg|jpg|png|webp|gif);base64,/.test(trimmed)) {
     return true;
   }
 

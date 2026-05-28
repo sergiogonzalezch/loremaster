@@ -8,6 +8,7 @@ from sqlmodel import Session
 
 from app.core.auth.dependencies import get_current_user
 from app.core.database.dependencies import get_current_db_user
+from app.core.exceptions import DuplicateEmailError, UserNotFoundError
 from app.database import get_session
 from app.models.db.user import User
 from app.models.schemas.public import PublicProfileResponse
@@ -46,7 +47,10 @@ def update_my_profile(
     session: Annotated[Session, Depends(get_session)],
 ):
     """Actualiza el perfil del usuario autenticado (display_name, bio, email)."""
-    return update_profile(session, user, request)
+    try:
+        return update_profile(session, user, request)
+    except DuplicateEmailError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.get("/me/avatar", response_model=AvatarResponse)
@@ -86,4 +90,7 @@ def get_user_public_profile(
     session: Annotated[Session, Depends(get_session)],
 ):
     """Obtiene el perfil público de un usuario con sus contenidos e imágenes compartidos."""
-    return get_public_profile(session, username)
+    try:
+        return get_public_profile(session, username)
+    except UserNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc

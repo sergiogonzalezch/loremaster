@@ -1,11 +1,10 @@
 """Rutas de administración para gestión de usuarios y contenido."""
 
 import logging
-from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from app.core.api.params import PaginationParams
 from app.core.auth.dependencies import get_admin_user
@@ -15,8 +14,8 @@ from app.models.db.collection import Collection
 from app.models.db.user import User
 from app.models.schemas.user import UserAdminResponse
 from app.services.collection.collection_service import delete_collection_service
-from app.services.deletion_service import cascade_delete_collection
-from app.services.profile.profile_service import delete_profile_image, get_avatar_info
+from app.services.deletion_service import delete_user_service
+from app.services.profile.profile_service import get_avatar_info
 
 logger = logging.getLogger(__name__)
 
@@ -110,25 +109,7 @@ def admin_delete_user(
     user = session.get(User, user_id)
     if not user or user.is_deleted:
         return Response(status_code=204)
-    collections = session.exec(
-        select(Collection).where(
-            Collection.owner_id == user_id,
-            Collection.is_deleted.is_(False),
-        ),
-    ).all()
-    for collection in collections:
-        cascade_delete_collection(session, collection)
-    try:
-        delete_profile_image(session, user)
-    except OSError:
-        logger.warning(
-            "Failed to delete avatar for user %s during admin deletion",
-            user_id,
-        )
-    user.is_deleted = True
-    user.deleted_at = datetime.now(UTC)
-    session.add(user)
-    session.commit()
+    delete_user_service(session, user)
     logger.info(
         "audit action=admin_delete_user user_id=%s admin_id=%s",
         user_id,

@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy.orm import Session
 from sqlmodel import select
 
-from app.core.exceptions import NoContextAvailableError
+from app.core.exceptions import ContentNotConfirmedError, NoContextAvailableError
 from app.models.db.entity import Entity, EntityType
 from app.models.db.entity_content import EntityContent
 from app.models.db.image_generation import ImageRecord
@@ -75,7 +75,7 @@ def test_ig_02_build_prompt_fails_for_unconfirmed_content(
     db_session.add(pending_content)
     db_session.commit()
 
-    with pytest.raises(NoContextAvailableError):
+    with pytest.raises(ContentNotConfirmedError):
         build_prompt_service(db_session, sample_entity, pending_content.id)
 
 
@@ -84,7 +84,7 @@ def test_ig_03_build_prompt_fails_for_nonexistent_content(
     sample_entity: Entity,
 ):
     """IG-03: build_prompt lanza error si el content_id no existe."""
-    with pytest.raises(NoContextAvailableError):
+    with pytest.raises(ContentNotConfirmedError):
         build_prompt_service(
             db_session,
             sample_entity,

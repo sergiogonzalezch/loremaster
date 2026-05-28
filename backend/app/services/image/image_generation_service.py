@@ -3,14 +3,14 @@
 import logging
 import uuid as _uuid
 from contextlib import suppress
-from datetime import UTC, datetime
 from pathlib import Path
 
 from sqlmodel import Session, select
 
 from app.core.config import settings
+from app.core.database.soft_delete import soft_delete
 from app.core.database.utils import db_commit
-from app.core.exceptions import NoContextAvailableError
+from app.core.exceptions import ContentNotConfirmedError, NoContextAvailableError
 from app.core.storage import build_storage_url
 from app.domain.content_guard import check_prompt_length, check_user_input
 from app.engine.image_prompt_builder import build_visual_prompt
@@ -58,10 +58,6 @@ def _get_confirmed_content(
             EntityContent.is_deleted.is_(False),
         ),
     ).first()
-
-
-def _build_url(storage_path: str | None) -> str | None:
-    return build_storage_url(storage_path)
 
 
 def _create_image_generation(
@@ -128,7 +124,7 @@ def build_prompt_service(
     """
     content = _get_confirmed_content(session, entity, content_id)
     if not content:
-        raise NoContextAvailableError
+        raise ContentNotConfirmedError
 
     if content.category not in ALLOWED_IMAGE_CATEGORIES:
         msg = f"Categoría '{content.category.value}' no soportada para generación de imágenes"
@@ -166,7 +162,7 @@ def generate_images_service(
     """
     content = _get_confirmed_content(session, entity, content_id)
     if not content:
-        raise NoContextAvailableError
+        raise ContentNotConfirmedError
 
     check_prompt_length(final_prompt)
     check_user_input(auto_prompt)
@@ -199,7 +195,7 @@ def generate_images_service(
         images_result.append(
             ImageResult(
                 id=data.image_id,
-                image_url=data.image_url or _build_url(data.storage_path),
+                image_url=data.image_url or build_storage_url(data.storage_path),
                 seed=data.seed,
                 width=settings.image_width,
                 height=settings.image_height,
@@ -254,7 +250,7 @@ def share_image_service(
         collection_id=record.collection_id,
         seed=record.seed,
         storage_path=record.storage_path,
-        image_url=record.image_url or _build_url(record.storage_path),
+        image_url=record.image_url or build_storage_url(record.storage_path),
         filename=record.filename,
         extension=record.extension,
         width=record.width,
@@ -291,8 +287,6 @@ def delete_image_service(
         raise NoContextAvailableError
 
     record.is_shared = False
-    record.is_deleted = True
-    record.deleted_at = datetime.now(UTC)
 
     # storage_path puede ser None en imágenes mock aunque el backend cambie.
     # Validar contenimiento dentro de media_root antes de operar (defensa en profundidad:
@@ -310,7 +304,7 @@ def delete_image_service(
                 record.storage_path,
             )
 
-    db_commit(session, f"delete_image({image_id})")
+    soft_delete(session, record)
 
 
 def get_generation_service(
@@ -344,7 +338,7 @@ def get_generation_service(
     images = [
         ImageResult(
             id=r.id,
-            image_url=r.image_url or _build_url(r.storage_path),
+            image_url=r.image_url or build_storage_url(r.storage_path),
             seed=r.seed,
             width=r.width,
             height=r.height,
@@ -378,17 +372,25 @@ def list_generations_service(
         .order_by(ImageGeneration.created_at.desc()),
     ).all()
 
+    if not generations:
+        return [], 0
+
+    # Carga todas las imágenes en una sola query para evitar N+1
+    gen_ids = [g.id for g in generations]
+    all_records = session.exec(
+        select(ImageRecord)
+        .where(
+            ImageRecord.generation_id.in_(gen_ids),
+            ImageRecord.is_deleted.is_(False),
+        )
+        .order_by(ImageRecord.seed.asc()),
+    ).all()
+    records_by_gen: dict[str, list] = {}
+    for r in all_records:
+        records_by_gen.setdefault(r.generation_id, []).append(r)
+
     result = []
     for gen in generations:
-        records = session.exec(
-            select(ImageRecord)
-            .where(
-                ImageRecord.generation_id == gen.id,
-                ImageRecord.is_deleted.is_(False),
-            )
-            .order_by(ImageRecord.seed.asc()),
-        ).all()
-
         images = [
             ImageRecordResponse(
                 id=r.id,
@@ -397,7 +399,7 @@ def list_generations_service(
                 collection_id=r.collection_id,
                 seed=r.seed,
                 storage_path=r.storage_path,
-                image_url=r.image_url or _build_url(r.storage_path),
+                image_url=r.image_url or build_storage_url(r.storage_path),
                 filename=r.filename,
                 extension=r.extension,
                 width=r.width,
@@ -408,9 +410,8 @@ def list_generations_service(
                 is_deleted=r.is_deleted,
                 deleted_at=r.deleted_at,
             )
-            for r in records
+            for r in records_by_gen.get(gen.id, [])
         ]
-
         result.append(
             ImageGenerationListItem(
                 id=gen.id,

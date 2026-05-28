@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.core.auth.dependencies import get_current_user
-from app.core.config import settings
+from app.services.model_service import list_ollama_models
 
 router = APIRouter(tags=["models"])
 
@@ -24,25 +24,10 @@ class ModelInfo(BaseModel):
 def list_models(_: Annotated[dict, Depends(get_current_user)]) -> list[ModelInfo]:
     """Lista los modelos LLM instalados localmente en Ollama."""
     try:
-        response = httpx.get(
-            f"{settings.ollama_base_url}/api/tags",
-            timeout=5.0,
-        )
-        response.raise_for_status()
+        models = list_ollama_models()
     except httpx.HTTPError as exc:
         raise HTTPException(
             status_code=503,
             detail="El servicio de modelos no está disponible en este momento.",
         ) from exc
-
-    models = response.json().get("models", [])
-    excluded = settings.ollama_excluded_models
-    return [
-        ModelInfo(
-            name=m["name"],
-            size=m.get("size", 0),
-            is_default=m["name"] == settings.ollama_model,
-        )
-        for m in models
-        if not any(m["name"].startswith(prefix) for prefix in excluded)
-    ]
+    return [ModelInfo(**m) for m in models]

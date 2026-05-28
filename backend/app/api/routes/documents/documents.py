@@ -248,8 +248,9 @@ def document_events(
     def event_stream():
         seen_processing: dict[str, DocumentStatus] = {}
         check_interval = 2
+        deadline = time.time() + 300  # 5 min max — libera el thread del pool
 
-        while True:
+        while time.time() < deadline:
             time.sleep(check_interval)
 
             try:

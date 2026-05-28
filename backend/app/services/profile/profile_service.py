@@ -5,12 +5,13 @@ import re
 import shutil
 from pathlib import Path
 
-from fastapi import HTTPException, UploadFile
+from fastapi import UploadFile
 from sqlmodel import Session, select
 
-from app.core.api.filters import _CONTENT_CONDITIONS, _IMAGE_CONDITIONS
+from app.core.api.filters import CONTENT_CONDITIONS, IMAGE_CONDITIONS
 from app.core.config import settings
 from app.core.database.utils import db_commit
+from app.core.exceptions import DuplicateEmailError, UserNotFoundError
 from app.core.storage import (
     build_storage_path,
     build_storage_url,
@@ -58,10 +59,7 @@ def update_profile(session: Session, user: User, request: UpdateProfileRequest) 
             ),
         ).first()
         if existing:
-            raise HTTPException(
-                status_code=409,
-                detail="El correo electrónico ya está en uso.",
-            )
+            raise DuplicateEmailError
         user.email = request.email
     session.add(user)
     session.commit()
@@ -75,10 +73,10 @@ def get_public_profile(session: Session, username: str) -> PublicProfileResponse
         select(User).where(User.username == username, User.is_deleted.is_(False)),
     ).first()
     if not user:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+        raise UserNotFoundError
 
-    content_conditions = (*_CONTENT_CONDITIONS, Collection.owner_id == user.id)
-    image_conditions = (*_IMAGE_CONDITIONS, Collection.owner_id == user.id)
+    content_conditions = (*CONTENT_CONDITIONS, Collection.owner_id == user.id)
+    image_conditions = (*IMAGE_CONDITIONS, Collection.owner_id == user.id)
 
     content_rows = session.exec(
         select(EntityContent, Entity)

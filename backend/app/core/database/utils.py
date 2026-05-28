@@ -1,9 +1,8 @@
 """Utilidades de base de datos para paginación, commit y consultas."""
 
-import contextlib
 import logging
 from collections.abc import Callable, Iterable, Sequence
-from typing import Literal, TypeVar
+from typing import Any, Literal, TypeVar
 
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
@@ -41,7 +40,7 @@ def paginate_with_sort(
     conditions: Sequence,
     page: int = 1,
     page_size: int = 20,
-    order_col: str | None = None,
+    order_col: Any = None,
     order: Literal["asc", "desc"] = "desc",
 ) -> tuple[list[T], int]:
     """Pagina y ordena una consulta por modelo y condiciones dadas.
@@ -79,8 +78,10 @@ def bulk_delete_items(
 ) -> None:
     """Itera sobre items ejecutando delete_fn, suprimiendo errores individuales."""
     for item in items:
-        with contextlib.suppress(Exception):
+        try:
             delete_fn(session, item)
+        except Exception:  # noqa: BLE001
+            logger.warning("bulk_delete_items: error deleting %r, skipping", item, exc_info=True)
 
 
 def get_active_by_id(

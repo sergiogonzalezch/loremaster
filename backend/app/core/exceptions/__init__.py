@@ -181,3 +181,19 @@ class LLMBusyError(Exception):
         super().__init__(
             "El servicio LLM está ocupado. Intenta de nuevo en 30 segundos.",
         )
+
+
+class DuplicateEmailError(Exception):
+    """Lanzada cuando se intenta usar un email que ya pertenece a otro usuario."""
+
+    def __init__(self) -> None:
+        """Inicializa la excepción indicando email duplicado."""
+        super().__init__("El correo electrónico ya está en uso.")
+
+
+class UserNotFoundError(Exception):
+    """Lanzada cuando no se encuentra el usuario solicitado."""
+
+    def __init__(self) -> None:
+        """Inicializa la excepción indicando usuario no encontrado."""
+        super().__init__("Usuario no encontrado.")

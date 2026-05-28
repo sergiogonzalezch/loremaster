@@ -10,6 +10,7 @@ Importa funciones de cascade_service para la fase de soft-delete en cascada.
 
 import logging
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 
 from sqlmodel import Session, select
@@ -21,10 +22,12 @@ from app.models.db.collection import Collection
 from app.models.db.document import Document
 from app.models.db.entity import Entity
 from app.models.db.image_generation import ImageRecord
+from app.models.db.user import User
 from app.services.cascade_service import (
     cascade_delete_by_collection,
     cascade_delete_by_entity,
 )
+from app.services.profile.profile_service import delete_profile_image
 
 logger = logging.getLogger(__name__)
 
@@ -262,3 +265,34 @@ def _cascade_delete_images_by_collection(session: Session, collection_id: str) -
 
     """
     return _cascade_delete_images(session, collection_id=collection_id)
+
+
+def delete_user_service(session: Session, user: User) -> None:
+    """Elimina un usuario y todas sus colecciones en cascada (operación de administración).
+
+    Cascade-elimina colecciones y sus contenidos, borra el avatar y soft-deleteae al usuario.
+    El log de auditoría y la verificación de auto-eliminación son responsabilidad del caller.
+
+    Args:
+        session: Sesión de base de datos activa.
+        user: Instancia del usuario a eliminar.
+
+    """
+    collections = session.exec(
+        select(Collection).where(
+            Collection.owner_id == user.id,
+            Collection.is_deleted.is_(False),
+        ),
+    ).all()
+    for collection in collections:
+        cascade_delete_collection(session, collection)
+
+    try:
+        delete_profile_image(session, user)
+    except OSError:
+        logger.warning("Failed to delete avatar for user %s during deletion", user.id)
+
+    user.is_deleted = True
+    user.deleted_at = datetime.now(UTC)
+    session.add(user)
+    session.commit()

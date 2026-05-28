@@ -10,6 +10,7 @@ from app.core.database.dependencies import get_entity_or_404_owned
 from app.core.exceptions import (
     ComfyUITimeoutError,
     ComfyUIUnavailableError,
+    ContentNotConfirmedError,
     DatabaseError,
     LLMBusyError,
     NoContextAvailableError,
@@ -59,7 +60,7 @@ def build_prompt(
             headers={"Retry-After": "30"},
             detail=str(e),
         ) from e
-    except NoContextAvailableError as e:
+    except (NoContextAvailableError, ContentNotConfirmedError) as e:
         raise HTTPException(
             status_code=422,
             detail="El contenido indicado no existe, no está confirmado o no pertenece a esta entidad.",
@@ -100,10 +101,10 @@ def generate_images(
             headers={"Retry-After": "30"},
             detail=str(e),
         ) from e
-    except NoContextAvailableError as e:
+    except (NoContextAvailableError, ContentNotConfirmedError) as e:
         raise HTTPException(
             status_code=422,
-            detail=("El contenido indicado no existe, no está confirmado o no pertenece a esta entidad."),
+            detail="El contenido indicado no existe, no está confirmado o no pertenece a esta entidad.",
         ) from e
     except ValueError as e:
         raise HTTPException(

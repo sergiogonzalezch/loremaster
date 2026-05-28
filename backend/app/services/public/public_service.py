@@ -2,7 +2,7 @@
 
 from sqlmodel import Session, select
 
-from app.core.api.filters import _CONTENT_CONDITIONS, _IMAGE_CONDITIONS
+from app.core.api.filters import CONTENT_CONDITIONS, IMAGE_CONDITIONS
 from app.core.database.utils import paginate
 from app.core.storage import build_storage_url
 from app.models.db.collection import Collection
@@ -24,7 +24,7 @@ def get_public_feed(
         .join(Entity, EntityContent.entity_id == Entity.id)
         .join(Collection, EntityContent.collection_id == Collection.id)
         .join(User, Collection.owner_id == User.id)
-        .where(*_CONTENT_CONDITIONS)
+        .where(*CONTENT_CONDITIONS)
         .order_by(EntityContent.confirmed_at.desc(), EntityContent.id.asc())
     )
     rows, total = paginate(session, base, page, page_size)
@@ -58,7 +58,7 @@ def get_public_images(
         .join(Entity, ImageRecord.entity_id == Entity.id)
         .join(Collection, ImageRecord.collection_id == Collection.id)
         .join(User, Collection.owner_id == User.id)
-        .where(*_IMAGE_CONDITIONS)
+        .where(*IMAGE_CONDITIONS)
         .order_by(ImageRecord.created_at.desc(), ImageRecord.id.asc())
     )
     rows, total = paginate(session, base, page, page_size)

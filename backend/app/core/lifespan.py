@@ -63,7 +63,7 @@ async def lifespan(_: FastAPI):
                         {
                             "AllowedHeaders": ["*"],
                             "AllowedMethods": ["GET", "HEAD"],
-                            "AllowedOrigins": ["*"],
+                            "AllowedOrigins": settings.allowed_origins,
                             "MaxAgeSeconds": 3600,
                         }
                     ]

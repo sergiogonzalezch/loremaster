@@ -3,7 +3,7 @@
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
-from app.core.auth import hash_password, verify_password
+from app.core.auth import DUMMY_HASH, hash_password, verify_password
 from app.models.db.user import User
 
 
@@ -20,7 +20,7 @@ def authenticate_user(session: Session, username_or_email: str, password: str) -
         valid = verify_password(password, user.hashed_password)
     else:
         # Timing-safe dummy check: iguala el tiempo de respuesta cuando el usuario no existe.
-        verify_password(password, "$2b$12$abcdefghijklmnopqrstuv")
+        verify_password(password, DUMMY_HASH)
         valid = False
 
     if not valid:
@@ -77,7 +77,9 @@ def get_or_create_clerk_user(session: Session, payload: dict) -> User:
         return user
 
     email = payload.get("email", "")
-    username = payload.get("username") or (email.split("@")[0] if email else None) or user_id
+    candidate = payload.get("username") or (email.split("@")[0] if email else None) or user_id
+    # user_id (Clerk) es único globalmente — se usa como fallback si el nombre derivado colisiona
+    username = candidate if not session.exec(select(User).where(User.username == candidate)).first() else user_id
     user = User(
         id=user_id,
         username=username,
