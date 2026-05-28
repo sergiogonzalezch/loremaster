@@ -25,6 +25,29 @@ DUMMY_HASH: str = bcrypt.hashpw(secrets.token_bytes(16), bcrypt.gensalt()).decod
 #   en produccion para minimizar ventana de exposicion
 
 
+def create_refresh_token(data: dict) -> str:
+    """Crea un refresh token JWT de larga duración (7 días por defecto).
+
+    El claim ``type=refresh`` evita que se use como access token.
+    Se invalida incrementando token_version en logout.
+    """
+    to_encode = data.copy()
+    expire = datetime.now(UTC) + timedelta(days=settings.refresh_token_expire_days)
+    to_encode.update({"exp": expire, "type": "refresh"})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def verify_refresh_token(token: str) -> dict:
+    """Verifica un refresh token. Lanza HTTPException 401 si es inválido o no es de tipo refresh."""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("sub") is None or payload.get("type") != "refresh":
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido")
+    except JWTError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido") from e
+    return payload
+
+
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
     """Crea un token de acceso JWT con fecha de expiración.
 

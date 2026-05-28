@@ -4,9 +4,10 @@
 
 import { apiFetch } from "./apiClient";
 
-interface AuthSuccessResponse {
+export interface AuthSuccessResponse {
   message: string;
   username: string;
+  expires_at?: string | null;
 }
 
 interface LoginCredentials {
@@ -43,4 +44,9 @@ export function register(
 /** Cierra la sesión del usuario actual (invalida el token en el backend). */
 export function logoutApi(): Promise<void> {
   return apiFetch<void>("/auth/logout", { method: "POST" });
+}
+
+/** Rota el access token usando el refresh token en cookie HttpOnly. */
+export function refreshToken(): Promise<AuthSuccessResponse> {
+  return apiFetch<AuthSuccessResponse>("/auth/refresh", { method: "POST" });
 }

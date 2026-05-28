@@ -152,10 +152,12 @@ class Settings(BaseSettings):
     # Auth - JWT
     secret_key: str
     algorithm: str = "HS256"
-    access_token_expire_minutes: int = 60
+    access_token_expire_minutes: int = 15   # corto; el refresh token renueva la sesión
+    refresh_token_expire_days: int = 7
 
     # Cookies Security
     cookie_access_name: str = "access_token"
+    cookie_refresh_name: str = "refresh_token"
     cookie_csrf_name: str = "csrf_token"
     cookie_secure: bool = False  # True en producción/demo (HTTPS)
     cookie_samesite: str = "Strict"

@@ -1,8 +1,9 @@
 /**
  * Contexto de autenticación para la aplicación.
  *
- * Gestiona el estado del usuario autenticado, decodifica el JWT,
- * y programa auto-logout cuando el token expira.
+ * Gestiona el estado del usuario autenticado y renueva el access token
+ * de forma proactiva (60s antes de expirar) via POST /auth/refresh.
+ * Como fallback reactivo, apiClient.ts intenta refresh en cada 401.
  */
 
 import {
@@ -14,9 +15,11 @@ import {
   useRef,
   type ReactNode,
 } from "react";
-import { logoutApi } from "../api/auth";
+import { logoutApi, refreshToken } from "../api/auth";
 import { getMyProfile, getMyAvatar } from "../api/users";
 import { ApiAbortError } from "../api/apiClient";
+
+const REFRESH_BEFORE_EXPIRY_MS = 60_000; // renovar 60s antes de que expire
 
 /** Datos del usuario obtenidos del backend. */
 interface AuthUser {
@@ -89,6 +92,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
   const { user, loading, avatarUrl } = state;
   const logoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Ref para romper la dependencia circular scheduleRefresh ↔ doRefresh
+  const scheduleRefreshRef = useRef<((expiresAt: string | null | undefined) => void) | null>(null);
 
   // Wrapper que mantiene la firma setAvatarUrl(url) para los consumidores del contexto.
   const setAvatarUrl = useCallback((url: string | null) => {
@@ -109,19 +114,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const scheduleLogout = useCallback(
+  // Renueva el access token proactivamente; si falla, fuerza logout
+  const doRefresh = useCallback(async () => {
+    try {
+      const data = await refreshToken();
+      scheduleRefreshRef.current?.(data.expires_at);
+    } catch {
+      void logout({ force: true });
+    }
+  }, [logout]);
+
+  const scheduleRefresh = useCallback(
     (expiresAt: string | null | undefined) => {
       if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
       if (!expiresAt) return;
-      const ms = new Date(expiresAt).getTime() - Date.now();
-      if (ms <= 0) return;
-      // force=true: la sesión ya expiró cuando dispara el timer, no necesita confirmación backend
-      logoutTimerRef.current = setTimeout(() => {
-        void logout({ force: true });
-      }, ms);
+      const ms = new Date(expiresAt).getTime() - Date.now() - REFRESH_BEFORE_EXPIRY_MS;
+      if (ms <= 0) {
+        // Token ya expirado o expira muy pronto — renovar inmediatamente
+        void doRefresh();
+        return;
+      }
+      logoutTimerRef.current = setTimeout(() => void doRefresh(), ms);
     },
-    [logout],
+    [doRefresh],
   );
+
+  // Mantener ref sincronizado con la versión más reciente del callback
+  useEffect(() => {
+    scheduleRefreshRef.current = scheduleRefresh;
+  }, [scheduleRefresh]);
 
   // Verifica la sesión activa al montar (lee la cookie HttpOnly automáticamente).
   // AbortController cancela la petición si el componente desmonta (Strict Mode safe).
@@ -139,7 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             is_admin: profile.is_admin ?? false,
           },
         });
-        scheduleLogout(profile.expires_at);
+        scheduleRefresh(profile.expires_at);
         return getMyAvatar({ signal: controller.signal })
           .then((r) =>
             dispatch({ type: "SET_AVATAR", url: r.avatar_url ?? null }),
@@ -156,7 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const timer = logoutTimerRef.current;
       if (timer) clearTimeout(timer);
     };
-  }, [scheduleLogout]);
+  }, [scheduleRefresh]);
 
   const login = useCallback((): Promise<void> => {
     return getMyProfile().then((profile) => {
@@ -168,7 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           is_admin: profile.is_admin ?? false,
         },
       });
-      scheduleLogout(profile.expires_at);
+      scheduleRefresh(profile.expires_at);
       return getMyAvatar()
         .then((r) =>
           dispatch({ type: "SET_AVATAR", url: r.avatar_url ?? null }),
@@ -176,7 +197,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .catch(() => {});
     });
     // Sin .catch(): los errores de red o credenciales se propagan al llamador (LoginPage).
-  }, [scheduleLogout]);
+  }, [scheduleRefresh]);
 
   const contextValue = useMemo(
     () => ({ user, loading, login, logout, avatarUrl, setAvatarUrl }),

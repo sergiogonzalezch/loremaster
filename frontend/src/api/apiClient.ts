@@ -7,6 +7,24 @@
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
 
+// Endpoints que no deben intentar refresh al recibir 401 (evita bucles)
+const NO_REFRESH_ENDPOINTS = new Set(["/auth/login", "/auth/refresh"]);
+
+/** Intenta rotar el access token llamando a POST /auth/refresh. */
+async function _tryRefresh(): Promise<boolean> {
+  try {
+    const csrf = getCsrfToken();
+    const res = await fetch(`${BASE_URL}/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+      headers: csrf ? { "X-CSRF-Token": csrf } : {},
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 /** Lee el token CSRF de las cookies del navegador. */
 function getCsrfToken(): string | null {
   const match = document.cookie.match(
@@ -67,6 +85,7 @@ export class ApiAbortError extends Error {
 export async function apiFetch<T>(
   endpoint: string,
   options: RequestInit = {},
+  _isRetry = false,
 ): Promise<T> {
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
@@ -99,23 +118,30 @@ export async function apiFetch<T>(
   }
 
   if (response.status === 401) {
-    const isAlreadyOnLogin = window.location.pathname === "/login";
-    if (!isAlreadyOnLogin) {
-      // 401 fuera de /login = sesión expirada; navegar sin full-reload via evento
-      window.dispatchEvent(new CustomEvent("auth:unauthorized"));
-      throw new ApiError(401, "Sesión expirada. Inicia sesión de nuevo.");
+    const isOnLogin = window.location.pathname === "/login";
+
+    // En /login el 401 es por credenciales incorrectas, no por token expirado
+    if (isOnLogin) {
+      let message = "Usuario o contraseña incorrectos.";
+      try {
+        const body = await response.json();
+        if (typeof body?.detail === "string" && body.detail.trim()) message = body.detail;
+      } catch { /* body no parseable */ }
+      throw new ApiError(401, message);
     }
-    // 401 en /login = credenciales incorrectas (login fallido)
-    let message = "Usuario o contraseña incorrectos.";
-    try {
-      const body = await response.json();
-      if (typeof body?.detail === "string" && body.detail.trim()) {
-        message = body.detail;
+
+    // Fuera de /login: intentar refresh una vez antes de redirigir al login
+    if (!_isRetry && !NO_REFRESH_ENDPOINTS.has(endpoint)) {
+      const refreshed = await _tryRefresh();
+      if (refreshed) {
+        // Refresh exitoso — reintentar la petición original con los nuevos tokens
+        return apiFetch<T>(endpoint, options, true);
       }
-    } catch {
-      // cuerpo no parseable — mantener mensaje por defecto
     }
-    throw new ApiError(401, message);
+
+    // Refresh fallido o segundo intento: sesión expirada definitivamente
+    window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+    throw new ApiError(401, "Sesión expirada. Inicia sesión de nuevo.");
   }
 
   if (!response.ok) {
