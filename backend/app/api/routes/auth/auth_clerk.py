@@ -1,5 +1,6 @@
 """Rutas de autenticación mediante Clerk."""
 
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -7,8 +8,9 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlmodel import Session
 
 from app.api.routes.auth.auth import AuthSuccessResponse, _set_auth_cookies
-from app.core.auth import create_access_token
+from app.core.auth import create_access_token, create_refresh_token
 from app.core.auth.clerk import decode_clerk_token
+from app.core.config import settings
 from app.database import get_session
 from app.models.db.user import User
 from app.services.auth import get_or_create_clerk_user
@@ -38,11 +40,12 @@ def sync_clerk_user(
     payload = decode_clerk_token(clerk_token)
 
     user = get_or_create_clerk_user(session, payload)
-    token = create_access_token(
-        data={"sub": user.id, "username": user.username, "version": user.token_version},
-    )
-    _set_auth_cookies(response, token)
-    return AuthSuccessResponse(username=user.username)
+    token_data = {"sub": user.id, "username": user.username, "version": user.token_version}
+    access = create_access_token(data=token_data)
+    refresh = create_refresh_token(data=token_data)
+    expires_at = datetime.now(UTC) + timedelta(minutes=settings.access_token_expire_minutes)
+    _set_auth_cookies(response, access, refresh)
+    return AuthSuccessResponse(username=user.username, expires_at=expires_at)
 
 
 @router.get("/verify")

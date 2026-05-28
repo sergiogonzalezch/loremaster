@@ -81,7 +81,9 @@ def _set_auth_cookies(response: Response, access_token: str, refresh_token: str 
         domain=settings.cookie_domain,
     )
     if refresh_token is not None:
-        # path restringido al endpoint de refresh — el browser solo lo envía allí
+        # path restringido al endpoint de refresh — el browser solo lo envía allí.
+        # max_age necesario para que persista entre sesiones del navegador; sin él
+        # sería una session cookie y se borraría al cerrar el navegador.
         response.set_cookie(
             key=settings.cookie_refresh_name,
             value=refresh_token,
@@ -90,6 +92,7 @@ def _set_auth_cookies(response: Response, access_token: str, refresh_token: str 
             samesite=settings.cookie_samesite,
             path="/api/v1/auth/refresh",
             domain=settings.cookie_domain,
+            max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
         )
 
 

@@ -77,8 +77,9 @@ def _delete_vectors_with_retry(collection_id: str) -> bool:
 def cascade_delete_entity(session: Session, entity: Entity) -> None:
     """Elimina en cascada una entidad y todos sus contenidos relacionados.
 
-    Se eliminan de forma suave: los EntityContent asociados, los ImageRecord
-    asociados, y la propia entidad.
+    Acumula los cambios con commit=False — el caller es responsable del commit.
+    Callers conocidos: cascade_delete_collection (commit al final de la colección)
+    y delete_entity_service (db_commit inmediato después de esta llamada).
 
     Args:
         session: Sesión de base de datos activa.

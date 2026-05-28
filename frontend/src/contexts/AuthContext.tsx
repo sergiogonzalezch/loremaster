@@ -129,6 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
       if (!expiresAt) return;
       const ms = new Date(expiresAt).getTime() - Date.now() - REFRESH_BEFORE_EXPIRY_MS;
+      if (!isFinite(ms)) return; // fecha inválida del backend — no programar timer
       if (ms <= 0) {
         // Token ya expirado o expira muy pronto — renovar inmediatamente
         void doRefresh();
