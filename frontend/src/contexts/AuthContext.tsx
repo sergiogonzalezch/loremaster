@@ -20,6 +20,11 @@ import { getMyProfile, getMyAvatar } from "../api/users";
 import { ApiAbortError } from "../api/apiClient";
 
 const REFRESH_BEFORE_EXPIRY_MS = 60_000; // renovar 60s antes de que expire
+// Suelo mínimo entre refreshes: si el reloj del cliente va adelantado respecto
+// al servidor, expires_at podría calcularse siempre como "ya pasado", lo que
+// dispararía un bucle de POST /auth/refresh. Este floor lo evita; el path
+// reactivo de 401 en apiClient cubre el token realmente expirado.
+const MIN_REFRESH_DELAY_MS = 5_000;
 
 /** Datos del usuario obtenidos del backend. */
 interface AuthUser {
@@ -130,14 +135,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (expiresAt: string | null | undefined) => {
       if (logoutTimerRef.current) clearTimeout(logoutTimerRef.current);
       if (!expiresAt) return;
-      const ms =
+      const target =
         new Date(expiresAt).getTime() - Date.now() - REFRESH_BEFORE_EXPIRY_MS;
-      if (!isFinite(ms)) return; // fecha inválida del backend — no programar timer
-      if (ms <= 0) {
-        // Token ya expirado o expira muy pronto — renovar inmediatamente
-        void doRefresh();
-        return;
-      }
+      if (!isFinite(target)) return; // fecha inválida del backend — no programar timer
+      // Aunque el token ya parezca expirado, esperamos al menos MIN_REFRESH_DELAY_MS
+      // para no entrar en un bucle de refresh por desfase de reloj cliente/servidor.
+      const ms = Math.max(target, MIN_REFRESH_DELAY_MS);
       logoutTimerRef.current = setTimeout(() => void doRefresh(), ms);
     },
     [doRefresh],

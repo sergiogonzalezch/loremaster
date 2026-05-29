@@ -17,8 +17,9 @@ interface Props {
   /**
    * Notifica al padre que un contenido fue mutado (confirm/discard/edit/share/delete).
    * El padre re-fetcha lo que necesite (entity, pending count, etc.).
+   * Puede ser async: handleContentAction lo espera junto al refresh local.
    */
-  onContentMutated: () => void;
+  onContentMutated: () => void | Promise<void>;
   onOpenImagePanel?: (content: EntityContent) => void;
 }
 
@@ -48,6 +49,15 @@ export default function EntityContentsPanel({
   >("pending");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+
+  // Si tras borrar/descartar la página actual queda fuera de rango (p.ej. era
+  // la última y se vació), retrocede a la última con resultados. Ajustar el
+  // estado durante el render es el patrón recomendado por React para corregir
+  // estado según datos nuevos; re-renderiza sin commit ni flash y evita el
+  // fetch extra que provocaría hacerlo en un useEffect.
+  if (meta.total_pages > 0 && page > meta.total_pages) {
+    setPage(meta.total_pages);
+  }
 
   useEffect(() => {
     const controller = new AbortController();

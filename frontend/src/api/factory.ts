@@ -22,10 +22,9 @@ function buildPaginatedPath(
 /** GET tipado contra la API. */
 export function apiGet<T>(
   path: string,
-  _params?: unknown,
+  params?: Record<string, unknown>,
   options?: RequestInit,
 ): Promise<T> {
-  const params = _params as Record<string, unknown> | undefined;
   return apiFetch<T>(params ? buildPaginatedPath(path, params) : path, {
     ...options,
     method: "GET",
