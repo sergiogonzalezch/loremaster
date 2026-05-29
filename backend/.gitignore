@@ -157,6 +157,11 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # ========================
+# Graphify
+# ========================
+graphify-out/
+
+# ========================
 # Tools / misc
 # ========================
 .pdm-python
