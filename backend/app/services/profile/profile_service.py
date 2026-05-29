@@ -15,6 +15,7 @@ from app.core.exceptions import DuplicateEmailError, UserNotFoundError
 from app.core.storage import (
     build_storage_path,
     build_storage_url,
+    delete_file,
     generate_unique_filename,
     save_file,
 )
@@ -173,17 +174,20 @@ def delete_profile_image(session: Session, user: User) -> None:
     if not user.avatar_path:
         return
 
-    profile_dir = _get_profile_dir(user.username)
-    if profile_dir.exists() and profile_dir.is_dir():
-        media_root_resolved = Path(settings.media_root).resolve()
-        for item in profile_dir.iterdir():
-            resolved = item.resolve()
-            if resolved.is_file() and resolved.is_relative_to(media_root_resolved):
-                resolved.unlink()
-            elif resolved.is_dir() and resolved.is_relative_to(media_root_resolved):
-                shutil.rmtree(resolved)
-        with contextlib.suppress(OSError):
-            profile_dir.rmdir()
+    if settings.storage_backend == "s3":
+        delete_file(user.avatar_path)
+    else:
+        profile_dir = _get_profile_dir(user.username)
+        if profile_dir.exists() and profile_dir.is_dir():
+            media_root_resolved = Path(settings.media_root).resolve()
+            for item in profile_dir.iterdir():
+                resolved = item.resolve()
+                if resolved.is_file() and resolved.is_relative_to(media_root_resolved):
+                    resolved.unlink()
+                elif resolved.is_dir() and resolved.is_relative_to(media_root_resolved):
+                    shutil.rmtree(resolved)
+            with contextlib.suppress(OSError):
+                profile_dir.rmdir()
 
     user.avatar_path = None
     session.add(user)

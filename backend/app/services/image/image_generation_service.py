@@ -2,9 +2,6 @@
 
 import logging
 import uuid as _uuid
-from contextlib import suppress
-from pathlib import Path
-
 from sqlalchemy import func
 from sqlmodel import Session, select
 
@@ -12,7 +9,7 @@ from app.core.config import settings
 from app.core.database.soft_delete import soft_delete
 from app.core.database.utils import db_commit
 from app.core.exceptions import ContentNotConfirmedError, NoContextAvailableError
-from app.core.storage import build_storage_url
+from app.core.storage import build_storage_url, delete_file
 from app.domain.content_guard import check_prompt_length, check_user_input
 from app.engine.image_prompt_builder import build_visual_prompt
 from app.models.db.entity import Entity
@@ -298,21 +295,8 @@ def delete_image_service(
 
     record.is_shared = False
 
-    # storage_path puede ser None en imágenes mock aunque el backend cambie.
-    # Validar contenimiento dentro de media_root antes de operar (defensa en profundidad:
-    # storage_path viene de la DB y aunque se construye solo vía build_generation_path(),
-    # un compromiso de DB no debería poder escalar a borrado de ficheros arbitrarios).
-    if settings.image_backend != "mock" and record.storage_path:
-        media_root_resolved = Path(settings.media_root).resolve()
-        full_path = (media_root_resolved / record.storage_path).resolve()
-        if full_path.is_relative_to(media_root_resolved):
-            with suppress(FileNotFoundError, OSError):
-                full_path.unlink()
-        else:
-            logger.warning(
-                "Attempted to delete file outside media_root: %s",
-                record.storage_path,
-            )
+    if settings.image_backend != "mock":
+        delete_file(record.storage_path)
 
     soft_delete(session, record, commit=False)
 

@@ -1,9 +1,12 @@
 """Utilidades de almacenamiento de archivos para la aplicación."""
 
+import logging
 import uuid
 from pathlib import Path
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 def build_storage_path(*parts: str) -> Path:
@@ -42,6 +45,38 @@ def save_file(content: bytes, relative_path: str) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(content)
     return relative_path
+
+
+def delete_file(relative_path: str | None) -> None:
+    """Elimina un archivo del almacenamiento.
+
+    En modo s3 elimina el objeto del bucket (no-op si no existe).
+    En modo local elimina el archivo de disco dentro de media_root.
+    No lanza excepción si el archivo no existe.
+    """
+    if not relative_path:
+        return
+
+    if settings.storage_backend == "s3":
+        from app.core.storage.s3_client import get_s3_client
+
+        try:
+            get_s3_client().delete_object(Bucket=settings.s3_bucket, Key=relative_path)
+            logger.info("Deleted S3 object: %s", relative_path)
+        except Exception:
+            logger.warning("Failed to delete S3 object: %s", relative_path)
+        return
+
+    media_root_resolved = Path(settings.media_root).resolve()
+    file_path = (media_root_resolved / relative_path).resolve()
+    if not file_path.is_relative_to(media_root_resolved):
+        logger.warning("Attempted to delete file outside media_root: %s", relative_path)
+        return
+    try:
+        file_path.unlink()
+        logger.info("Deleted file: %s", relative_path)
+    except (FileNotFoundError, OSError) as e:
+        logger.warning("Failed to delete file %s: %s", relative_path, e)
 
 
 def build_storage_url(relative_path: str | None) -> str | None:

@@ -11,12 +11,11 @@ Importa funciones de cascade_service para la fase de soft-delete en cascada.
 import logging
 import time
 from datetime import UTC, datetime
-from pathlib import Path
-
 from sqlmodel import Session, select
 
 from app.core.config import settings
 from app.core.database.soft_delete import soft_delete
+from app.core.storage import delete_file
 from app.core.database.utils import db_commit
 from app.engine.rag import delete_collection_vectors
 from app.models.db.collection import Collection
@@ -179,28 +178,7 @@ def cascade_delete_collection(session: Session, collection: Collection) -> bool:
 
 
 def _delete_image_file(storage_path: str | None) -> None:
-    """Elimina el archivo físico del disco si existe.
-
-    Args:
-        storage_path: Ruta relativa del archivo a eliminar dentro de media_root.
-
-    """
-    if not storage_path:
-        return
-    try:
-        media_root_resolved = Path(settings.media_root).resolve()
-        file_path = (media_root_resolved / storage_path).resolve()
-        if not file_path.is_relative_to(media_root_resolved):
-            logger.warning(
-                "Attempted to delete file outside media_root: %s",
-                storage_path,
-            )
-            return
-        if file_path.exists() and file_path.is_file():
-            file_path.unlink()
-            logger.info("Deleted file: %s", storage_path)
-    except OSError as e:
-        logger.warning("Failed to delete file %s: %s", storage_path, e)
+    delete_file(storage_path)
 
 
 def _cascade_delete_images(
