@@ -42,18 +42,22 @@ El pipeline de imagen tiene dos pasos, ambos pueden correr en cloud:
 1. **Prompt builder** (LLM texto): `mistral:latest` vía Ollama genera el prompt visual a partir del contenido confirmado.
 2. **Diffusion** (GPU): ComfyUI ejecuta FLUX u otro modelo de difusión con ese prompt.
 
+#### Modelo actual: FLUX.2 Klein 4B
+
+El workflow de ComfyUI del proyecto usa **FLUX.2 Klein 4B** — modelo compacto (4B parámetros) de la familia FLUX 2, más rápido y ligero que los modelos dev de FLUX.1. Al tener menos parámetros, el tiempo de inferencia es menor, lo que reduce el costo GPU-segundo en servicios serverless.
+
 #### Opciones cloud — tabla comparativa
 
 | Opción | Modelo | Precio/imagen (est.) | Cambio de código | Notas |
 |---|---|---|---|---|
-| **GPU propia (RTX 3080+)** | ComfyUI local | $0 + electricidad | Ninguno | Solución actual en demo local. |
-| **RunPod Serverless** | ComfyUI template | ~$0.005-0.010/img (RTX 4090, 20-30 s × $0.00044/s) | Solo env var | **Sin cambio de código.** Apuntar `COMFYUI_URL` al endpoint serverless. |
-| **fal.ai** | FLUX.1 schnell | ~$0.003/img | Reemplazar `comfyui_client.py` | API REST simple, sin gestionar GPU. Schnell: 4 pasos, muy rápido. |
-| **fal.ai** | FLUX.1 dev | ~$0.025/img | Reemplazar `comfyui_client.py` | Mayor calidad que schnell. |
-| **Replicate** | FLUX.1 schnell | ~$0.003/img | Reemplazar `comfyui_client.py` | Muy similar a fal.ai. |
-| **Replicate** | FLUX.1 dev | ~$0.055/img | Reemplazar `comfyui_client.py` | Más caro que fal.ai dev. |
-| **Modal** | ComfyUI custom | ~$0.003-0.008/img (A10G ~$0.00015/s) | Nuevo worker Python | Máxima flexibilidad de workflow, mayor complejidad ops. |
-| **RunPod On-Demand** | ComfyUI | ~$0.74/hora | Solo env var | Solo rentable si se generan >50 imágenes/hora en bloque. |
+| **GPU propia (RTX 3080+)** | FLUX.2 Klein 4B (ComfyUI local) | $0 + electricidad | Ninguno | Solución actual en demo local. |
+| **RunPod Serverless** | FLUX.2 Klein 4B (ComfyUI template) | ~$0.003-0.007/img (RTX 4090, 10-20 s × $0.00044/s) | Solo env var | **Sin cambio de código.** Klein 4B es más rápido que dev → menos GPU-s → más barato. |
+| **fal.ai** | FLUX.2 Klein 4B (si disponible) | ~verificar en dashboard | Reemplazar `comfyui_client.py` | Verificar disponibilidad del modelo exacto antes de elegir esta ruta. |
+| **Replicate** | FLUX.2 Klein 4B (si disponible) | ~verificar en dashboard | Reemplazar `comfyui_client.py` | Ídem — confirmar que hospedan este modelo. |
+| **Modal** | FLUX.2 Klein 4B (ComfyUI custom) | ~$0.002-0.006/img (A10G, Klein es rápido) | Nuevo worker Python | Máxima flexibilidad de workflow, mayor complejidad ops. |
+| **RunPod On-Demand** | FLUX.2 Klein 4B (ComfyUI) | ~$0.74/hora | Solo env var | Solo rentable si se generan >50 imágenes/hora en bloque. |
+
+> **Nota sobre fal.ai / Replicate:** estas plataformas hospedan modelos predefinidos. Si no tienen FLUX.2 Klein 4B disponible, la Ruta B requeriría cambiar el modelo (perdiendo fidelidad con el workflow actual) o usar RunPod/Modal donde se controla el workflow completo.
 
 #### Rutas arquitectónicas
 
@@ -68,15 +72,16 @@ El proyecto ya tiene `engine/comfyui_client.py` integrado. RunPod permite desple
 
 **Ruta B — fal.ai o Replicate (API managed, código nuevo)**
 
-Reemplaza `comfyui_client.py` por un cliente REST de ~50 líneas:
+Solo viable si la plataforma hostea **FLUX.2 Klein 4B**. Reemplaza `comfyui_client.py` por un cliente REST de ~50 líneas; el endpoint concreto debe verificarse en el dashboard antes de implementar:
 ```python
 import httpx
 
 FAL_KEY = settings.fal_api_key
 
 def generate_image(prompt: str, width: int, height: int) -> bytes:
+    # Verificar endpoint real de FLUX.2 Klein 4B en fal.ai antes de usar
     resp = httpx.post(
-        "https://fal.run/fal-ai/flux/schnell",
+        "https://fal.run/fal-ai/flux-2-klein",  # confirmar URL exacta
         headers={"Authorization": f"Key {FAL_KEY}"},
         json={"prompt": prompt, "image_size": {"width": width, "height": height}},
         timeout=60,
@@ -85,25 +90,25 @@ def generate_image(prompt: str, width: int, height: int) -> bytes:
     return httpx.get(resp.json()["images"][0]["url"]).content
 ```
 - **Ventaja:** sin gestión de GPU, sin arranques en frío, SLA garantizado.
-- **Desventaja:** pierde control del workflow ComfyUI (nodos personalizados, ControlNet, etc.).
+- **Desventaja:** pierde control del workflow ComfyUI; si el modelo no está disponible, hay que cambiar de modelo.
 
 #### Recomendación
 
 | Contexto | Recomendación |
 |---|---|
-| Demo / prueba rápida | **RunPod Serverless** — cero código, solo env var. |
-| Producción con escala | **fal.ai FLUX schnell** — más barato/imagen, sin ops GPU, API más simple. |
-| Calidad máxima | **fal.ai FLUX dev** — $0.025/img, aún muy económico para <500 imgs/mes. |
+| Demo / prueba rápida | **RunPod Serverless + ComfyUI** — cero código, workflow exacto, FLUX.2 Klein 4B garantizado. |
+| Producción con escala | **RunPod Serverless** (si se quiere mantener el workflow) o **fal.ai** (si hospedan el modelo). |
+| Máxima simplicidad ops | **fal.ai o Replicate** — pero verificar disponibilidad de FLUX.2 Klein 4B antes de migrar. |
 
-#### Estimación de costo mensual por imagen
+#### Estimación de costo mensual por imagen (FLUX.2 Klein 4B, más rápido que dev)
 
-| Volumen | RunPod Serverless | fal.ai schnell | fal.ai dev |
-|---|---|---|---|
-| 50 imgs/mes (demo) | ~$0.25 | ~$0.15 | ~$1.25 |
-| 500 imgs/mes (producción) | ~$2.50 | ~$1.50 | ~$12.50 |
-| 5.000 imgs/mes (escala) | ~$25 | ~$15 | ~$125 |
+| Volumen | RunPod Serverless (RTX 4090) | API managed (si disponible) |
+|---|---|---|
+| 50 imgs/mes (demo) | ~$0.15-0.35 | ~$0.10-0.25 |
+| 500 imgs/mes (producción) | ~$1.50-3.50 | ~$1-2.50 |
+| 5.000 imgs/mes (escala) | ~$15-35 | ~$10-25 |
 
-> En todos los escenarios el costo de imagen es negligible frente al VPS. El factor dominante es la elección de modelo (schnell vs dev), no el proveedor.
+> Klein 4B al ser más pequeño es más rápido en inferencia → menos GPU-segundos → costo menor que un modelo dev grande. En todos los escenarios el costo de imagen sigue siendo negligible frente al VPS.
 
 ### 2.3 LLM de texto para el pipeline de imagen
 
@@ -219,19 +224,19 @@ datacenter en EU (baja latencia a España), interfaz sencilla, y sin lock-in de 
 
 > El costo de GPU para ~50 imágenes/mes es despreciable. El costo dominante es el VPS.
 
-### Demo privada (sin GPU propia — fal.ai, máxima simplicidad)
+### Demo privada (sin GPU propia — API managed, máxima simplicidad)
 
 | Componente | Proveedor | $/mes |
 |---|---|---|
 | VPS backend (8 GB RAM) | Hetzner CX32 | $9.90 |
 | Auth | Clerk free tier | $0 |
 | Prompt builder (mistral) | Groq free tier | $0 |
-| Generación de imagen (~50/mes) | fal.ai FLUX schnell | ~$0.15 |
+| Generación de imagen (~50/mes) | fal.ai / Replicate (FLUX.2 Klein 4B) | ~$0.15-0.25 |
 | Storage | Cloudflare R2 | $0 |
 | Dominio | | $1 |
 | **Total** | | **~$11/mes** |
 
-> Requiere reemplazar `comfyui_client.py` por cliente fal.ai (~50 líneas). A cambio: sin gestión de GPU, sin arranques en frío.
+> Requiere reemplazar `comfyui_client.py` por cliente API (~50 líneas). Verificar disponibilidad de FLUX.2 Klein 4B en la plataforma elegida antes de implementar.
 
 ### Producción pequeña (10-50 usuarios)
 
@@ -240,12 +245,12 @@ datacenter en EU (baja latencia a España), interfaz sencilla, y sin lock-in de 
 | VPS backend (4 vCPU, 8 GB) | Hetzner CX32 | $9.90 |
 | Auth | Clerk free tier (<10k MAU) | $0 |
 | Prompt builder (mistral) | Groq / Together AI | ~$0.03 |
-| Generación de imagen (~500/mes) | fal.ai FLUX schnell | ~$1.50 |
+| Generación de imagen (~500/mes) | RunPod Serverless (FLUX.2 Klein 4B via ComfyUI) | ~$1.50-3.50 |
 | Storage (~5 GB) | Cloudflare R2 | $0 |
 | Dominio + extras | | $2 |
-| **Total** | | **~$13/mes** |
+| **Total** | | **~$13-16/mes** |
 
-> Si se requiere mayor calidad de imagen: fal.ai FLUX dev (~$12.50/mes para 500 imgs). Aún muy manejable.
+> RunPod Serverless mantiene el workflow ComfyUI exacto con FLUX.2 Klein 4B sin cambios de código. Alternativa API si el modelo está disponible en fal.ai/Replicate.
 
 ---
 
