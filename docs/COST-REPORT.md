@@ -1,11 +1,11 @@
 # Reporte de Costos — Lore Master
 
 Estimación de costos operativos mensuales para demo privada y producción.
-Actualizado: 2026-05-27. Precios en USD, aproximados — verificar en los dashboards de cada servicio.
+Actualizado: 2026-05-30. Precios en USD, aproximados — verificar en los dashboards de cada servicio.
 
 > **Estado actual:** Stack demo completamente containerizado (`make prod-up`).
 > 6 servicios Docker corriendo en un único VPS. LLM + imágenes via Ollama/ComfyUI en el host.
-> Decisión de GPU cloud (P1) pendiente — impacta el escenario "sin GPU propia".
+> Decisión de GPU cloud: **resuelta** — ver secciones 2.2 y 2.3.
 
 ---
 
@@ -38,35 +38,97 @@ Requisitos reales del stack completo: **mínimo 4 GB RAM, recomendado 6-8 GB**. 
 
 ### 2.2 GPU — generación de imágenes
 
-> ⚠️ **Decisión pendiente (P1):** La elección de backend GPU cloud no está tomada.
-> El costo varía significativamente según la opción elegida.
+El pipeline de imagen tiene dos pasos, ambos pueden correr en cloud:
+1. **Prompt builder** (LLM texto): `mistral:latest` vía Ollama genera el prompt visual a partir del contenido confirmado.
+2. **Diffusion** (GPU): ComfyUI ejecuta FLUX u otro modelo de difusión con ese prompt.
 
-| Opción | Precio/imagen (est.) | Notas |
+#### Opciones cloud — tabla comparativa
+
+| Opción | Modelo | Precio/imagen (est.) | Cambio de código | Notas |
+|---|---|---|---|---|
+| **GPU propia (RTX 3080+)** | ComfyUI local | $0 + electricidad | Ninguno | Solución actual en demo local. |
+| **RunPod Serverless** | ComfyUI template | ~$0.005-0.010/img (RTX 4090, 20-30 s × $0.00044/s) | Solo env var | **Sin cambio de código.** Apuntar `COMFYUI_URL` al endpoint serverless. |
+| **fal.ai** | FLUX.1 schnell | ~$0.003/img | Reemplazar `comfyui_client.py` | API REST simple, sin gestionar GPU. Schnell: 4 pasos, muy rápido. |
+| **fal.ai** | FLUX.1 dev | ~$0.025/img | Reemplazar `comfyui_client.py` | Mayor calidad que schnell. |
+| **Replicate** | FLUX.1 schnell | ~$0.003/img | Reemplazar `comfyui_client.py` | Muy similar a fal.ai. |
+| **Replicate** | FLUX.1 dev | ~$0.055/img | Reemplazar `comfyui_client.py` | Más caro que fal.ai dev. |
+| **Modal** | ComfyUI custom | ~$0.003-0.008/img (A10G ~$0.00015/s) | Nuevo worker Python | Máxima flexibilidad de workflow, mayor complejidad ops. |
+| **RunPod On-Demand** | ComfyUI | ~$0.74/hora | Solo env var | Solo rentable si se generan >50 imágenes/hora en bloque. |
+
+#### Rutas arquitectónicas
+
+**Ruta A — RunPod Serverless + ComfyUI (cero cambio de código)**
+
+El proyecto ya tiene `engine/comfyui_client.py` integrado. RunPod permite desplegar ComfyUI como endpoint serverless con plantilla oficial:
+- Crear endpoint en [runpod.io/serverless](https://www.runpod.io/serverless) con la plantilla `comfyui`.
+- Cambiar solo: `COMFYUI_URL=https://<endpoint-id>-8188.proxy.runpod.net` en `.env.production`.
+- Añadir autenticación: cabecera `Authorization: Bearer <RUNPOD_API_KEY>` en `ComfyUIClient._request`.
+- **Ventaja:** compatibilidad total con los workflows actuales.
+- **Desventaja:** arranque en frío de ~15-30 s si el worker estaba idle.
+
+**Ruta B — fal.ai o Replicate (API managed, código nuevo)**
+
+Reemplaza `comfyui_client.py` por un cliente REST de ~50 líneas:
+```python
+import httpx
+
+FAL_KEY = settings.fal_api_key
+
+def generate_image(prompt: str, width: int, height: int) -> bytes:
+    resp = httpx.post(
+        "https://fal.run/fal-ai/flux/schnell",
+        headers={"Authorization": f"Key {FAL_KEY}"},
+        json={"prompt": prompt, "image_size": {"width": width, "height": height}},
+        timeout=60,
+    )
+    resp.raise_for_status()
+    return httpx.get(resp.json()["images"][0]["url"]).content
+```
+- **Ventaja:** sin gestión de GPU, sin arranques en frío, SLA garantizado.
+- **Desventaja:** pierde control del workflow ComfyUI (nodos personalizados, ControlNet, etc.).
+
+#### Recomendación
+
+| Contexto | Recomendación |
+|---|---|
+| Demo / prueba rápida | **RunPod Serverless** — cero código, solo env var. |
+| Producción con escala | **fal.ai FLUX schnell** — más barato/imagen, sin ops GPU, API más simple. |
+| Calidad máxima | **fal.ai FLUX dev** — $0.025/img, aún muy económico para <500 imgs/mes. |
+
+#### Estimación de costo mensual por imagen
+
+| Volumen | RunPod Serverless | fal.ai schnell | fal.ai dev |
+|---|---|---|---|
+| 50 imgs/mes (demo) | ~$0.25 | ~$0.15 | ~$1.25 |
+| 500 imgs/mes (producción) | ~$2.50 | ~$1.50 | ~$12.50 |
+| 5.000 imgs/mes (escala) | ~$25 | ~$15 | ~$125 |
+
+> En todos los escenarios el costo de imagen es negligible frente al VPS. El factor dominante es la elección de modelo (schnell vs dev), no el proveedor.
+
+### 2.3 LLM de texto para el pipeline de imagen
+
+El pipeline de imagen usa dos LLMs de texto (configurables en `.env`):
+
+| Variable | Modelo por defecto | Propósito |
 |---|---|---|
-| GPU propia (RTX 3080+) | $0 + electricidad | Solución actual en demo local. |
-| RunPod Serverless (RTX 4090) | ~$0.003-0.006/s ≈ $0.05-0.09/img (15-30s) | Paga por segundo. Sin costo en reposo. **Candidato principal.** |
-| RunPod On-Demand (RTX 4090) | ~$0.74/hora | Rentable si se generan muchas imágenes en bloque. |
-| Replicate (FLUX.1 schnell) | ~$0.003/imagen | Más barato por imagen, pero modelo puede diferir. |
-| Replicate (FLUX.1 dev) | ~$0.055/imagen | Más calidad, más caro. |
+| `OLLAMA_MODEL` | `llama3.2:latest` | RAG — respuestas de colección (**fuera del scope de imagen**) |
+| `IMAGE_PROMPT_MODEL` | `mistral:latest` | Genera el prompt visual para ComfyUI |
 
-**Estimación demo (~50 imágenes/mes):**
-- RunPod Serverless: 50 × 25s × $0.000222/s (RTX 4090) ≈ **$0.28/mes** — prácticamente gratis.
-- Replicate FLUX schnell: 50 × $0.003 ≈ **$0.15/mes**.
+Solo el `IMAGE_PROMPT_MODEL` es relevante para el pipeline de generación de imagen.
 
-**Para demo 1-5 usuarios:** cualquiera de las dos opciones es negligible en costo. La decisión es de integración, no de precio.
-
-### 2.3 LLM (Ollama)
-
-Opciones si no hay GPU en el VPS:
+#### Opciones para `IMAGE_PROMPT_MODEL` en cloud
 
 | Opción | Precio | Notas |
 |---|---|---|
-| Ollama en GPU propia (host) | $0/mes | Solución actual en local. |
-| RunPod On-Demand (RTX 3090) | ~$0.44/hora | Arrancar solo cuando se necesita. |
-| Groq API (llama3) | Free tier / ~$0.05/1M tokens | Sin GPU propia, muy rápido. |
-| Together AI | ~$0.20/1M tokens | Compatible con OpenAI SDK. |
+| **Ollama en GPU propia (host)** | $0/mes | Solución actual. El VPS apunta a `host.docker.internal:11434`. |
+| **Groq API** (`mixtral-8x7b` / `llama-3.1-8b`) | Free tier / ~$0.27/1M tokens | Sin GPU propia. Latencia muy baja (~0.5 s). Compatible con sustitución directa. |
+| **Together AI** (`mistral-7b-instruct`) | ~$0.20/1M tokens | Compatible con OpenAI SDK. |
+| **OpenRouter** (`mistral-7b-instruct`) | ~$0.07/1M tokens | Agregador; elige proveedor más barato. |
 
-**Para demo:** Mantener Ollama en el host (GPU propia) + el backend en el VPS apuntando a `host.docker.internal` — o bien la IP pública del host si el VPS es externo.
+**Costo real del prompt builder:** cada llamada genera ~150-300 tokens. A $0.20/1M tokens:
+- 500 llamadas/mes × 300 tokens ≈ 150k tokens → **$0.03/mes**. Negligible.
+
+**Para demo:** mantener Ollama en host. Si el host con GPU no está disponible, Groq free tier cubre perfectamente la carga de demo sin costo.
 
 ### 2.4 Auth — Clerk
 
@@ -107,55 +169,126 @@ Para activar: cambiar `S3_ENDPOINT_URL` + credenciales reales en `.env.productio
 
 ## 3. Resumen — costo total estimado por escenario
 
+### Hosting recomendado para el stack completo
+
+El stack de producción corre 6 contenedores Docker (Nginx, FastAPI, PostgreSQL, Qdrant, Redis, Floci).
+Requiere **mínimo 4 GB RAM, recomendado 6-8 GB**. Un único VPS cubre todo.
+
+| Proveedor | Plan | $/mes | RAM | Veredicto |
+|---|---|---|---|---|
+| **Hetzner Cloud** | **CX32 (4 vCPU, 8 GB)** | **~$9.90** | 8 GB | **Recomendado** — mejor relación precio/RAM para los 6 servicios. |
+| Hetzner Cloud | CX22 (2 vCPU, 4 GB) | ~$4.90 | 4 GB | Mínimo viable. Vigilar RAM con Qdrant activo. |
+| Contabo | VPS S (4 vCPU, 6 GB) | ~$6 | 6 GB | Más barato que DO, soporte lento. |
+| DigitalOcean | Basic Droplet (2 vCPU, 4 GB) | ~$24 | 4 GB | Caro para lo que ofrece; solo si ya se usa el ecosistema DO. |
+| Fly.io | shared-cpu-2x (4 GB) | ~$10-15 | 4 GB | Pago por uso; arranques en frío. Complejo con 6 servicios stateful. |
+| Railway | Hobby / Pro | ~$5-20 | Variable | No apto: Qdrant + PostgreSQL como volúmenes stateful no encajan bien. |
+
+> **Nota Fly.io / Railway:** estos PaaS funcionan bien para aplicaciones sin estado o con bases de datos gestionadas.
+> El stack de Lore Master tiene **Qdrant + PostgreSQL + Redis stateful**, lo que hace más simple un VPS clásico.
+
+**Recomendación final de hosting: Hetzner CX32 (~$9.90/mes).** Soporta el stack completo con margen,
+datacenter en EU (baja latencia a España), interfaz sencilla, y sin lock-in de PaaS.
+
+---
+
 ### Demo privada (1-5 usuarios, GPU propia para LLM/imágenes)
 
 | Componente | Proveedor | $/mes |
 |---|---|---|
-| VPS backend (8 GB RAM) | Hetzner CX32 | $9 |
+| VPS backend (8 GB RAM) | Hetzner CX32 | $9.90 |
 | Auth | Clerk free tier | $0 |
 | Storage imágenes | Cloudflare R2 free tier | $0 |
 | Dominio | Namecheap / Porkbun | $1 |
-| LLM + Imágenes | GPU propia (local) | $0 + electricidad |
-| **Total** | | **~$10/mes** |
+| Prompt builder (mistral) | Ollama en GPU propia | $0 |
+| Generación de imagen | ComfyUI en GPU propia | $0 + electricidad |
+| **Total** | | **~$11/mes** |
 
-> Con Hetzner CX22 ($4.50) en vez de CX32: **~$5.50/mes** — viable si el RAM alcanza.
+> Con Hetzner CX22 ($4.90): **~$6/mes** — viable si el RAM alcanza.
 
-### Demo privada (sin GPU propia — GPU cloud)
+### Demo privada (sin GPU propia — GPU cloud, cero cambio de código)
 
 | Componente | Proveedor | $/mes |
 |---|---|---|
-| VPS backend (8 GB RAM) | Hetzner CX32 | $9 |
+| VPS backend (8 GB RAM) | Hetzner CX32 | $9.90 |
 | Auth | Clerk free tier | $0 |
-| LLM queries (~500/mes) | Groq free tier | $0 |
-| Imágenes (~50/mes) | RunPod Serverless | ~$0.30 |
+| Prompt builder (mistral) | Groq free tier | $0 |
+| Generación de imagen (~50/mes) | RunPod Serverless + ComfyUI | ~$0.25 |
 | Storage | Cloudflare R2 | $0 |
 | Dominio | | $1 |
-| **Total** | | **~$10/mes** |
+| **Total** | | **~$11/mes** |
 
-> ⚠️ Nota: El costo de GPU en RunPod Serverless es prácticamente despreciable para ~50 imágenes/mes
-> (~25s × $0.000222/s × 50 = $0.28). El costo dominante es el VPS.
+> El costo de GPU para ~50 imágenes/mes es despreciable. El costo dominante es el VPS.
+
+### Demo privada (sin GPU propia — fal.ai, máxima simplicidad)
+
+| Componente | Proveedor | $/mes |
+|---|---|---|
+| VPS backend (8 GB RAM) | Hetzner CX32 | $9.90 |
+| Auth | Clerk free tier | $0 |
+| Prompt builder (mistral) | Groq free tier | $0 |
+| Generación de imagen (~50/mes) | fal.ai FLUX schnell | ~$0.15 |
+| Storage | Cloudflare R2 | $0 |
+| Dominio | | $1 |
+| **Total** | | **~$11/mes** |
+
+> Requiere reemplazar `comfyui_client.py` por cliente fal.ai (~50 líneas). A cambio: sin gestión de GPU, sin arranques en frío.
 
 ### Producción pequeña (10-50 usuarios)
 
 | Componente | Proveedor | $/mes |
 |---|---|---|
-| VPS backend (4 vCPU, 8 GB) | Hetzner CX32 | $9 |
+| VPS backend (4 vCPU, 8 GB) | Hetzner CX32 | $9.90 |
 | Auth | Clerk free tier (<10k MAU) | $0 |
-| LLM API | Groq / Together AI | $5-30 |
-| Imágenes (~500/mes) | RunPod Serverless | ~$3 |
+| Prompt builder (mistral) | Groq / Together AI | ~$0.03 |
+| Generación de imagen (~500/mes) | fal.ai FLUX schnell | ~$1.50 |
 | Storage (~5 GB) | Cloudflare R2 | $0 |
 | Dominio + extras | | $2 |
-| **Total** | | **~$15-45/mes** |
+| **Total** | | **~$13/mes** |
 
-> Producción real con muchos usuarios concurrentes requeriría LLM API externa (Groq/Together) — sin GPU propia en VPS.
+> Si se requiere mayor calidad de imagen: fal.ai FLUX dev (~$12.50/mes para 500 imgs). Aún muy manejable.
 
 ---
 
 ## 4. Notas de arquitectura que impactan el costo
 
 - **Semáforo LLM (`MAX_CONCURRENT_LLM_CALLS=1`):** limita el throughput pero evita costos por timeout o requests fallidas cuando el LLM está saturado. El HTTP 429 devuelve error rápido sin consumir GPU.
-- **Llama Guard (`LLAMA_GUARD_ENABLED=true`):** si se activa en producción, añade una llamada extra a Ollama por cada respuesta generada. Con GPU propia: solo latencia. Con API externa: dobla el costo de LLM. Mantener desactivado en demo salvo que la moderación sea prioritaria.
+- **Llama Guard (`LLAMA_GUARD_ENABLED=true`):** si se activa en producción, añade una llamada extra a Ollama por cada respuesta generada. Con GPU propia: solo latencia. Con API externa: dobla el costo del prompt builder. Mantener desactivado en demo salvo que la moderación sea prioritaria.
 - **`MAX_PDF_PAGES=100`:** limita el procesamiento de PDFs grandes — afecta CPU del VPS, no GPU.
 - **Storage:** el backend S3 ya está implementado con boto3. Para demo usa Floci (gratis en Docker). Para cloud: Cloudflare R2 free tier cubre miles de imágenes sin costo de egress. El filesystem local del VPS se pierde si el volumen no está bien montado — preferir R2 para persistencia real.
 - **6 contenedores Docker:** el stack completo (Nginx + FastAPI + PG + Qdrant + Redis + Floci) consume ~2-3 GB RAM en reposo. Qdrant puede crecer con el índice vectorial. Monitorear con `docker stats` en el VPS.
-- **GPU cloud (pendiente P1):** si se usa RunPod Serverless, el costo es despreciable para demos (pago por segundos de inferencia, $0 en reposo). Si se usa Replicate: similar. La decisión impacta la arquitectura más que el costo.
+- **GPU cloud — rutas de implementación:**
+  - **RunPod Serverless** (cero código): cambiar `COMFYUI_URL` en compose + añadir auth header en `ComfyUIClient._request`. Costo: ~$0.005-0.010/imagen. Arranque en frío ~15-30 s.
+  - **fal.ai** (cliente nuevo): reemplazar `comfyui_client.py` por cliente REST (~50 líneas). Costo: ~$0.003/imagen (schnell) o $0.025 (dev). Sin arranques en frío, SLA gestionado.
+  - Ambas opciones son negligibles en costo para demos. Para producción: fal.ai simplifica ops.
+
+---
+
+## 5. Checklist — activar GPU cloud (RunPod Serverless, Ruta A)
+
+Pasos mínimos sin cambio de código:
+
+1. Crear cuenta en [runpod.io](https://www.runpod.io) y fondear wallet (mínimo $10).
+2. Crear **Serverless Endpoint** con plantilla `comfyui` → anotar `Endpoint ID`.
+3. Subir el workflow JSON al endpoint (vía UI de RunPod o API).
+4. En `.env.production`: `COMFYUI_URL=https://<endpoint-id>-8188.proxy.runpod.net`.
+5. Añadir en `ComfyUIClient._request`:
+   ```python
+   headers = {}
+   if settings.runpod_api_key:
+       headers["Authorization"] = f"Bearer {settings.runpod_api_key}"
+   response = client.request(method, url, headers=headers, **kwargs)
+   ```
+6. Añadir `RUNPOD_API_KEY=<tu-key>` en `.env.production`.
+7. Verificar con una generación de prueba y confirmar que la imagen llega al bucket.
+
+## 6. Checklist — activar GPU cloud (fal.ai, Ruta B)
+
+Requiere reemplazar el cliente ComfyUI por uno fal.ai:
+
+1. Crear cuenta en [fal.ai](https://fal.ai) y generar API key.
+2. `pip install fal-client` o usar `httpx` directo (sin dependencia adicional).
+3. Crear `backend/app/engine/fal_client.py` con el cliente REST (ver snippet en sección 2.2).
+4. En `image_generation_service.py`: añadir rama `elif params.backend == "fal"` en `generate_images_service`.
+5. En `docker-compose.prod.yml`: `IMAGE_BACKEND: fal`.
+6. Añadir `FAL_API_KEY=<tu-key>` en `.env.production`.
+7. Ajustar `_backends.py` para llamar al cliente fal.ai en vez de ComfyUI.
