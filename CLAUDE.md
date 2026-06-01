@@ -12,10 +12,17 @@ Lore Master is a RAG-based tool for collaborative world-building (writers, RPG c
 loremaster/
 ├── backend/    # FastAPI + SQLModel + Qdrant + Ollama  →  see backend/CLAUDE.md
 ├── frontend/   # React 19 + TypeScript + Vite + React Bootstrap  →  see frontend/CLAUDE.md
-└── docs/       # Extended documentation
+└── docs/
+    ├── architecture/   # Technical reference — DOCUMENTATION, DEPLOY, ENVIRONMENT,
+    │                   # ENV-ARCHITECTURE, LIMITERS, CLERK-APP-INTEGRATION, MOD, COST-REPORT
+    ├── planning/       # Task tracking — STRATEGY, WEEKLY_CHECKLISTS, FIX
+    ├── completed/      # Finished implementation plans — PLAN-DEPLOY-STORAGE, PLAN-LLAMA-GUARD
+    ├── history/        # Session status snapshots
+    └── old/            # Obsolete documents
 ```
 
 Each subdirectory has its own `CLAUDE.md` with full commands, architecture details, and design decisions.
+See `docs/README.md` for a full index of all documentation.
 
 ## High-Level Architecture
 
