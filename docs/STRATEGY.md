@@ -169,13 +169,13 @@ Objetivo: backend containerizado, concurrencia LLM resuelta, stack demo completo
 **Pendiente de semana 9 continuación:**
 - [x] Reporte de costos finalizado — ver `docs/COST-REPORT.md` (completado 2026-05-27)
 
-### Semana 10 — GPU cloud + Clerk + TLS
+### Semana 10 — GPU cloud + Clerk + TLS (en curso — 2026-06-01)
 
 Objetivo: flujo de imágenes en cloud y auth Clerk validada.
 
-- [ ] **Decidir e implementar GPU cloud**: RunPod Serverless vs Replicate vs filesystem — `runpod_client.py` no existe aún
-- [x] ~~Storage S3/R2 en producción real~~ — **ya implementado** (`core/storage/s3_client.py` con boto3; soporta AWS, R2 y Floci). Para cloud: solo configurar credenciales en `.env.production`
-- [ ] **Clerk end-to-end con tenant real**: código completo en main; descomentar `CLERK_JWKS_URL` + `CLERK_AUDIENCE` en compose y `.env.production`
+- [ ] **Decidir e implementar GPU cloud**: RunPod Serverless decidido para demo; `runpod_client.py` pendiente
+- [x] **Variables S3/R2 interpolables** — `${VAR:-fallback}` en compose; demo usa Floci, cloud usa R2 con credenciales en `.env.production`
+- [x] **Clerk end-to-end con tenant real** — `CLERK_JWKS_URL` + `CLERK_AUDIENCE` activos en compose; JWT template con `email`; fusión de cuentas por email; 8 tests; app `REDACTED-CLERK-APP-ID`
 - [ ] **TLS/HTTPS**: Nginx solo tiene `listen 80`; necesario certbot o proxy externo antes de URL pública
 
 ### Semana 11 — GPU cloud e imagen en producción

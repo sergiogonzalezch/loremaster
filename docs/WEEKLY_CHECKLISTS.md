@@ -680,12 +680,24 @@ Fixes de consistencia entre capas y eliminación de código muerto aplicados sob
 - [ ] Variables en `.env.production`: `RUNPOD_API_KEY` + `RUNPOD_ENDPOINT_ID` (o equivalente Replicate)
 - [ ] Documentar cold start time (esperado 20-60s RunPod)
 
-### Clerk end-to-end con tenant real
+### Clerk end-to-end con tenant real ✅ (2026-06-01)
 
-- [ ] Obtener `CLERK_JWKS_URL` y `CLERK_AUDIENCE` del dashboard de Clerk
-- [ ] Descomentar en `docker-compose.prod.yml`: `CLERK_JWKS_URL` y `CLERK_AUDIENCE`
-- [ ] Añadir a `.env.production` y probar flujo completo: Clerk login → `/auth/clerk/sync` → cookie local
-- [ ] Verificar que `ProtectedRoute` funciona en modo Clerk en el stack Docker
+- [x] Obtener `CLERK_JWKS_URL` y `CLERK_AUDIENCE` del dashboard de Clerk
+- [x] Descomentar en `docker-compose.prod.yml`: `CLERK_JWKS_URL` y `CLERK_AUDIENCE`
+- [x] Añadir a `.env.production` y probar flujo completo: Clerk login → `/auth/clerk/sync` → cookie local
+- [x] Verificar que `ProtectedRoute` funciona en modo Clerk en el stack Docker
+- [x] `VITE_CLERK_PUBLISHABLE_KEY` bakeada en `frontend/Dockerfile` como `ARG/ENV`
+- [x] JWT template con claim `email` configurado en Clerk Dashboard → Configure → Sessions
+- [x] `get_or_create_clerk_user()` fusiona con cuenta local por email (evita duplicados)
+- [x] `afterSignInUrl="/"` + `afterSignUpUrl="/"` en `<SignIn>` — no redirige al dashboard Clerk
+- [x] 8 tests pasando (CLERK-01 a CLERK-06 + CLERK-03b + CLERK-03c fusión por email)
+- [x] App Clerk: `REDACTED-CLERK-APP-ID`
+
+### Variables S3/R2 interpolables ✅ (2026-06-01)
+
+- [x] `S3_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_REGION` con `${VAR:-fallback}` en compose
+- [x] Demo local usa Floci automáticamente; cloud R2 solo requiere credenciales en `.env.production`
+- [x] Instrucciones R2 documentadas en `.env.production` (comentadas, listas para activar)
 
 ### TLS/HTTPS
 
@@ -697,9 +709,9 @@ Fixes de consistencia entre capas y eliminación de código muerto aplicados sob
 ### Criterios de aceptación Semana 10
 
 - [ ] `/image-generation/generate` genera imagen via backend cloud elegido
-- [ ] Clerk login funciona end-to-end en stack Docker
+- [x] Clerk login funciona end-to-end en stack Docker
 - [ ] Stack accesible via HTTPS (certificado válido)
-- [ ] `make prod-up` levanta todo sin errores con las nuevas variables
+- [x] `make prod-up` levanta todo sin errores con las nuevas variables
 
 ---
 
