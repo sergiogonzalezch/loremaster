@@ -1,6 +1,6 @@
 # STRATEGY.md — Evaluación técnica y hoja de ruta hacia producción
 
-**Fecha:** 2026-05-28 (revisado 2026-05-28 — sesión de hardening backend + frontend)
+**Fecha:** 2026-05-28 (revisado 2026-06-01 — Clerk end-to-end, RunPod skeleton, plan deploy Cloudflare)
 **Contexto:** Evaluación honesta del estado del proyecto. Actualizado tras cierre completo de Semana 9, revisión de items pendientes y sprint de seguridad/calidad (rama `bugfix/issues-security`).
 
 ---
@@ -9,18 +9,19 @@
 
 > Sección de consulta rápida. Verificado contra el código el 2026-05-27.
 
-### Pendiente Semana 10
+### Pendiente Semana 10–11
 
 | # | Item | Esfuerzo | Bloqueante para |
 |---|---|---|---|
-| P1 | **GPU cloud** — implementar `runpod_client.py` o cliente Replicate; hacer `IMAGE_BACKEND` interpolable en compose | Alto | Imágenes fuera del host |
-| P2 | **Clerk end-to-end** — descomentar 2 vars en compose + `CLERK_JWKS_URL`/`CLERK_AUDIENCE` en `.env.production` | Bajo | Auth en cloud |
-| P3 | **TLS/HTTPS** — certificado SSL + `listen 443 ssl` en `nginx.conf` + redirect 80→443 | Medio | Cualquier URL pública |
+| P1 | **RunPod — implementar métodos del cliente** — skeleton creado; métodos pendientes de implementar y conectar en `_backends.py` | Medio | Imágenes fuera del host |
+| P3 | **Deploy Cloudflare** — instalar `cloudflared`, crear bucket R2, configurar `.env.production` con URL tunnel + credenciales R2 | Bajo | URL pública para portafolio |
 
 ### Pendiente sin fecha urgente (no bloquea demo)
 
 | # | Item | Cuándo |
 |---|---|---|
+| ~~P2~~ | ~~**Clerk end-to-end**~~ — ✅ Resuelto 2026-06-01 | — |
+| ~~P3~~ | ~~**TLS/HTTPS via VPS**~~ — reemplazado por plan Cloudflare Tunnel (gratis, sin VPS) | — |
 | ~~P4~~ | ~~**Variables S3/R2 interpolables**~~ — ✅ Resuelto 2026-06-01 | — |
 | P5 | **Modelos Ollama configurables** — `${OLLAMA_MODEL:-llama3.2:latest}` en compose | Calidad de vida; sin urgencia |
 | P6 | **Cola de generación** — `BackgroundTasks` + job state `pending→running→done` | Si el volumen lo justifica |
@@ -35,7 +36,10 @@
 | Storage S3-compatible con boto3 (AWS, R2, Floci) | ✅ | `core/storage/s3_client.py` |
 | Semáforo LLM → HTTP 429 + `Retry-After: 30` | ✅ | `rag_query.py`, `content.py`, `image_generation.py` |
 | Llama Guard 3 — capa semántica fail-open | ✅ | `app/domain/llama_guard.py` |
-| Clerk — código completo en main (sync, verify, 6 tests) | ✅ código / ⚠️ config | `auth_clerk.py`, `clerk.py` |
+| Clerk — end-to-end con tenant real (8 tests, fusión por email, JWT template) | ✅ | `auth_clerk.py`, `clerk.py`, `.env.production` |
+| RunPod — skeleton `runpod_client.py` + `IMAGE_BACKEND` interpolable | ✅ skeleton | `engine/runpod_client.py`, `docker-compose.prod.yml` |
+| Plan deploy Cloudflare Tunnel + R2 (gratis, sin VPS ni dominio) | ✅ plan | `docs/architecture/DEPLOY-CLOUDFLARE.md` |
+| Documentación reorganizada en architecture/ planning/ completed/ | ✅ | `docs/` |
 | Migración FK `ix_entities_collection_id` | ✅ | Alembic |
 | Path traversal guard en `delete_image_service` | ✅ | `image_generation_service.py` |
 | CORS eliminado — todo pasa por Nginx en :80 | ✅ | `nginx.conf` |
@@ -169,21 +173,22 @@ Objetivo: backend containerizado, concurrencia LLM resuelta, stack demo completo
 **Pendiente de semana 9 continuación:**
 - [x] Reporte de costos finalizado — ver `docs/architecture/COST-REPORT.md` (completado 2026-05-27)
 
-### Semana 10 — GPU cloud + Clerk + TLS (en curso — 2026-06-01)
+### Semana 10 — GPU cloud + Clerk + TLS (cerrada 2026-06-01)
 
 Objetivo: flujo de imágenes en cloud y auth Clerk validada.
 
-- [ ] **Decidir e implementar GPU cloud**: RunPod Serverless decidido para demo; `runpod_client.py` pendiente
-- [x] **Variables S3/R2 interpolables** — `${VAR:-fallback}` en compose; demo usa Floci, cloud usa R2 con credenciales en `.env.production`
-- [x] **Clerk end-to-end con tenant real** — `CLERK_JWKS_URL` + `CLERK_AUDIENCE` activos en compose; JWT template con `email`; fusión de cuentas por email; 8 tests; app `REDACTED-CLERK-APP-ID`
-- [ ] **TLS/HTTPS**: Nginx solo tiene `listen 80`; necesario certbot o proxy externo antes de URL pública
+- [x] **Variables S3/R2 interpolables** — `${VAR:-fallback}` en compose; demo usa Floci, cloud usa R2
+- [x] **Clerk end-to-end con tenant real** — `CLERK_JWKS_URL` + `CLERK_AUDIENCE` activos; JWT template con `email`; fusión de cuentas por email; 8 tests; app `REDACTED-CLERK-APP-ID`
+- [x] **RunPod skeleton** — `engine/runpod_client.py` con interfaz completa (métodos pendientes de implementar); `IMAGE_BACKEND` interpolable en compose; `runpod_api_key` + `runpod_endpoint_id` en Settings
+- [x] **TLS/HTTPS → reemplazado** — sin presupuesto para VPS ni dominio; plan alternativo: Cloudflare Tunnel (gratis, HTTPS automático, sin abrir puertos) + R2 (storage gratuito). Ver `docs/architecture/DEPLOY-CLOUDFLARE.md`
+- [x] **Documentación reorganizada** — `docs/architecture/`, `docs/planning/`, `docs/completed/`; todos los README actualizados
 
-### Semana 11 — GPU cloud e imagen en producción
+### Semana 11 — Deploy Cloudflare + RunPod implementado
 
-Objetivo: flujo RAG imagen completo fuera del host del desarrollador.
+Objetivo: app accesible públicamente vía Cloudflare Tunnel y generación de imágenes probada en cloud.
 
-- [ ] `runpod_client.py` si se decidió RunPod (Semana 10) — sino esta semana se redirige a polish
-- [ ] Switch `IMAGE_BACKEND=runpod` transparente (mismo endpoint `/image-generation/generate`)
+- [ ] **Activar deploy Cloudflare**: instalar `cloudflared`, crear bucket R2, configurar `.env.production` (ALLOWED_ORIGINS, CLERK_AUDIENCE, credenciales R2, STORAGE_BASE_URL). Ver `DEPLOY-CLOUDFLARE.md §Fases 0-3`
+- [ ] **Implementar RunPod client**: completar métodos `submit_workflow`, `get_status`, `wait_for_completion`, `extract_image_bytes`; conectar en `_backends.py` con `elif params.backend == "runpod"`; fondear wallet RunPod (~$4) y probar generación end-to-end
 - [x] ~~Limpiar deuda de documentación: eliminar `entity_relations` de HU-05~~ — resuelto 2026-05-20
 
 ### Semana 12 — Demo + Evaluación final
