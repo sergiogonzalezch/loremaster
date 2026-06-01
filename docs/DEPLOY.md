@@ -127,7 +127,7 @@ docker exec -it loremaster-api python scripts/make_admin.py <username> --force
 
 | Item | Código | Compose | Configuración |
 |---|---|---|---|
-| **Clerk auth** | ✅ `auth_clerk.py`, `clerk.py`, 6 tests | ✅ Vars presentes pero comentadas (líneas 129-130) | ❌ Descomentar en compose + añadir `CLERK_JWKS_URL` y `CLERK_AUDIENCE` en `.env.production` |
+| **Clerk auth** | ✅ `auth_clerk.py`, `clerk.py`, 8 tests | ✅ `CLERK_JWKS_URL` + `CLERK_AUDIENCE` activos en compose | ✅ Configurado en `.env.production` + JWT template con `email` en dashboard |
 | **Storage S3/R2 real** | ✅ `core/storage/s3_client.py` con boto3 | ❌ `S3_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` hardcodeados para Floci — hacer interpolables | ❌ Añadir credenciales reales en `.env.production` tras el cambio de compose |
 | **TLS/HTTPS** | ❌ Nginx solo `listen 80` | — | ❌ Certificado SSL (Let's Encrypt / certbot) + `listen 443 ssl` + redirect 80→443 en `nginx.conf` |
 | **GPU cloud** | ❌ `runpod_client.py` no existe | ❌ `IMAGE_BACKEND: comfyui` hardcodeado — hacer `${IMAGE_BACKEND:-comfyui}` | ❌ Implementar cliente + añadir `RUNPOD_API_KEY` / `RUNPOD_ENDPOINT_ID` en `.env.production` |

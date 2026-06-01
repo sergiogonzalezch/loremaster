@@ -148,6 +148,38 @@ async def test_sync_existing_user_is_idempotent(clerk_client, db_session):
 
 
 @pytest.mark.anyio
+async def test_sync_merges_with_existing_local_account_by_email(clerk_client, db_session):
+    """CLERK-03c: /sync con email que coincide con cuenta local retorna esa cuenta sin duplicar."""
+    local_user = User(
+        id="local-uuid-999",
+        username="localuser",
+        email="clerk@example.com",
+        hashed_password="hashed",
+    )
+    db_session.add(local_user)
+    db_session.commit()
+
+    with patch(
+        "app.api.routes.auth.auth_clerk.decode_clerk_token",
+        return_value=_CLERK_PAYLOAD,
+    ):
+        response = await clerk_client.post(
+            "/api/v1/auth/clerk/sync",
+            headers={"Authorization": "Bearer valid-clerk-token"},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["username"] == "localuser"
+
+    # No se creó un segundo usuario con el Clerk sub
+    from sqlmodel import select
+
+    all_users = db_session.exec(select(User).where(User.email == "clerk@example.com")).all()
+    assert len(all_users) == 1
+    assert all_users[0].id == "local-uuid-999"
+
+
+@pytest.mark.anyio
 async def test_sync_uses_email_prefix_when_no_username(clerk_client, db_session):
     """CLERK-03b: cuando el payload Clerk no trae 'username', usa el prefijo del email."""
     payload_no_username = {"sub": "user_clerk_456", "email": "noname@example.com"}

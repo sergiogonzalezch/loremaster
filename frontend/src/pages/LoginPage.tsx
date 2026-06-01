@@ -91,7 +91,7 @@ function ClerkLoginPage() {
         className="d-flex align-items-center justify-content-center"
         style={{ minHeight: "100vh", position: "relative", zIndex: 1 }}
       >
-        <SignIn />
+        <SignIn afterSignInUrl="/" afterSignUpUrl="/" />
       </Container>
     </>
   );

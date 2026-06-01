@@ -135,7 +135,7 @@ class Settings(BaseSettings):
     s3_region: str = "us-east-1"
     aws_access_key_id: str | None = None
     aws_secret_access_key: str | None = None
-    profile_image_max_size_mb: float = 5.0
+    profile_image_max_size_mb: float = 10.0
     document_max_upload_mb: int = 50
     document_extraction_timeout_seconds: int = 30
     document_event_stream_max_seconds: int = 300  # duración máxima del SSE de documentos

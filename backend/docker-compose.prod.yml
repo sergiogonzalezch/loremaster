@@ -125,9 +125,8 @@ services:
       # RATE_LIMIT_PER_MINUTE: "30"
       # RATE_LIMIT_LLM_PER_MINUTE: "5"
       # RATE_LIMIT_IMAGE_PER_MINUTE: "3"
-      # Clerk — descomentar cuando se complete la integración en semana 10.
-      # CLERK_JWKS_URL: ${CLERK_JWKS_URL}
-      # CLERK_AUDIENCE: ${CLERK_AUDIENCE}
+      CLERK_JWKS_URL: ${CLERK_JWKS_URL}
+      CLERK_AUDIENCE: ${CLERK_AUDIENCE}
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY requerida}
       COOKIE_SECURE: "true"
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?ALLOWED_ORIGINS requerida}
@@ -148,6 +147,8 @@ services:
     build:
       context: ../frontend
       dockerfile: Dockerfile
+      args:
+        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY}
     container_name: loremaster-frontend
     restart: unless-stopped
     depends_on:

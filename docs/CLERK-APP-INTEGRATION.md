@@ -2,26 +2,83 @@
 
 Guía para conectar Lore Master con Clerk como proveedor de autenticación externo.
 
-> **Última actualización:** 2026-05-15  
-> **Estado:** Backend 100% implementado. Frontend 100% implementado. Pendiente: `test_auth_clerk.py`.
+> **Última actualización:** 2026-06-01  
+> **Estado:** 100% completado y verificado en producción Docker.
 
 ---
 
-## Estado actual (2026-05-15)
+## Estado actual (2026-06-01)
 
 | Componente | Archivo | Estado |
 |---|---|---|
-| `JWKSManager` + `decode_clerk_token()` | `core/auth/clerk.py` | ✅ Implementado |
-| Settings `clerk_jwks_url` + `clerk_audience` | `core/config/__init__.py` | ✅ Implementado |
-| `GET /auth/clerk/verify` | `routes/auth/auth_clerk.py` | ✅ Implementado |
-| Cookies HttpOnly + CSRF | `core/auth/` | ✅ Implementado |
-| **`POST /auth/clerk/sync`** | `routes/auth/auth_clerk.py` | ✅ Implementado |
-| **`get_or_create_clerk_user()`** | `services/auth/auth_service.py` | ✅ Implementado |
-| **Bug en `get_current_user`** | `core/auth/dependencies.py` | ✅ Corregido |
-| SDK Clerk + `ClerkProvider` + `ClerkBridge` | `frontend/src/App.tsx` | ✅ Implementado |
-| `VITE_CLERK_PUBLISHABLE_KEY` | `frontend/.env` + `clerkConfig.ts` | ✅ Implementado |
-| `clerkSync.ts` | `frontend/src/api/clerkSync.ts` | ✅ Implementado |
-| **`test_auth_clerk.py`** | `backend/tests/test_auth_clerk.py` | ❌ Pendiente |
+| `JWKSManager` + `decode_clerk_token()` | `core/auth/clerk.py` | ✅ |
+| Settings `clerk_jwks_url` + `clerk_audience` | `core/config/__init__.py` | ✅ |
+| `GET /auth/clerk/verify` | `routes/auth/auth_clerk.py` | ✅ |
+| Cookies HttpOnly + CSRF | `core/auth/` | ✅ |
+| `POST /auth/clerk/sync` | `routes/auth/auth_clerk.py` | ✅ |
+| `get_or_create_clerk_user()` — fusión por email | `services/auth/auth_service.py` | ✅ |
+| `get_current_user` usa `verify_token()` uniforme | `core/auth/dependencies.py` | ✅ |
+| `ClerkProvider` + `ClerkBridge` | `frontend/src/App.tsx` | ✅ |
+| `VITE_CLERK_PUBLISHABLE_KEY` bakeada en Dockerfile | `frontend/Dockerfile` | ✅ |
+| `afterSignInUrl="/"` + `afterSignUpUrl="/"` | `frontend/src/pages/LoginPage.tsx` | ✅ |
+| `clerkSync.ts` | `frontend/src/api/clerkSync.ts` | ✅ |
+| `CLERK_JWKS_URL` + `CLERK_AUDIENCE` en compose | `backend/docker-compose.prod.yml` | ✅ |
+| JWT template con claim `email` | Clerk Dashboard → Configure → Sessions | ✅ |
+| Tests CLERK-01 a CLERK-06 + CLERK-03c (fusión) | `backend/tests/test_auth_clerk.py` | ✅ 8/8 |
+
+---
+
+## Modelo de almacenamiento de usuario
+
+El usuario vive en **dos sistemas con roles distintos**:
+
+```
+CLERK (proveedor de identidad)          POSTGRESQL (datos de la app)
+────────────────────────────            ──────────────────────────────
+• Credenciales (contraseña/OAuth)       • username, bio, display_name
+• Sesión activa / tokens JWT            • email (copia local)
+• Foto de perfil de Clerk               • is_admin, avatar_url
+• Email verificado                      • colecciones, entidades
+• 2FA, seguridad                        • contenidos, imágenes generadas
+```
+
+Clerk gestiona la autenticación. Una vez sincronizado, todos los requests
+usan cookies HttpOnly con JWT local — Clerk no interviene en operaciones
+de la app.
+
+## Flujo de login completo
+
+```
+Usuario → Clerk login → Clerk JWT (RS256, incluye email)
+              ↓
+    POST /api/v1/auth/clerk/sync  (Authorization: Bearer <clerk_jwt>)
+              ↓
+    decode_clerk_token()
+      → valida firma RS256 con JWKS públicas de Clerk (caché 1h)
+      → verifica issuer y audience
+              ↓
+    get_or_create_clerk_user(payload)
+      1. ¿Existe usuario con id == sub?   → retorna esa cuenta
+      2. ¿Existe usuario con ese email?   → retorna cuenta local (fusión)
+      3. Si no existe                     → crea nueva cuenta en PostgreSQL
+              ↓
+    create_access_token() + create_refresh_token()
+    _set_auth_cookies() → cookies HttpOnly (access 15min, refresh 7d)
+              ↓
+    Requests siguientes usan cookies — Clerk no interviene
+```
+
+### Importante: el Clerk JWT nunca se guarda en cookie
+
+El JWT de Clerk llega una sola vez por header en `/sync` y se descarta.
+La cookie siempre contiene un JWT local firmado con `SECRET_KEY`.
+
+### Fusión de cuentas (registro con email existente)
+
+Si el usuario se registra en Clerk con un email que ya tiene cuenta local,
+`get_or_create_clerk_user()` detecta la coincidencia por email y retorna
+la cuenta existente. No se crea duplicado y el usuario accede a todo su
+contenido previo.
 
 ---
 

@@ -69,8 +69,10 @@ def invalidate_session(session: Session, user_id: str) -> None:
 def get_or_create_clerk_user(session: Session, payload: dict) -> User:
     """Retorna el User local vinculado al Clerk JWT, creándolo si no existe.
 
-    El 'sub' del Clerk JWT (e.g. 'user_2abc...') es el ID primario.
-    hashed_password queda vacío porque Clerk gestiona las credenciales.
+    Orden de lookup:
+    1. Por Clerk sub (retorno directo si ya existe).
+    2. Por email — fusiona con cuenta local preexistente sin duplicar.
+    3. Crea usuario nuevo si no hay coincidencia.
     """
     user_id = payload["sub"]
     user = session.get(User, user_id)
@@ -78,6 +80,14 @@ def get_or_create_clerk_user(session: Session, payload: dict) -> User:
         return user
 
     email = payload.get("email", "")
+
+    if email:
+        existing = session.exec(
+            select(User).where(User.email == email, User.is_deleted.is_(False))
+        ).first()
+        if existing:
+            return existing
+
     candidate = payload.get("username") or (email.split("@")[0] if email else None) or user_id
     # user_id (Clerk) es único globalmente — se usa como fallback si el nombre derivado colisiona
     username = candidate if not session.exec(select(User).where(User.username == candidate)).first() else user_id

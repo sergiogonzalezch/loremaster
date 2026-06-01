@@ -325,7 +325,7 @@ export default function ProfilePage() {
                         )}
                       </div>
                       <Form.Text className="text-muted mb-0">
-                        JPEG, PNG, WebP, GIF · Máx 5MB
+                        JPEG, PNG, WebP, GIF · Máx 10MB
                       </Form.Text>
                     </div>
                   </div>
@@ -336,6 +336,22 @@ export default function ProfilePage() {
                     onChange={handleAvatarUpload}
                     className="d-none"
                   />
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label className="small text-muted">
+                    Nombre de usuario
+                  </Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={profile?.username ?? ""}
+                    readOnly
+                    plaintext
+                    className="text-muted"
+                  />
+                  <Form.Text className="text-muted">
+                    El nombre de usuario no se puede cambiar.
+                  </Form.Text>
                 </Form.Group>
 
                 <Form.Group className="mb-3">
