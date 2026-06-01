@@ -264,4 +264,4 @@ el compose dice "por defecto inactivo para demo".
 ---
 
 *Última actualización: 2026-05-27 (revisado — S3 implementado; GPU cloud movido a Semana 10). Branch `main`.*
-*Ver también: `docs/ENVIRONMENT.md` (referencia completa de variables), `docs/DEPLOY.md` (runbook operacional).*
+*Ver también: `docs/architecture/ENVIRONMENT.md` (referencia completa de variables), `docs/architecture/DEPLOY.md` (runbook operacional).*

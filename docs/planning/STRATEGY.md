@@ -167,7 +167,7 @@ Objetivo: backend containerizado, concurrencia LLM resuelta, stack demo completo
 - [x] Documentación actualizada: DEPLOY.md, README, frontend/README, ENVIRONMENT.md, WEEKLY_CHECKLISTS
 
 **Pendiente de semana 9 continuación:**
-- [x] Reporte de costos finalizado — ver `docs/COST-REPORT.md` (completado 2026-05-27)
+- [x] Reporte de costos finalizado — ver `docs/architecture/COST-REPORT.md` (completado 2026-05-27)
 
 ### Semana 10 — GPU cloud + Clerk + TLS (en curso — 2026-06-01)
 

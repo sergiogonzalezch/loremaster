@@ -30,7 +30,7 @@ cp .env.example .env
 ```
 
 > Para el stack Docker de demo/producción usar `.env.production` en la raíz del repo
-> (no `backend/.env`). Ver [`docs/ENV-ARCHITECTURE.md`](../docs/ENV-ARCHITECTURE.md)
+> (no `backend/.env`). Ver [`docs/architecture/ENV-ARCHITECTURE.md`](../docs/architecture/ENV-ARCHITECTURE.md)
 > para el flujo completo: qué archivo lee quién, prioridad Pydantic y variables pendientes de mejora.
 
 **General**
