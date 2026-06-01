@@ -108,13 +108,13 @@ services:
       LLAMA_GUARD_MODEL: ${LLAMA_GUARD_MODEL:-llama-guard3:8b}
       LLAMA_GUARD_TIMEOUT: ${LLAMA_GUARD_TIMEOUT:-5.0}
       MEDIA_ROOT: /app/media
-      # Storage — S3 via Floci (emulador AWS local, DNS interno Docker).
+      # Storage — fallback = Floci (demo local). Para R2/S3 real: definir vars en .env.production.
       STORAGE_BACKEND: s3
-      S3_ENDPOINT_URL: http://floci:4566
+      S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-http://floci:4566}
       S3_BUCKET: ${S3_BUCKET:-loremaster-media}
-      S3_REGION: us-east-1
-      AWS_ACCESS_KEY_ID: test
-      AWS_SECRET_ACCESS_KEY: test
+      S3_REGION: ${S3_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
       # Nginx proxea /media/ → floci:4566/loremaster-media/ (bucket absorbido en proxy_pass).
       # Las image_url generadas quedan como <dominio>/media/<path>, mismo origen que el frontend.
       # Defecto: http://localhost/media para demo local. Sobreescribir en .env para otros dominios.

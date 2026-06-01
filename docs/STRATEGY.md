@@ -21,7 +21,7 @@
 
 | # | Item | Cuándo |
 |---|---|---|
-| P4 | **Variables S3/R2 interpolables** — `S3_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` como `${VAR:-fallback}` en compose | Al activar S3/R2 real en cloud |
+| ~~P4~~ | ~~**Variables S3/R2 interpolables**~~ — ✅ Resuelto 2026-06-01 | — |
 | P5 | **Modelos Ollama configurables** — `${OLLAMA_MODEL:-llama3.2:latest}` en compose | Calidad de vida; sin urgencia |
 | P6 | **Cola de generación** — `BackgroundTasks` + job state `pending→running→done` | Si el volumen lo justifica |
 
