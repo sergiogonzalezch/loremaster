@@ -235,9 +235,9 @@ Documentos donde se registran puntos de mejora identificados pero no implementad
 | Documento | Sección de mejoras | Contenido |
 |---|---|---|
 | [`docs/FIX.md`](FIX.md) | Tabla de estado rápido + Cobertura de tests | Deuda técnica activa (ítems 🟢 Cubierto sin acción inmediata): 13, 29, 30, 34, 35, 39, 42, 50. Tests pendientes de frontend: botón reintentar en error `CollectionsPage`. |
-| [`docs/ENV-ARCHITECTURE.md §8`](ENV-ARCHITECTURE.md#8-puntos-de-mejora-identificados) | §8 — Puntos de mejora identificados | ~~Variables S3/R2 hardcodeadas~~ resuelto. `IMAGE_BACKEND` interpolable para RunPod (Semana 10). Inconsistencia `rate_limit_enabled` Python default vs compose fallback. Modelos Ollama configurables sin editar el YAML. |
-| [`docs/DEPLOY.md`](DEPLOY.md) | Checklist de deploy | Estado actualizado del checklist operacional: qué está cubierto, qué falta para un deploy en servidor real (S3/R2, Clerk, dominio HTTPS). |
-| [`docs/DOCUMENTATION.md`](DOCUMENTATION.md) | Roadmap / Decisiones pendientes | Decisiones de arquitectura diferidas: RunPod vs Replicate, modelo en producción, sesiones deslizantes Clerk. |
+| [`docs/ENV-ARCHITECTURE.md §8`](../architecture/ENV-ARCHITECTURE.md#8-puntos-de-mejora-identificados) | §8 — Puntos de mejora identificados | ~~Variables S3/R2 hardcodeadas~~ resuelto. `IMAGE_BACKEND` interpolable para RunPod (Semana 10). Inconsistencia `rate_limit_enabled` Python default vs compose fallback. Modelos Ollama configurables sin editar el YAML. |
+| [`docs/DEPLOY.md`](../architecture/DEPLOY.md) | Checklist de deploy | Estado actualizado del checklist operacional: qué está cubierto, qué falta para un deploy en servidor real (S3/R2, Clerk, dominio HTTPS). |
+| [`docs/DOCUMENTATION.md`](../architecture/DOCUMENTATION.md) | Roadmap / Decisiones pendientes | Decisiones de arquitectura diferidas: RunPod vs Replicate, modelo en producción, sesiones deslizantes Clerk. |
 
 ### Deuda técnica rápida — ítems sin fecha
 

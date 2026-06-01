@@ -71,7 +71,7 @@ make infra-pg   # solo Qdrant + Redis + PostgreSQL
 make down       # bajar infra dev (qdrant + redis + postgres)
 ```
 
-Ver [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md) para la referencia completa de variables de entorno, modos (local/demo/producción) y checklist de despliegue.
+Ver [`docs/architecture/ENVIRONMENT.md`](docs/architecture/ENVIRONMENT.md) para la referencia completa de variables de entorno, modos (local/demo/producción) y checklist de despliegue.
 
 ## Usuarios y acceso
 
@@ -137,9 +137,9 @@ Verificar que las variables se resuelven correctamente antes de levantar:
 docker compose -f backend/docker-compose.prod.yml --env-file .env.production config
 ```
 
-Ver [`docs/DEPLOY.md`](docs/DEPLOY.md) para el runbook completo, checklist y acceso a servicios internos en debug.
+Ver [`docs/architecture/DEPLOY.md`](docs/architecture/DEPLOY.md) para el runbook completo, checklist y acceso a servicios internos en debug.
 
-Ver [`docs/ENV-ARCHITECTURE.md`](docs/ENV-ARCHITECTURE.md) para el flujo completo de variables: qué lee cada archivo, prioridad Pydantic, clasificación de variables y mejoras pendientes.
+Ver [`docs/architecture/ENV-ARCHITECTURE.md`](docs/architecture/ENV-ARCHITECTURE.md) para el flujo completo de variables: qué lee cada archivo, prioridad Pydantic, clasificación de variables y mejoras pendientes.
 
 Ver [`backend/README.md`](backend/README.md) para la referencia completa de variables, ambientes y opciones del compose.
 
@@ -147,13 +147,13 @@ Ver [`backend/README.md`](backend/README.md) para la referencia completa de vari
 
 | Documento | Contenido |
 |---|---|
-| [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md) | Variables de entorno, modos, arranque, checklist de despliegue |
-| [`docs/ENV-ARCHITECTURE.md`](docs/ENV-ARCHITECTURE.md) | Flujo de variables (local vs Docker), mapeo Pydantic, mejoras pendientes |
-| [`docs/DEPLOY.md`](docs/DEPLOY.md) | Runbook operacional: arranque, checklist, debug |
-| [`docs/LIMITERS.md`](docs/LIMITERS.md) | Flujo de validación, límites input/output/DB y constantes del sistema |
-| [`docs/DOCUMENTATION.md`](docs/DOCUMENTATION.md) | Arquitectura, decisiones técnicas y roadmap |
-| [`docs/MOD.md`](docs/MOD.md) | Arquitectura del sistema de moderación y guardrails |
-| [`docs/FIX.md`](docs/FIX.md) | Tracker de deuda técnica (61 issues, incluye sprint hardening 2026-05-28) |
-| [`docs/STRATEGY.md`](docs/STRATEGY.md) | Estado del proyecto, riesgos, hoja de ruta Semanas 9-12, §9 React Doctor pendientes |
+| [`docs/architecture/ENVIRONMENT.md`](docs/architecture/ENVIRONMENT.md) | Variables de entorno, modos, arranque, checklist de despliegue |
+| [`docs/architecture/ENV-ARCHITECTURE.md`](docs/architecture/ENV-ARCHITECTURE.md) | Flujo de variables (local vs Docker), mapeo Pydantic, mejoras pendientes |
+| [`docs/architecture/DEPLOY.md`](docs/architecture/DEPLOY.md) | Runbook operacional: arranque, checklist, debug |
+| [`docs/architecture/LIMITERS.md`](docs/architecture/LIMITERS.md) | Flujo de validación, límites input/output/DB y constantes del sistema |
+| [`docs/architecture/DOCUMENTATION.md`](docs/architecture/DOCUMENTATION.md) | Arquitectura, decisiones técnicas y roadmap |
+| [`docs/architecture/MOD.md`](docs/architecture/MOD.md) | Arquitectura del sistema de moderación y guardrails |
+| [`docs/planning/FIX.md`](docs/planning/FIX.md) | Tracker de deuda técnica (61 issues, incluye sprint hardening 2026-05-28) |
+| [`docs/planning/STRATEGY.md`](docs/planning/STRATEGY.md) | Estado del proyecto, riesgos, hoja de ruta Semanas 9-12, §9 React Doctor pendientes |
 | [`backend/README.md`](backend/README.md) | API, endpoints, tests, ambientes, estructura del backend |
 | [`frontend/README.md`](frontend/README.md) | Componentes, pantallas, autenticación, tests |

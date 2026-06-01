@@ -65,5 +65,5 @@ Flujo de dos pasos (ImageGenerator.tsx):
 ---
 
 **Full documentation:** [README.md](./README.md)
-**Documentation:** [../docs/DOCUMENTATION.md](../docs/DOCUMENTATION.md)
+**Documentation:** [../docs/architecture/DOCUMENTATION.md](../docs/architecture/DOCUMENTATION.md)
 **Skills:** [SKILLS.md](./SKILLS.md)
