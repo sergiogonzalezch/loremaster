@@ -15,7 +15,11 @@ Plataforma RAG para escritores y narradores de rol. Carga documentos de lore, ge
 loremaster/
 ├── backend/          → API REST + pipeline RAG
 ├── frontend/         → SPA React
-├── docs/             → Documentación extendida
+├── docs/
+│   ├── architecture/ → Referencia técnica (DEPLOY, ENVIRONMENT, DOCUMENTATION, LIMITERS…)
+│   ├── planning/     → Seguimiento de tareas (STRATEGY, WEEKLY_CHECKLISTS, FIX)
+│   ├── completed/    → Planes de implementación finalizados
+│   └── README.md     → Índice completo de documentación
 ├── Makefile          → Targets de infra y arranque
 ├── dev.ps1           → Arranque completo del entorno local (Windows)
 ├── loremaster.bat    → Launcher con menu interactivo (Windows)

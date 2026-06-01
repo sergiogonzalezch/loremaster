@@ -100,7 +100,7 @@ cp .env.example .env
 | `MEDIA_ROOT` | `./media` | Directorio raíz para archivos multimedia (solo backend `local`) |
 | `STORAGE_BACKEND` | `local` | Backend de almacenamiento: `local` (archivos en disco) o `s3` (Floci/MinIO/AWS) |
 | `STORAGE_BASE_URL` | `http://localhost:8000/media` | URL **pública** base para servir archivos. En demo con Floci: `http://localhost:4566/loremaster-media` |
-| `PROFILE_IMAGE_MAX_SIZE_MB` | `5` | Tamaño máximo de avatar en MB |
+| `PROFILE_IMAGE_MAX_SIZE_MB` | `10` | Tamaño máximo de avatar en MB |
 | `DOCUMENT_MAX_UPLOAD_MB` | `50` | Tamaño máximo de documentos subidos (PDF/TXT) en MB |
 | `DOCUMENT_EXTRACTION_TIMEOUT_SECONDS` | `30` | Timeout en segundos para extracción de texto de documentos |
 | `DOCUMENT_EVENT_STREAM_MAX_SECONDS` | `300` | Duración máxima del SSE de notificaciones de documentos (5 min) |
@@ -368,7 +368,7 @@ pytest -k "test_create"             # por nombre
 | `test_harness_smoke.py` | 9 | Smoke tests del harness de evaluación de prompts (reporter, judge, runner) |
 | `test_generation_service.py` | 8 | Generación por categoría, prompt templates, moderación |
 | `test_prompt_builder.py` | 7 | Estrategias de contexto, flag `truncated`, ranking de fuentes |
-| `test_auth_clerk.py` | 7 | `/sync` sin header → 401, token inválido → 401, user nuevo → creado + cookies, idempotencia, `/verify` soft-deleted → 401 |
+| `test_auth_clerk.py` | 8 | `/sync` sin header → 401, token inválido → 401, user nuevo → creado + cookies, idempotencia, fusión por email (CLERK-03c), email-prefix como username, `/verify` soft-deleted → 401 |
 | `test_admin.py` | 6 | Listado usuarios, cascade delete de colección y usuario, guardrail auto-eliminación |
 | `test_users.py` | 4 | Perfil `/users/me` GET/PATCH, avatar upload/delete |
 | `test_models.py` | 3 | Smoke tests de modelos DB (instanciación SQLModel y relaciones básicas) |

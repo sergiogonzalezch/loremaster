@@ -64,7 +64,7 @@ make prod-rebuild-fe  # reconstruye solo el frontend tras cambios React/CSS
 
 > El frontend no requiere `.env.production` — sus variables de build (`VITE_API_BASE_URL=/api/v1`)
 > están fijadas en el `Dockerfile`. El `.env.production` de la raíz es solo para el backend vía
-> Docker Compose. Ver [`docs/ENV-ARCHITECTURE.md`](../docs/ENV-ARCHITECTURE.md).
+> Docker Compose. Ver [`docs/architecture/ENV-ARCHITECTURE.md`](../docs/architecture/ENV-ARCHITECTURE.md).
 
 Si `VITE_CLERK_PUBLISHABLE_KEY` está definida, la app usa Clerk para autenticación: `ClerkProvider` envuelve la app, `LoginPage` muestra `<SignIn />` de Clerk y `ClerkBridge` sincroniza la sesión con el backend. Sin esta variable, la app usa el formulario de login/registro propio.
 
@@ -185,7 +185,7 @@ Los tests se encuentran en `src/test/`. Las llamadas a la API se mockean con `vi
 
 **Total: 121 tests.**
 
-**React Doctor:** 94/100 (sesión 2026-05-28). Componentes refactorizados a `useReducer` agrupando estado relacionado: `DocumentsTab` (4 reducers), `EntitiesTab` (3), `CollectionsPage` (4), `ProfilePage`, `ContentCard`, `LoginPage`, `AdminPage`, `ImagePanel`. Ver `docs/STRATEGY.md §9` para techo práctico y deuda pendiente (componentes >300 líneas).
+**React Doctor:** 94/100 (sesión 2026-05-28). Componentes refactorizados a `useReducer` agrupando estado relacionado: `DocumentsTab` (4 reducers), `EntitiesTab` (3), `CollectionsPage` (4), `ProfilePage`, `ContentCard`, `LoginPage`, `AdminPage`, `ImagePanel`. Ver `docs/planning/STRATEGY.md §9` para techo práctico y deuda pendiente (componentes >300 líneas).
 
 Aspectos destacados de cobertura:
 
@@ -283,7 +283,7 @@ Límite: máximo **5 contenidos pendientes por entidad por categoría**.
 
 | Documento | Contenido |
 |---|---|
-| [`../docs/ENVIRONMENT.md`](../docs/ENVIRONMENT.md) | Variables de entorno del backend y modos de arranque |
-| [`../docs/AUTH-CONTEXT.md`](../docs/AUTH-CONTEXT.md) | Flujo JWT/CSRF, race conditions y patrones de autenticación |
-| [`../docs/LIMITERS.md`](../docs/LIMITERS.md) | Límites de validación input/output relevantes para el frontend |
+| [`../docs/architecture/ENVIRONMENT.md`](../docs/architecture/ENVIRONMENT.md) | Variables de entorno del backend y modos de arranque |
+| [`../docs/architecture/CLERK-APP-INTEGRATION.md`](../docs/architecture/CLERK-APP-INTEGRATION.md) | Flujo auth Clerk, modelo de almacenamiento de usuario, fusión de cuentas |
+| [`../docs/architecture/LIMITERS.md`](../docs/architecture/LIMITERS.md) | Límites de validación input/output relevantes para el frontend |
 | [`../backend/README.md`](../backend/README.md) | Referencia completa de la API REST |
