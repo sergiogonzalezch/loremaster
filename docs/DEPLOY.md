@@ -103,13 +103,26 @@ docker exec -it loremaster-api python scripts/make_admin.py <username> --force
 
 ### Configuración
 
-- [ ] `SECRET_KEY` generada con `secrets.token_hex(32)` y añadida a `.env.production`
-- [ ] `ALLOWED_ORIGINS` contiene el dominio real (ej. `http://localhost` en demo local)
-- [ ] `STORAGE_BASE_URL=http://localhost/media` (o dominio real en producción)
-- [ ] `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` definidas en `.env.production`
-- [x] `COOKIE_SECURE=true` — ya hardcodeado en `docker-compose.prod.yml`
-- [ ] `RATE_LIMIT_ENABLED=false` para demo, `true` para producción real
+- [x] `SECRET_KEY` generada y añadida a `.env.production`
+- [x] `ALLOWED_ORIGINS=["http://localhost"]` en `.env.production` (actualizar con dominio real en cloud)
+- [x] `STORAGE_BASE_URL=http://localhost/media` en `.env.production` (actualizar con dominio real en cloud)
+- [x] `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` definidas en `.env.production`
+- [x] `COOKIE_SECURE=true` — hardcodeado en `docker-compose.prod.yml`
+- [x] `RATE_LIMIT_ENABLED=false` para demo — en `.env.production`
 - [ ] `LLAMA_GUARD_ENABLED=false` por defecto — activar con `true` + `ollama pull llama-guard3:8b` si se quiere moderación semántica (añade ~400-900 ms por respuesta)
+
+### Clerk
+
+- [x] `CLERK_JWKS_URL` añadida a `.env.production`
+- [x] `CLERK_AUDIENCE=http://localhost` en `.env.production` (actualizar con dominio real en cloud)
+- [x] `VITE_CLERK_PUBLISHABLE_KEY` en `.env.production` — se bake en el bundle al hacer `prod-rebuild-fe`
+- [x] JWT template con claim `email` configurado en Clerk Dashboard → Configure → Sessions
+- [ ] Para cloud: cambiar `pk_test_` por `pk_live_` (requiere TLS activo)
+
+### Storage S3/R2
+
+- [x] Demo local: Floci activo por defecto (fallback en compose)
+- [ ] Para R2 real: descomentar y rellenar `S3_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` en `.env.production`
 
 ### Base de datos
 
@@ -118,9 +131,9 @@ docker exec -it loremaster-api python scripts/make_admin.py <username> --force
 
 ### Infraestructura
 
-- [ ] `docker compose -f backend/docker-compose.prod.yml ps` muestra todos los servicios `healthy`
-- [ ] `http://localhost` abre el frontend correctamente
-- [ ] `http://localhost/health` retorna `{"status": "ok", ...}`
+- [x] `docker compose -f backend/docker-compose.prod.yml ps` muestra todos los servicios `healthy`
+- [x] `http://localhost` abre el frontend correctamente
+- [x] `http://localhost/health` retorna `{"status": "ok", ...}`
 - [ ] `ComfyUI` accesible desde el backend en `COMFYUI_URL` (si se usa generación de imágenes)
 
 ### Pendientes (bloquean producción real, no demo privada)
