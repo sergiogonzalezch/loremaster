@@ -169,6 +169,10 @@ class Settings(BaseSettings):
     cookie_domain: str | None = None
     cookie_path: str = "/"
 
+    # RunPod Serverless — GPU cloud para generación de imágenes
+    runpod_api_key: str | None = None
+    runpod_endpoint_id: str | None = None
+
     # Clerk - production
     clerk_jwks_url: str = "https://your-org.clerk.accounts.dev/.well-known/jwks.json"
     clerk_audience: str = "your-audience-id"

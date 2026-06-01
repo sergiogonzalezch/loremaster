@@ -97,7 +97,7 @@ services:
       OLLAMA_BASE_URL: http://host.docker.internal:11434
       OLLAMA_MODEL: llama3.2:latest
       # Image generation
-      IMAGE_BACKEND: comfyui
+      IMAGE_BACKEND: ${IMAGE_BACKEND:-comfyui}
       IMAGE_PROMPT_MODEL: mistral:latest
       COMFYUI_URL: http://host.docker.internal:8188
       # Embeddings — debe coincidir con el modelo pre-descargado en el Dockerfile.
