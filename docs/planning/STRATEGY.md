@@ -1,6 +1,6 @@
 # STRATEGY.md — Evaluación técnica y hoja de ruta hacia producción
 
-**Fecha:** 2026-05-28 (revisado 2026-06-02 — Deploy Cloudflare completo, R2 activo, SafeImage fix, nginx upload limit)
+**Fecha:** 2026-05-28 (revisado 2026-06-02 — Named Tunnel `loremasterai.site` activo, R2 activo, SafeImage fix, nginx upload limit)
 **Contexto:** Evaluación honesta del estado del proyecto. Actualizado tras cierre completo de Semana 9, revisión de items pendientes y sprint de seguridad/calidad (rama `bugfix/issues-security`).
 
 ---
@@ -38,7 +38,7 @@
 | Llama Guard 3 — capa semántica fail-open | ✅ | `app/domain/llama_guard.py` |
 | Clerk — end-to-end con tenant real (8 tests, fusión por email, JWT template) | ✅ | `auth_clerk.py`, `clerk.py`, `.env.production` |
 | RunPod — skeleton `runpod_client.py` + `IMAGE_BACKEND` interpolable | ✅ skeleton | `engine/runpod_client.py`, `docker-compose.prod.yml` |
-| Deploy Cloudflare Tunnel + R2 — 4 fases completas, R2 activo, tunnel verificado | ✅ 2026-06-02 | `docs/architecture/DEPLOY-CLOUDFLARE.md` |
+| Deploy Cloudflare — Named Tunnel `loremasterai.site` + R2 activo, URL fija, 5 fases completas | ✅ 2026-06-02 | `docs/architecture/DEPLOY-CLOUDFLARE.md` |
 | Documentación reorganizada en architecture/ planning/ completed/ | ✅ | `docs/` |
 | Migración FK `ix_entities_collection_id` | ✅ | Alembic |
 | Path traversal guard en `delete_image_service` | ✅ | `image_generation_service.py` |

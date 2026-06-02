@@ -104,7 +104,7 @@ docker exec -it loremaster-api python scripts/make_admin.py <username> --force
 ### Configuración
 
 - [x] `SECRET_KEY` generada y añadida a `.env.production`
-- [x] `ALLOWED_ORIGINS=["https://tu-url.trycloudflare.com"]` en `.env.production` (actualizar con URL del tunnel antes de cada demo)
+- [x] `ALLOWED_ORIGINS=["https://loremasterai.site"]` en `.env.production` (URL fija — Named Tunnel activo)
 - [x] `STORAGE_BASE_URL=https://pub-REDACTED-R2-TOKEN.r2.dev` en `.env.production` (R2 activo)
 - [x] `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` definidas en `.env.production`
 - [x] `COOKIE_SECURE=true` — hardcodeado en `docker-compose.prod.yml`

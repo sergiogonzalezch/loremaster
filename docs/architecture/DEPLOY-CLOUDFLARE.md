@@ -1,9 +1,9 @@
 # Deploy Gratuito — Cloudflare Tunnel + R2
 
-Exponer el stack demo desde tu propio equipo sin VPS ni dominio,
-usando Cloudflare Tunnel (TLS gratuito) y Cloudflare R2 (storage gratuito).
+Exponer el stack demo desde tu propio equipo con URL fija y TLS gratuito,
+usando Cloudflare Named Tunnel y Cloudflare R2 (storage gratuito).
 
-**Costo total: $0/mes**
+**Costo total: ~$1.98/año** (dominio `loremasterai.site` en Namecheap)
 
 ---
 
@@ -15,6 +15,7 @@ usando Cloudflare Tunnel (TLS gratuito) y Cloudflare R2 (storage gratuito).
 | Fase 1 — Activar R2 como storage | ✅ completo (2026-06-02) |
 | Fase 2 — Exponer stack con Quick Tunnel | ✅ completo (2026-06-02) |
 | Fase 3 — Actualizar config + verificar | ✅ completo (2026-06-02) |
+| Fase 4 — Named Tunnel con dominio fijo `loremasterai.site` | ✅ completo (2026-06-02) |
 
 ---
 
@@ -43,15 +44,32 @@ Sin port-forwarding, sin IP pública fija, sin tocar el router.
 
 ---
 
-## Opción de tunnel elegida: Quick Tunnel
+## Tunnel activo: Named Tunnel con dominio fijo
 
 | Opción | URL | Persiste al reiniciar | Costo |
 |---|---|---|---|
-| **Quick Tunnel** ← **esta** | `https://<random>.trycloudflare.com` | ❌ cambia | $0 |
-| Named Tunnel (con dominio) | `https://tudominio.com` | ✅ fija | ~$1-3/año |
+| ~~Quick Tunnel~~ | `https://<random>.trycloudflare.com` | ❌ cambia | $0 |
+| **Named Tunnel** ← **activo** | `https://loremasterai.site` | ✅ fija | ~$1.98/año |
 
-Quick Tunnel es suficiente para demo de portafolio bajo demanda.
-La URL cambia al reiniciar `cloudflared` — se actualiza config en ~5 min antes de cada demo.
+URL permanente — no requiere reconfiguración entre sesiones de demo.
+
+### Configuración del Named Tunnel
+
+- Tunnel ID: `REDACTED-TUNNEL-ID`
+- Credentials: `C:\Users\REDACTED\.cloudflared\REDACTED-TUNNEL-ID.json`
+- Config: `C:\Users\REDACTED\.cloudflared\config.yml`
+- DNS: CNAME `loremasterai.site` → tunnel (gestionado por Cloudflare)
+
+```yaml
+# C:\Users\REDACTED\.cloudflared\config.yml
+tunnel: REDACTED-TUNNEL-ID
+credentials-file: C:\Users\REDACTED\.cloudflared\REDACTED-TUNNEL-ID.json
+
+ingress:
+  - hostname: loremasterai.site
+    service: http://localhost:80
+  - service: http_status:404
+```
 
 ---
 
@@ -130,79 +148,81 @@ resultante apunta a `https://pub-<token>.r2.dev/...`.
 
 ---
 
-## Fase 2 — Exponer el stack con Quick Tunnel
+## Fase 2 — Exponer el stack con Quick Tunnel ✅ (superado por Fase 4)
 
-Con el stack corriendo en `localhost:80`:
+~~Con el stack corriendo en `localhost:80`:~~
+~~`cloudflared tunnel --url http://localhost:80`~~
 
-```powershell
-cloudflared tunnel --url http://localhost:80
-```
-
-Output esperado:
-```
-2026-06-01T... INF Thank you for trying Cloudflare Tunnel. Doing so, ...
-2026-06-01T... INF +-------------------------------------------------------+
-2026-06-01T... INF |  Your quick Tunnel has been created! Visit it at      |
-2026-06-01T... INF |  https://fancy-octopus-abc123.trycloudflare.com       |
-2026-06-01T... INF +-------------------------------------------------------+
-```
-
-Copiar esa URL — la necesitas para la Fase 3.
-Dejar el proceso corriendo en esa terminal mientras dure la demo.
+Esta fase fue el punto de partida. Reemplazada por el Named Tunnel en Fase 4.
 
 ---
 
-## Fase 3 — Actualizar config con la URL del tunnel
+## Fase 3 — Actualizar config con la URL del tunnel ✅
 
-### 1. Actualizar `.env.production`
+Variables activas en `.env.production`:
 
 ```bash
-ALLOWED_ORIGINS=["https://fancy-octopus-abc123.trycloudflare.com"]
-CLERK_AUDIENCE=https://fancy-octopus-abc123.trycloudflare.com
+ALLOWED_ORIGINS=["https://loremasterai.site"]
+CLERK_AUDIENCE=https://loremasterai.site
 ```
 
-### 2. Reiniciar el backend con la nueva config
+> Con `pk_test_` Clerk es permisivo — login funciona sin añadir el dominio
+> en el dashboard. Para producción real: crear instancia de producción en Clerk
+> y obtener claves `pk_live_`.
+
+### Verificar
 
 ```bash
-make prod-down && make prod-up
-```
-
-### 3. Actualizar Clerk dashboard
-
-En [dashboard.clerk.com](https://dashboard.clerk.com) → tu app → **Configure** → **Domains**:
-- Añadir `https://fancy-octopus-abc123.trycloudflare.com` como dominio permitido
-
-> Con `pk_test_` (clave actual) Clerk es permisivo con los orígenes en modo test,
-> pero añadirlo en el dashboard evita warnings en los logs.
-
-### 4. Verificar
-
-```bash
-curl https://fancy-octopus-abc123.trycloudflare.com/health
-# Esperado: {"status": "ok", "qdrant": "ok", "ollama": "ok"}
+curl https://loremasterai.site/health
+# Esperado: {"status":"healthy","services":{...}}
 ```
 
 Checklist final:
-- [ ] Frontend carga desde la URL del tunnel
-- [ ] Login con Clerk funciona
-- [ ] Subida de documento funciona
-- [ ] Imagen generada tiene URL de R2 (`pub-xxx.r2.dev/...`)
-- [ ] Cerrar sesión y volver a entrar funciona
+- [x] Frontend carga desde `https://loremasterai.site`
+- [x] Login con Clerk funciona
+- [x] Subida de documento funciona
+- [x] Imagen generada tiene URL de R2 (`pub-REDACTED-R2-TOKEN.r2.dev/...`)
+- [x] Cerrar sesión y volver a entrar funciona
 
 ---
 
-## Flujo para cada demo (una vez configurado)
+## Fase 4 — Named Tunnel con dominio fijo ✅ (2026-06-02)
+
+### Setup (ya realizado — referencia)
+
+```powershell
+# 1. Login
+cloudflared tunnel login
+
+# 2. Crear tunnel
+cloudflared tunnel create loremaster
+# → genera credentials en ~/.cloudflared/<id>.json
+
+# 3. Apuntar DNS
+cloudflared tunnel route dns loremaster loremasterai.site
+
+# 4. Crear config.yml (ver sección anterior)
+
+# 5. Arrancar
+cloudflared tunnel --config "C:\Users\REDACTED\.cloudflared\config.yml" run loremaster
+```
+
+### Dominio
+- Registrado en Namecheap: `loremasterai.site`
+- Nameservers apuntando a Cloudflare: `REDACTED-NS` / `REDACTED-NS`
+- CNAME en Cloudflare DNS apunta al tunnel (proxied)
+
+---
+
+## Flujo para cada demo (Named Tunnel activo)
 
 ```
-1. make prod-up                                     (~2 min)
-2. cloudflared tunnel --url http://localhost:80      (~30 s → URL)
-3. Actualizar ALLOWED_ORIGINS + CLERK_AUDIENCE       (~1 min)
-4. make prod-down && make prod-up                   (~2 min)
-5. Compartir URL con el evaluador
+1. make prod-up                                                          (~2 min)
+2. cloudflared tunnel --config "C:\Users\REDACTED\.cloudflared\config.yml" run loremaster
+3. Compartir https://loremasterai.site con el evaluador
 ```
 
-Total: ~5-6 min de setup antes de cada sesión.
-Si el dominio queda igual entre sesiones (raro), se saltan los pasos 3 y 4.
+Total: ~2-3 min. URL siempre la misma — sin reconfiguración.
 
 ---
 
@@ -211,7 +231,7 @@ Si el dominio queda igual entre sesiones (raro), se saltan los pasos 3 y 4.
 | Limitación | Impacto | Estado |
 |---|---|---|
 | Máquina debe estar encendida | App offline si apaga el PC | Aceptable para demo bajo demanda |
-| URL cambia al reiniciar tunnel | ~5 min de reconfig | Aceptable para portafolio |
+| ~~URL cambia al reiniciar tunnel~~ | ~~5 min de reconfig~~ | ✅ Resuelto — Named Tunnel con `loremasterai.site` |
 | Ollama/ComfyUI deben estar corriendo | Sin LLM/imágenes si no están activos | Prerequisito documentado |
 | Upload del ISP | Limita velocidad de transferencia | Irrelevante para 1-5 usuarios |
 | R2 free tier: 10 GB + 1M ops/mes | Muy holgado para demo | Sin acción |
@@ -229,4 +249,4 @@ Cuando la Fase 3 esté completa, marcar en `DEPLOY.md §4 Checklist pre-deploy`:
 
 ---
 
-*Actualizado: 2026-06-01. Ver también: `DEPLOY.md` (runbook operacional), `ENV-ARCHITECTURE.md` (flujo de variables), `COST-REPORT.md` (estimaciones de costo).*
+*Actualizado: 2026-06-02. Named Tunnel activo en `loremasterai.site`. Ver también: `DEPLOY.md` (runbook operacional), `ENV-ARCHITECTURE.md` (flujo de variables), `COST-REPORT.md` (estimaciones de costo).*
