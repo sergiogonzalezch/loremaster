@@ -691,7 +691,7 @@ Fixes de consistencia entre capas y eliminación de código muerto aplicados sob
 - [x] `get_or_create_clerk_user()` fusiona con cuenta local por email (evita duplicados)
 - [x] `afterSignInUrl="/"` + `afterSignUpUrl="/"` en `<SignIn>` — no redirige al dashboard Clerk
 - [x] 8 tests pasando (CLERK-01 a CLERK-06 + CLERK-03b + CLERK-03c fusión por email)
-- [x] App Clerk: `REDACTED-CLERK-APP-ID`
+- [x] App Clerk: configurada (ID en `.env.production`)
 
 ### Variables S3/R2 interpolables ✅ (2026-06-01)
 

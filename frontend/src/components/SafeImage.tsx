@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { isImageUrlAllowed } from "../utils/strings";
 
 import type { CSSProperties } from "react";
@@ -30,6 +31,23 @@ interface SafeImageProps {
  * <SafeImage src={avatarUrl} alt="Avatar" className="rounded-circle" />
  * ```
  */
+function ImagePlaceholder({
+  className,
+  style,
+}: {
+  className?: string;
+  style?: CSSProperties;
+}) {
+  return (
+    <div
+      className={`bg-secondary bg-opacity-25 d-flex align-items-center justify-content-center ${className || ""}`}
+      style={style}
+    >
+      <i className="bi bi-image text-muted" />
+    </div>
+  );
+}
+
 export default function SafeImage({
   src,
   alt,
@@ -37,16 +55,10 @@ export default function SafeImage({
   style,
   onClick,
 }: SafeImageProps) {
-  if (!isImageUrlAllowed(src)) {
-    // Placeholder transparente que respeta las dimensiones del contenedor
-    return (
-      <div
-        className={`bg-secondary bg-opacity-25 d-flex align-items-center justify-content-center ${className || ""}`}
-        style={{ width: "100%", height: "100%", minHeight: 60, ...style }}
-      >
-        <span className="text-muted small">Imagen no disponible</span>
-      </div>
-    );
+  const [failed, setFailed] = useState(false);
+
+  if (!isImageUrlAllowed(src) || failed) {
+    return <ImagePlaceholder className={className} style={style} />;
   }
 
   if (onClick) {
@@ -62,6 +74,7 @@ export default function SafeImage({
           src={src ?? undefined}
           alt=""
           loading="lazy"
+          onError={() => setFailed(true)}
           style={{
             width: "100%",
             height: "100%",
@@ -80,6 +93,7 @@ export default function SafeImage({
       className={className}
       style={style}
       loading="lazy"
+      onError={() => setFailed(true)}
     />
   );
 }

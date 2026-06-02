@@ -1,286 +1,252 @@
 # Deploy Gratuito — Cloudflare Tunnel + R2
 
-Plan para exponer el stack demo desde tu propio equipo sin VPS ni dominio de pago,
-usando Cloudflare Tunnel (TLS gratuito) y Cloudflare R2 (storage gratuito).
+Exponer el stack demo desde tu propio equipo con URL fija y TLS gratuito,
+usando Cloudflare Named Tunnel y Cloudflare R2 (storage gratuito).
 
-**Costo total: $0/mes** (o ~$1-3/año si se quiere un dominio propio permanente).
+**Costo total: ~$1.98/año** (dominio `loremasterai.site` en Namecheap)
 
 ---
 
-## Arquitectura resultante
+## Estado actual
+
+| Paso | Estado |
+|---|---|
+| Fase 0 — Instalar `cloudflared` + crear bucket R2 | ✅ completo (2026-06-02) |
+| Fase 1 — Activar R2 como storage | ✅ completo (2026-06-02) |
+| Fase 2 — Exponer stack con Quick Tunnel | ✅ completo (2026-06-02) |
+| Fase 3 — Actualizar config + verificar | ✅ completo (2026-06-02) |
+| Fase 4 — Named Tunnel con dominio fijo `loremasterai.site` | ✅ completo (2026-06-02) |
+
+---
+
+## Arquitectura
 
 ```
 Internet (HTTPS)
-    │
-    ▼
-Cloudflare Edge ← TLS terminado aquí; certificado gratuito
-    │
-    │  Cloudflare Tunnel (conexión saliente desde tu máquina)
-    ▼
-cloudflared daemon ─────────────────────────────────────────┐
-    │                                                        │
-    ▼ HTTP (interno)                                         │
-localhost:80 (Docker Nginx)                                  │
-    ├── /api/*   → loremaster-api:8000                       │
-    └── /*       → React SPA (bundle React)                  │
-                                                             │
-Tu máquina también aloja:                                    │
-    ├── Ollama (LLM texto) en localhost:11434                 │
-    └── ComfyUI (imágenes) en localhost:8188  ───────────────┘
+    ↓ Cloudflare Edge — TLS gratuito terminado aquí
+    ↓ Cloudflare Tunnel (conexión saliente — sin abrir puertos)
+localhost:80 (Docker Nginx)
+    ├── /api/*  → loremaster-api:8000
+    └── /*      → React SPA bundle
 
-Cloudflare R2 (bucket S3-compatible, egress gratuito):
+Cloudflare R2 (S3-compatible, egress gratuito):
     ← Backend sube imágenes vía boto3
-    → Frontend carga imágenes directamente desde R2 public URL
+    → Frontend carga imágenes desde URL pública R2 directamente
        (no pasa por Nginx ni por el tunnel)
+
+Tu máquina también aloja:
+    ├── Ollama en localhost:11434
+    └── ComfyUI en localhost:8188
 ```
 
-**Por qué funciona sin abrir puertos ni tocar el router:**
-`cloudflared` hace una conexión HTTPS saliente hacia Cloudflare. El tráfico
-entra a tu máquina por ese túnel ya autenticado — sin necesidad de port-forwarding
-ni IP pública fija.
+`cloudflared` hace una conexión HTTPS **saliente** hacia Cloudflare.
+Sin port-forwarding, sin IP pública fija, sin tocar el router.
 
 ---
 
-## Comparativa de opciones de tunnel
+## Tunnel activo: Named Tunnel con dominio fijo
 
-| Opción | URL | Persiste al reiniciar | Costo | Ideal para |
-|---|---|---|---|---|
-| **Quick Tunnel** | `https://<random>.trycloudflare.com` | ❌ Cambia | $0 | Demos puntuales, pruebas |
-| **Named Tunnel** (sin dominio) | `https://<uuid>.cfargotunnel.com` | ✅ Fija | $0 | Demo continua (URL fea) |
-| **Named Tunnel** (con dominio) | `https://loremaster.tudominio.com` | ✅ Fija | ~$1-3/año | Portafolio permanente |
+| Opción | URL | Persiste al reiniciar | Costo |
+|---|---|---|---|
+| ~~Quick Tunnel~~ | `https://<random>.trycloudflare.com` | ❌ cambia | $0 |
+| **Named Tunnel** ← **activo** | `https://loremasterai.site` | ✅ fija | ~$1.98/año |
 
-**Recomendación para portafolio:** Named Tunnel con dominio barato. Porkbun ofrece
-`.xyz` desde ~$1/año. No es un requisito — el Quick Tunnel funciona para demos.
+URL permanente — no requiere reconfiguración entre sesiones de demo.
+
+### Configuración del Named Tunnel
+
+- Tunnel ID: en `~/.cloudflared/<tunnel-id>.json` (generado por `cloudflared tunnel create`)
+- Credentials: `%USERPROFILE%\.cloudflared\<tunnel-id>.json` — **no compartir**
+- Config: `%USERPROFILE%\.cloudflared\config.yml`
+- DNS: CNAME `loremasterai.site` → tunnel (gestionado por Cloudflare)
+
+```yaml
+# %USERPROFILE%\.cloudflared\config.yml
+tunnel: <tunnel-id>
+credentials-file: %USERPROFILE%\.cloudflared\<tunnel-id>.json
+
+ingress:
+  - hostname: loremasterai.site
+    service: http://localhost:80
+  - service: http_status:404
+```
 
 ---
 
-## Cambios requeridos en el proyecto
+## Cambios necesarios en el proyecto
 
-El stack ya soporta todo. Solo hay que actualizar variables; **cero cambios de código.**
+**Cero cambios de código.** Solo variables en `.env.production`.
 
-### 1. `docker-compose.prod.yml` — ya listo ✅
+`docker-compose.prod.yml` ya tiene todo interpolable con fallback a Floci:
+`S3_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET` ✅
 
-`IMAGE_BACKEND`, `S3_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
-y `S3_BUCKET` ya son interpolables con fallback a Floci. No se toca el compose.
+---
 
-### 2. `.env.production` — actualizaciones necesarias
+## Fase 0 — Prerrequisitos (una sola vez)
+
+### Instalar cloudflared
+
+```powershell
+# PowerShell como Admin
+winget install Cloudflare.cloudflared
+
+# Verificar
+cloudflared --version
+```
+
+### Crear bucket R2 en Cloudflare dashboard
+
+1. Crear cuenta gratuita en cloudflare.com
+2. Menú lateral → **R2 Object Storage** → **Create bucket**
+   - Nombre: `loremaster-media`
+   - Región: Automatic
+3. Entrar al bucket → pestaña **Settings** → **Public Access** → **Allow Access** ✅
+4. Anotar la **Public Bucket URL** → formato: `https://pub-<token>.r2.dev`
+
+### Crear API Token para el bucket
+
+1. Menú lateral → **R2** → **Manage R2 API Tokens** → **Create API Token**
+2. Permisos: `Object Read & Write`
+3. Scope: `Specific bucket` → `loremaster-media`
+4. Guardar:
+   - `Access Key ID` → será `AWS_ACCESS_KEY_ID`
+   - `Secret Access Key` → será `AWS_SECRET_ACCESS_KEY`
+
+### Anotar Account ID
+
+Dashboard → barra lateral derecha → **Account ID**
+Construye el endpoint S3: `https://<Account ID>.r2.cloudflarestorage.com`
+
+---
+
+## Fase 1 — Activar R2 como storage
+
+Editar `.env.production` añadiendo/actualizando estas líneas:
 
 ```bash
-# ── URL pública del tunnel (reemplazar con la URL real) ──────────────────────
-# Para quick tunnel: la URL que imprime cloudflared al arrancar
-# Para named tunnel: https://loremaster.tudominio.com
-TUNNEL_URL=https://tu-url.trycloudflare.com
-
-# ── CORS y Clerk ─────────────────────────────────────────────────────────────
-ALLOWED_ORIGINS=["https://tu-url.trycloudflare.com"]
-CLERK_AUDIENCE=https://tu-url.trycloudflare.com
-
-# ── Cloudflare R2 ────────────────────────────────────────────────────────────
+# Storage — Cloudflare R2
 S3_ENDPOINT_URL=https://<account-id>.r2.cloudflarestorage.com
 S3_BUCKET=loremaster-media
 S3_REGION=auto
 AWS_ACCESS_KEY_ID=<r2-access-key>
 AWS_SECRET_ACCESS_KEY=<r2-secret-key>
-
-# URL pública del bucket R2 (habilitar "Public Access" en el dashboard R2)
-# Formato: https://pub-<token>.r2.dev  o  https://media.tudominio.com (custom domain R2)
 STORAGE_BASE_URL=https://pub-<token>.r2.dev
 ```
 
-> **Nota sobre `STORAGE_BASE_URL`:** con R2, las imágenes se sirven directamente
-> desde la URL pública de R2, no a través del tunnel ni de Nginx. El bucket necesita
-> tener "Allow Access" habilitado en el dashboard de Cloudflare R2.
-
-### 3. Rebuild del frontend (una sola vez por cambio de URL)
-
-`ALLOWED_ORIGINS` y `CLERK_AUDIENCE` son runtime (solo reiniciar el backend).
-Pero si cambia la URL del tunnel con un Quick Tunnel, hay que actualizar `.env.production`
-y reiniciar el stack. Con Named Tunnel la URL es fija — esto no aplica.
+Verificar y reiniciar:
 
 ```bash
-# Si Clerk publishable key o API base URL cambian:
-make prod-rebuild-fe   # rebuildea bundle con nuevas VITE_* vars
+# Verificar que las vars se interpolan correctamente
+docker compose -f backend/docker-compose.prod.yml --env-file .env.production config | grep -E "S3|STORAGE|AWS"
 
-# Si solo cambian vars de backend (ALLOWED_ORIGINS, CLERK_AUDIENCE, R2 creds):
+# Reiniciar stack
 make prod-down && make prod-up
 ```
 
-### 4. Clerk dashboard — actualizar allowed URLs
-
-En el dashboard de Clerk (optimum-tuna-92.clerk.accounts.dev):
-- **Authorized redirect URLs**: añadir `https://tu-url.trycloudflare.com`
-- **Allowed origins for JWT**: añadir `https://tu-url.trycloudflare.com`
-
-> Con `pk_test_` (clave actual) Clerk acepta cualquier origen en modo test.
-> Con `pk_live_` (modo producción real) requiere que el dominio esté verificado
-> en el dashboard y solo funciona con Named Tunnel + dominio.
+Prueba: generar o subir una imagen en la app → verificar que la URL
+resultante apunta a `https://pub-<token>.r2.dev/...`.
 
 ---
 
-## Guía de setup paso a paso
+## Fase 2 — Exponer el stack con Quick Tunnel ✅ (superado por Fase 4)
 
-### Fase 0 — Prerrequisitos (~30 min, una sola vez)
+~~Con el stack corriendo en `localhost:80`:~~
+~~`cloudflared tunnel --url http://localhost:80`~~
 
-```bash
-# 1. Instalar cloudflared (Windows — PowerShell como Admin)
-winget install Cloudflare.cloudflared
-# O descargar el .exe desde: https://github.com/cloudflare/cloudflared/releases
-
-# 2. Verificar instalación
-cloudflared --version
-```
-
-En Cloudflare dashboard (cloudflare.com):
-1. Crear cuenta gratuita
-2. Ir a **R2** → Create bucket → nombre: `loremaster-media`
-3. En el bucket creado → Settings → **Public Access** → Allow Access ✅
-4. Ir a **R2** → API Tokens → Create Token (permisos: Object Read + Write para `loremaster-media`)
-5. Guardar `Access Key ID` y `Secret Access Key`
-6. Anotar la **Account ID** (en la barra lateral derecha del dashboard)
-
-Con esos datos ya puedes construir:
-```
-S3_ENDPOINT_URL = https://<Account ID>.r2.cloudflarestorage.com
-STORAGE_BASE_URL = https://pub-<token>.r2.dev   ← aparece en bucket → Settings → Public URL
-```
+Esta fase fue el punto de partida. Reemplazada por el Named Tunnel en Fase 4.
 
 ---
 
-### Fase 1 — Activar R2 como storage (~10 min)
+## Fase 3 — Actualizar config con la URL del tunnel ✅
+
+Variables activas en `.env.production`:
 
 ```bash
-# Actualizar .env.production con las credenciales R2 (ver sección anterior)
-# Verificar que las vars se resuelven correctamente:
-docker compose -f backend/docker-compose.prod.yml --env-file .env.production config
-
-# Levantar (o reiniciar) el stack:
-make prod-down && make prod-up
-
-# Probar: subir una imagen desde la app y verificar que la URL pública de R2 funciona
+ALLOWED_ORIGINS=["https://loremasterai.site"]
+CLERK_AUDIENCE=https://loremasterai.site
 ```
 
-Si todo va bien, las imágenes nuevas se guardarán en R2 y se servirán desde
-`https://pub-<token>.r2.dev/<path>`. Las imágenes antiguas (en Floci) dejan de
-ser accesibles — solo afecta a una demo fresca, lo cual es el caso habitual.
+> Con `pk_test_` Clerk es permisivo — login funciona sin añadir el dominio
+> en el dashboard. Para producción real: crear instancia de producción en Clerk
+> y obtener claves `pk_live_`.
+
+### Verificar
+
+```bash
+curl https://loremasterai.site/health
+# Esperado: {"status":"healthy","services":{...}}
+```
+
+Checklist final:
+- [x] Frontend carga desde `https://loremasterai.site`
+- [x] Login con Clerk funciona
+- [x] Subida de documento funciona
+- [x] Imagen generada tiene URL de R2 (`https://pub-<r2-token>.r2.dev/...`)
+- [x] Cerrar sesión y volver a entrar funciona
 
 ---
 
-### Fase 2 — Exponer el stack con Cloudflare Tunnel (~15 min)
+## Fase 4 — Named Tunnel con dominio fijo ✅ (2026-06-02)
 
-#### Opción A — Quick Tunnel (cero configuración, URL temporal)
+### Setup (ya realizado — referencia)
 
-```bash
-# Con el stack ya corriendo en localhost:80:
-cloudflared tunnel --url http://localhost:80
-
-# Output de ejemplo:
-# https://fancy-name-abc123.trycloudflare.com
-```
-
-Esa URL ya tiene HTTPS y es accesible desde internet. Copiarla y:
-1. Actualizar `ALLOWED_ORIGINS` y `CLERK_AUDIENCE` en `.env.production`
-2. `make prod-down && make prod-up`
-3. Añadir URL en Clerk dashboard → Authorized redirect URLs
-
-**Limitación:** la URL cambia cada vez que reinicias `cloudflared`.
-
----
-
-#### Opción B — Named Tunnel (URL fija, requiere dominio en Cloudflare)
-
-```bash
-# 1. Login con cuenta Cloudflare
+```powershell
+# 1. Login
 cloudflared tunnel login
 
-# 2. Crear tunnel (una sola vez)
+# 2. Crear tunnel
 cloudflared tunnel create loremaster
-# Output: tunnel ID UUID, ej: a1b2c3d4-...
+# → genera credentials en ~/.cloudflared/<id>.json
 
-# 3. Crear config (guardar como %USERPROFILE%\.cloudflared\config.yml en Windows)
+# 3. Apuntar DNS
+cloudflared tunnel route dns loremaster loremasterai.site
+
+# 4. Crear config.yml (ver sección anterior)
+
+# 5. Arrancar
+cloudflared tunnel --config "%USERPROFILE%\.cloudflared\config.yml" run loremaster
 ```
 
-```yaml
-# config.yml
-tunnel: <tunnel-uuid>
-credentials-file: C:\Users\<user>\.cloudflared\<tunnel-uuid>.json
-
-ingress:
-  - hostname: loremaster.tudominio.com
-    service: http://localhost:80
-  - service: http_status:404
-```
-
-```bash
-# 4. Enrutar el dominio al tunnel (dominio debe estar en Cloudflare DNS)
-cloudflared tunnel route dns loremaster loremaster.tudominio.com
-
-# 5. Arrancar el tunnel
-cloudflared tunnel run loremaster
-
-# Para que arranque con Windows: registrar como servicio
-cloudflared service install
-```
+### Dominio
+- Registrado en Namecheap: `loremasterai.site`
+- Nameservers apuntando a Cloudflare (asignados al activar el dominio en Cloudflare dashboard)
+- CNAME en Cloudflare DNS apunta al tunnel (proxied)
 
 ---
 
-### Fase 3 — Verificar el deploy completo
+## Flujo para cada demo (Named Tunnel activo)
 
-```bash
-# Health check vía tunnel
-curl https://tu-url.trycloudflare.com/health
-# Esperado: {"status": "ok", "qdrant": "ok", "ollama": "ok"}
-
-# Verificar que el frontend carga
-# Abrir en navegador: https://tu-url.trycloudflare.com
+```
+1. make prod-up                                                          (~2 min)
+2. cloudflared tunnel --config "%USERPROFILE%\.cloudflared\config.yml" run loremaster
+3. Compartir https://loremasterai.site con el evaluador
 ```
 
-Checklist:
-- [ ] Frontend carga correctamente
-- [ ] Login con Clerk funciona
-- [ ] Subida de documento funciona
-- [ ] Imagen generada aparece desde URL de R2 (no `/media/`)
-- [ ] Cerrar sesión y volver a entrar funciona
+Total: ~2-3 min. URL siempre la misma — sin reconfiguración.
 
 ---
 
-## Limitaciones conocidas
+## Limitaciones
 
-| Limitación | Impacto | Mitigación |
+| Limitación | Impacto | Estado |
 |---|---|---|
-| Máquina debe estar encendida | App offline si apaga el PC | Aceptable para demo de portafolio |
-| Quick Tunnel: URL cambia al reiniciar | Necesitas actualizar config y Clerk | Usar Named Tunnel para demo permanente |
-| Ollama/ComfyUI deben estar corriendo | Sin LLM/imágenes si no están activos | Documentar prerequisitos en README del portafolio |
-| Ancho de banda del ISP | Limitado por upload de tu conexión | Irrelevante para 1-5 usuarios |
-| R2 free tier: 10 GB + 1M ops | Muy holgado para demo | Sin acción requerida |
-| Cloudflare Tunnel: 50 req/s gratis | Más que suficiente para demo | Sin acción requerida |
+| Máquina debe estar encendida | App offline si apaga el PC | Aceptable para demo bajo demanda |
+| ~~URL cambia al reiniciar tunnel~~ | ~~5 min de reconfig~~ | ✅ Resuelto — Named Tunnel con `loremasterai.site` |
+| Ollama/ComfyUI deben estar corriendo | Sin LLM/imágenes si no están activos | Prerequisito documentado |
+| Upload del ISP | Limita velocidad de transferencia | Irrelevante para 1-5 usuarios |
+| R2 free tier: 10 GB + 1M ops/mes | Muy holgado para demo | Sin acción |
+| Cloudflare Tunnel free: 50 req/s | Más que suficiente | Sin acción |
 
 ---
 
-## Comparativa final vs VPS
+## Actualizar DEPLOY.md tras completar
 
-| | Este plan (Cloudflare) | VPS mínimo (Hetzner CX22) |
-|---|---|---|
-| **Costo mensual** | **$0** | ~$4.90 |
-| **Hardware** | Tu máquina | Servidor remoto |
-| **Uptime** | Cuando tu PC está encendido | 24/7 |
-| **Setup** | ~1 hora | ~2 horas + mantenimiento |
-| **Validez para portafolio** | ✅ Sí | ✅ Sí |
-| **Escalabilidad** | Tu máquina | Fácil de escalar |
-| **IP pública** | No requerida | Incluida |
-
-Para un portafolio técnico donde el evaluador agenda una demo o accede bajo demanda,
-este plan es completamente válido. No requiere que la app esté online las 24h.
+Cuando la Fase 3 esté completa, marcar en `DEPLOY.md §4 Checklist pre-deploy`:
+- [ ] `ALLOWED_ORIGINS=["https://tu-url"]` con URL del tunnel
+- [ ] `STORAGE_BASE_URL=https://pub-xxx.r2.dev` con URL pública R2
+- [ ] Credenciales R2 en `.env.production`
+- [ ] Cloudflare Tunnel activo (TLS resuelto sin cambios en `nginx.conf`)
 
 ---
 
-## Actualizar checklist de DEPLOY.md tras activar este plan
-
-Cuando completes la Fase 3 del setup, marcar en `DEPLOY.md §4 Checklist pre-deploy`:
-- [ ] `ALLOWED_ORIGINS=["https://tu-url"]` ✅ (actualizar con URL real)
-- [ ] `STORAGE_BASE_URL=https://pub-xxx.r2.dev` ✅ (URL pública R2)
-- [ ] Credenciales R2 en `.env.production` ✅
-- [ ] Cloudflare Tunnel corriendo ✅ (TLS resuelto — sin cambios en nginx.conf)
-
----
-
-*Creado: 2026-06-01. Ver también: `DEPLOY.md` (runbook operacional), `ENV-ARCHITECTURE.md` (flujo de variables), `COST-REPORT.md` (estimaciones de costo).*
+*Actualizado: 2026-06-02. Named Tunnel activo en `loremasterai.site`. Ver también: `DEPLOY.md` (runbook operacional), `ENV-ARCHITECTURE.md` (flujo de variables), `COST-REPORT.md` (estimaciones de costo).*
