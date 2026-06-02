@@ -104,8 +104,8 @@ docker exec -it loremaster-api python scripts/make_admin.py <username> --force
 ### Configuración
 
 - [x] `SECRET_KEY` generada y añadida a `.env.production`
-- [x] `ALLOWED_ORIGINS=["http://localhost"]` en `.env.production` (actualizar con dominio real en cloud)
-- [x] `STORAGE_BASE_URL=http://localhost/media` en `.env.production` (actualizar con dominio real en cloud)
+- [x] `ALLOWED_ORIGINS=["https://tu-url.trycloudflare.com"]` en `.env.production` (actualizar con URL del tunnel antes de cada demo)
+- [x] `STORAGE_BASE_URL=https://pub-REDACTED-R2-TOKEN.r2.dev` en `.env.production` (R2 activo)
 - [x] `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` definidas en `.env.production`
 - [x] `COOKIE_SECURE=true` — hardcodeado en `docker-compose.prod.yml`
 - [x] `RATE_LIMIT_ENABLED=false` para demo — en `.env.production`
@@ -122,7 +122,7 @@ docker exec -it loremaster-api python scripts/make_admin.py <username> --force
 ### Storage S3/R2
 
 - [x] Demo local: Floci activo por defecto (fallback en compose)
-- [ ] Para R2 real: descomentar y rellenar `S3_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` en `.env.production`
+- [x] R2 activo: `S3_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET=loremaster-media`, `S3_REGION=auto` en `.env.production`
 
 ### Base de datos
 
@@ -142,7 +142,7 @@ docker exec -it loremaster-api python scripts/make_admin.py <username> --force
 |---|---|---|---|
 | **Clerk auth** | ✅ `auth_clerk.py`, `clerk.py`, 8 tests | ✅ `CLERK_JWKS_URL` + `CLERK_AUDIENCE` activos en compose | ✅ Configurado en `.env.production` + JWT template con `email` en dashboard |
 | **Storage S3/R2 real** | ✅ `core/storage/s3_client.py` con boto3 | ✅ `S3_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` interpolables con fallback Floci | ✅ Vars comentadas en `.env.production` listas para R2 — solo rellenar credenciales |
-| **TLS/HTTPS** | ❌ Nginx solo `listen 80` | — | ❌ Certificado SSL (Let's Encrypt / certbot) + `listen 443 ssl` + redirect 80→443 en `nginx.conf` |
+| **TLS/HTTPS** | ✅ Cloudflare Tunnel termina TLS en el edge | — | ✅ Cloudflare Quick Tunnel activo — ver `DEPLOY-CLOUDFLARE.md` |
 | **GPU cloud** | ❌ `runpod_client.py` no existe | ❌ `IMAGE_BACKEND: comfyui` hardcodeado — hacer `${IMAGE_BACKEND:-comfyui}` | ❌ Implementar cliente + añadir `RUNPOD_API_KEY` / `RUNPOD_ENDPOINT_ID` en `.env.production` |
 
 ### Seguridad (código)

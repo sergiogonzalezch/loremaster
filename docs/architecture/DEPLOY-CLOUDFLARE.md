@@ -11,10 +11,10 @@ usando Cloudflare Tunnel (TLS gratuito) y Cloudflare R2 (storage gratuito).
 
 | Paso | Estado |
 |---|---|
-| Fase 0 — Instalar `cloudflared` + crear bucket R2 | ⬜ pendiente |
-| Fase 1 — Activar R2 como storage | ⬜ pendiente |
-| Fase 2 — Exponer stack con Quick Tunnel | ⬜ pendiente |
-| Fase 3 — Actualizar config + verificar | ⬜ pendiente |
+| Fase 0 — Instalar `cloudflared` + crear bucket R2 | ✅ completo (2026-06-02) |
+| Fase 1 — Activar R2 como storage | ✅ completo (2026-06-02) |
+| Fase 2 — Exponer stack con Quick Tunnel | ✅ completo (2026-06-02) |
+| Fase 3 — Actualizar config + verificar | ✅ completo (2026-06-02) |
 
 ---
 

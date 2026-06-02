@@ -1,6 +1,6 @@
 # STRATEGY.md — Evaluación técnica y hoja de ruta hacia producción
 
-**Fecha:** 2026-05-28 (revisado 2026-06-01 — Clerk end-to-end, RunPod skeleton, plan deploy Cloudflare)
+**Fecha:** 2026-05-28 (revisado 2026-06-02 — Deploy Cloudflare completo, R2 activo, SafeImage fix, nginx upload limit)
 **Contexto:** Evaluación honesta del estado del proyecto. Actualizado tras cierre completo de Semana 9, revisión de items pendientes y sprint de seguridad/calidad (rama `bugfix/issues-security`).
 
 ---
@@ -14,7 +14,7 @@
 | # | Item | Esfuerzo | Bloqueante para |
 |---|---|---|---|
 | P1 | **RunPod — implementar métodos del cliente** — skeleton creado; métodos pendientes de implementar y conectar en `_backends.py` | Medio | Imágenes fuera del host |
-| P3 | **Deploy Cloudflare** — instalar `cloudflared`, crear bucket R2, configurar `.env.production` con URL tunnel + credenciales R2 | Bajo | URL pública para portafolio |
+| ~~P3~~ | ~~**Deploy Cloudflare**~~ — ✅ Resuelto 2026-06-02 | — | — |
 
 ### Pendiente sin fecha urgente (no bloquea demo)
 
@@ -38,7 +38,7 @@
 | Llama Guard 3 — capa semántica fail-open | ✅ | `app/domain/llama_guard.py` |
 | Clerk — end-to-end con tenant real (8 tests, fusión por email, JWT template) | ✅ | `auth_clerk.py`, `clerk.py`, `.env.production` |
 | RunPod — skeleton `runpod_client.py` + `IMAGE_BACKEND` interpolable | ✅ skeleton | `engine/runpod_client.py`, `docker-compose.prod.yml` |
-| Plan deploy Cloudflare Tunnel + R2 (gratis, sin VPS ni dominio) | ✅ plan | `docs/architecture/DEPLOY-CLOUDFLARE.md` |
+| Deploy Cloudflare Tunnel + R2 — 4 fases completas, R2 activo, tunnel verificado | ✅ 2026-06-02 | `docs/architecture/DEPLOY-CLOUDFLARE.md` |
 | Documentación reorganizada en architecture/ planning/ completed/ | ✅ | `docs/` |
 | Migración FK `ix_entities_collection_id` | ✅ | Alembic |
 | Path traversal guard en `delete_image_service` | ✅ | `image_generation_service.py` |
@@ -187,7 +187,7 @@ Objetivo: flujo de imágenes en cloud y auth Clerk validada.
 
 Objetivo: app accesible públicamente vía Cloudflare Tunnel y generación de imágenes probada en cloud.
 
-- [ ] **Activar deploy Cloudflare**: instalar `cloudflared`, crear bucket R2, configurar `.env.production` (ALLOWED_ORIGINS, CLERK_AUDIENCE, credenciales R2, STORAGE_BASE_URL). Ver `DEPLOY-CLOUDFLARE.md §Fases 0-3`
+- [x] **Activar deploy Cloudflare**: `cloudflared` instalado, bucket R2 `loremaster-media` activo, `.env.production` configurado, tunnel verificado. Ver `DEPLOY-CLOUDFLARE.md`
 - [ ] **Implementar RunPod client**: completar métodos `submit_workflow`, `get_status`, `wait_for_completion`, `extract_image_bytes`; conectar en `_backends.py` con `elif params.backend == "runpod"`; fondear wallet RunPod (~$4) y probar generación end-to-end
 - [x] ~~Limpiar deuda de documentación: eliminar `entity_relations` de HU-05~~ — resuelto 2026-05-20
 
