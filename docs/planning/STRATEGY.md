@@ -178,7 +178,7 @@ Objetivo: backend containerizado, concurrencia LLM resuelta, stack demo completo
 Objetivo: flujo de imágenes en cloud y auth Clerk validada.
 
 - [x] **Variables S3/R2 interpolables** — `${VAR:-fallback}` en compose; demo usa Floci, cloud usa R2
-- [x] **Clerk end-to-end con tenant real** — `CLERK_JWKS_URL` + `CLERK_AUDIENCE` activos; JWT template con `email`; fusión de cuentas por email; 8 tests; app `REDACTED-CLERK-APP-ID`
+- [x] **Clerk end-to-end con tenant real** — `CLERK_JWKS_URL` + `CLERK_AUDIENCE` activos; JWT template con `email`; fusión de cuentas por email; 8 tests
 - [x] **RunPod skeleton** — `engine/runpod_client.py` con interfaz completa (métodos pendientes de implementar); `IMAGE_BACKEND` interpolable en compose; `runpod_api_key` + `runpod_endpoint_id` en Settings
 - [x] **TLS/HTTPS → reemplazado** — sin presupuesto para VPS ni dominio; plan alternativo: Cloudflare Tunnel (gratis, HTTPS automático, sin abrir puertos) + R2 (storage gratuito). Ver `docs/architecture/DEPLOY-CLOUDFLARE.md`
 - [x] **Documentación reorganizada** — `docs/architecture/`, `docs/planning/`, `docs/completed/`; todos los README actualizados

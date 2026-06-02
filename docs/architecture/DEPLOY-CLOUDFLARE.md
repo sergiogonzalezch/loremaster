@@ -55,15 +55,15 @@ URL permanente — no requiere reconfiguración entre sesiones de demo.
 
 ### Configuración del Named Tunnel
 
-- Tunnel ID: `REDACTED-TUNNEL-ID`
-- Credentials: `C:\Users\REDACTED\.cloudflared\REDACTED-TUNNEL-ID.json`
-- Config: `C:\Users\REDACTED\.cloudflared\config.yml`
+- Tunnel ID: en `~/.cloudflared/<tunnel-id>.json` (generado por `cloudflared tunnel create`)
+- Credentials: `%USERPROFILE%\.cloudflared\<tunnel-id>.json` — **no compartir**
+- Config: `%USERPROFILE%\.cloudflared\config.yml`
 - DNS: CNAME `loremasterai.site` → tunnel (gestionado por Cloudflare)
 
 ```yaml
-# C:\Users\REDACTED\.cloudflared\config.yml
-tunnel: REDACTED-TUNNEL-ID
-credentials-file: C:\Users\REDACTED\.cloudflared\REDACTED-TUNNEL-ID.json
+# %USERPROFILE%\.cloudflared\config.yml
+tunnel: <tunnel-id>
+credentials-file: %USERPROFILE%\.cloudflared\<tunnel-id>.json
 
 ingress:
   - hostname: loremasterai.site
@@ -181,7 +181,7 @@ Checklist final:
 - [x] Frontend carga desde `https://loremasterai.site`
 - [x] Login con Clerk funciona
 - [x] Subida de documento funciona
-- [x] Imagen generada tiene URL de R2 (`pub-REDACTED-R2-TOKEN.r2.dev/...`)
+- [x] Imagen generada tiene URL de R2 (`https://pub-<r2-token>.r2.dev/...`)
 - [x] Cerrar sesión y volver a entrar funciona
 
 ---
@@ -204,12 +204,12 @@ cloudflared tunnel route dns loremaster loremasterai.site
 # 4. Crear config.yml (ver sección anterior)
 
 # 5. Arrancar
-cloudflared tunnel --config "C:\Users\REDACTED\.cloudflared\config.yml" run loremaster
+cloudflared tunnel --config "%USERPROFILE%\.cloudflared\config.yml" run loremaster
 ```
 
 ### Dominio
 - Registrado en Namecheap: `loremasterai.site`
-- Nameservers apuntando a Cloudflare: `REDACTED-NS` / `REDACTED-NS`
+- Nameservers apuntando a Cloudflare (asignados al activar el dominio en Cloudflare dashboard)
 - CNAME en Cloudflare DNS apunta al tunnel (proxied)
 
 ---
@@ -218,7 +218,7 @@ cloudflared tunnel --config "C:\Users\REDACTED\.cloudflared\config.yml" run lore
 
 ```
 1. make prod-up                                                          (~2 min)
-2. cloudflared tunnel --config "C:\Users\REDACTED\.cloudflared\config.yml" run loremaster
+2. cloudflared tunnel --config "%USERPROFILE%\.cloudflared\config.yml" run loremaster
 3. Compartir https://loremasterai.site con el evaluador
 ```
 
