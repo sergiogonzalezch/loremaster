@@ -335,7 +335,16 @@ El flujo de dos pasos (`build-prompt → generate`) y el módulo de prompts visu
 
 # 4. Arquitectura Técnica
 
-La arquitectura se divide en dos configuraciones que comparten el mismo codebase: ejecución local para desarrollo y prototipado, y ejecución en nube usando RunPod como proveedor de GPU bajo demanda. La diferencia clave es únicamente la capa de inferencia de imágenes.
+> **📐 Referencia canónica de arquitectura:** el documento [`docs/ARQUITECTURA.md`](../ARQUITECTURA.md)
+> contiene la arquitectura completa con diagramas Mermaid (contexto C4, contenedores, ERD,
+> clases, secuencia, flujo, máquinas de estado, seguridad, despliegue, frontend, borrado en
+> cascada e infraestructura de evaluación). Esta sección resume; ese documento es la fuente
+> de detalle.
+
+La arquitectura comparte un mismo codebase entre tres modos de ejecución (ver §5.x):
+**local** (SQLite, ComfyUI/mock), **demo en Docker** (PostgreSQL, Floci/R2, expuesto vía
+Cloudflare Tunnel) y **producción** (R2, ComfyUI o RunPod). La diferencia entre modos es de
+configuración (`.env`), no de código.
 
 ## 4.1 Autenticación
 
@@ -413,7 +422,8 @@ sequenceDiagram
 | **ComfyUI**                   | Motor de difusión          | API HTTP/WebSocket para generación de imágenes. Acepta workflows JSON.                    |
 | **Flux.2 Klein 4B Distilled** | Modelo de imagen           | FP8, 4 pasos, cfg=1.0. ~8.4 GB VRAM. Apache 2.0. Texto+edición unificados.                |
 | **Redis**                     | Rate limiting              | Sliding window para `RateLimitMiddleware`. La caché semántica planificada no está implementada. |
-| **S3 / Cloudflare R2**        | Almacenamiento de imágenes | LocalStack en dev. S3 real o R2 (más barato) en producción.                               |
+| **S3 / Cloudflare R2**        | Almacenamiento de imágenes | Floci (S3-compatible) en demo local; Cloudflare R2 (egress $0) activo en cloud.            |
+| **Cloudflare Tunnel**         | Exposición pública + TLS   | Named Tunnel sobre dominio propio; TLS de borde, sin VPS ni port-forwarding.              |
 | **PostgreSQL**                | Base de datos relacional   | Metadatos de documentos, entidades e imágenes. SQLite en prototipo.                       |
 | **Prometheus + Grafana**      | Observabilidad             | Métricas de latencia p95, tasa de error, cola de imágenes, uso VRAM.                      |
 | **Docker Compose**            | Contenerización local      | Levanta todos los servicios de soporte con un solo comando.                               |
@@ -421,9 +431,45 @@ sequenceDiagram
 
 ## Diagrama de arquitectura general
 
-![Diagrama arquitectura general](./diagrams/Diagrama-Arquitectura-General.png)
+### Vista de contenedores (estado actual)
 
-**Diagrama de Arquitectura — Vista General Local y Cloud**
+```mermaid
+graph TB
+    browser([Navegador])
+
+    subgraph edge[Cloudflare]
+        tunnel[Named Tunnel · TLS]
+        r2[(R2 · media)]
+    end
+
+    subgraph host[Host · Docker]
+        nginx[Nginx :80<br/>reverse proxy + SPA]
+        api[FastAPI :8000]
+        pg[(PostgreSQL)]
+        qdrant[(Qdrant)]
+        redis[(Redis)]
+        ollama[Ollama :11434]
+        comfy[ComfyUI :8188]
+    end
+
+    browser -->|HTTPS| tunnel --> nginx
+    nginx -->|/api/*| api
+    nginx -->|/*| nginx
+    api --> pg & qdrant & redis
+    api -->|host.docker.internal| ollama & comfy
+    api -->|boto3| r2
+    browser -->|imágenes directo| r2
+```
+
+### Vista de despliegue (demo/portafolio gratuito)
+
+- **Exposición:** Cloudflare Named Tunnel (conexión saliente, sin port-forwarding).
+- **TLS:** terminado en el borde de Cloudflare (sin tocar `nginx.conf`).
+- **Storage:** Cloudflare R2 (S3-compatible, egress $0); Floci como fallback local.
+- **Inferencia:** Ollama (texto) y ComfyUI (imagen) en el host; RunPod como alternativa cloud.
+
+> Para el detalle completo (contexto C4, flujos de secuencia, ERD, seguridad y
+> despliegue), ver [`docs/ARQUITECTURA.md`](../ARQUITECTURA.md).
 
 # 5. Estructura del Proyecto
 
