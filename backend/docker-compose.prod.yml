@@ -149,6 +149,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY}
+        VITE_MEDIA_HOST: ${VITE_MEDIA_HOST}
     container_name: loremaster-frontend
     restart: unless-stopped
     depends_on:
