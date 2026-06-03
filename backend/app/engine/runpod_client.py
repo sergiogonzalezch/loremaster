@@ -11,9 +11,11 @@ Estados de job: IN_QUEUE → IN_PROGRESS → COMPLETED | FAILED | CANCELLED
 
 Arranque en frío: ~15-30 s si el worker estaba idle.
 
-TODO: integrar en _backends.py cuando se active IMAGE_BACKEND=runpod.
+Integrado en services/image/_backends._generate_runpod_images cuando
+IMAGE_BACKEND=runpod. Diseñado para el worker-comfyui oficial de RunPod.
 """
 
+import base64
 import time
 
 import httpx
@@ -59,17 +61,19 @@ class RunPodClient:
 
         Raises:
             httpx.HTTPStatusError: Si RunPod rechaza el request
-            NotImplementedError: Pendiente de implementación
+            RuntimeError: Si la respuesta no contiene un job id
 
-        TODO: confirmar el campo "input" exacto que espera el worker RunPod elegido.
-              Con el template oficial de ComfyUI, el payload suele ser:
-              { "input": { "workflow": <workflow_dict> } }
-              Verificar en el dashboard de RunPod → Endpoint → Request Schema.
+        Payload del worker-comfyui oficial: { "input": { "workflow": <dict> } }
+        Respuesta de POST /run: { "id": "<job_id>", "status": "IN_QUEUE" }
         """
-        raise NotImplementedError(
-            "RunPodClient.submit_workflow — pendiente de implementación. "
-            "Ver TODO en el docstring."
-        )
+        response = self._request("POST", "run", json={"input": {"workflow": workflow}})
+        data = response.json()
+
+        job_id = data.get("id")
+        if not job_id:
+            msg = f"RunPod no devolvió un job id: {data}"
+            raise RuntimeError(msg)
+        return job_id
 
     def get_status(self, job_id: str) -> dict:
         """Consulta el estado actual de un job.
@@ -80,12 +84,10 @@ class RunPodClient:
             - "output": resultado del worker (solo si status="COMPLETED")
             - "error": mensaje de error (solo si status="FAILED")
 
-        TODO: implementar junto con submit_workflow.
-              Endpoint: GET /v2/{endpoint_id}/status/{job_id}
+        Endpoint: GET /v2/{endpoint_id}/status/{job_id}
         """
-        raise NotImplementedError(
-            "RunPodClient.get_status — pendiente de implementación."
-        )
+        response = self._request("GET", f"status/{job_id}")
+        return response.json()
 
     def wait_for_completion(
         self,
@@ -108,13 +110,28 @@ class RunPodClient:
             TimeoutError: Si se supera el timeout
             RuntimeError: Si el job falla o es cancelado
 
-        TODO: implementar junto con get_status().
-              Nota: el arranque en frío de RunPod tarda 15-30 s en el primer job.
-              El timeout por defecto (300 s) cubre ese caso.
+        Nota: el arranque en frío de RunPod tarda 15-30 s en el primer job.
+        El timeout por defecto (300 s) cubre ese caso.
         """
-        raise NotImplementedError(
-            "RunPodClient.wait_for_completion — pendiente de implementación."
-        )
+        start_time = time.time()
+
+        while True:
+            if time.time() - start_time > timeout:
+                msg = f"Timeout después de {timeout}s esperando el job RunPod {job_id}"
+                raise TimeoutError(msg)
+
+            result = self.get_status(job_id)
+            status = result.get("status")
+
+            if status == "COMPLETED":
+                return result
+
+            if status in _TERMINAL_STATUSES:  # FAILED | CANCELLED
+                error = result.get("error", "error desconocido")
+                msg = f"Job RunPod {job_id} terminó en {status}: {error}"
+                raise RuntimeError(msg)
+
+            time.sleep(poll_interval)
 
     def extract_image_bytes(self, job_result: dict) -> list[bytes]:
         """Extrae los bytes de imagen del resultado de un job completado.
@@ -125,15 +142,35 @@ class RunPodClient:
         Returns:
             Lista de bytes de imagen (una por imagen generada en el batch)
 
-        TODO: el formato de salida depende del worker RunPod elegido:
-          - Worker ComfyUI oficial: suele devolver imágenes como base64 en "output.images"
-          - Worker personalizado: verificar el schema de salida en el dashboard
-          Decodificar con: bytes_data = base64.b64decode(img["image"])
+        Raises:
+            RuntimeError: Si el job no contiene imágenes decodificables.
+
+        Formato del worker-comfyui oficial:
+            output.images = [ { "filename": ..., "type": "base64", "data": "<b64>" } ]
+        Si el worker está configurado para subir a S3, "type" es "s3_url"/"url" y
+        "data" es la URL pública; en ese caso se descarga el contenido.
         """
-        raise NotImplementedError(
-            "RunPodClient.extract_image_bytes — pendiente de implementación. "
-            "El formato de salida depende del worker elegido en RunPod."
-        )
+        output = job_result.get("output") or {}
+        images = output.get("images", [])
+
+        result: list[bytes] = []
+        for img in images:
+            data = img.get("data")
+            if not data:
+                continue
+
+            if img.get("type") in ("s3_url", "url"):
+                with httpx.Client(timeout=self._request_timeout) as client:
+                    resp = client.get(data)
+                    resp.raise_for_status()
+                    result.append(resp.content)
+            else:  # base64 (default)
+                result.append(base64.b64decode(data))
+
+        if not result:
+            msg = f"Job RunPod completado pero sin imágenes: {job_result}"
+            raise RuntimeError(msg)
+        return result
 
 
 def build_runpod_client() -> "RunPodClient":
@@ -141,8 +178,6 @@ def build_runpod_client() -> "RunPodClient":
 
     Raises:
         ValueError: Si RUNPOD_API_KEY o RUNPOD_ENDPOINT_ID no están configurados.
-
-    TODO: llamar desde _backends._generate_runpod_images() cuando IMAGE_BACKEND=runpod.
     """
     from app.core.config import settings  # import local para evitar ciclo en tests
 

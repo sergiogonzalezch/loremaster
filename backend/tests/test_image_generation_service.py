@@ -398,3 +398,72 @@ def test_ig_13_generate_batch_comfyui(
     assert result.backend == "comfyui"
     assert len(result.images) == 1
     assert result.images[0].image_url is not None
+
+
+def test_ig_14_generate_batch_runpod(
+    db_session: Session,
+    sample_entity: Entity,
+    sample_entity_content_confirmed: EntityContent,
+):
+    """IG-14: generate_images con backend runpod guarda registros en DB.
+
+    Mockea RunPodClient (worker-comfyui oficial): submit → wait → extract.
+    Valida la integración del switch sin consumir GPU real.
+    """
+    fake_image_bytes = b"fake-png-bytes"
+
+    mock_client = MagicMock()
+    mock_client.submit_workflow.return_value = "job-uuid-123"
+    mock_client.wait_for_completion.return_value = {
+        "status": "COMPLETED",
+        "output": {"images": [{"filename": "img_001.png", "type": "base64", "data": "Zm9v"}]},
+    }
+    mock_client.extract_image_bytes.return_value = [fake_image_bytes]
+
+    with (
+        patch("app.services.image.image_generation_service.settings") as mock_svc_settings,
+        patch("app.services.image._backends.settings") as mock_be_settings,
+        patch(
+            "app.services.image._backends.build_runpod_client",
+            return_value=mock_client,
+        ),
+        patch(
+            "app.services.image._backends.load_template",
+            return_value={"12": {"inputs": {"value": ""}}},
+        ),
+        patch(
+            "app.services.image._backends.inject_prompt",
+            side_effect=lambda w, p: w,
+        ),
+        patch(
+            "app.services.image._backends.inject_seed",
+            side_effect=lambda w, s: w,
+        ),
+        patch(
+            "app.services.image._backends._save_comfyui_image",
+            return_value="col/ent/gen/img.png",
+        ),
+    ):
+        mock_svc_settings.image_backend = "runpod"
+        mock_svc_settings.image_width = 1024
+        mock_svc_settings.image_height = 1024
+        mock_svc_settings.image_seed_base = 42
+        mock_svc_settings.storage_base_url = "http://localhost:8000/media"
+        mock_be_settings.comfyui_timeout = 300
+        mock_be_settings.image_width = 1024
+        mock_be_settings.image_height = 1024
+
+        result = generate_images_service(
+            db_session,
+            "testuser",
+            sample_entity,
+            sample_entity_content_confirmed.id,
+            auto_prompt="test auto prompt",
+            final_prompt="test prompt",
+            batch_size=1,
+        )
+
+    assert result.generation_id
+    assert result.backend == "runpod"
+    assert len(result.images) == 1
+    assert result.images[0].image_url is not None

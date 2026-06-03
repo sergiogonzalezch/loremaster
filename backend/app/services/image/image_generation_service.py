@@ -26,6 +26,7 @@ from app.models.schemas.image_generation import (
 from app.services.image._backends import (
     _generate_comfyui_images,
     _generate_mock_images,
+    _generate_runpod_images,
     _GenerationParams,
     _ImageData,
 )
@@ -205,8 +206,10 @@ def generate_images_service(
         images_data = _generate_mock_images(entity, params.batch_size, params.seed_base)
     elif params.backend == "comfyui":
         images_data = _generate_comfyui_images(username, entity, params, generation_id)
+    elif params.backend == "runpod":
+        images_data = _generate_runpod_images(username, entity, params, generation_id)
     else:
-        msg = f"Backend '{params.backend}' no soportado. Usar: 'mock' o 'comfyui'"
+        msg = f"Backend '{params.backend}' no soportado. Usar: 'mock', 'comfyui' o 'runpod'"
         raise ValueError(msg)
 
     images_result: list[ImageResult] = []

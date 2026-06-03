@@ -24,6 +24,7 @@
 | [STRATEGY.md](planning/STRATEGY.md) | Estado rápido pendientes/resueltos + hoja de ruta semanas 9-12 |
 | [WEEKLY_CHECKLISTS.md](planning/WEEKLY_CHECKLISTS.md) | Checklist semanal detallado con criterios de aceptación por semana |
 | [FIX.md](planning/FIX.md) | Log de deuda técnica: 61 ítems con estado y fecha de cierre |
+| [RUNPOD-SWITCH.md](planning/RUNPOD-SWITCH.md) | Switch ComfyUI↔RunPod: código hecho, verificación en GPU pendiente |
 
 ## `completed/` — Planes de implementación finalizados
 *Guías de cómo se implementaron features ya completadas. Referencia histórica.*

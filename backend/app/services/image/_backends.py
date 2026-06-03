@@ -19,6 +19,7 @@ from app.engine.comfyui_client import (
     inject_seed,
     load_template,
 )
+from app.engine.runpod_client import build_runpod_client
 from app.models.db.entity import Entity
 
 logger = logging.getLogger(__name__)
@@ -159,6 +160,73 @@ def _generate_comfyui_images(
 
     if not results:
         msg = "No se generaron imágenes desde ComfyUI"
+        raise RuntimeError(msg)
+
+    return results
+
+
+def _generate_runpod_images(
+    username: str,
+    entity: Entity,
+    params: _GenerationParams,
+    generation_id: str,
+) -> list[_ImageData]:
+    """Genera imágenes vía RunPod Serverless (worker-comfyui oficial).
+
+    Mismo workflow y template que el backend ComfyUI local: solo cambia el
+    transporte (job serverless en vez de servidor HTTP local). Permite hacer
+    switch ComfyUI local ↔ RunPod cambiando IMAGE_BACKEND.
+
+    Raises:
+        ComfyUIUnavailableError: si RunPod no responde (se reutiliza la misma
+            excepción que ComfyUI para mapear a 503 en la ruta).
+        ComfyUITimeoutError: si se agota el tiempo de espera del job.
+        RuntimeError: si ninguna imagen del batch se generó con éxito.
+
+    """
+    client = build_runpod_client()
+    workflow_base = load_template("flux2-klein-4b-api.json")
+    workflow_base = inject_prompt(workflow_base, params.final_prompt)
+
+    results: list[_ImageData] = []
+
+    for i in range(params.batch_size):
+        seed = params.seed_base + i
+        workflow = inject_seed(workflow_base, seed)
+
+        try:
+            job_id = client.submit_workflow(workflow)
+            job_result = client.wait_for_completion(job_id, timeout=settings.comfyui_timeout)
+            image_batch = client.extract_image_bytes(job_result)
+        except httpx.ConnectError as exc:
+            raise ComfyUIUnavailableError() from exc
+        except TimeoutError as exc:
+            raise ComfyUITimeoutError(settings.comfyui_timeout) from exc
+        except (httpx.HTTPError, RuntimeError, ValueError) as exc:
+            logger.warning(
+                "RunPod falló en iteración %d/%d: %s",
+                i + 1,
+                params.batch_size,
+                exc,
+            )
+            continue
+
+        for image_bytes in image_batch[:1]:
+            image_id = str(_uuid.uuid4())
+            filename = f"{image_id}.png"
+            storage_path = _save_comfyui_image(image_bytes, username, entity, generation_id, filename)
+            results.append(
+                _ImageData(
+                    image_id=image_id,
+                    filename=filename,
+                    seed=seed,
+                    storage_path=storage_path,
+                    image_url=build_storage_url(storage_path),
+                )
+            )
+
+    if not results:
+        msg = "No se generaron imágenes desde RunPod"
         raise RuntimeError(msg)
 
     return results
