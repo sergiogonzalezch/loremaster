@@ -1,11 +1,11 @@
 ﻿# 1. Resumen Ejecutivo
 
-> **NOTA SOBRE DIAGRAMAS** — Estado actual (2026-05-20):
-> - **ERD**: ✅ Actualizado en §6.1 como diagrama Mermaid — incluye todas las tablas actuales.
-> - **HU-01** (flujo y secuencia): ✅ PNGs actualizados en `docs/diagrams/` — incluyen `get_current_user` y `owner_id`.
-> - **HU-04** (flujo y secuencia): ✅ PNGs actualizados en `docs/diagrams/` — reflejan flujo de dos pasos `build-prompt → generate`.
-> - **Arquitectura frontend**: ✅ Árbol de componentes actualizado en §5.1.
-> - **Flujo de autenticación**: ✅ Diagramas Mermaid en §4.1 — modo local (registro + login) y modo Clerk (sync).
+> **NOTA SOBRE DIAGRAMAS** — Estado actual (2026-06-03):
+> Todos los diagramas de este documento son **Mermaid inline** (renderizan en GitHub/VS Code
+> sin assets externos). El ERD está en §6.1; los flujos y secuencias por historia de usuario
+> en sus secciones (§3 y HU-01…HU-06); los flujos de autenticación en §4.1.
+> Para la vista arquitectónica completa (contexto C4, clases, máquinas de estado, seguridad,
+> despliegue, cascada y evaluación) ver [`docs/ARQUITECTURA.md`](../ARQUITECTURA.md).
 
 ## ¿Qué es Lore Master?
 
@@ -22,7 +22,7 @@ A diferencia de los asistentes de IA genéricos basados en chat, Lore Master ofr
 - Genera texto narrativo expandido, consistente con el lore cargado.
 - Genera **contenidos RAG por categoría** para cada entidad: el usuario puede editar, confirmar (descarta automáticamente los demás pendientes de la misma categoría, sin afectar confirmados previos) o descartar cada contenido.
 - Gestiona entidades del mundo (personajes, criaturas, escenarios, facciones, ítems) con atributos estructurados.
-- Aplica moderación de contenido en tres capas (input, documentos y output del LLM) mediante filtros regex (`domain/content_guard.py`).
+- Aplica moderación de contenido en tres puntos del pipeline (input del usuario, texto de documentos y output del LLM) con guardrails léxicos (`domain/content_guard.py`), más una capa semántica opcional con Llama Guard 3 (`domain/llama_guard.py`, fail-open).
 - **Sistema multi-tenant**: cada colección pertenece a un usuario (`owner_id`); otros usuarios no pueden acceder a colecciones, contenidos ni imágenes ajenas.
 - **Generación de imágenes** (flujo de dos pasos):
   1. `build-prompt`: Genera `auto_prompt` (prompt visual LLM) a partir de un contenido confirmado de la entidad.
@@ -32,10 +32,11 @@ A diferencia de los asistentes de IA genéricos basados en chat, Lore Master ofr
 - **Panel de administración**: listar usuarios, eliminar colecciones y usuarios (cascade atómico).
 - Módulo consolidado `engine/image_prompt_builder.py`. Límite de 512 tokens para prompts visuales.
 
-**Parcialmente implementado:**
+**Infraestructura cloud y backends:**
 
-- Almacenamiento S3 — staging (docker-compose incluye LocalStack).
-- Integración con RunPod Serverless para generación de imágenes en la nube — pendiente. Backend local ComfyUI implementado y funcional.
+- **Almacenamiento S3-compatible** implementado (`core/storage/s3_client.py`, boto3): `STORAGE_BACKEND=local|s3`. Floci en demo local; Cloudflare R2 (egress $0) en cloud.
+- **Generación de imágenes con switch `IMAGE_BACKEND`**: `comfyui` (ComfyUI local, funcional), `runpod` (RunPod Serverless, código completo — verificación en GPU real pendiente) y `mock` (sin GPU). Cambiar de backend es solo una variable de entorno, sin tocar código.
+- **Despliegue**: stack dockerizado expuesto vía Cloudflare Named Tunnel (URL fija, TLS de borde) sobre dominio propio; sin VPS ni port-forwarding.
 
 ## ¿Qué problema resuelve?
 
@@ -70,7 +71,7 @@ Construir un prototipo funcional y escalable de Lore Master que demuestre la via
 | **O-2** | Integrar ComfyUI con Flux.2 Klein 4B       | Endpoint /generate/image retorna URL de imagen generada en < 30 s localmente      | Fase 1   |
 | **O-3** | Construir la API REST completa con FastAPI | “N” endpoints documentados y funcionales en /docs (Swagger)                       | Fase 1   |
 | **O-4** | Desarrollar la interfaz de usuario web     | SPA con paneles de personajes, escenarios, facciones e ítems                      | Fase 2   |
-| **O-5** | Implementar almacenamiento S3              | Imágenes guardadas en LocalStack S3 (dev) / AWS S3 o R2 (prod)                    | Fase 2   |
+| **O-5** | Implementar almacenamiento S3              | Imágenes guardadas en Floci S3-compatible (dev) / Cloudflare R2 (prod)            | Fase 2   |
 | **O-6** | Desplegar el worker de ComfyUI en RunPod   | Imagen Docker funcional en RunPod Serverless con Flux.2 Klein                     | Fase 3   |
 | **O-7** | Configurar observabilidad                  | Dashboard Grafana con latencia p95, tasa de error y cola de imágenes              | Fase 1-2 |
 | **O-8** | Documentar y guiar la realización          | README + guía paso a paso para setup local y despliegue en nube                   | Fase 3   |
@@ -98,29 +99,71 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 | **HU-05** | Gestión de entidades      | Como creador de mundos, quiero gestionar personajes, escenarios y objetos dentro de una colección para estructurar mi mundo.                           |
 | **HU-06** | Contenidos RAG por categoría | Como creador de mundos, quiero generar contenidos RAG por categoría para una entidad y confirmar el mejor, descartando automáticamente los demás pendientes de esa categoría sin afectar confirmados previos.   |
 
-### Diagramas
+### Diagrama de flujo RAG
 
-- Diagrama de flujo RAG
-  
-![Diagrama de flujo RAG](./diagrams/Diagrama-Flujo-RAG.png)
+```mermaid
+flowchart TD
+    A[Usuario envía query] --> B[check_user_input]
+    B -->|bloqueado| X[HTTP 422]
+    B -->|ok| C[Embedding de la query]
+    C --> D["Qdrant search_context<br/>top_k=4 · threshold 0.30"]
+    D -->|sin chunks| Y[HTTP 422 — sin contexto]
+    D -->|chunks| E[Ensambla prompt + contexto]
+    E --> F["Ollama LLM<br/>semáforo: máx. 1 concurrente"]
+    F --> G[check_generated_output]
+    G --> H[Llama Guard 3 · fail-open]
+    H --> I["HTTP 200 — answer + source_doc_ids"]
+```
 
-- Diagrama de secuencia RAG
+### Diagrama de secuencia RAG
 
-![Diagrama de secuencia RAG](./diagrams/Diagrama-Secuencia-RAG.png)
+```mermaid
+sequenceDiagram
+    actor U as Usuario
+    participant API as FastAPI
+    participant G as content_guard
+    participant Q as Qdrant
+    participant L as Ollama
+
+    U->>API: POST /collections/{id}/query {query}
+    API->>G: check_user_input(query)
+    API->>Q: search_context(collection_id, top_k=4)
+    Q-->>API: chunks relevantes
+    API->>L: chain.invoke(context, query)
+    L-->>API: texto generado
+    API->>G: check_generated_output(text)
+    API-->>U: 200 {answer, query, sources_count, source_doc_ids}
+```
 
 ---
 
 # HU-01 — Crear colección
 
-### Diagramas
+### Diagrama de flujo — Creación de colección
 
-- Diagrama de flujo — Creación de colección
+```mermaid
+flowchart TD
+    A[POST /collections] --> B[get_current_user — valida JWT]
+    B --> C{Nombre único<br/>por owner_id?}
+    C -->|duplicado| D[HTTP 409]
+    C -->|ok| E[INSERT collection con owner_id]
+    E --> F[HTTP 201 — collection_id]
+```
 
-![Diagrama de flujo HU-01](./diagrams/Diagrama-Flujo-HU-01.png)
+### Diagrama de secuencia — Creación de colección
 
-- Diagrama de secuencia — Creación de colección
+```mermaid
+sequenceDiagram
+    actor U as Cliente
+    participant API as FastAPI
+    participant DB
 
-![Diagrama de secuencia HU-01](./diagrams/Diagrama-Secuencia-HU-01.png)
+    U->>API: POST /collections {name, description}
+    API->>API: get_current_user()
+    API->>DB: INSERT collection (owner_id = user.id)
+    DB-->>API: collection
+    API-->>U: 201 {collection_id}
+```
 
 ### Secuencia — Crear colección
 
@@ -140,15 +183,34 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 # HU-02 — Ingestión de documentos
 
-### Diagramas
+### Diagrama de flujo — Ingestión de documentos
 
-- Diagrama de flujo — Ingestión de documentos
+```mermaid
+flowchart TD
+    A[POST /collections/id/documents] --> B{PDF/TXT<br/>y ≤ 50 MB?}
+    B -->|formato inválido| C[HTTP 400]
+    B -->|filename vacío o > 255| C2[HTTP 422]
+    B -->|ok| D[Extrae texto PDF/TXT]
+    D --> E["Chunking · 400 chars / 150 overlap"]
+    E --> F["Embeddings MiniLM · 384d"]
+    F --> G["Qdrant upsert · colección lm_{collection_id}"]
+    G --> H[HTTP 201 — doc_id, chunk_count]
+```
 
-![Diagrama de flujo HU-02](./diagrams/Diagrama-Flujo-HU-02.png)
+### Diagrama de secuencia — Cliente → FastAPI → Qdrant
 
-- Diagrama de secuencia — Cliente → FastAPI → Qdrant
+```mermaid
+sequenceDiagram
+    actor U as Cliente
+    participant API as FastAPI
+    participant Q as Qdrant
 
-![Diagrama de secuencia HU-02](./diagrams/Diagrama-Secuencia-HU-02.png)
+    U->>API: POST /collections/{id}/documents (file)
+    API->>API: valida tipo, tamaño y filename
+    API->>API: extrae texto + chunking
+    API->>Q: upsert chunks + embeddings (collection_id)
+    API-->>U: 201 {doc_id, chunk_count}
+```
 
 ### Criterios de aceptación (corregidos)
 
@@ -172,15 +234,35 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 # HU-03 — Generación de texto con RAG
 
-### Diagramas
+### Diagrama de flujo — Generación de texto RAG
 
-- Diagrama de flujo — Generación de texto RAG
+```mermaid
+flowchart TD
+    A[POST /collections/id/query] --> B[check_user_input]
+    B --> C["Qdrant search_context · top_k=4"]
+    C -->|sin documentos| D[HTTP 422]
+    C -->|chunks| E[Construye prompt + contexto]
+    E --> F[Ollama LLM]
+    F --> G[check_generated_output + Llama Guard]
+    G --> H[HTTP 200 — answer + source_doc_ids]
+```
 
-![Diagrama de flujo HU-03](./diagrams/Diagrama-Flujo-HU-03.png)
+### Diagrama de secuencia — Cliente → FastAPI → Qdrant → LLM
 
-- Diagrama de secuencia — Cliente → FastAPI → Qdrant → LLM
+```mermaid
+sequenceDiagram
+    actor U as Cliente
+    participant API as FastAPI
+    participant Q as Qdrant
+    participant L as Ollama
 
-![Diagrama de secuencia HU-03](./diagrams/Diagrama-Secuencia-HU-03.png)
+    U->>API: POST /collections/{id}/query {query}
+    API->>Q: search_context(collection_id, top_k=4)
+    Q-->>API: chunks relevantes
+    API->>L: chain.invoke(context, query)
+    L-->>API: answer
+    API-->>U: 200 {answer, query, sources_count}
+```
 
 ### Criterios de aceptación (MVP ajustado)
 
@@ -202,15 +284,47 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 
 # HU-04 — Generación de imágenes
 
-### Diagramas
+### Diagrama de flujo — Generación de imágenes
 
-- Diagrama de flujo — Generación de imágenes
+```mermaid
+flowchart TD
+    A[POST build-prompt — content_id] --> B[Carga EntityContent confirmado]
+    B --> C[LLM extrae tipo + atributos visuales]
+    C --> D[HTTP 200 — auto_prompt]
+    D --> E[POST generate — auto_prompt + final_prompt]
+    E --> F[check_user_input]
+    F --> G[INSERT ImageGeneration]
+    G --> H{IMAGE_BACKEND}
+    H -->|mock| I[Placeholder URLs]
+    H -->|comfyui| J[ComfyUI local · Flux.2 Klein]
+    H -->|runpod| K[RunPod Serverless · worker-comfyui]
+    I --> L[Guarda imágenes en storage]
+    J --> L
+    K --> L
+    L --> M[HTTP 201 — generation_id, images]
+```
 
-![Diagrama de flujo HU-04](./diagrams/Diagrama-Flujo-HU-04.png)
+### Diagrama de secuencia — Generación de imágenes
 
-- Diagrama de secuencia — Generación de imágenes
+```mermaid
+sequenceDiagram
+    actor U as Cliente
+    participant API as FastAPI
+    participant DB
+    participant IMG as Backend de imagen
 
-![Diagrama de secuencia HU-04](./diagrams/Diagrama-Secuencia-HU-04.png)
+    U->>API: POST build-prompt {content_id}
+    API->>DB: carga EntityContent confirmado
+    API->>API: build_combined_prompt (LLM)
+    API-->>U: 200 {auto_prompt}
+    U->>API: POST generate {auto_prompt, final_prompt, batch_size}
+    API->>API: check_user_input
+    API->>DB: INSERT ImageGeneration
+    API->>IMG: genera batch (según IMAGE_BACKEND)
+    IMG-->>API: imágenes (bytes / URL)
+    API->>DB: INSERT ImageRecord × N
+    API-->>U: 201 {generation_id, images}
+```
 
 ### Nuevo flujo (implementado)
 
@@ -255,23 +369,45 @@ Las historias cubren el ciclo completo del creador de mundos, utilizando **colle
 ### Integración con ComfyUI + Flux.2 Klein 4B
 
 La generación de imágenes usa:
-- **ComfyUI local** (implementado) — cliente en `engine/comfyui_client.py`, backend puro en `services/image/_backends.py`
+- **ComfyUI local** (implementado) — cliente en `engine/comfyui_client.py`, backend puro en `services/image/_backends.py` (`_generate_comfyui_images`)
 - **Modelo Flux.2 Klein 4B Distilled** (FP8, ~8.4 GB VRAM) via workflow JSON `flux2-klein-4b-api.json`
-- **RunPod Serverless** — pendiente; requiere `runpod_client.py` y cambio de `IMAGE_BACKEND=runpod`
+- **RunPod Serverless** (implementado, verificación en GPU pendiente) — cliente en `engine/runpod_client.py` (worker-comfyui oficial), backend puro `_generate_runpod_images`; reutiliza el mismo workflow y solo cambia el transporte. Ver [`docs/planning/RUNPOD-SWITCH.md`](../planning/RUNPOD-SWITCH.md).
 
-El flujo de dos pasos (`build-prompt → generate`) y el módulo de prompts visuales (`image_prompt_builder.py`) están implementados. El switch `IMAGE_BACKEND=mock|comfyui` permite desarrollo sin GPU.
+El flujo de dos pasos (`build-prompt → generate`) y el módulo de prompts visuales (`image_prompt_builder.py`) están implementados. El switch `IMAGE_BACKEND=mock|comfyui|runpod` selecciona el backend sin tocar código (`mock` permite desarrollo sin GPU).
 
 # HU-05 — Gestión de entidades
 
-### Diagramas
+### Diagrama de flujo — CRUD de entidades
 
-- Diagrama de flujo — CRUD de entidades
+```mermaid
+flowchart TD
+    A[Request entidad] --> B{Método}
+    B -->|POST| C{Nombre único<br/>en la colección?}
+    C -->|duplicado| D[HTTP 409]
+    C -->|ok| E[INSERT entity]
+    B -->|GET| F[Lista / detalle activos]
+    B -->|PATCH| G[Update parcial]
+    B -->|DELETE| H[Soft-delete + cascada a drafts]
+    E --> I[Respuesta]
+    F --> I
+    G --> I
+    H --> I
+```
 
-![Diagrama de flujo HU-05](./diagrams/Diagrama-Flujo-HU-05.png)
+### Diagrama de secuencia — Cliente → FastAPI → DB
 
-- Diagrama de secuencia — Cliente → FastAPI → DB
+```mermaid
+sequenceDiagram
+    actor U as Cliente
+    participant API as FastAPI
+    participant DB
 
-![Diagrama de secuencia HU-05](./diagrams/Diagrama-Secuencia-HU-05.png)
+    U->>API: POST /entities {type, name, description}
+    API->>DB: verifica nombre único por colección
+    API->>DB: INSERT entity
+    DB-->>API: entity
+    API-->>U: 201 {entity}
+```
 
 ### Criterios de aceptación
 
@@ -282,20 +418,55 @@ El flujo de dos pasos (`build-prompt → generate`) y el módulo de prompts visu
 
 # HU-06 — Contenidos RAG por categoría para entidades
 
-### Diagramas
+### Diagrama de flujo — Generación de contenido RAG por categoría
 
-- Diagrama de flujo — Generación de contenido RAG por categoría
+```mermaid
+flowchart TD
+    A[POST entities/eid/generate/category] --> B{Categoría válida<br/>para el tipo?}
+    B -->|no| C[HTTP 422]
+    B -->|ok| D{≤ 5 pending<br/>por categoría?}
+    D -->|excede| E[HTTP 422]
+    D -->|ok| F["Qdrant search_context · top_k=4"]
+    F --> G[render_prompt por categoría]
+    G --> H["Ollama genera · semáforo máx. 1"]
+    H --> I[INSERT EntityContent — status=pending]
+    I --> J[HTTP 201 — content]
+```
 
-![Diagrama de flujo HU-06](./diagrams/Diagrama-Flujo-HU-06.png)
+### Diagrama de secuencia (generación) — Cliente → FastAPI → Qdrant → LLM → DB
 
-- Diagrama de secuencia (generación) — Cliente → FastAPI → Qdrant → LLM → DB
+```mermaid
+sequenceDiagram
+    actor U as Cliente
+    participant API as FastAPI
+    participant Q as Qdrant
+    participant L as Ollama
+    participant DB
 
-![Diagrama de secuencia HU-06](./diagrams/Diagrama-Secuencia-HU-06-(Generacion).png)
+    U->>API: POST /entities/{eid}/generate/{category} {query}
+    API->>API: valida categoría + límite pending
+    API->>Q: search_context(collection_id, top_k=4)
+    Q-->>API: chunks
+    API->>L: generation_chain.invoke(render_prompt)
+    L-->>API: contenido generado
+    API->>DB: INSERT EntityContent (pending)
+    API-->>U: 201 {content_id, content, category, status}
+```
 
-- Diagrama de secuencia (confirmación) — Cliente → FastAPI → DB
+### Diagrama de secuencia (confirmación) — Cliente → FastAPI → DB
 
-![Diagrama de secuencia HU-06](./diagrams/Diagrama-Secuencia-HU-06-(Confirmar).png)
+```mermaid
+sequenceDiagram
+    actor U as Cliente
+    participant API as FastAPI
+    participant DB
 
+    U->>API: POST /contents/{cid}/confirm
+    API->>DB: content.status = confirmed
+    API->>DB: otros pending de la misma categoría → discarded
+    DB-->>API: ok
+    API-->>U: 200 {entity}
+```
 
 ### Criterios de aceptación
 
@@ -475,7 +646,7 @@ graph TB
 
 ## 5.1 Ejecución local (ComfyUI en el host)
 
-En modo local, ComfyUI y Ollama corren en el host para acceder directamente a la GPU. El resto de servicios de soporte (Qdrant, Redis, Prometheus, Grafana, LocalStack) corren en Docker Compose.
+En modo local, ComfyUI y Ollama corren en el host para acceder directamente a la GPU. El resto de servicios de soporte (Qdrant, Redis y, en la demo Docker, Floci como storage S3-compatible) corren en Docker Compose. Prometheus/Grafana están diferidos (ver §9.1).
 
 ```
 loremaster/
@@ -537,7 +708,8 @@ loremaster/
 │   │   │   ├── rag_pipeline.py            # invoke_rag_pipeline() (libre) + invoke_generation_pipeline() (por entidad/categoría)
 │   │   │   ├── llm.py                     # OllamaLLM singletons: llm (bare) + chain (PromptTemplate pipeline)
 │   │   │   ├── extractor.py               # Extracción de texto PDF/TXT
-│   │   │   ├── comfyui_client.py          # Cliente HTTP/WebSocket para ComfyUI local/RunPod
+│   │   │   ├── comfyui_client.py          # Cliente HTTP para ComfyUI local (queue_prompt, history, download)
+│   │   │   ├── runpod_client.py           # Cliente RunPod Serverless (worker-comfyui): submit/status/wait/extract
 │   │   │   └── image_prompt_builder.py    # Consolidado: build_prompt_from_content + generación visual
 │   │   ├── domain/                        # Lógica de dominio pura — sin I/O ni DB
 │   │   │   ├── category_rules.py          # ENTITY_CATEGORY_MAP, validate_category_for_entity()
@@ -555,8 +727,8 @@ loremaster/
 │   │       │   ├── content_service.py     # list, edit, confirm, discard, share, soft_delete
 │   │       │   └── generation_service.py  # generate(): RAG → EntityContent
 │   │       ├── image/                     # image_generation_service + backends
-│   │       │   ├── image_generation_service.py  # build_prompt, generate_images, share, delete (orquesta DB)
-│   │       │   └── _backends.py           # funciones puras: _generate_mock_images, _generate_comfyui_images
+│   │       │   ├── image_generation_service.py  # build_prompt, generate_images, share, delete (orquesta DB + switch IMAGE_BACKEND)
+│   │       │   └── _backends.py           # funciones puras: _generate_mock_images, _generate_comfyui_images, _generate_runpod_images
 │   │       ├── moderation/                # moderation_service
 │   │       │   └── moderation_service.py
 │   │       ├── profile/                   # profile_service
@@ -569,7 +741,7 @@ loremaster/
 │   │   └── dataset/
 │   │       ├── golden_dataset.json        # Casos: RAG, CRUD, entity_content, guardrail, imagen, feed
 │   │       └── golden_seed.txt            # Documento semilla (Mundo de Valdorath)
-│   ├── tests/                             # pytest con SQLite in-memory; stubs de engine.rag y LLM (262 tests)
+│   ├── tests/                             # pytest con SQLite in-memory; stubs de engine.rag y LLM (315 tests)
 │   ├── Makefile                           # Comandos: run, test, format, lint, install, clean, clean-all. Centraliza pycache en `.pycache/` (PYTHONPYCACHEPREFIX)
 │   ├── requirements.txt
 │   ├── requirements-dev.txt
@@ -663,7 +835,7 @@ loremaster/
 
 > ⚠️ **Desactualizado (2026-05-17):** Los nombres de variables han cambiado. Ver [`docs/ENVIRONMENT.md`](./ENVIRONMENT.md) para la referencia completa y actualizada. Diferencias clave:
 > - `OLLAMA_URL` → `OLLAMA_BASE_URL`
-> - `COMFY_BACKEND` → `IMAGE_BACKEND` (`comfyui` | `mock`)
+> - `COMFY_BACKEND` → `IMAGE_BACKEND` (`comfyui` | `mock` | `runpod`)
 > - `COMFY_URL` → `COMFYUI_URL`
 > - `CACHE_THRESHOLD` / `CACHE_TTL` — Redis se usa para rate limiting (sliding window), no caché semántico
 > - `STORAGE_BACKEND=localstack` → `local` (dev) / `s3` / `r2` (prod)
@@ -697,75 +869,42 @@ STORAGE_BACKEND=local
 DATABASE_URL=sqlite:///./loremaster.db
 ```
 
-## 5.2 Escalado a nube con RunPod (ComfyUI remoto)
+## 5.2 Escalado a nube — Switch a RunPod Serverless
 
-En modo producción, el api_gateway corre en un VPS económico (sin GPU). Las peticiones de imagen se delegan a un worker RunPod Serverless que ejecuta ComfyUI + Flux.2 Klein dentro de un contenedor con GPU de alta gama.
+El **mismo codebase** soporta GPU cloud sin cambios de código: basta cambiar
+`IMAGE_BACKEND=runpod` y proveer credenciales. No hay un gateway ni repo aparte;
+el switch vive en `services/image/image_generation_service.py`, que selecciona la
+función de backend según la variable de entorno.
 
-```
-loremaster-cloud/
-├── api_gateway/               # Mismo codebase que backend/ local
-│   ├── app/
-│   │   ├── services/
-│   │   │   ├── comfy_client.py        # Detecta COMFY_BACKEND=runpod → usa RunPodClient
-│   │   │   └── runpod_client.py       # NUEVO: cliente HTTP async para RunPod API
-│   │   └── core/config.py             # Lee RUNPOD_API_KEY, RUNPOD_ENDPOINT_ID
-│   ├── Dockerfile
-│   └── requirements.txt
-│
-├── runpod_worker/
-│   ├── builder/
-│   │   └── setup.sh           # Descarga modelos Flux.2 Klein durante el build
-│   ├── src/
-│   │   └── handler.py         # Puente RunPod SDK ↔ ComfyUI (mismo contenedor)
-│   ├── Dockerfile             # Base: NVIDIA CUDA + ComfyUI + RunPod SDK
-│   └── requirements.txt       # runpod, torch, httpx
-│
-├── docker-compose.prod.yml
-│   # Servicios: api_gateway · Qdrant · Redis · PostgreSQL · Prometheus · Grafana
-│   # SIN LocalStack — usa S3/R2 real
-│
-├── infra/
-│   ├── init_s3.sh             # Crea bucket en S3 real o Cloudflare R2
-│   └── deploy_vps.sh          # Script de deploy del api_gateway en VPS
-│
-├── .env.prod.example
-└── README.md
-```
+| Componente | Local | RunPod |
+|---|---|---|
+| Variable | `IMAGE_BACKEND=comfyui` | `IMAGE_BACKEND=runpod` |
+| Cliente | `engine/comfyui_client.py` | `engine/runpod_client.py` |
+| Backend puro | `_generate_comfyui_images()` | `_generate_runpod_images()` |
+| Workflow | `flux2-klein-4b-api.json` | `flux2-klein-4b-api.json` (el mismo) |
+| Transporte | HTTP a ComfyUI `:8188` | RunPod `/run` + polling de `/status` |
 
-### Variables de entorno (.env producción)
+El cliente RunPod está diseñado para el **worker-comfyui oficial**: envía el
+workflow en formato API de ComfyUI tal cual (`input.workflow`) y recibe las
+imágenes en base64 (o como URL si el worker está configurado con S3). Los errores
+de disponibilidad/timeout se mapean a **HTTP 503**, igual que ComfyUI local.
+
+> **Estado:** código completo y testeado (mock). Verificación en GPU real pendiente
+> (sin saldo RunPod). El riesgo crítico a validar antes de gastar GPU es que el worker
+> tenga el modelo Flux.2 Klein 4B + los custom nodes del workflow. Plan paso a paso en
+> [`docs/planning/RUNPOD-SWITCH.md`](../planning/RUNPOD-SWITCH.md).
+
+### Variables (.env producción — imágenes)
 
 ```
-# .env.prod
-ENVIRONMENT=production
-
-# LLM (puede ser Ollama en VPS o RunPod también)
-OLLAMA_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.2:latest
-
-# ComfyUI via RunPod Serverless
-COMFY_BACKEND=runpod
-RUNPOD_API_KEY=rp_xxxxxxxxxxxxxxxxxxxx
-RUNPOD_ENDPOINT_ID=xxxxxxxxxxxxxxxxxx
-RUNPOD_ENDPOINT_URL=https://api.runpod.ai/v2/${RUNPOD_ENDPOINT_ID}/runsync
-COMFY_TIMEOUT=120
-
-# Qdrant (puede ser cloud o self-hosted)
-QDRANT_URL=http://qdrant:6333
-
-# Redis
-REDIS_URL=redis://redis:6379/0
-
-# Storage (Cloudflare R2 — más barato que S3)
-STORAGE_BACKEND=s3
-S3_ENDPOINT_URL=https://<account_id>.r2.cloudflarestorage.com
-S3_BUCKET=loremaster-prod
-AWS_ACCESS_KEY_ID=<r2_access_key>
-AWS_SECRET_ACCESS_KEY=<r2_secret_key>
-AWS_REGION=auto
-
-# Base de datos
-DATABASE_URL=postgresql://user:pass@postgres:5432/loremaster
+IMAGE_BACKEND=runpod
+RUNPOD_API_KEY=<api_key>
+RUNPOD_ENDPOINT_ID=<endpoint_id>
 ```
+
+El resto del despliegue (PostgreSQL, Qdrant, Redis, storage R2, exposición vía
+Cloudflare Named Tunnel) es idéntico al de la demo; ver [`DEPLOY.md`](./DEPLOY.md)
+y [`DEPLOY-CLOUDFLARE.md`](./DEPLOY-CLOUDFLARE.md).
 
 ## 5.3 Comparativa Local vs RunPod
 
@@ -791,7 +930,7 @@ DATABASE_URL=postgresql://user:pass@postgres:5432/loremaster
 | **entities** | id (UUID PK), collection_id (FK), type (ENUM), name, description, created_at, updated_at, is_deleted, deleted_at | `type`: character \| creature \| location \| faction \| item. Nombre único por colección: `uq_entity_collection_name`. Los nombres de entidades eliminadas quedan reservados. |
 | **generated_texts** | id (UUID PK), entity_id (FK), collection_id (FK), category, query, raw_content, sources_count, token_count, model_used (VARCHAR 100, nullable), created_at | Salida bruta del LLM antes de cualquier edición del usuario. `model_used`: nombre del modelo Ollama usado. Vinculada 1:1 con `entity_contents`. Los IDs de documentos fuente se devuelven en `RagQueryResponse.source_doc_ids` pero no se persisten en esta tabla. |
 | **entity_contents** | id (UUID PK), entity_id (FK), collection_id (FK), generated_text_id (FK), category, content, status, is_shared, confirmed_at, created_at, updated_at, is_deleted, deleted_at | `status`: pending \| confirmed \| discarded. Máx. 5 `pending` por entidad y por categoría. Confirmar descarta los demás `pending` de esa categoría. `is_shared`: solo `confirmed` puede compartirse. |
-| **image_generations** | id (UUID PK), entity_id (FK), collection_id (FK), content_id (FK), category, auto_prompt, final_prompt, prompt_token_count, batch_size, backend, width, height, created_at, is_deleted, deleted_at | Una generación produce N imágenes (batch_size 1-4). `backend`: comfyui \| mock. `category` vincula el contenido base usado para el prompt. |
+| **image_generations** | id (UUID PK), entity_id (FK), collection_id (FK), content_id (FK), category, auto_prompt, final_prompt, prompt_token_count, batch_size, backend, width, height, created_at, is_deleted, deleted_at | Una generación produce N imágenes (batch_size 1-4). `backend`: comfyui \| runpod \| mock. `category` vincula el contenido base usado para el prompt. |
 | **image_records** | id (UUID PK), generation_id (FK), entity_id (FK), collection_id (FK), seed, storage_path, image_url, filename, extension, width, height, generation_ms, is_shared, is_deleted, deleted_at, created_at | Una fila por imagen del batch. `is_shared` controla visibilidad en feed público. `filename` y `extension` identifican el archivo generado. `generation_ms` mide el tiempo de generación. |
 | **moderation_log** | id (UUID PK), layer, snippet, created_at | `layer`: input \| document \| output. Registra cada rechazo del guardrail con los primeros 200 chars. |
 
@@ -975,7 +1114,7 @@ Tres fases de 4 semanas. Cada semana cierra con un entregable concreto, verifica
 | **Cold start RunPod (20-60 s)**      | Alta      | Medio       | Workers GPU tardan al arrancar tras un período idle. Implementar cola con BackgroundTasks, mostrar progreso al usuario. Mantener 1 worker ‘caliente’ en horas pico (~$0.74/hr extra).                         |
 | **Calidad RAG baja**                 | Media     | Alto        | Chunks mal dimensionados recuperan contexto irrelevante. Configuración actual: `chunk_size=400`, `overlap=150` (ajustado desde los valores originales de planificación 512/50). Evaluar con RAGAS. Ajustar `score_threshold` e implementar filtros por tipo de entidad. |
 | **Coherencia visual entre sesiones** | Alta      | Medio       | Sin seed fijo, el mismo personaje puede variar radicalmente. Guardar seed + visual_prompt exacto por imagen. Reutilizar seed al regenerar. Futuro: LoRA de personaje.                                         |
-| **Costos RunPod desbocados**         | Media     | Medio       | Sin control, múltiples workers activos pueden acumular costos altos. Configurar límite de presupuesto en RunPod. Usar runsync (síncrono) solo durante el prototipo; implementar cola asíncrona en producción. |
+| **Costos RunPod desbocados**         | Media     | Medio       | Sin control, múltiples workers activos pueden acumular costos altos. Configurar límite de presupuesto en RunPod. El cliente usa `/run` + polling de `/status` (tolera cold-start); en la primera prueba usar `batch_size=1` (cada imagen es 1 job) para validar gastando centavos. |
 
 # 9. Monitoreo y Gestión de Costos
 
@@ -997,7 +1136,7 @@ Tres fases de 4 semanas. Cada semana cierra con un entregable concreto, verifica
 | **Componente**                   | **Estimación de costo**                       | **Optimización recomendada**                                                                 |
 | -------------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | **RunPod RTX 4090 (Serverless)** | ~$0.44-0.74/hr activo. $0 cuando idle.        | min_workers=0 por defecto. Subir a 1 solo en horarios de prueba o producción alta.           |
-| **VPS para api_gateway**         | €4-8/mes (Hetzner CX22 o similar). Sin GPU.   | 2 vCPU, 4 GB RAM es suficiente para el api_gateway. No necesita GPU.                         |
+| **Exposición pública**           | $0 — Cloudflare Named Tunnel desde el host (demo actual). VPS €4-8/mes solo si se quiere servidor dedicado. | El deploy actual no usa VPS: el host expone el stack vía Cloudflare Tunnel (TLS de borde, sin port-forwarding). |
 | **Cloudflare R2 (imágenes)**     | $0.015/GB almacenado. Egress gratuito.        | Más barato que S3 para almacenar y servir imágenes públicas. Sin egress fees.                |
 | **Qdrant Cloud (opcional)**      | Tier gratuito: 1 GB RAM. Paid desde ~$25/mes. | En prototipo: self-hosted en el VPS. Migrar a cloud cuando la colección supere 1 M vectores. |
 | **PostgreSQL**                   | ~€0 en el VPS o ~$7/mes managed.              | Self-hosted en el VPS en MVP. Managed (Railway, Supabase) cuando haya > 1 usuario.           |
@@ -1028,6 +1167,8 @@ El sistema implementa control de contenido en el texto y en el pipeline visual (
 Cada rechazo se persiste en `moderation_log` con `layer` (`input` \| `document` \| `output`) y `snippet` (primeros 200 chars del texto bloqueado).
 
 Patrones bloqueados: contenido sexual explícito, discurso de odio / supremacismo, instrucciones de armas o explosivos, síntesis de drogas, y lenguaje de acoso.
+
+**Capa semántica opcional — Llama Guard 3 (IMPLEMENTADO).** Tras `check_generated_output()`, el output del LLM puede pasar por `domain/llama_guard.py` (modelo `llama-guard3:8b` vía Ollama), que clasifica el contenido por categorías de riesgo. Es **fail-open**: ante timeout, error de red o respuesta inesperada, registra un `warning` y deja pasar (no bloquea el flujo). Se activa con `LLAMA_GUARD_ENABLED=true` (desactivado por defecto en local). Diseño de alto nivel en [`MOD.md`](./MOD.md).
 
 ## Capa 2 — Construcción estructurada del prompt visual (IMPLEMENTADO)
 
@@ -1069,5 +1210,5 @@ Cada imagen generada queda registrada en las tablas `image_generations` + `image
 - `final_prompt` exacto usado en `image_generations` (para auditoría y reproducibilidad).
 - `seed` en `image_records` (permite reproducir la misma imagen exacta si se usa ComfyUI).
 - `generation_ms` en `image_records` (actualmente 0; se puede rellenar con el tiempo real de ComfyUI).
-- `backend` en `image_generations`: `’mock’` o `’comfyui’`.
+- `backend` en `image_generations`: `’mock’`, `’comfyui’` o `’runpod’`.
 - `storage_path` en `image_records`: ruta relativa dentro de `MEDIA_ROOT`; `image_url` como fallback para el backend mock (URL de placehold.co).
