@@ -820,6 +820,11 @@ graph TB
         layout --> admin[AdminPage]
     end
 
+    subgraph public[Rutas públicas]
+        router --> pubprofile[PublicProfilePage]
+        router --> legal[LegalLayout<br/>Terms · Privacy · AI-notice]
+    end
+
     subgraph shared[Componentes reutilizables]
         contentcard[ContentCard]
         imagepanel[ImagePanel]

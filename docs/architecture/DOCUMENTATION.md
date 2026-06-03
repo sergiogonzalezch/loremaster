@@ -30,6 +30,7 @@ A diferencia de los asistentes de IA genéricos basados en chat, Lore Master ofr
 - **Compartir contenido**: textos (`is_shared`) e imágenes (`is_shared`) se pueden publicar selectivamente en el feed público (`/public/feed`, `/public/images`) y en perfiles de usuario (`/users/{username}/profile`).
 - **Perfiles de usuario**: display_name, bio, avatar (upload/delete). Perfil público accesible sin autenticación.
 - **Panel de administración**: listar usuarios, eliminar colecciones y usuarios (cascade atómico).
+- **Páginas legales públicas**: Términos y Condiciones (`/terms`), Política de Privacidad (`/privacy`) y Aviso de uso de IA (`/ai-notice`), enlazadas desde el footer y desde la pantalla de login (nota de consentimiento). Solo informativas, sin persistencia de aceptación.
 - Módulo consolidado `engine/image_prompt_builder.py`. Límite de 512 tokens para prompts visuales.
 
 **Infraestructura cloud y backends:**
@@ -764,7 +765,7 @@ loremaster/
 │   │   │   ├── query.ts                   # buildQuery() — utilidad interna para query strings de URL
 │   │   │   └── index.ts                   # Re-exporta todos los módulos de api/ (no incluye query.ts)
 │   │   ├── pages/
-│   │   │   ├── LoginPage.tsx              # Dual: modo Clerk → <SignIn /> de Clerk; modo local → formulario login/registro con tabs
+│   │   │   ├── LoginPage.tsx              # Dual: modo Clerk → <SignIn /> de Clerk; modo local → formulario login/registro con tabs; nota de consentimiento legal (links a /terms y /privacy)
 │   │   │   ├── CollectionsPage.tsx        # Listado, creación y eliminación de colecciones
 │   │   │   ├── CollectionDetailPage/      # Tabs: Documentos / Entidades / Generar texto
 │   │   │   │   ├── index.tsx
@@ -776,9 +777,14 @@ loremaster/
 │   │   │   ├── ProfilePage.tsx            # Edición de perfil propio: display_name, bio, avatar, email
 │   │   │   ├── AdminPage.tsx              # Tabla de usuarios con avatar; eliminar usuario/colección
 │   │   │   ├── PublicFeedPage.tsx         # Feed global paginado: imágenes + cards de textos
-│   │   │   └── PublicProfilePage.tsx      # Perfil público: galería + contenidos; Compartir + ⚙ (solo owner)
+│   │   │   ├── PublicProfilePage.tsx      # Perfil público: galería + contenidos; Compartir + ⚙ (solo owner)
+│   │   │   └── legal/                      # Páginas legales públicas (rutas /terms, /privacy, /ai-notice)
+│   │   │       ├── TermsPage.tsx           # Términos y Condiciones
+│   │   │       ├── PrivacyPage.tsx         # Política de Privacidad
+│   │   │       └── AiNoticePage.tsx        # Aviso de uso de IA
 │   │   ├── components/
 │   │   │   ├── AppNavbar.tsx              # Dropdown: avatar/iniciales, Mi perfil público, Admin, Cerrar sesión
+│   │   │   ├── AppFooter.tsx              # Footer: marca, stack, GitHub, links legales (/terms, /privacy, /ai-notice)
 │   │   │   ├── ContentCard.tsx            # Card de EntityContent: acciones por estado, busy-lock, badge ✎ editado
 │   │   │   ├── ConfirmModal.tsx           # Modal de confirmación reutilizable
 │   │   │   ├── EntityContentsPanel.tsx    # Panel de contenidos de entidad
@@ -789,7 +795,8 @@ loremaster/
 │   │   │   ├── ImageGallery.tsx           # Galería de imágenes
 │   │   │   ├── ImageGenerator.tsx         # Componente de generación de imágenes
 │   │   │   ├── ImagePanel.tsx             # Panel de imágenes de entidad
-│   │   │   ├── Layout.tsx                 # AppNavbar + Outlet + StarfieldCanvas
+│   │   │   ├── Layout.tsx                 # StarfieldCanvas + AppNavbar + Outlet + AppFooter (rutas protegidas)
+│   │   │   ├── LegalLayout.tsx            # Chrome público para páginas legales: navbar + footer + MarkdownContent sanitizado
 │   │   │   ├── LoadingSpinner.tsx         # Spinner centrado con texto opcional
 │   │   │   ├── MarkdownContent.tsx        # Markdown sanitizado (remark-gfm + rehype-sanitize)
 │   │   │   ├── PaginationControls.tsx     # Controles de paginación reutilizables
