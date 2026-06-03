@@ -1,3 +1,9 @@
+# check=skip=SecretsUsedInArgOrEnv
+# El check anterior se silencia a propósito: las únicas vars VITE_* que recibe el
+# build son públicas por diseño. VITE_CLERK_PUBLISHABLE_KEY es la *publishable key*
+# de Clerk (pk_test_/pk_live_), pensada para vivir en el bundle del navegador; Vite
+# hornea cualquier VITE_* en el JS estático, así que no hay secreto que proteger.
+
 # ── Stage 1: build ────────────────────────────────────────────────────────────
 # Compila el bundle de producción con Vite.
 FROM node:22-alpine AS builder
