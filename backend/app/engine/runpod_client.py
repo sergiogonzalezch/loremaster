@@ -20,7 +20,7 @@ import time
 
 import httpx
 
-_RUNPOD_BASE_URL = "https://api.runpod.io/v2"
+_RUNPOD_BASE_URL = "https://api.runpod.ai/v2"
 
 # Estados terminales del job (polling para cuando dejar de esperar)
 _TERMINAL_STATUSES = {"COMPLETED", "FAILED", "CANCELLED"}
