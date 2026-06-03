@@ -721,34 +721,42 @@ Fixes de consistencia entre capas y eliminación de código muerto aplicados sob
 **Objetivos:** O-6
 **Historias:** HU-04
 
+> **ESTADO (2026-06-03):** Código completo y testeado (mock). Solo falta la
+> verificación en GPU real, bloqueada por falta de saldo RunPod. Detalle del
+> switch y plan de verificación en `docs/planning/RUNPOD-SWITCH.md`.
+> Nota: el switch real usa `IMAGE_BACKEND` (mock|comfyui|runpod), no
+> `COMFY_BACKEND`; el cliente es **síncrono** (httpx.Client, paridad con
+> `ComfyUIClient`) y usa `/run` + polling en vez de `/runsync` para tolerar el
+> cold-start de 15-30 s.
+
 ### RunPod Client
 
-- [ ] `runpod_client.py` implementado: cliente HTTP async para RunPod API
-- [ ] Enviar prompt via `runsync` endpoint
-- [ ] Recibir imagen (bytes o URL)
-- [ ] Manejo de timeout (configurable, default 120s para RunPod)
-- [ ] Manejo de errores: RunPod no disponible → `HTTP 503`
+- [x] `runpod_client.py` implementado: cliente HTTP para RunPod Serverless (worker-comfyui oficial) — síncrono, paridad con `ComfyUIClient`
+- [x] Enviar prompt — `submit_workflow` via `/run` + `wait_for_completion` (polling); más robusto que `runsync` ante cold-start
+- [x] Recibir imagen (bytes o URL) — `extract_image_bytes` decodifica base64 o descarga si el worker usa S3 (`s3_url`)
+- [x] Manejo de timeout (configurable) — `wait_for_completion(timeout=settings.comfyui_timeout)` (300s, cubre cold-start)
+- [x] Manejo de errores: RunPod no disponible → `HTTP 503` — reutiliza `ComfyUIUnavailableError`/`ComfyUITimeoutError` (mapean a 503)
 
 ### Switch Local/RunPod
 
-- [ ] `comfy_client.py` detecta `COMFY_BACKEND` env var
-- [ ] `COMFY_BACKEND=local` → usa ComfyUI local
-- [ ] `COMFY_BACKEND=runpod` → usa RunPod client
-- [ ] Mismo endpoint `/generate/image` soporta ambos backends transparentemente
-- [ ] Metadata de imagen incluye campo `backend: 'local' | 'runpod'`
+- [x] El servicio detecta `IMAGE_BACKEND` env var (sustituye al `COMFY_BACKEND` del plan original)
+- [x] `IMAGE_BACKEND=comfyui` → usa ComfyUI local
+- [x] `IMAGE_BACKEND=runpod` → usa RunPod client (`_generate_runpod_images`)
+- [x] Mismo endpoint `/image-generation/generate` soporta ambos backends transparentemente
+- [x] Metadata de imagen incluye campo `backend` — ya persistido en `ImageGeneration`/`ImageRecord` y devuelto en la respuesta
 
 ### Storage Produccion
 
 - [x] ~~`storage.py` soporta switch entre LocalStack (dev) y S3/R2 real (prod)~~ — **implementado en Semana 9**: `core/storage/s3_client.py` con boto3; `STORAGE_BACKEND=local|s3`; soporta AWS S3 real y Cloudflare R2
-- [ ] Probar con Cloudflare R2 en cloud deploy real (egress gratuito) — solo requiere credenciales
+- [x] Probar con Cloudflare R2 en cloud deploy real (egress gratuito) — **hecho en deploy Cloudflare (Semana 11)**: R2 (`loremaster-media`) configurado en `.env.production`, imágenes servidas desde `pub-*.r2.dev`
 
 ### Criterios de aceptacion Semana 11
 
-- [ ] `/image-generation/generate` genera imagen via RunPod cuando `COMFY_BACKEND=runpod`
-- [ ] `/image-generation/generate` genera imagen via ComfyUI local cuando `COMFY_BACKEND=local`
-- [x] ~~Imagen se guarda en S3 real (no solo LocalStack)~~ — implementado en Semana 9; activar con `STORAGE_BACKEND=s3` + credenciales en `.env.production`
-- [ ] Metadata registra correctamente el backend usado
-- [ ] Switch entre backends no requiere cambio de codigo
+- [ ] `/image-generation/generate` genera imagen via RunPod cuando `IMAGE_BACKEND=runpod` — **código listo, verificación en GPU pendiente** (sin saldo RunPod)
+- [x] `/image-generation/generate` genera imagen via ComfyUI local cuando `IMAGE_BACKEND=comfyui`
+- [x] ~~Imagen se guarda en S3 real (no solo LocalStack)~~ — implementado en Semana 9; activo con `STORAGE_BACKEND=s3` + credenciales en `.env.production` (R2 en deploy)
+- [x] Metadata registra correctamente el backend usado
+- [x] Switch entre backends no requiere cambio de codigo — solo cambiar `IMAGE_BACKEND` en `.env`
 
 ---
 
