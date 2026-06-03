@@ -25,6 +25,9 @@ import PublicFeedPage from "./pages/PublicFeedPage";
 import PublicProfilePage from "./pages/PublicProfilePage";
 import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
+import TermsPage from "./pages/legal/TermsPage";
+import PrivacyPage from "./pages/legal/PrivacyPage";
+import AiNoticePage from "./pages/legal/AiNoticePage";
 
 /**
  * Detecta el login con Clerk y sincroniza la sesión con el backend.
@@ -94,6 +97,9 @@ function AppRoutes() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/users/:username" element={<PublicProfilePage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/ai-notice" element={<AiNoticePage />} />
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
               <Route path="/" element={<PublicFeedPage />} />

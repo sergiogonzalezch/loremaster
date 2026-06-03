@@ -1,6 +1,6 @@
 import { useEffect, useReducer, useState } from "react";
 import type { FormEvent, Reducer } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import {
   Container,
   Card,
@@ -78,6 +78,27 @@ const authUIReducer: Reducer<AuthUIState, AuthUIAction> = (state, action) => {
 };
 
 /**
+ * Nota de consentimiento legal mostrada bajo los formularios de acceso.
+ * Enlaza a las páginas públicas de Términos y Privacidad para que sean
+ * visibles durante el registro (la pantalla de login no tiene footer).
+ */
+function LegalConsentNote() {
+  return (
+    <p className="text-center text-muted small mt-3 mb-0">
+      Al continuar, aceptas los{" "}
+      <Link to="/terms" className="lm-footer-legal-link">
+        Términos
+      </Link>{" "}
+      y la{" "}
+      <Link to="/privacy" className="lm-footer-legal-link">
+        Política de Privacidad
+      </Link>
+      .
+    </p>
+  );
+}
+
+/**
  * Página de autenticación con Clerk (demo/production).
  *
  * ClerkBridge en App.tsx detecta el login y sincroniza la sesión con el
@@ -88,10 +109,16 @@ function ClerkLoginPage() {
     <>
       <StarfieldCanvas />
       <Container
-        className="d-flex align-items-center justify-content-center"
-        style={{ minHeight: "100vh", position: "relative", zIndex: 1 }}
+        className="d-flex flex-column align-items-center justify-content-center"
+        style={{
+          minHeight: "100vh",
+          position: "relative",
+          zIndex: 1,
+          gap: "1rem",
+        }}
       >
         <SignIn afterSignInUrl="/" afterSignUpUrl="/" />
+        <LegalConsentNote />
       </Container>
     </>
   );
@@ -307,6 +334,8 @@ function LocalLoginPage() {
                       : "Crear cuenta"}
               </Button>
             </Form>
+
+            <LegalConsentNote />
           </Card.Body>
         </Card>
       </Container>

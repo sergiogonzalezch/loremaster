@@ -1438,6 +1438,27 @@ textarea.form-control {
   letter-spacing: 0.06em;
 }
 
+.lm-footer-legal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+}
+
+.lm-footer-legal-link {
+  font-size: 0.78rem;
+  color: var(--lm-text-muted);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.lm-footer-legal-link:hover {
+  color: var(--lm-accent);
+  text-decoration: none;
+}
+
 @media (max-width: 576px) {
   .lm-footer-body {
     flex-direction: column;

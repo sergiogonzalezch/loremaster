@@ -1,4 +1,5 @@
 import { Container } from "react-bootstrap";
+import { Link } from "react-router-dom";
 
 const YEAR = new Date().getFullYear();
 const GITHUB_URL = "https://github.com/sergiogonzalezch/loremaster";
@@ -78,6 +79,20 @@ export default function AppFooter() {
             </div>
           </div>
         </div>
+
+        <nav className="lm-footer-legal">
+          <Link to="/terms" className="lm-footer-legal-link">
+            Términos
+          </Link>
+          <span className="lm-footer-dot">·</span>
+          <Link to="/privacy" className="lm-footer-legal-link">
+            Privacidad
+          </Link>
+          <span className="lm-footer-dot">·</span>
+          <Link to="/ai-notice" className="lm-footer-legal-link">
+            Aviso de IA
+          </Link>
+        </nav>
 
         <div className="lm-footer-bottom">
           <span className="lm-footer-sep">
