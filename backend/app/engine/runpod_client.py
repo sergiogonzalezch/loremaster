@@ -25,6 +25,10 @@ _RUNPOD_BASE_URL = "https://api.runpod.ai/v2"
 # Estados terminales del job (polling para cuando dejar de esperar)
 _TERMINAL_STATUSES = {"COMPLETED", "FAILED", "CANCELLED"}
 
+# Tope de tamaño por imagen descargada/decodificada (defensa ante respuestas
+# inesperadamente grandes que podrían agotar la memoria del proceso).
+_MAX_IMAGE_BYTES = 25 * 1024 * 1024  # 25 MB
+
 
 class RunPodClient:
     """Cliente HTTP para la API Serverless de RunPod."""
@@ -35,6 +39,7 @@ class RunPodClient:
         endpoint_id: str,
         request_timeout: float = 30.0,
     ) -> None:
+        """Inicializa el cliente con la API key, el endpoint y el timeout por request."""
         self._endpoint_id = endpoint_id
         self._request_timeout = request_timeout
         self._headers = {
@@ -160,17 +165,45 @@ class RunPodClient:
                 continue
 
             if img.get("type") in ("s3_url", "url"):
-                with httpx.Client(timeout=self._request_timeout) as client:
-                    resp = client.get(data)
-                    resp.raise_for_status()
-                    result.append(resp.content)
+                result.append(self._download_image_url(data))
             else:  # base64 (default)
-                result.append(base64.b64decode(data))
+                raw = base64.b64decode(data)
+                if len(raw) > _MAX_IMAGE_BYTES:
+                    msg = f"Imagen RunPod excede el tamaño máximo ({_MAX_IMAGE_BYTES} bytes)"
+                    raise RuntimeError(msg)
+                result.append(raw)
 
         if not result:
             msg = f"Job RunPod completado pero sin imágenes: {job_result}"
             raise RuntimeError(msg)
         return result
+
+    def _download_image_url(self, url: str) -> bytes:
+        """Descarga una imagen desde una URL devuelta por el worker (modo S3).
+
+        Defensa en profundidad: exige https (bloquea http a hosts internos/metadata)
+        y corta la descarga si supera _MAX_IMAGE_BYTES. La URL proviene de la
+        respuesta de RunPod, pero se valida igualmente.
+
+        Raises:
+            RuntimeError: Si la URL no es https o la imagen excede el tamaño máximo.
+            httpx.HTTPError: Si la descarga falla.
+        """
+        if not url.lower().startswith("https://"):
+            msg = f"URL de imagen RunPod no es https: {url[:60]}"
+            raise RuntimeError(msg)
+
+        with httpx.Client(timeout=self._request_timeout) as client, client.stream("GET", url) as resp:
+            resp.raise_for_status()
+            chunks: list[bytes] = []
+            total = 0
+            for chunk in resp.iter_bytes():
+                total += len(chunk)
+                if total > _MAX_IMAGE_BYTES:
+                    msg = f"Imagen RunPod excede el tamaño máximo ({_MAX_IMAGE_BYTES} bytes)"
+                    raise RuntimeError(msg)
+                chunks.append(chunk)
+            return b"".join(chunks)
 
 
 def build_runpod_client() -> "RunPodClient":

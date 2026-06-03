@@ -178,10 +178,10 @@ def _generate_runpod_images(
     switch ComfyUI local ↔ RunPod cambiando IMAGE_BACKEND.
 
     Raises:
-        ComfyUIUnavailableError: si RunPod no responde (se reutiliza la misma
-            excepción que ComfyUI para mapear a 503 en la ruta).
+        ComfyUIUnavailableError: si RunPod no responde o ninguna imagen del batch
+            se generó con éxito (error de conexión, auth, job fallido). Se reutiliza
+            la misma excepción que ComfyUI para mapear a HTTP 503 en la ruta.
         ComfyUITimeoutError: si se agota el tiempo de espera del job.
-        RuntimeError: si ninguna imagen del batch se generó con éxito.
 
     """
     client = build_runpod_client()
@@ -226,7 +226,8 @@ def _generate_runpod_images(
             )
 
     if not results:
-        msg = "No se generaron imágenes desde RunPod"
-        raise RuntimeError(msg)
+        # Ninguna imagen del batch tuvo éxito (auth, job fallido, errores HTTP):
+        # se trata como servicio no disponible → HTTP 503 en la ruta.
+        raise ComfyUIUnavailableError()
 
     return results
