@@ -2,12 +2,22 @@
 
 Plataforma RAG para escritores y narradores de rol. Carga documentos de lore, gestiona entidades de tu mundo y genera texto narrativo e imágenes coherentes con tu contexto. Cada usuario tiene sus propias colecciones privadas; el contenido individual (textos e imágenes) se puede compartir selectivamente en el feed público y en perfiles de usuario accesibles sin autenticación.
 
+## Demo
+
+Disponible en **[loremasterai.site](https://loremasterai.site)** (acceso por invitación — contactar al autor).
+
+El stack completo corre en una única máquina personal expuesta via Cloudflare Named Tunnel (TLS en el borde, sin abrir puertos). Costo total de infraestructura: ~$1.98/año (dominio) + electricidad.
+
 ## Stack
 
 | Capa | Tecnología |
 |---|---|
-| Backend | FastAPI, SQLModel, Qdrant, Ollama |
-| Frontend | React 19, TypeScript, Vite, Bootstrap 5 |
+| Backend | FastAPI · SQLModel · Qdrant · Ollama |
+| Frontend | React 19 · TypeScript (strict) · Vite · Bootstrap 5 |
+| Auth | JWT local (cookies HttpOnly + CSRF + refresh) · Clerk (RS256) |
+| Imagen | ComfyUI (local) · RunPod Serverless (cloud, `IMAGE_BACKEND=runpod`) |
+| Storage | S3-compatible boto3 — Floci (demo) · Cloudflare R2 (cloud) |
+| Infraestructura | Docker · Nginx · PostgreSQL · Redis · Qdrant · Cloudflare Tunnel |
 
 ## Estructura del repo
 
@@ -146,6 +156,29 @@ Ver [`docs/architecture/DEPLOY.md`](docs/architecture/DEPLOY.md) para el runbook
 Ver [`docs/architecture/ENV-ARCHITECTURE.md`](docs/architecture/ENV-ARCHITECTURE.md) para el flujo completo de variables: qué lee cada archivo, prioridad Pydantic, clasificación de variables y mejoras pendientes.
 
 Ver [`backend/README.md`](backend/README.md) para la referencia completa de variables, ambientes y opciones del compose.
+
+## Decisiones técnicas destacadas
+
+- **Multi-tenant por `owner_id`:** colecciones, entidades y contenidos pertenecen al usuario que los crea. El aislamiento se aplica en capa de servicio (`get_*_or_404_owned`) — no solo en rutas — para que ningún bypass accidental de middleware exponga datos ajenos.
+- **Auth dual sin bifurcación de middleware:** modo local (JWT HS256 en cookie HttpOnly + CSRF doble-submit + refresh 7 d) y modo Clerk (RS256). El backend usa siempre `verify_token()` sobre la cookie local; `ClerkBridge` en el frontend intercambia el JWT de Clerk por una sesión local en `/auth/clerk/sync`. Un solo middleware, dos flujos de login.
+- **Soft-delete en cascada atómica:** `soft_delete(commit=False)` encadena todas las eliminaciones (colección → documentos + entidades → contenidos + imágenes) y hace un único `db_commit` al final, evitando estados inconsistentes entre DB, Qdrant y filesystem.
+- **Moderación multicapa con harness de evaluación:** guardrail léxico (regex + normalización NFKD, leetspeak, separadores) en tres puntos del pipeline (input, texto de documento, output LLM); más Llama Guard 3 como capa semántica fail-open. Calibrado con 54 casos (18 categorías adversariales, 16 técnicas de bypass, 14 casos RPG legítimos).
+- **Pipeline de imagen sin RAG (decisión validada):** evaluado experimentalmente en `metadata_harness`: añadir cabeceras de fuente Qdrant al prompt visual no mejoraba la calidad en modelos 3B (Δ D1 < +0.2). El prompt visual se construye directamente desde el texto del contenido confirmado, reduciendo latencia y complejidad sin pérdida de calidad.
+- **Self-hosted sin costos de token:** toda la inferencia (texto con Ollama, embeddings con sentence-transformers, imagen con ComfyUI/Flux.2 Klein) corre en el host. Sin llamadas a APIs externas de pago. GPU cloud (RunPod Serverless) disponible como backend alternativo via `IMAGE_BACKEND=runpod` — mismo endpoint, sin cambio de código.
+
+## Métricas de calidad
+
+| Métrica | Resultado |
+|---|---|
+| Tests backend (`pytest`) | 309 / 309 |
+| Tests frontend (`vitest`) | 121 / 121 |
+| Baseline evals — 83 casos end-to-end con LLM | **83 / 83** (100 %) · 2026-06-08 |
+| Guard harness — adversarial · bypass · RPG | **54 / 54** input correcto · 2026-06-08 |
+| Ruff (lint Python) | 0 errores |
+| ESLint (lint TypeScript) | 0 errores |
+| `npm audit` | 0 vulnerabilidades |
+| React Doctor | 94 / 100 |
+| Issues de seguridad cerrados | 61 |
 
 ## Documentación
 

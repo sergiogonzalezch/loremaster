@@ -776,10 +776,10 @@ Fixes de consistencia entre capas y eliminación de código muerto aplicados sob
 
 ### Evaluacion
 
-- [ ] Evaluacion basica de calidad RAG (manual o con RAGAS)
-- [ ] Documentar resultados: precision del retrieval, coherencia de respuestas
-- [ ] Comparar tiempos de generacion: local vs RunPod
-- [ ] Documentar metricas de rendimiento: latencia p95, throughput
+- [x] Evaluacion basica de calidad RAG — baseline evals 83/83 (100 %) · 2026-06-08
+- [x] Guard harness — 54/54 input correcto (adversarial 24/24 · bypass 16/16 · RPG 14/14) · 2026-06-08
+- [ ] Comparar tiempos de generacion: local vs RunPod — descartado (sin saldo RunPod)
+- [ ] Documentar metricas de rendimiento: latencia p95, throughput — diferido
 
 ### Observabilidad Completa
 
@@ -796,14 +796,13 @@ Fixes de consistencia entre capas y eliminación de código muerto aplicados sob
 
 ### Documentacion Final
 
-- [ ] README completo con:
-  - [ ] Descripcion del proyecto
-  - [ ] Instrucciones de setup local (paso a paso)
-  - [ ] Instrucciones de despliegue en nube (RunPod + VPS)
-  - [ ] Variables de entorno documentadas
-  - [ ] Arquitectura y diagramas
-- [ ] Guia de troubleshooting para problemas comunes
-- [ ] Changelog con features implementadas por fase
+- [x] README raíz actualizado para portafolio: Demo URL, stack completo, decisiones técnicas destacadas, métricas de calidad · 2026-06-08
+- [x] Setup local documentado (launcher, manual, variables de entorno)
+- [x] Deploy Docker documentado (`make prod-up`, checklist en DEPLOY.md)
+- [x] Variables de entorno documentadas (ENV-ARCHITECTURE.md + .env.production.example)
+- [x] Arquitectura con diagramas Mermaid (docs/ARQUITECTURA.md)
+- [ ] Guia de troubleshooting para problemas comunes — diferido
+- [ ] Changelog con features por fase — diferido
 
 ### Demo Final
 
