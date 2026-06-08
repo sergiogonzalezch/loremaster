@@ -191,22 +191,30 @@ Objetivo: app accesible públicamente vía Cloudflare Tunnel y generación de im
 - [ ] **Implementar RunPod client**: completar métodos `submit_workflow`, `get_status`, `wait_for_completion`, `extract_image_bytes`; conectar en `_backends.py` con `elif params.backend == "runpod"`; fondear wallet RunPod (~$4) y probar generación end-to-end
 - [x] ~~Limpiar deuda de documentación: eliminar `entity_relations` de HU-05~~ — resuelto 2026-05-20
 
-### Semana 12 — Demo + Evaluación final
+### Semana 12 — Demo + Evaluación final ✅ (cerrada 2026-06-08)
 
 Objetivo: entorno de demo funcional y documentación de portafolio.
 
-- [ ] Evaluación final: baseline evals + guard harness contra el entorno de demo
-- [ ] Documentación de portafolio: README con setup completo, arquitectura, decisiones clave
+- [x] **Evaluación final**: baseline evals 83/83 (100 %) + guard harness 54/54 · 2026-06-08
+- [x] **Documentación de portafolio**: README actualizado con demo URL, decisiones técnicas, métricas de calidad · 2026-06-08
+- [x] **Demo**: en vivo cada sábado (no grabada); flujo end-to-end cubierto por baseline evals 83/83
 
-### Post-Fase 3 (después de Semana 12)
+### Semana 13 (post-roadmap) — Redis + Métricas
+
+Objetivo: implementar las dos features de Semana 12 que quedaron pendientes por priorización.
+
+- [ ] **Martes 2026-06-09 — Redis caché semántica**: queries con similitud coseno ≥ 0.95 reutilizan respuesta; TTL configurable; Redis ya en el stack (`loremaster-redis`)
+- [ ] **Miércoles 2026-06-11 — Métricas Prometheus + Grafana**: instrumentar endpoints clave, dashboard básico
+
+### Post-roadmap (sin fecha)
 
 Features complementarias a extender sin bloquear el deploy:
-- Feed público y sistema de sharing
+- Feed público y sistema de sharing (ya implementado, extender post-Fase 3)
 - Perfiles de usuario extendidos
 - Panel de administración avanzado
-- Redis caché semántica (si el volumen lo justifica)
 - WebSocket / polling para generación LLM asíncrona
 - Sesiones deslizantes Clerk (Issue #6)
+- RunPod — verificación en GPU real cuando haya saldo (~$4)
 
 ---
 

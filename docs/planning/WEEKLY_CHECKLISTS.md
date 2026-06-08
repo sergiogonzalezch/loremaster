@@ -760,13 +760,16 @@ Fixes de consistencia entre capas y eliminación de código muerto aplicados sob
 
 ---
 
-## Semana 12 — Cache + Evaluacion + Demo Final
+## Semana 12 — Cache + Evaluacion + Demo Final ✅ (cerrada 2026-06-08)
 
-**Hito:** Sistema completo con cache, evaluacion y documentacion.
+**Hito:** Sistema completo con evaluacion y documentacion.
 **Objetivos:** O-7, O-8
 **Historias:** Todas
 
-### Cache Redis
+> **Nota (2026-06-08):** Cache Redis y métricas Prometheus/Grafana se implementan en Semana 13
+> (martes y miércoles respectivamente). Demo en vivo cada sábado — no grabada.
+
+### Cache Redis → implementar Semana 13 (martes 2026-06-09)
 
 - [ ] Redis integrado en el flujo de generacion de texto
 - [ ] Cache semantico: queries con similitud coseno >= 0.95 reutilizan respuesta
@@ -781,18 +784,15 @@ Fixes de consistencia entre capas y eliminación de código muerto aplicados sob
 - [ ] Comparar tiempos de generacion: local vs RunPod — descartado (sin saldo RunPod)
 - [ ] Documentar metricas de rendimiento: latencia p95, throughput — diferido
 
-### Observabilidad Completa
+### Observabilidad Completa → implementar Semana 13 (miércoles 2026-06-11)
 
-- [ ] Todas las metricas de la tabla 9.1 exportadas:
+- [ ] Métricas clave exportadas con `prometheus_client`:
   - [ ] `loremaster_requests_total`
   - [ ] `loremaster_request_duration_seconds`
   - [ ] `loremaster_llm_tokens_generated_total`
   - [ ] `loremaster_image_generation_seconds`
-  - [ ] `loremaster_comfy_queue_depth`
   - [ ] `loremaster_cache_hit_ratio`
-  - [ ] `loremaster_qdrant_search_seconds`
-  - [ ] `loremaster_storage_bytes_total`
-- [ ] Dashboard Grafana con todas las metricas y alertas configuradas
+- [ ] Dashboard Grafana básico con las métricas anteriores
 
 ### Documentacion Final
 
@@ -806,33 +806,32 @@ Fixes de consistencia entre capas y eliminación de código muerto aplicados sob
 
 ### Demo Final
 
-- [ ] Demo end-to-end grabada o en vivo:
-  1. [ ] Crear coleccion
-  2. [ ] Ingestar documento PDF con lore
-  3. [ ] Hacer query de texto → respuesta RAG coherente
-  4. [ ] Generar imagen desde contexto RAG (local)
-  5. [ ] Generar imagen desde contexto RAG (RunPod)
-  6. [ ] Mostrar entidades creadas
-  7. [ ] Mostrar dashboard Grafana con metricas
-  8. [ ] Mostrar cache hit en query repetida
+- [x] Demo en vivo cada sábado — flujo end-to-end cubierto por baseline evals 83/83
+  1. [x] Crear coleccion
+  2. [x] Ingestar documento PDF con lore
+  3. [x] Hacer query de texto → respuesta RAG coherente
+  4. [x] Generar imagen desde contexto RAG (ComfyUI local)
+  5. [ ] ~~Generar imagen con RunPod~~ — descartado (sin saldo RunPod)
+  6. [x] Mostrar entidades creadas
+  7. [ ] Mostrar dashboard Grafana — Semana 13 (miércoles)
+  8. [ ] Mostrar cache hit en query — Semana 13 (martes)
 
 ### Criterios de aceptacion Semana 12
 
-- [ ] Cache Redis reduce latencia en queries repetidas (medible)
-- [ ] Dashboard Grafana muestra metricas en tiempo real
-- [ ] Documentacion permite a un nuevo desarrollador hacer setup desde cero
-- [ ] Demo completa ejecutada sin errores criticos
+- [ ] Cache Redis reduce latencia en queries repetidas — **Semana 13**
+- [ ] Dashboard Grafana muestra metricas en tiempo real — **Semana 13**
+- [x] Documentacion permite a un nuevo desarrollador hacer setup desde cero
+- [x] Demo completa ejecutada sin errores criticos (en vivo, cada sábado)
 
 ### Checklist de Cierre Fase 3
 
-- [ ] Todos los criterios de Semanas 9-12 cumplidos
-- [ ] Stack completo dockerizado y funcional
-- [ ] PostgreSQL como DB principal (no mock)
-- [ ] RunPod funcional como backend alternativo de imagenes
-- [ ] Cache Redis activo y medible
-- [ ] Observabilidad con Prometheus + Grafana
-- [ ] Documentacion completa
-- [ ] Demo exitosa
+- [x] Stack completo dockerizado y funcional
+- [x] PostgreSQL como DB principal (no mock)
+- [ ] RunPod funcional como backend alternativo de imagenes — código completo, verificación GPU pendiente
+- [ ] Cache Redis activo y medible — **Semana 13**
+- [ ] Observabilidad con Prometheus + Grafana — **Semana 13**
+- [x] Documentacion completa
+- [x] Demo exitosa (en vivo, cada sábado)
 
 ---
 
