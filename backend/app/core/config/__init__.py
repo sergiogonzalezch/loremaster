@@ -109,6 +109,9 @@ class Settings(BaseSettings):
     rate_limit_llm_per_minute: int = 5  # Endpoints que invocan Ollama
     rate_limit_image_per_minute: int = 3  # Endpoints de generación de imagen
     redis_url: str = "redis://localhost:6379"
+    semantic_cache_enabled: bool = True
+    semantic_cache_ttl: int = 3600  # segundos
+    semantic_cache_threshold: float = 0.95
 
     # Image generation
     image_prompt_tokens: int = 512

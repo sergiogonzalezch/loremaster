@@ -8,6 +8,7 @@ from dataclasses import dataclass
 # 1. Variables de entorno ANTES de cualquier import de app (Settings se instancia al importar)
 os.environ.setdefault("ENVIRONMENT", "test")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-for-testing-only-not-for-prod")
+os.environ.setdefault("SEMANTIC_CACHE_ENABLED", "false")
 
 # 2. Stub de app.engine.rag ANTES de importar app.main (evita carga de modelos pesados)
 if "app.engine.rag" not in sys.modules:
@@ -40,12 +41,18 @@ if "app.engine.rag" not in sys.modules:
     def _stub_ping_qdrant(*args, **kwargs):
         return None
 
+    def _stub_embed_query(text: str):
+        import numpy as np
+
+        return np.zeros(384, dtype=np.float32)
+
     rag_stub.ingest_chunks = _stub_ingest_chunks
     rag_stub.search_context = _stub_search_context
     rag_stub.retrieve_context = _stub_retrieve_context
     rag_stub.delete_document_chunks = _stub_delete_document_chunks
     rag_stub.delete_collection_vectors = _stub_delete_collection_vectors
     rag_stub.ping_qdrant = _stub_ping_qdrant
+    rag_stub.embed_query = _stub_embed_query
     sys.modules["app.engine.rag"] = rag_stub
 
 # 3. Imports de app (con env vars y stubs ya en su lugar)

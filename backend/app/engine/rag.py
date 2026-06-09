@@ -4,6 +4,7 @@ import logging
 import uuid
 from dataclasses import dataclass
 
+import numpy as np
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
@@ -134,6 +135,11 @@ def delete_document_chunks(collection_id: str, doc_id: str) -> None:
 def ping_qdrant() -> None:
     """Verifica la conectividad con Qdrant listando las colecciones existentes."""
     _qdrant_client.get_collections()
+
+
+def embed_query(text: str) -> np.ndarray:
+    """Genera el embedding de un texto reutilizando el modelo ya cargado."""
+    return np.array(_embedding_model.encode([text])[0], dtype=np.float32)
 
 
 def search_context(

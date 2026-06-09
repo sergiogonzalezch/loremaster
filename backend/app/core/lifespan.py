@@ -12,6 +12,7 @@ from fastapi import FastAPI
 from alembic import command
 from app.core.config import settings
 from app.engine.rag import ping_qdrant
+from app.engine.semantic_cache import ping_redis
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +89,12 @@ async def lifespan(_: FastAPI):
         logger.info("Ollama connection OK (%s)", settings.ollama_base_url)
     except Exception as e:  # noqa: BLE001
         logger.warning("Ollama not reachable at startup: %s", e)
+
+    try:
+        await asyncio.to_thread(ping_redis)
+        logger.info("Redis connection OK (%s)", settings.redis_url)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Redis not reachable at startup: %s", e)
 
     # Redirigir uvicorn.access hacia nuestro root handler para que los logs de
     # cada request (GET /api/v1/... 200) sean visibles con el mismo formato.
