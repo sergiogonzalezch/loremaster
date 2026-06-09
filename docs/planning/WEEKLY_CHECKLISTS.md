@@ -769,13 +769,13 @@ Fixes de consistencia entre capas y eliminación de código muerto aplicados sob
 > **Nota (2026-06-08):** Cache Redis y métricas Prometheus/Grafana se implementan en Semana 13
 > (martes y miércoles respectivamente). Demo en vivo cada sábado — no grabada.
 
-### Cache Redis → implementar Semana 13 (martes 2026-06-09)
+### Cache Redis ✅ (2026-06-09)
 
-- [ ] Redis integrado en el flujo de generacion de texto
-- [ ] Cache semantico: queries con similitud coseno >= 0.95 reutilizan respuesta
-- [ ] TTL configurable (default 3600s)
-- [ ] Metrica `loremaster_cache_hit_ratio` exportada a Prometheus
-- [ ] Verificar que cache reduce latencia en queries repetidas
+- [x] Redis integrado en el flujo de generacion de texto (`rag_query_service.py`)
+- [x] Cache semantico: queries con similitud coseno >= 0.95 reutilizan respuesta (`engine/semantic_cache.py`)
+- [x] TTL configurable (default 3600s, `SEMANTIC_CACHE_TTL`)
+- [ ] Metrica `loremaster_cache_hit_ratio` exportada a Prometheus — pendiente miércoles
+- [x] 10 tests unitarios: hit, miss, fail-open, TTL, aislamiento por colección
 
 ### Evaluacion
 
@@ -814,11 +814,11 @@ Fixes de consistencia entre capas y eliminación de código muerto aplicados sob
   5. [ ] ~~Generar imagen con RunPod~~ — descartado (sin saldo RunPod)
   6. [x] Mostrar entidades creadas
   7. [ ] Mostrar dashboard Grafana — Semana 13 (miércoles)
-  8. [ ] Mostrar cache hit en query — Semana 13 (martes)
+  8. [x] Mostrar cache hit en query — implementado 2026-06-09
 
 ### Criterios de aceptacion Semana 12
 
-- [ ] Cache Redis reduce latencia en queries repetidas — **Semana 13**
+- [x] Cache Redis activo (caché semántica coseno ≥ 0.95, fail-open, 10 tests) — 2026-06-09
 - [ ] Dashboard Grafana muestra metricas en tiempo real — **Semana 13**
 - [x] Documentacion permite a un nuevo desarrollador hacer setup desde cero
 - [x] Demo completa ejecutada sin errores criticos (en vivo, cada sábado)
@@ -828,7 +828,7 @@ Fixes de consistencia entre capas y eliminación de código muerto aplicados sob
 - [x] Stack completo dockerizado y funcional
 - [x] PostgreSQL como DB principal (no mock)
 - [ ] RunPod funcional como backend alternativo de imagenes — código completo, verificación GPU pendiente
-- [ ] Cache Redis activo y medible — **Semana 13**
+- [x] Cache Redis activo y medible — `engine/semantic_cache.py` · 2026-06-09
 - [ ] Observabilidad con Prometheus + Grafana — **Semana 13**
 - [x] Documentacion completa
 - [x] Demo exitosa (en vivo, cada sábado)

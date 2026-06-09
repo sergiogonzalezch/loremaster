@@ -165,12 +165,13 @@ Ver [`backend/README.md`](backend/README.md) para la referencia completa de vari
 - **Moderación multicapa con harness de evaluación:** guardrail léxico (regex + normalización NFKD, leetspeak, separadores) en tres puntos del pipeline (input, texto de documento, output LLM); más Llama Guard 3 como capa semántica fail-open. Calibrado con 54 casos (18 categorías adversariales, 16 técnicas de bypass, 14 casos RPG legítimos).
 - **Pipeline de imagen sin RAG (decisión validada):** evaluado experimentalmente en `metadata_harness`: añadir cabeceras de fuente Qdrant al prompt visual no mejoraba la calidad en modelos 3B (Δ D1 < +0.2). El prompt visual se construye directamente desde el texto del contenido confirmado, reduciendo latencia y complejidad sin pérdida de calidad.
 - **Self-hosted sin costos de token:** toda la inferencia (texto con Ollama, embeddings con sentence-transformers, imagen con ComfyUI/Flux.2 Klein) corre en el host. Sin llamadas a APIs externas de pago. GPU cloud (RunPod Serverless) disponible como backend alternativo via `IMAGE_BACKEND=runpod` — mismo endpoint, sin cambio de código.
+- **Caché semántica en Redis:** `engine/semantic_cache.py` intercepta `execute_rag_query` antes del pipeline completo. Reutiliza respuestas para queries con similitud coseno ≥ 0.95 (configurable); TTL 3600 s; fail-open si Redis no responde. El embedding se calcula con el mismo modelo ya cargado en memoria — sin dependencia adicional.
 
 ## Métricas de calidad
 
 | Métrica | Resultado |
 |---|---|
-| Tests backend (`pytest`) | 309 / 309 |
+| Tests backend (`pytest`) | 319 / 319 |
 | Tests frontend (`vitest`) | 121 / 121 |
 | Baseline evals — 83 casos end-to-end con LLM | **83 / 83** (100 %) · 2026-06-08 |
 | Guard harness — adversarial · bypass · RPG | **54 / 54** input correcto · 2026-06-08 |
