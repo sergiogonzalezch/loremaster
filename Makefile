@@ -4,8 +4,9 @@ DC_BASE      = docker compose -f $(BACKEND_DIR)/docker-compose.yml
 DC_PG        = $(DC_BASE) -f $(BACKEND_DIR)/docker-compose.postgres.yml
 DC_PROD      = docker compose -f $(BACKEND_DIR)/docker-compose.prod.yml --env-file .env.production
 DC_MONITORING = $(DC_PROD) -f $(BACKEND_DIR)/docker-compose.monitoring.yml
+DC_DEBUG      = $(DC_PROD) -f $(BACKEND_DIR)/docker-compose.debug.yml
 
-.PHONY: dev dev-pg infra infra-pg down prod-up prod-down prod-rebuild prod-rebuild-api prod-rebuild-fe make-admin monitoring-up monitoring-down docker-clean
+.PHONY: dev dev-pg infra infra-pg down prod-up prod-down prod-rebuild prod-rebuild-api prod-rebuild-fe make-admin monitoring-up monitoring-down docker-clean debug-up debug-down
 
 # ── Entorno completo (SQLite) ────────────────────────────────────────────────
 dev: infra
@@ -53,6 +54,14 @@ monitoring-up:
 # Detiene Prometheus + Grafana sin tocar el resto del stack.
 monitoring-down:
 	$(DC_MONITORING) stop prometheus grafana
+
+# Expone puertos internos del stack de prod para inspección local.
+# Requiere backend/docker-compose.debug.yml (gitignoreado — ver DEPLOY.md §6).
+debug-up:
+	$(DC_DEBUG) up -d
+
+debug-down:
+	$(DC_DEBUG) down
 
 # Elimina imágenes sin usar, volúmenes huérfanos y build cache.
 # No toca contenedores ni volúmenes del proyecto activos.
