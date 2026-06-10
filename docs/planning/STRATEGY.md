@@ -49,10 +49,12 @@
 | CSP en `index.html` + S3 CORS restringido + SVG XSS bloqueado | ✅ | `index.html`, `lifespan.py`, `utils/strings.ts` |
 | 4 vulnerabilidades npm parchadas (happy-dom RCE, js-cookie, etc.) | ✅ | `package-lock.json` |
 | React Doctor 94/100 (subió 81→94 en sesiones sucesivas) | ✅ | Frontend |
-| Tests: 309 backend · 121 frontend | ✅ | — |
+| Tests: 328 backend · 121 frontend | ✅ | — |
 | Ruff 0 errores · ESLint 0 errores | ✅ | — |
 | `npm audit`: 0 vulnerabilidades | ✅ | — |
 | Integridad BD verificada (0 huérfanos en 8 relaciones de cascade) | ✅ | — |
+| Redis caché semántica — coseno ≥ 0.95, TTL 3600 s, fail-open, 10 tests · 2026-06-09 | ✅ | `engine/semantic_cache.py` |
+| Prometheus + Grafana — 8 métricas, `/metrics` Bearer token, dashboard 8 paneles auto-provisionado · 2026-06-10 | ✅ | `core/metrics.py`, `monitoring/` |
 
 ---
 

@@ -774,7 +774,7 @@ Fixes de consistencia entre capas y eliminación de código muerto aplicados sob
 - [x] Redis integrado en el flujo de generacion de texto (`rag_query_service.py`)
 - [x] Cache semantico: queries con similitud coseno >= 0.95 reutilizan respuesta (`engine/semantic_cache.py`)
 - [x] TTL configurable (default 3600s, `SEMANTIC_CACHE_TTL`)
-- [ ] Metrica `loremaster_cache_hit_ratio` exportada a Prometheus — pendiente miércoles
+- [x] Métricas `loremaster_cache_hits_total` · `loremaster_cache_misses_total` exportadas a Prometheus — 2026-06-10
 - [x] 10 tests unitarios: hit, miss, fail-open, TTL, aislamiento por colección
 
 ### Evaluacion
