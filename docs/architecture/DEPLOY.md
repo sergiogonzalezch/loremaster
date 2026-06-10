@@ -189,4 +189,51 @@ Con el override activo:
 
 ---
 
-*Última actualización: 2026-05-27 (revisado — Storage S3/R2 ya implementado; TLS/GPU cloud añadidos como pendientes)*
+---
+
+## 7. Observabilidad (opcional)
+
+El stack de monitoreo es un overlay opt-in. No arranca con el compose principal.
+
+### Configuración
+
+```bash
+# 1. Crear el archivo de configuración de Prometheus (gitignoreado)
+cp backend/monitoring/prometheus.yml.example backend/monitoring/prometheus.yml
+
+# 2. Editar bearer_token con el valor real
+#    El token debe coincidir con METRICS_TOKEN en .env / .env.production
+
+# 3. Añadir la variable al entorno del backend (mismo valor)
+#    METRICS_TOKEN=<token-generado>
+```
+
+Generar un token seguro:
+
+```bash
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+### Arranque
+
+```bash
+# Desde backend/ — requiere que el stack principal ya esté corriendo
+docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d prometheus grafana
+
+# Bajar solo el monitoring
+docker compose -f docker-compose.yml -f docker-compose.monitoring.yml stop prometheus grafana
+```
+
+En demo/producción sustituir `docker-compose.yml` por `docker-compose.prod.yml`.
+
+Tras arrancar:
+- Prometheus: `http://127.0.0.1:9090`
+- Grafana: `http://127.0.0.1:3001` (usuario `admin`, contraseña en `GF_ADMIN_PASSWORD`)
+
+El dashboard "Lore Master" carga automáticamente vía provisioning. Incluye: tasa de peticiones, latencia p95, ratio de caché, duración LLM, bloqueos de moderación, ingesta de documentos e imágenes.
+
+> `monitoring/prometheus.yml` está en `.gitignore`. El archivo con el token real nunca se commitea. Solo se versiona `prometheus.yml.example`.
+
+---
+
+*Última actualización: 2026-06-10 (añadido §7 Observabilidad; Prometheus/Grafana como overlay opt-in)*

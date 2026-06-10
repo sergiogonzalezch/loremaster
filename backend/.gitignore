@@ -157,6 +157,12 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # ========================
+# Monitoring — archivo real con token (nunca commitear)
+# ========================
+monitoring/prometheus.yml
+monitoring/grafana/provisioning/datasources/*.yml.local
+
+# ========================
 # Graphify
 # ========================
 graphify-out/
