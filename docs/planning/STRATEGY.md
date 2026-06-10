@@ -204,7 +204,7 @@ Objetivo: entorno de demo funcional y documentación de portafolio.
 Objetivo: implementar las dos features de Semana 12 que quedaron pendientes por priorización.
 
 - [x] **Martes 2026-06-09 — Redis caché semántica**: `engine/semantic_cache.py`; coseno ≥ 0.95; TTL 3600 s; fail-open; 10 tests · 2026-06-09
-- [ ] **Miércoles 2026-06-11 — Métricas Prometheus + Grafana**: instrumentar endpoints clave, dashboard básico
+- [x] **Miércoles 2026-06-10 — Métricas Prometheus + Grafana**: `core/metrics.py` (8 métricas), HTTP automáticas vía instrumentator, `/metrics` con Bearer token, `docker-compose.monitoring.yml`, dashboard 8 paneles auto-provisionado · 2026-06-10
 
 ### Post-roadmap (sin fecha)
 

@@ -171,7 +171,7 @@ Ver [`backend/README.md`](backend/README.md) para la referencia completa de vari
 
 | Métrica | Resultado |
 |---|---|
-| Tests backend (`pytest`) | 319 / 319 |
+| Tests backend (`pytest`) | 328 / 328 |
 | Tests frontend (`vitest`) | 121 / 121 |
 | Baseline evals — 83 casos end-to-end con LLM | **83 / 83** (100 %) · 2026-06-08 |
 | Guard harness — adversarial · bypass · RPG | **54 / 54** input correcto · 2026-06-08 |

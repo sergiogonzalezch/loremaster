@@ -784,15 +784,17 @@ Fixes de consistencia entre capas y eliminación de código muerto aplicados sob
 - [ ] Comparar tiempos de generacion: local vs RunPod — descartado (sin saldo RunPod)
 - [ ] Documentar metricas de rendimiento: latencia p95, throughput — diferido
 
-### Observabilidad Completa → implementar Semana 13 (miércoles 2026-06-11)
+### Observabilidad Completa ✅ (2026-06-10)
 
-- [ ] Métricas clave exportadas con `prometheus_client`:
-  - [ ] `loremaster_requests_total`
-  - [ ] `loremaster_request_duration_seconds`
-  - [ ] `loremaster_llm_tokens_generated_total`
-  - [ ] `loremaster_image_generation_seconds`
-  - [ ] `loremaster_cache_hit_ratio`
-- [ ] Dashboard Grafana básico con las métricas anteriores
+- [x] Métricas clave exportadas con `prometheus_client` (`app/core/metrics.py`):
+  - [x] `http_requests_total` + `http_request_duration_seconds` (instrumentator automático)
+  - [x] `loremaster_rag_queries_total` · `loremaster_cache_hits_total` · `loremaster_cache_misses_total`
+  - [x] `loremaster_llm_requests_total` · `loremaster_llm_duration_seconds`
+  - [x] `loremaster_document_ingestions_total` · `loremaster_image_generations_total`
+  - [x] `loremaster_moderation_blocks_total`
+- [x] `/metrics` protegido por Bearer token (libre en local/test, requerido en demo/prod)
+- [x] Dashboard Grafana 8 paneles auto-provisionado (`monitoring/grafana/provisioning/`)
+- [x] Stack opt-in: `docker-compose.monitoring.yml` overlay (Prometheus + Grafana)
 
 ### Documentacion Final
 
@@ -813,13 +815,13 @@ Fixes de consistencia entre capas y eliminación de código muerto aplicados sob
   4. [x] Generar imagen desde contexto RAG (ComfyUI local)
   5. [ ] ~~Generar imagen con RunPod~~ — descartado (sin saldo RunPod)
   6. [x] Mostrar entidades creadas
-  7. [ ] Mostrar dashboard Grafana — Semana 13 (miércoles)
+  7. [x] Mostrar dashboard Grafana — implementado 2026-06-10
   8. [x] Mostrar cache hit en query — implementado 2026-06-09
 
 ### Criterios de aceptacion Semana 12
 
 - [x] Cache Redis activo (caché semántica coseno ≥ 0.95, fail-open, 10 tests) — 2026-06-09
-- [ ] Dashboard Grafana muestra metricas en tiempo real — **Semana 13**
+- [x] Dashboard Grafana muestra métricas en tiempo real — 2026-06-10
 - [x] Documentacion permite a un nuevo desarrollador hacer setup desde cero
 - [x] Demo completa ejecutada sin errores criticos (en vivo, cada sábado)
 
@@ -829,7 +831,7 @@ Fixes de consistencia entre capas y eliminación de código muerto aplicados sob
 - [x] PostgreSQL como DB principal (no mock)
 - [ ] RunPod funcional como backend alternativo de imagenes — código completo, verificación GPU pendiente
 - [x] Cache Redis activo y medible — `engine/semantic_cache.py` · 2026-06-09
-- [ ] Observabilidad con Prometheus + Grafana — **Semana 13**
+- [x] Observabilidad con Prometheus + Grafana — `monitoring/` + `docker-compose.monitoring.yml` · 2026-06-10
 - [x] Documentacion completa
 - [x] Demo exitosa (en vivo, cada sábado)
 
