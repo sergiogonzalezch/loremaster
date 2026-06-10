@@ -217,14 +217,12 @@ python -c "import secrets; print(secrets.token_hex(32))"
 ### Arranque
 
 ```bash
-# Desde backend/ — requiere que el stack principal ya esté corriendo
-docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d prometheus grafana
+make prod-up          # stack principal (si no está ya corriendo)
+make monitoring-up    # Prometheus + Grafana encima
 
-# Bajar solo el monitoring
-docker compose -f docker-compose.yml -f docker-compose.monitoring.yml stop prometheus grafana
+make monitoring-down  # detiene solo el monitoring
+make prod-down        # detiene todo (incluye monitoring)
 ```
-
-En demo/producción sustituir `docker-compose.yml` por `docker-compose.prod.yml`.
 
 Tras arrancar:
 - Prometheus: `http://127.0.0.1:9090`
