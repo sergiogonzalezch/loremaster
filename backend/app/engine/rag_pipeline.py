@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import time
 from dataclasses import dataclass
 
 import httpx
@@ -9,6 +10,7 @@ from langchain_core.output_parsers import StrOutputParser
 
 from app.core.config import settings
 from app.core.exceptions import LLMBusyError
+from app.core.metrics import llm_duration_seconds, llm_requests_total
 from app.domain.prompt_templates import render_prompt
 from app.engine.llm import chain, get_llm
 from app.engine.rag import ChunkInfo, retrieve_context
@@ -71,8 +73,12 @@ async def invoke_rag_pipeline(
     try:
         loop = asyncio.get_running_loop()
         async with _llm_semaphore:
+            t0 = time.perf_counter()
             answer = await loop.run_in_executor(None, lambda: chain.invoke({"context": context, "query": query}))
+            llm_duration_seconds.observe(time.perf_counter() - t0)
+            llm_requests_total.labels(status="success").inc()
     except _TRANSPORT_ERRORS as e:
+        llm_requests_total.labels(status="error").inc()
         logger.exception("LLM generation failed for collection %s", collection_id)
         msg = "LLM service unavailable"
         raise RuntimeError(msg) from e

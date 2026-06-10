@@ -9,6 +9,8 @@ from dataclasses import dataclass
 os.environ.setdefault("ENVIRONMENT", "test")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-for-testing-only-not-for-prod")
 os.environ.setdefault("SEMANTIC_CACHE_ENABLED", "false")
+os.environ.setdefault("METRICS_ENABLED", "false")
+os.environ.setdefault("METRICS_TOKEN", "test-metrics-token")
 
 # 2. Stub de app.engine.rag ANTES de importar app.main (evita carga de modelos pesados)
 if "app.engine.rag" not in sys.modules:

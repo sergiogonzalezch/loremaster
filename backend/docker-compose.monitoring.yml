@@ -1,0 +1,60 @@
+# Overlay de observabilidad — Prometheus + Grafana.
+# Usar sobre docker-compose.yml (dev) o docker-compose.prod.yml (prod):
+#
+#   Dev:   docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+#   Prod:  docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml up -d
+#
+# Acceso (solo localhost):
+#   Prometheus → http://localhost:9090
+#   Grafana    → http://localhost:3001  (admin / contraseña en GF_SECURITY_ADMIN_PASSWORD)
+#
+# El token de scraping debe coincidir con METRICS_TOKEN del servicio app.
+# Cambiar en producción: actualizar bearer_token en monitoring/prometheus.yml
+# y METRICS_TOKEN en .env.production.
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: loremaster-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.enable-lifecycle"
+    ports:
+      - "127.0.0.1:9090:9090"
+    networks:
+      - loremaster
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: loremaster-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD:-loremaster-grafana}
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s:%(http_port)s/"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3001:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - loremaster
+
+volumes:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  loremaster:
+    external: true
+    name: backend_loremaster

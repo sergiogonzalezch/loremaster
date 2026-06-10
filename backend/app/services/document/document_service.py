@@ -23,6 +23,7 @@ from app.core.exceptions import (
     UnsupportedFileTypeError,
     VectorStoreError,
 )
+from app.core.metrics import document_ingestions_total
 from app.core.storage.validator import DOCUMENT_MIME_TYPES, FileValidator
 from app.domain.content_guard import check_document_content
 from app.engine.extractor import extract_text
@@ -146,6 +147,7 @@ async def ingest_document_service(
     session.add(document)
     db_commit(session, f"ingest_document({_sanitize_for_log(data.filename)})")
     session.refresh(document)
+    document_ingestions_total.labels(status="success").inc()
     return document, extracted_text
 
 

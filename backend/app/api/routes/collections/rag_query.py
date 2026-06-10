@@ -13,6 +13,7 @@ from app.core.exceptions import (
     LLMBusyError,
     NoContextAvailableError,
 )
+from app.core.metrics import moderation_blocks_total
 from app.database import get_session
 from app.models.db.collection import Collection
 from app.models.schemas.rag_query import RagQueryRequest, RagQueryResponse
@@ -36,6 +37,7 @@ async def rag_query(
     try:
         answer, sources_count, source_doc_ids = await execute_rag_query(collection_id, query)
     except ContentNotAllowedError as e:
+        moderation_blocks_total.labels(layer="input").inc()
         log_moderation_event(
             session,
             "input",
@@ -48,6 +50,7 @@ async def rag_query(
     except NoContextAvailableError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
     except GeneratedContentBlockedError as e:
+        moderation_blocks_total.labels(layer="output").inc()
         log_moderation_event(
             session,
             "output",

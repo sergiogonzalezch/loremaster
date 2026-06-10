@@ -113,6 +113,10 @@ class Settings(BaseSettings):
     semantic_cache_ttl: int = 3600  # segundos
     semantic_cache_threshold: float = 0.95
 
+    # Observabilidad — Prometheus
+    metrics_enabled: bool = True
+    metrics_token: str = "dev-metrics-token"  # reemplazar en producción
+
     # Image generation
     image_prompt_tokens: int = 512
     image_prompt_model: str = "mistral:latest"

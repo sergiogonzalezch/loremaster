@@ -2,6 +2,7 @@
 
 import logging
 import uuid as _uuid
+
 from sqlalchemy import func
 from sqlmodel import Session, select
 
@@ -9,6 +10,7 @@ from app.core.config import settings
 from app.core.database.soft_delete import soft_delete
 from app.core.database.utils import db_commit
 from app.core.exceptions import ContentNotConfirmedError, NoContextAvailableError
+from app.core.metrics import image_generations_total
 from app.core.storage import build_storage_url, delete_file
 from app.domain.content_guard import check_prompt_length, check_user_input
 from app.engine.image_prompt_builder import build_visual_prompt
@@ -202,15 +204,19 @@ def generate_images_service(
     generation_id = str(_uuid.uuid4())
     _create_image_generation(session, entity, generation_id, params)
 
-    if params.backend == "mock":
-        images_data = _generate_mock_images(entity, params.batch_size, params.seed_base)
-    elif params.backend == "comfyui":
-        images_data = _generate_comfyui_images(username, entity, params, generation_id)
-    elif params.backend == "runpod":
-        images_data = _generate_runpod_images(username, entity, params, generation_id)
-    else:
-        msg = f"Backend '{params.backend}' no soportado. Usar: 'mock', 'comfyui' o 'runpod'"
-        raise ValueError(msg)
+    try:
+        if params.backend == "mock":
+            images_data = _generate_mock_images(entity, params.batch_size, params.seed_base)
+        elif params.backend == "comfyui":
+            images_data = _generate_comfyui_images(username, entity, params, generation_id)
+        elif params.backend == "runpod":
+            images_data = _generate_runpod_images(username, entity, params, generation_id)
+        else:
+            msg = f"Backend '{params.backend}' no soportado. Usar: 'mock', 'comfyui' o 'runpod'"
+            raise ValueError(msg)
+    except Exception:
+        image_generations_total.labels(backend=params.backend, status="error").inc()
+        raise
 
     images_result: list[ImageResult] = []
     for data in images_data:
@@ -226,6 +232,7 @@ def generate_images_service(
             )
         )
 
+    image_generations_total.labels(backend=params.backend, status="success").inc()
     db_commit(session, f"generate_images({entity.id})")
     return GenerateImagesResponse(
         generation_id=generation_id,

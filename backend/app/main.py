@@ -8,11 +8,13 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.api.middlewares import RateLimitMiddleware, SecurityHeadersMiddleware
 from app.api.routes import (
@@ -39,6 +41,15 @@ from app.core.logging import configure_logging
 
 configure_logging(settings.log_level)
 logger = logging.getLogger(__name__)
+
+def _verify_metrics_token(request: Request) -> None:
+    """Valida el Bearer token del endpoint /metrics en entornos no-locales."""
+    if settings.environment in ("local", "test"):
+        return
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer ") or auth[7:] != settings.metrics_token:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
 
 if settings.environment == "local":
     logger.warning(
@@ -116,6 +127,17 @@ app.add_middleware(
     requests_per_minute=settings.rate_limit_per_minute,
 )
 app.add_middleware(SecurityHeadersMiddleware)
+
+if settings.metrics_enabled:
+    Instrumentator().instrument(app)
+
+
+@app.get("/metrics", include_in_schema=False, dependencies=[Depends(_verify_metrics_token)])
+async def metrics_endpoint() -> Response:
+    """Expone métricas Prometheus. Protegido por Bearer token en entornos no-locales."""
+    if not settings.metrics_enabled:
+        raise HTTPException(status_code=404)
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.get("/")
