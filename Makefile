@@ -33,7 +33,7 @@ prod-up:
 	$(DC_PROD) up -d
 
 prod-down:
-	$(DC_PROD) down
+	$(DC_MONITORING) down
 
 # Reconstruye todos los servicios con build: (app + frontend).
 prod-rebuild:
