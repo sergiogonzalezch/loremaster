@@ -5,7 +5,7 @@ DC_PG        = $(DC_BASE) -f $(BACKEND_DIR)/docker-compose.postgres.yml
 DC_PROD      = docker compose -f $(BACKEND_DIR)/docker-compose.prod.yml --env-file .env.production
 DC_MONITORING = $(DC_PROD) -f $(BACKEND_DIR)/docker-compose.monitoring.yml
 
-.PHONY: dev dev-pg infra infra-pg down prod-up prod-down prod-rebuild prod-rebuild-api prod-rebuild-fe make-admin monitoring-up monitoring-down
+.PHONY: dev dev-pg infra infra-pg down prod-up prod-down prod-rebuild prod-rebuild-api prod-rebuild-fe make-admin monitoring-up monitoring-down docker-clean
 
 # ── Entorno completo (SQLite) ────────────────────────────────────────────────
 dev: infra
@@ -53,6 +53,13 @@ monitoring-up:
 # Detiene Prometheus + Grafana sin tocar el resto del stack.
 monitoring-down:
 	$(DC_MONITORING) stop prometheus grafana
+
+# Elimina imágenes sin usar, volúmenes huérfanos y build cache.
+# No toca contenedores ni volúmenes del proyecto activos.
+docker-clean:
+	docker image prune -af
+	docker volume prune -f
+	docker builder prune -af
 
 # Promueve un usuario a admin en el stack de demo/producción.
 # Requiere que loremaster-api esté corriendo (make prod-up).
