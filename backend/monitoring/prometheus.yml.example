@@ -7,6 +7,6 @@ scrape_configs:
     static_configs:
       - targets: ["app:8000"]
     metrics_path: /metrics
-    # Copiar este archivo como prometheus.yml y sustituir por el valor real.
-    # El token debe coincidir con METRICS_TOKEN en .env / .env.production.
-    bearer_token: "REPLACE_WITH_METRICS_TOKEN"
+    # El compose escribe el token desde METRICS_TOKEN en /run/metrics_token al iniciar.
+    # No sustituir manualmente: definir METRICS_TOKEN en .env y levantar con docker compose.
+    bearer_token_file: /run/metrics_token
