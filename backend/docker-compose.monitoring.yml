@@ -25,7 +25,7 @@ services:
     entrypoint:
       - /bin/sh
       - -c
-      - "printf '%s' \"$$METRICS_TOKEN\" > /run/metrics_token && exec /bin/prometheus --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus --storage.tsdb.retention.time=15d --web.enable-lifecycle"
+      - "printf '%s' \"$$METRICS_TOKEN\" > /tmp/metrics_token && exec /bin/prometheus --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus --storage.tsdb.retention.time=15d --web.enable-lifecycle"
     ports:
       - "127.0.0.1:9090:9090"
     networks:

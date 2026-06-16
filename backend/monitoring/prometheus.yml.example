@@ -9,4 +9,4 @@ scrape_configs:
     metrics_path: /metrics
     # El compose escribe el token desde METRICS_TOKEN en /run/metrics_token al iniciar.
     # No sustituir manualmente: definir METRICS_TOKEN en .env y levantar con docker compose.
-    bearer_token_file: /run/metrics_token
+    bearer_token_file: /tmp/metrics_token
