@@ -183,3 +183,6 @@ cython_debug/
 .streamlit/secrets.toml
 
 settings.local.json
+
+# Docker volume backups (binary tarballs, not for git)
+volume-backups/
