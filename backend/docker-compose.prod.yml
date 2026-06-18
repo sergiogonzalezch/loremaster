@@ -96,6 +96,7 @@ services:
       # Ollama y ComfyUI corren en el host — accesibles via host-gateway en Linux.
       OLLAMA_BASE_URL: http://host.docker.internal:11434
       OLLAMA_MODEL: llama3.2:latest
+      OLLAMA_EXCLUDED_MODELS: '["qwen3.5"]'
       # Image generation
       IMAGE_BACKEND: ${IMAGE_BACKEND:-comfyui}
       IMAGE_PROMPT_MODEL: mistral:latest
@@ -162,9 +163,17 @@ services:
 
 volumes:
   qdrant_data:
+    external: true
+    name: backend_qdrant_data
   postgres_data:
+    external: true
+    name: backend_postgres_data
   media_data:
+    external: true
+    name: backend_media_data
   floci_data:
+    external: true
+    name: backend_floci_data
 
 networks:
   loremaster:

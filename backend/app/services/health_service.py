@@ -17,7 +17,7 @@ def check_services_health() -> dict:
 
     try:
         with httpx.Client(timeout=settings.health_check_timeout_seconds) as client:
-            resp = client.get(f"{settings.qdrant_url}/ready")
+            resp = client.get(f"{settings.qdrant_url}/readyz")
             result["services"]["qdrant"] = "healthy" if resp.status_code == 200 else "unhealthy"
     except httpx.TransportError:
         result["services"]["qdrant"] = "unhealthy"
