@@ -52,10 +52,11 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Copiar código fuente con ownership correcto.
 COPY --chown=loremaster:loremaster . .
 
-USER loremaster
+# Crear media dir y fijar ownership del directorio /app (WORKDIR lo crea como root).
+# Solo se chownean inodos vacíos — sin duplicación de datos.
+RUN mkdir -p /app/media && chown loremaster:loremaster /app /app/media
 
-# Crear directorio de media como loremaster para que el volumen herede permisos correctos.
-RUN mkdir -p /app/media
+USER loremaster
 
 EXPOSE 8000
 
