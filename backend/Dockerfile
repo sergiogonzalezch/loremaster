@@ -43,21 +43,19 @@ WORKDIR /app
 # Copiar venv del builder (deps ya instaladas, sin pip ni build tools).
 COPY --from=builder /opt/venv /opt/venv
 
-# Copiar el cache del embedding model al home del usuario runtime.
-COPY --from=builder /root/.cache /home/loremaster/.cache
+# Copiar el cache del embedding model directamente con ownership correcto,
+# evitando un RUN chown posterior que duplicaría ~535 MB en una capa extra.
+COPY --chown=loremaster:loremaster --from=builder /root/.cache /home/loremaster/.cache
 
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Copiar código fuente.
-COPY . .
-
-# Crear directorio de media para que el volumen Docker herede los permisos correctos.
-RUN mkdir -p /app/media
-
-# Ajustar permisos: el usuario loremaster necesita el cache y el directorio de trabajo.
-RUN chown -R loremaster:loremaster /home/loremaster/.cache /app
+# Copiar código fuente con ownership correcto.
+COPY --chown=loremaster:loremaster . .
 
 USER loremaster
+
+# Crear directorio de media como loremaster para que el volumen herede permisos correctos.
+RUN mkdir -p /app/media
 
 EXPOSE 8000
 
