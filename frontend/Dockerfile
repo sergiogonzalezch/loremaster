@@ -35,6 +35,8 @@ RUN npm run build
 # Nginx sirve el bundle estático y actúa como reverse proxy.
 FROM nginx:alpine
 
+LABEL project=loremaster
+
 # Reemplazar config por defecto con la nuestra (proxy rules incluidas).
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 

@@ -6,7 +6,9 @@ DC_PROD      = docker compose -f $(BACKEND_DIR)/docker-compose.prod.yml --env-fi
 DC_MONITORING = $(DC_PROD) -f $(BACKEND_DIR)/docker-compose.monitoring.yml
 DC_DEBUG      = $(DC_PROD) -f $(BACKEND_DIR)/docker-compose.debug.yml
 
-.PHONY: dev dev-pg infra infra-pg down prod-up prod-down prod-rebuild prod-rebuild-api prod-rebuild-fe make-admin monitoring-up monitoring-down docker-clean debug-up debug-down
+LOREMASTER_LABEL = project=loremaster
+
+.PHONY: dev dev-pg infra infra-pg down prod-up prod-down prod-rebuild prod-rebuild-api prod-rebuild-fe make-admin monitoring-up monitoring-down docker-clean docker-nuke debug-up debug-down
 
 # ── Entorno completo (SQLite) ────────────────────────────────────────────────
 dev: infra
@@ -63,9 +65,16 @@ debug-up:
 debug-down:
 	$(DC_DEBUG) down
 
-# Elimina imágenes sin usar, volúmenes huérfanos y build cache.
-# No toca contenedores ni volúmenes del proyecto activos.
+# Limpia solo recursos etiquetados como loremaster (contenedores parados,
+# volúmenes huérfanos e imágenes propias). No toca recursos de otros proyectos.
 docker-clean:
+	docker container prune -f --filter "label=$(LOREMASTER_LABEL)"
+	docker volume prune -f --filter "label=$(LOREMASTER_LABEL)"
+	docker image prune -af --filter "label=$(LOREMASTER_LABEL)"
+	docker builder prune -af
+
+# Limpieza global de la máquina (PRECAUCIÓN: afecta todos los proyectos Docker).
+docker-nuke:
 	docker image prune -af
 	docker volume prune -f
 	docker builder prune -af

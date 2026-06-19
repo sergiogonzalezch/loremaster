@@ -30,6 +30,8 @@ SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')"
 # Imagen final: solo lo necesario para ejecutar la app.
 FROM python:3.12-slim
 
+LABEL project=loremaster
+
 # Parchear paquetes del SO antes de cualquier otra capa.
 RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 

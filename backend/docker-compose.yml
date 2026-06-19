@@ -17,6 +17,8 @@ services:
       - qdrant_data:/qdrant/storage
     networks:
       - loremaster
+    labels:
+      - "project=loremaster"
 
   redis:
     image: redis:7-alpine
@@ -25,6 +27,8 @@ services:
       - "127.0.0.1:6379:6379"
     networks:
       - loremaster
+    labels:
+      - "project=loremaster"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -33,6 +37,8 @@ services:
 
 volumes:
   qdrant_data:
+    labels:
+      - "project=loremaster"
 
 networks:
   loremaster:
