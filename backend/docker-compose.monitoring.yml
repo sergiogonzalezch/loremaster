@@ -40,7 +40,10 @@ services:
     environment:
       GF_SECURITY_ADMIN_USER: ${GF_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD:-loremaster-grafana}
-      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      # Acceso anónimo de solo lectura: ver dashboards sin login (el puerto solo
+      # escucha en 127.0.0.1). Editar/administrar sigue pidiendo el usuario admin.
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s:%(http_port)s/"
     volumes:
