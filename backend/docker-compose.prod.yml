@@ -98,28 +98,46 @@ services:
       floci:
         condition: service_healthy
     # Sin ports: el backend solo es accesible via Nginx (red interna Docker).
+    # Bloque ordenado con las mismas secciones que backend/.env.example.
+    # Lo que no aparece aquí usa el default de Settings (el contenedor no lleva .env).
     environment:
+      # ── General ──────────────────────────────────────────────────────────
       ENVIRONMENT: demo
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      QDRANT_URL: http://qdrant:6333
-      REDIS_URL: redis://redis:6379
-      # Ollama y ComfyUI corren en el host — accesibles via host-gateway en Linux.
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?ALLOWED_ORIGINS requerida}
+      # ── LLM (Ollama) — corre en el host, accesible via host-gateway ──────
       OLLAMA_BASE_URL: http://host.docker.internal:11434
-      OLLAMA_MODEL: llama3.2:latest
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:latest}
       OLLAMA_EXCLUDED_MODELS: '["qwen3.5"]'
-      # Image generation
-      IMAGE_BACKEND: ${IMAGE_BACKEND:-comfyui}
-      IMAGE_PROMPT_MODEL: mistral:latest
-      COMFYUI_URL: http://host.docker.internal:8188
-      # Embeddings — debe coincidir con el modelo pre-descargado en el Dockerfile.
-      EMBEDDING_MODEL: paraphrase-multilingual-MiniLM-L12-v2
       # Llama Guard — segunda capa semántica de moderación (fail-open).
       # Activar en demo/producción. Requiere: ollama pull llama-guard3:8b (~4.9 GB).
       LLAMA_GUARD_ENABLED: ${LLAMA_GUARD_ENABLED:-false}
       LLAMA_GUARD_MODEL: ${LLAMA_GUARD_MODEL:-llama-guard3:8b}
       LLAMA_GUARD_TIMEOUT: ${LLAMA_GUARD_TIMEOUT:-5.0}
+      # ── Embedding — debe coincidir con el modelo pre-descargado en el Dockerfile ──
+      EMBEDDING_MODEL: paraphrase-multilingual-MiniLM-L12-v2
+      # ── Infraestructura interna (red Docker) ─────────────────────────────
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      QDRANT_URL: http://qdrant:6333
+      REDIS_URL: redis://redis:6379
+      # ── Auth ─────────────────────────────────────────────────────────────
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY requerida}
+      CLERK_JWKS_URL: ${CLERK_JWKS_URL:?CLERK_JWKS_URL requerida}
+      CLERK_AUDIENCE: ${CLERK_AUDIENCE:?CLERK_AUDIENCE requerida}
+      COOKIE_SECURE: "true"
+      # ── Rate limiting — activar en .env.production cuando haya usuarios reales ──
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-false}
+      # RATE_LIMIT_PER_MINUTE: "30"
+      # RATE_LIMIT_LLM_PER_MINUTE: "5"
+      # RATE_LIMIT_IMAGE_PER_MINUTE: "3"
+      # ── Métricas — debe coincidir con bearer_token de monitoring/prometheus.yml ──
+      # (el overlay de monitoring interpola la misma variable).
+      METRICS_TOKEN: ${METRICS_TOKEN:-dev-metrics-token}
+      # ── Image generation — ComfyUI corre en el host ──────────────────────
+      IMAGE_BACKEND: ${IMAGE_BACKEND:-comfyui}
+      IMAGE_PROMPT_MODEL: ${IMAGE_PROMPT_MODEL:-mistral:latest}
+      COMFYUI_URL: http://host.docker.internal:8188
+      # ── Storage — fallback = Floci (demo local); R2/S3 real via .env.production ──
       MEDIA_ROOT: /app/media
-      # Storage — fallback = Floci (demo local). Para R2/S3 real: definir vars en .env.production.
       STORAGE_BACKEND: s3
       S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-http://floci:4566}
       S3_BUCKET: ${S3_BUCKET:-loremaster-media}
@@ -130,17 +148,6 @@ services:
       # Las image_url generadas quedan como <dominio>/media/<path>, mismo origen que el frontend.
       # Defecto: http://localhost/media para demo local. Sobreescribir en .env para otros dominios.
       STORAGE_BASE_URL: ${STORAGE_BASE_URL:-http://localhost/media}
-      # Rate limiting — false por defecto (demo local). Activar en .env.production
-      # cuando haya usuarios reales: RATE_LIMIT_ENABLED=true
-      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-false}
-      # RATE_LIMIT_PER_MINUTE: "30"
-      # RATE_LIMIT_LLM_PER_MINUTE: "5"
-      # RATE_LIMIT_IMAGE_PER_MINUTE: "3"
-      CLERK_JWKS_URL: ${CLERK_JWKS_URL}
-      CLERK_AUDIENCE: ${CLERK_AUDIENCE}
-      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY requerida}
-      COOKIE_SECURE: "true"
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?ALLOWED_ORIGINS requerida}
     volumes:
       - media_data:/app/media
     extra_hosts:

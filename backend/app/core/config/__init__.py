@@ -104,7 +104,9 @@ class Settings(BaseSettings):
     llama_guard_enabled: bool = False
     llama_guard_model: str = "llama-guard3:8b"
     llama_guard_timeout: float = 5.0
-    rate_limit_enabled: bool = True
+    # False por defecto, igual que docker-compose.prod.yml y los .env de ejemplo;
+    # activar explícitamente en demo/producción cuando haya usuarios reales.
+    rate_limit_enabled: bool = False
     rate_limit_per_minute: int = 30  # Rate limiting base (req/min)
     rate_limit_llm_per_minute: int = 5  # Endpoints que invocan Ollama
     rate_limit_image_per_minute: int = 3  # Endpoints de generación de imagen
