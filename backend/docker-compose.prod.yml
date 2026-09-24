@@ -41,7 +41,7 @@ services:
     labels:
       - "project=loremaster"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4566/"]
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/4566' 2>/dev/null"]
       interval: 10s
       timeout: 5s
       retries: 5
